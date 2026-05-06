@@ -145,9 +145,7 @@ export type HashrateRightAxis =
   | 'network_difficulty'
   | 'pool_hashrate'
   | 'pool_luck_24h'
-  | 'pool_luck_7d'
-  | 'acceptance'
-  | 'datum_rejects';
+  | 'pool_luck_7d';
 
 interface RightAxisSpec {
   /** Per-point values pulled off MetricPoint. */
@@ -325,86 +323,6 @@ export const HashrateChart = memo(function HashrateChart({
             axisLabel: `pool ${denomination.hashrateSuffix}`,
             stroke: '#c084fc',
           };
-        case 'acceptance': {
-          // #90 - per-tick rolling acceptance ratio. Earlier per-bucket
-          // forward delta yielded values >100% (impossible) due to
-          // acknowledgment-lag noise: the pool sometimes acks shares in
-          // batches (accepted_m jumps after purchased_m already counted
-          // them), so within a single small bucket the accepted-delta
-          // can transiently exceed the purchased-delta. Rolling the
-          // acceptance over a window the size of the panel's 1h figure
-          // smooths that noise out and matches the panel's semantics -
-          // each chart point reads as "acceptance over the trailing
-          // window ending here".
-          //
-          // ROLLING_BUCKETS = 60 covers ~1h at the dashboard's
-          // canonical 1-min bucketing for the 3h range; for longer
-          // ranges where buckets are wider the window is wider too,
-          // which is the right behaviour (less zoom = more smoothing).
-          //
-          // Defensive .min(100) caps any residual noise: cumulative
-          // accepted ≤ cumulative purchased always holds in the
-          // long-run, so anything above 100% is artifact.
-          const ROLLING_BUCKETS = 60;
-          const values: (number | null)[] = points.map((_p, i) => {
-            if (i === 0) return null;
-            const start = Math.max(0, i - ROLLING_BUCKETS);
-            let sumP = 0;
-            let sumA = 0;
-            for (let j = start; j < i; j += 1) {
-              const prev = points[j]!;
-              const cur = points[j + 1]!;
-              const curP = cur.primary_bid_shares_purchased_m;
-              const curA = cur.primary_bid_shares_accepted_m;
-              const prevP = prev.primary_bid_shares_purchased_m;
-              const prevA = prev.primary_bid_shares_accepted_m;
-              if (
-                curP === null || curA === null ||
-                prevP === null || prevA === null ||
-                curP < prevP || curA < prevA
-              ) continue;
-              sumP += curP - prevP;
-              sumA += curA - prevA;
-            }
-            if (sumP <= 0) return null;
-            return Math.min(100, (sumA / sumP) * 100);
-          });
-          return {
-            values,
-            formatTick: (v) =>
-              `${new Intl.NumberFormat(intlLocale, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(v)}%`,
-            axisLabel: 'acceptance %',
-            stroke: '#c084fc',
-          };
-        }
-        case 'datum_rejects': {
-          // #91: per-bucket forward delta of the cumulative
-          // datum_rejected_shares_total counter. Same delta semantics
-          // as acceptance - null on the first tick or any pair where
-          // the counter went backwards (DATUM restart). Operators on
-          // builds that do NOT expose the reject tile see an empty
-          // line; the column is null on every tick for them.
-          const values: (number | null)[] = points.map((p, i) => {
-            if (i === 0) return null;
-            const prev = points[i - 1]!;
-            const cur = p.datum_rejected_shares_total;
-            const last = prev.datum_rejected_shares_total;
-            if (cur === null || last === null || cur < last) return null;
-            return cur - last;
-          });
-          return {
-            values,
-            formatTick: (v) =>
-              new Intl.NumberFormat(intlLocale, {
-                maximumFractionDigits: 0,
-              }).format(v),
-            axisLabel: 'datum rejects (per bucket)',
-            stroke: '#c084fc',
-          };
-        }
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
           // Gap-based pool luck, computed per tick on the daemon side

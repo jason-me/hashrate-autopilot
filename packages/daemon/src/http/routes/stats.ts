@@ -67,37 +67,6 @@ export interface StatsResponse {
    * Braiins actually charged us) rather than our bid price.
    */
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
-  /**
-   * #90 - 1h-rolling acceptance ratio: shares accepted by the pool ÷
-   * shares purchased (Braiins-validated), computed from per-tick
-   * forward deltas of the cumulative counters. Resets (counter
-   * decreased mid-window, e.g. a bid replacement) are skipped so a
-   * fresh bid does not torpedo the ratio. Null when no usable counter
-   * pairs are present in the window. Healthy baseline ~99.95%; alert
-   * threshold proposed at <98%.
-   */
-  readonly acceptance_pct_1h: number | null;
-  readonly acceptance_purchased_delta_1h: number | null;
-  readonly acceptance_accepted_delta_1h: number | null;
-  /**
-   * #91 - 1h-rolling forward delta of the cumulative DATUM gateway
-   * reject counter. Pairs with `braiins_rejects_count_1h` on the
-   * Datum panel so the operator can compare "shares Datum thinks
-   * were rejected upstream of the pool" vs "shares Braiins reports
-   * the pool rejected" - the asymmetry tells which leg of the
-   * Knots → Datum → Ocean pipeline is dropping shares (research.md
-   * §4.5). Null when DATUM does not expose the reject tile (the
-   * common case as of May 2026) or there are no usable counter
-   * pairs in the trailing hour.
-   */
-  readonly datum_rejects_1h: number | null;
-  /**
-   * Braiins-side rejected-shares delta over the same trailing hour,
-   * converted from millions to raw count so it can be compared 1:1
-   * with `datum_rejects_1h`. Null when the bid did not exist for
-   * the full window or the call failed at every tick.
-   */
-  readonly braiins_rejects_count_1h: number | null;
   readonly avg_time_to_fill_ms: number | null;
   /**
    * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
@@ -143,16 +112,6 @@ export async function registerStatsRoute(
       const metrics = await computeMetrics(deps.db, sinceMs);
       const avgFillMs = await computeAvgTimeToFill(deps.db, deps.bidEventsDb, sinceMs);
       const mutationCount = await computeMutationCount(deps.bidEventsDb, sinceMs);
-      // Acceptance + reject windows now follow the chart range
-      // selector (3h/6h/12h/24h/1w/etc) instead of a hardcoded 1h.
-      // 1h was too narrow to wash out Braiins's slight counter-sync
-      // jitter (the two cumulative counters land at slightly
-      // different times, so any short window can drift just over /
-      // just under 100%). Longer windows match what the operator is
-      // already looking at on the chart and average the jitter out.
-      const acceptance = await computeAcceptance(deps.db, sinceMs);
-      const rejects = await computeRejects(deps.db, sinceMs);
-
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
         avg_hashrate_ph: metrics.avg_hashrate_ph,
@@ -161,11 +120,6 @@ export async function registerStatsRoute(
         total_ph_hours: metrics.total_ph_hours,
         avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
-        acceptance_pct_1h: acceptance.pct,
-        acceptance_purchased_delta_1h: acceptance.purchased_delta,
-        acceptance_accepted_delta_1h: acceptance.accepted_delta,
-        datum_rejects_1h: rejects.datum,
-        braiins_rejects_count_1h: rejects.braiins,
         avg_time_to_fill_ms: avgFillMs,
         mutation_count: mutationCount,
         range,
@@ -405,144 +359,6 @@ async function computeMutationCount(
     .where('occurred_at', '>=', sinceMs)
     .executeTakeFirst();
   return Number(row?.count ?? 0);
-}
-
-/**
- * #90 - 1h-rolling acceptance ratio.
- *
- * Sums forward deltas of `primary_bid_shares_purchased_m` and
- * `_accepted_m` across the last hour of tick_metrics rows. Skips
- * pairs where the counter went backwards (bid replacement resets the
- * counter to zero) so a fresh bid does not torpedo the ratio. Skips
- * pairs where either side is null. Returns null pct when no usable
- * deltas are present in the window - same semantics as uptime_pct
- * during pre-migration ranges.
- *
- * Per-tick fold in TS rather than SQL because the LAG + reset-skip +
- * null-handling combination is messier in CTEs than in a tiny TS
- * loop, and the window is tiny (60 rows max).
- */
-async function computeAcceptance(
-  db: Kysely<Database>,
-  sinceMs: number,
-): Promise<{
-  pct: number | null;
-  purchased_delta: number | null;
-  accepted_delta: number | null;
-}> {
-  const rows = await db
-    .selectFrom('tick_metrics')
-    .select([
-      'tick_at',
-      'primary_bid_shares_purchased_m',
-      'primary_bid_shares_accepted_m',
-    ])
-    .where('tick_at', '>=', sinceMs)
-    .orderBy('tick_at', 'asc')
-    .execute();
-
-  let purchasedDelta = 0;
-  let acceptedDelta = 0;
-  let prev: { p: number; a: number } | null = null;
-  for (const r of rows) {
-    const p = r.primary_bid_shares_purchased_m;
-    const a = r.primary_bid_shares_accepted_m;
-    if (p === null || a === null) {
-      prev = null;
-      continue;
-    }
-    if (prev !== null && p >= prev.p && a >= prev.a) {
-      purchasedDelta += p - prev.p;
-      acceptedDelta += a - prev.a;
-    }
-    prev = { p, a };
-  }
-  if (purchasedDelta <= 0) {
-    return { pct: null, purchased_delta: null, accepted_delta: null };
-  }
-  // Clamp at 100%. Mathematically `accepted <= purchased` always
-  // holds (you cannot accept a share you never submitted), so a
-  // ratio above 100% is an artifact of Braiins's two cumulative
-  // counters not being sampled atomically: when the lag closes
-  // between two snapshots the delta of the lagging counter
-  // overshoots, and we read 100.84% acceptance even though the
-  // physical reality is 100%. Capping at 100% keeps the metric
-  // honest without hiding the underlying counter behaviour (the
-  // raw deltas are still surfaced for debugging).
-  const rawPct = (acceptedDelta / purchasedDelta) * 100;
-  return {
-    pct: Math.min(rawPct, 100),
-    purchased_delta: purchasedDelta,
-    accepted_delta: acceptedDelta,
-  };
-}
-
-/**
- * #91 - 1h-rolling forward deltas of two reject counters:
- *
- * - `datum`: `datum_rejected_shares_total` (raw count). Cumulative
- *   on DATUM's side, so we sum forward pair-wise deltas across the
- *   window; pairs where the value went backwards (DATUM restart) or
- *   either side is null get skipped. Null when DATUM does not expose
- *   the reject tile.
- * - `braiins`: `primary_bid_shares_rejected_m × 1_000_000` (raw count
- *   semantics, converted from millions). Same pair-wise fold over
- *   the window. Null when the bid did not exist or every tick failed.
- *
- * Both numbers are over the SAME tick window so the operator can
- * directly subtract them on the Datum panel - Datum > Braiins means
- * the gateway filtered work that never made it to the pool (that's
- * good - Datum saved you from paying for stale shares); Braiins >
- * Datum means the pool rejected work Datum thought was fine
- * (research.md §4.5: stale-work signature).
- */
-async function computeRejects(
-  db: Kysely<Database>,
-  sinceMs: number,
-): Promise<{ datum: number | null; braiins: number | null }> {
-  const rows = await db
-    .selectFrom('tick_metrics')
-    .select([
-      'tick_at',
-      'datum_rejected_shares_total',
-      'primary_bid_shares_rejected_m',
-    ])
-    .where('tick_at', '>=', sinceMs)
-    .orderBy('tick_at', 'asc')
-    .execute();
-
-  let datumDelta = 0;
-  let datumPairs = 0;
-  let braiinsDeltaM = 0;
-  let braiinsPairs = 0;
-  let prevDatum: number | null = null;
-  let prevBraiins: number | null = null;
-  for (const r of rows) {
-    const d = r.datum_rejected_shares_total;
-    if (d !== null) {
-      if (prevDatum !== null && d >= prevDatum) {
-        datumDelta += d - prevDatum;
-        datumPairs += 1;
-      }
-      prevDatum = d;
-    } else {
-      prevDatum = null;
-    }
-    const b = r.primary_bid_shares_rejected_m;
-    if (b !== null) {
-      if (prevBraiins !== null && b >= prevBraiins) {
-        braiinsDeltaM += b - prevBraiins;
-        braiinsPairs += 1;
-      }
-      prevBraiins = b;
-    } else {
-      prevBraiins = null;
-    }
-  }
-  return {
-    datum: datumPairs > 0 ? datumDelta : null,
-    braiins: braiinsPairs > 0 ? Math.round(braiinsDeltaM * 1_000_000) : null,
-  };
 }
 
 /**

@@ -161,12 +161,8 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM
   upload up to 200 KB. Plays once per new block; the dashboard tab needs to be open.
 - **Per-chart right-axis dropdown** - render BTC/USD price, network difficulty, pool hashrate, Ocean unpaid
-  balance, estimated block reward, pool-luck (24h/7d), share-acceptance %, or share_log against the chart's
-  primary series. Independent picker per chart, persists per browser.
-- **Datum share-acceptance + reject metrics** - the Datum panel shows the share-acceptance ratio over the
-  chart-range window (capped at 100% to absorb Braiins's slight counter-sync jitter) and a side-by-side
-  comparison of Datum-gateway-side rejects vs pool-side rejects when DATUM exposes its reject counter -
-  diagnostic for stale-work issues that show up as `pool > gateway`.
+  balance, estimated block reward, pool-luck (24h/7d), or share_log against the chart's primary series.
+  Independent picker per chart, persists per browser.
 - **Multilingual UI** - every page (Status, Config, Setup wizard, Login, charts, tooltips, time-relative
   strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
   header next to "sign out"; the choice persists to localStorage and the page boots in the operator's stored

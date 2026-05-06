@@ -45,16 +45,6 @@ export interface DatumSnapshot {
   readonly reachable: boolean;
   readonly connections: number | null;
   readonly hashrate_ph: number | null;
-  /**
-   * #91 - opportunistic capture of the gateway-side rejected-shares
-   * counter from `/umbrel-api`. Detected heuristically by scanning
-   * `items[].title` for `/reject/i`; null when no such tile is exposed
-   * by the operator's DATUM build (which is the common case in May
-   * 2026 - feature is filed for follow-up if/when DATUM ships it).
-   * Cumulative count, not delta. Future-compatible field name keeps
-   * the door open for `accepted` / `purchased` if they appear too.
-   */
-  readonly rejected_shares_total: number | null;
   readonly last_ok_at: number | null;
   readonly consecutive_failures: number;
 }
@@ -200,19 +190,6 @@ export interface State {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
-
-  /**
-   * #90: latest cumulative share counters (in millions) for the
-   * primary owned bid, sourced from `/spot/bid/delivery/{order_id}`.
-   * The endpoint returns a time series; observe() takes the most
-   * recent item and forwards its three counters here. Per-tick
-   * deltas drive the dashboard's 1h-rolling acceptance ratio. All
-   * three null when there is no primary owned bid, the call failed,
-   * or the bid has no delivery records yet.
-   */
-  readonly primary_bid_shares_purchased_m: number | null;
-  readonly primary_bid_shares_accepted_m: number | null;
-  readonly primary_bid_shares_rejected_m: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

@@ -164,11 +164,6 @@ export interface MetricPoint {
    */
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
-  /** #90: cumulative shares purchased / accepted on the primary bid (millions); pair-wise deltas drive the chart's acceptance series. */
-  primary_bid_shares_purchased_m: number | null;
-  primary_bid_shares_accepted_m: number | null;
-  /** #91: Datum gateway-side rejected-shares counter (cumulative); null when DATUM does not expose a /reject/i tile. */
-  datum_rejected_shares_total: number | null;
 }
 
 export interface BidEventView {
@@ -236,8 +231,6 @@ export interface StatusResponse {
     reachable: boolean;
     connections: number | null;
     hashrate_ph: number | null;
-    /** #91 - gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
-    rejected_shares_total: number | null;
     last_ok_at: number | null;
     consecutive_failures: number;
   } | null;
@@ -522,14 +515,6 @@ export interface StatsResponse {
   total_ph_hours: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
-  /** #90 - 1h-rolling pool acceptance ratio (%); null when no counter pairs in window. */
-  acceptance_pct_1h: number | null;
-  acceptance_purchased_delta_1h: number | null;
-  acceptance_accepted_delta_1h: number | null;
-  /** #91 - DATUM gateway-side rejects in the trailing hour (raw count); null when DATUM does not expose the tile. */
-  datum_rejects_1h: number | null;
-  /** Braiins-reported rejects in the same window, converted from millions to raw count for direct comparison. */
-  braiins_rejects_count_1h: number | null;
   avg_time_to_fill_ms: number | null;
   mutation_count: number;
   range: ChartRange;

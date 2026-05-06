@@ -75,9 +75,7 @@ function readStoredHashrateRightAxis(
     raw === 'network_difficulty' ||
     raw === 'pool_hashrate' ||
     raw === 'pool_luck_24h' ||
-    raw === 'pool_luck_7d' ||
-    raw === 'acceptance' ||
-    raw === 'datum_rejects'
+    raw === 'pool_luck_7d'
   ) {
     return raw;
   }
@@ -283,8 +281,6 @@ export function Status() {
             className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px]"
           >
             <option value="none">{t`none`}</option>
-            <option value="acceptance">{t`acceptance %`}</option>
-            <option value="datum_rejects">{t`datum rejects`}</option>
             <option value="share_log">{t`share_log %`}</option>
             <option value="network_difficulty">{t`network difficulty`}</option>
             <option value="pool_hashrate">{t`pool hashrate`}</option>
@@ -425,10 +421,6 @@ export function Status() {
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
           datum={s.datum}
-          acceptancePct={statsQuery.data?.acceptance_pct_1h ?? null}
-          datumRejects={statsQuery.data?.datum_rejects_1h ?? null}
-          braiinsRejects={statsQuery.data?.braiins_rejects_count_1h ?? null}
-          chartRange={chartRange}
           nextTickAt={s.next_tick_at}
         />
         <OceanPanel />
@@ -1284,7 +1276,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, acceptance_pct_1h } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
   // total_ph_hours + mutation_count remain on the server-side
   // StatsResponse even though no card consumes them - keeping the
   // shape stable so we can re-surface either later without a backend
@@ -2523,31 +2515,19 @@ function DatumPanel({
   reachable,
   consecutiveFailures,
   datum,
-  acceptancePct,
-  datumRejects,
-  braiinsRejects,
-  chartRange,
   nextTickAt,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
   datum: StatusResponse['datum'];
-  /** Acceptance ratio over the chart-range window. Datum-side number relayed via the Braiins API; capped at 100% (Braiins's two cumulative counters aren't sampled atomically, so short windows can read just over 100% as a sync artifact). */
-  acceptancePct: number | null;
-  /** DATUM gateway-side reject delta over the same chart-range window. */
-  datumRejects: number | null;
-  /** Braiins-reported reject count over the same window. Only rendered when datumRejects is also non-null so the two appear as a comparison pair. */
-  braiinsRejects: number | null;
-  /** Active chart range, used to label the rolling-window rows ("acceptance (6h)") so they always match what the operator selected on the chart. */
-  chartRange: ChartRange;
   nextTickAt: number | null;
 }) {
   const [copied, setCopied] = useState(false);
   const { i18n } = useLingui();
+  void i18n;
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
-  const rangeLbl = localizedRangeLabel(chartRange, i18n.locale);
 
   // Split the pool URL into scheme / host / port so the card doesn't
   // wrap an unreadable 60-character string. Pool URLs on Ocean look
@@ -2599,68 +2579,6 @@ function DatumPanel({
           <div className="text-right font-mono text-slate-200">
             {datum.connections ?? '-'}
           </div>
-          {acceptancePct !== null && (
-            <>
-              <Tooltip
-                text={t`Share acceptance over the chart-range window (currently ${rangeLbl}): (shares accepted / shares submitted) × 100, capped at 100%. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low. Cap at 100% absorbs Braiins's slight counter-sync jitter (the two cumulative counters land at slightly different times, which can read just over 100% on short windows; longer windows from the chart-range selector wash this out).`}
-              >
-                <div className="text-slate-400 cursor-help">
-                  <Trans>acceptance ({rangeLbl})</Trans>
-                </div>
-              </Tooltip>
-              <div
-                className={
-                  'text-right font-mono ' +
-                  (acceptancePct >= 99.5
-                    ? 'text-emerald-300'
-                    : acceptancePct >= 98
-                      ? 'text-amber-300'
-                      : 'text-red-300')
-                }
-              >
-                {formatNumber(
-                  acceptancePct,
-                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                  intlLocale,
-                )}
-                %
-              </div>
-            </>
-          )}
-          {/* #91 - only render the side-by-side reject pair when DATUM
-              actually exposes its own reject counter. Without that
-              counter the absolute Braiins-reported reject count is
-              just confusing noise (raw share count at validation
-              difficulty looks alarming even at the 0.05% baseline that
-              the acceptance % already signals cleanly). */}
-          {datumRejects !== null && (
-            <>
-              <Tooltip
-                text={t`Datum gateway-side rejects over the chart-range window (currently ${rangeLbl}): forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature).`}
-              >
-                <div className="text-slate-400 cursor-help">
-                  <Trans>gateway rejects ({rangeLbl})</Trans>
-                </div>
-              </Tooltip>
-              <div className="text-right font-mono text-slate-200">
-                {formatNumber(datumRejects, {}, intlLocale)}
-              </div>
-              {braiinsRejects !== null && (
-                <>
-                  <Tooltip
-                    text={t`Pool-rejected shares the seller's rig reported over the same chart-range window (currently ${rangeLbl}), relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots -> Datum -> Ocean is delivering stale work the pool rejects.`}
-                  >
-                    <div className="text-slate-400 cursor-help">
-                      <Trans>pool rejects ({rangeLbl})</Trans>
-                    </div>
-                  </Tooltip>
-                  <div className="text-right font-mono text-slate-200">
-                    {formatNumber(braiinsRejects, {}, intlLocale)}
-                  </div>
-                </>
-              )}
-            </>
-          )}
         </div>
       ) : (
         <div className="text-xs text-slate-500">

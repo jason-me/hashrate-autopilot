@@ -2,6 +2,17 @@
 
 ## 2026-05-06
 
+### `[Infra]` Revert #90 acceptance + #91 Datum-reject infrastructure
+
+Both issues cancelled. #91 because DATUM's `/umbrel-api` exposes only Connections + Hashrate tiles - no reject counter to read, so the gateway-vs-pool comparison the issue called for has no data source. #90 because the acceptance ratio sits at 100,00% in healthy operation (Datum + Ocean essentially never reject valid work) and only deviates when something is broken; in practice the metric was a flat noise indicator, not diagnostic. Removed:
+
+- Migrations 0059 and 0060 (the `primary_bid_shares_*_m` and `datum_rejected_shares_total` columns).
+- Daemon-side: `getBidDeliveryHistory` per-tick fetch in observe.ts; `extractRejectedShares` regex parser in datum.ts; `computeAcceptance` and `computeRejects` in stats.ts.
+- HTTP responses: `acceptance_pct_1h`, `acceptance_*_delta_1h`, `datum_rejects_1h`, `braiins_rejects_count_1h` from `/api/stats`; `primary_bid_shares_*` and `datum_rejected_shares_total` from `/api/metrics`; `rejected_shares_total` from `/api/status`.
+- Dashboard: `acceptance ({range})`, `gateway rejects ({range})`, and `pool rejects ({range})` Datum-panel rows; `acceptance %` and `datum rejects` chart right-axis dropdown options; matching translations.
+
+Existing operator's DB still has the four columns from the prior dev install (SQLite migrations are forward-only and recorded in `_migrations`); fresh installs after this commit skip 0059/0060 entirely. Columns sit unused on existing DBs - harmless.
+
 ### `[Docs]` `/check-code` sweep on research.md + drop research.md refs from user-facing tooltips
 
 Operator flagged that research.md was written at project inception (~3 weeks ago) and has accumulated drift; also flagged that an internal research doc shouldn't be referenced from dashboard tooltips. Two parts:
