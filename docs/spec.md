@@ -103,11 +103,6 @@ Every tick the daemon writes a row to `tick_metrics` with the canonical chart + 
   the source they came from). (#89)
 - Pool blocks + luck: `pool_blocks_24h_count`, `pool_blocks_7d_count`, `pool_hashrate_ph_avg_24h`, `pool_hashrate_ph_avg_7d`,
   `pool_luck_24h`, `pool_luck_7d` (gap-based per-tick luck = `(600 / pool_share) / time_since_last_pool_block`). (#92)
-- Bid acceptance counters from `/spot/bid/delivery/{order_id}`: `primary_bid_shares_purchased_m`, `_accepted_m`,
-  `_rejected_m`. Cumulative on the bid (in millions); per-tick deltas drive the BRAIINS-side acceptance ratio. (#90)
-- Datum gateway-side reject counter: `datum_rejected_shares_total` (heuristic capture from `/umbrel-api`'s `items[]` -
-  matches any tile whose title hits `/reject/i`; null when DATUM does not expose the tile, which is the common case as of
-  May 2026). (#91)
 
 The full DDL (with comments and migration numbers) lives in `architecture.md` §5; this list is the operator-facing inventory.
 
@@ -500,11 +495,7 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   localStorage) selects one secondary series: `none` (default), `share_log %` (the legacy
   `% of Ocean` overlay; replaces the retired `show_share_log_on_hashrate_chart` checkbox),
   `network difficulty`, `pool hashrate`, `pool luck (24h)` / `pool luck (7d)` (#92, gap-based per-tick
-  luck = `(600 / pool_share) / time_since_last_pool_block`; capped at 10× for chart readability),
-  `acceptance %` (#90, per-tick rolling-60-bucket window forward-delta of the cumulative
-  `primary_bid_shares_*_m` counters with a defensive `min(100)` cap to absorb pool-side ack-batch
-  noise), `datum rejects` (#91, per-bucket forward delta of `datum_rejected_shares_total`; empty line
-  on builds where DATUM does not expose the tile).
+  luck = `count_in_window / (pool_share × (window + elapsed) / 600)`).
 - **Price chart.** Four always-on lines: `our bid` (amber), `fillable` (cyan, the controller's tracking
   anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red, with a red gradient above
   the line marking the off-limits region). Bid-event dots (yellow / cyan / red) on the amber line mark
@@ -519,11 +510,7 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   `BTC/USD`, `unpaid earnings`, `network difficulty`.
 - **Service panels (three-column).** BRAIINS (API reachability, delivered vs target, wallet balance,
   runway at current spend rate). DATUM GATEWAY (stratum reachability, gateway-measured hashrate,
-  connected workers - if `datum_api_url` is configured; `acceptance (1h)` row from #90 with
-  green/amber/red threshold colors; conditionally `gateway rejects (1h)` + `pool rejects (1h)`
-  side-by-side rows from #91 when the gateway exposes its own reject counter so the operator can read
-  the asymmetry directly - Datum > Braiins means upstream filtering, Braiins > Datum is the
-  stale-work signature from research.md §4.5). OCEAN (API reachability, Ocean-credited hashrate,
+  connected workers - if `datum_api_url` is configured). OCEAN (API reachability, Ocean-credited hashrate,
   current hashprice, recent blocks, time to next payout, plus `pool blocks 24h/7d` rows with inline
   `Nx lucky/unlucky` annotations from #92 - share computed live from
   `pool_hashrate_ph / network_hashrate` so the example doesn't drift out of date).

@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.8"
+version: "1.5.0"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -74,14 +74,39 @@ defaultUsername: ""
 defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
-releaseNotes: >-
-  v1.4.8 - UPTIME stat-card now stays accurate when target
-  hashrate changes. The previous absolute-threshold formula
-  marked legitimate delivery at lower targets (e.g. 1 PH/s) as
-  downtime, because expected per-tick accrual fell under a
-  fixed sat/sec floor. The threshold is now relative to
-  expected accrual implied by the bid and the reported
-  delivered_ph, so good delivery reads ~100% uptime regardless
-  of target, while genuine counter freezes still register as
-  downtime. Restart Umbrel app or `scripts/deploy.sh` for the
-  new SQL to take effect.
+releaseNotes: |
+  v1.5.0 - feature release.
+
+  NEW
+  - Pool-luck plot on the Hashrate chart with a Poisson-derived
+    "expected" multiplier in the OCEAN panel; tooltip explains
+    the math against Ocean's live network-hashrate share.
+  - Crown markers on the chart for blocks signalling BIP 110
+    (Reduced Data soft fork). Detection via your bitcoind /
+    Electrs node when configured.
+  - BIP 110 scan card on the Status page - scan the last N
+    blocks and see who's signalling.
+  - Unit toggles in the header: hashrate in TH / PH / EH,
+    and prices in sat / BTC / USD. Persists per browser.
+  - Audible block-found cue when Ocean credits your address
+    with a new pool block. Four bundled sounds plus custom
+    MP3 / OGG / WAV / WebM upload.
+  - Per-chart right-axis dropdown - plot pool luck, BTC/USD,
+    network difficulty, Ocean unpaid balance, etc. against
+    the chart's primary series.
+  - Auto-save on the Config page; no more Save button.
+  - Storage-estimate hints in Log Retention so you can see
+    how big the database will grow before you commit.
+
+  FIXES
+  - UPTIME stat now reads correctly at low target hashrates.
+  - BTC/USD price stays current even when the dashboard tab
+    is closed (daemon now keeps the oracle warm).
+  - Tab refocus refreshes data instantly instead of waiting
+    out the polling cycle.
+  - P&L Lifetime panel updates within 60s of a new block,
+    not the next hour.
+  - Pool-luck math fixed (denominator window now matches
+    numerator); panel and chart now agree at every find.
+
+  Restart Umbrel app or scripts/deploy.sh after upgrade.

@@ -2,6 +2,25 @@
 
 ## 2026-05-06
 
+### `[Release]` v1.5.0
+
+NEW
+- Pool-luck plot on the Hashrate chart with a Poisson-derived "expected" multiplier in the OCEAN panel.
+- Crown markers on the chart for blocks signalling BIP 110 (Reduced Data soft fork). Detection via bitcoind / Electrs.
+- BIP 110 scan card on the Status page (scan last N blocks).
+- Unit toggles in the header: hashrate in TH / PH / EH, prices in sat / BTC / USD.
+- Audible block-found cue with four bundled sounds + custom MP3 / OGG / WAV / WebM upload.
+- Per-chart right-axis dropdown.
+- Auto-save on the Config page (no more Save button).
+- Storage-estimate hints in Log Retention.
+
+FIXES
+- UPTIME stat reads correctly at low target hashrates.
+- BTC/USD price stays current with the dashboard closed.
+- Tab refocus refreshes data instantly.
+- P&L Lifetime panel updates within 60s of a new block.
+- Pool-luck math fixed (denominator window matches numerator).
+
 ### `[Infra]` Revert #90 acceptance + #91 Datum-reject infrastructure
 
 Both issues cancelled. #91 because DATUM's `/umbrel-api` exposes only Connections + Hashrate tiles - no reject counter to read, so the gateway-vs-pool comparison the issue called for has no data source. #90 because the acceptance ratio sits at 100,00% in healthy operation (Datum + Ocean essentially never reject valid work) and only deviates when something is broken; in practice the metric was a flat noise indicator, not diagnostic. Removed:
@@ -13,27 +32,20 @@ Both issues cancelled. #91 because DATUM's `/umbrel-api` exposes only Connection
 
 Existing operator's DB still has the four columns from the prior dev install (SQLite migrations are forward-only and recorded in `_migrations`); fresh installs after this commit skip 0059/0060 entirely. Columns sit unused on existing DBs - harmless.
 
-### `[Docs]` `/check-code` sweep on research.md + drop research.md refs from user-facing tooltips
+### `[Docs]` research.md catch-up sweep
 
-Operator flagged that research.md was written at project inception (~3 weeks ago) and has accumulated drift; also flagged that an internal research doc shouldn't be referenced from dashboard tooltips. Two parts:
-
-1. **research.md catch-up sweep** (interview-driven, six findings): rewrote §5.3 — the original "no documented Ocean public API" claim is wrong, replaced with a positive description of the per-address JSON API at `api.ocean.xyz/v1/` (no auth) and the five endpoints `services/ocean.ts` actually uses. Added §5.5 documenting the OCEAN panel's `next payout` row semantics — particularly that `Next block` means the next *Ocean pool* block (TIDES coinbase mechanic), not the next Bitcoin block in general; recurring source of operator confusion. Renumbered the BIP 110 detection subsection from a duplicate §5.4 to §5.6 (pre-existing numbering bug). Added §7.11 on the gap-based pool-luck formula (#92, migration 0057) including the three-iteration evolution from count-based stair-steps to the unified formula. Added §7.12 on the heuristic Datum reject capture (#91, migration 0060). Document History gains a v1.5 row summarising the above.
-
-2. **Tooltip de-references**: dropped `see docs/research.md §7.5` from the OCEAN-panel `acceptance` tooltip and `see research.md §4.5` from the `gateway rejects (1h)` tooltip. Tooltips are user-facing surfaces; research.md is internal scaffolding and shouldn't be cited from the UI. en/nl/es catalogs updated for the two re-translated tooltips.
+Operator flagged that research.md was written at project inception (~3 weeks ago) and has accumulated drift. Interview-driven sweep, six findings: rewrote §5.3 — the original "no documented Ocean public API" claim is wrong, replaced with a positive description of the per-address JSON API at `api.ocean.xyz/v1/` (no auth) and the five endpoints `services/ocean.ts` actually uses. Added §5.5 documenting the OCEAN panel's `next payout` row semantics — particularly that `Next block` means the next *Ocean pool* block (TIDES coinbase mechanic), not the next Bitcoin block in general; recurring source of operator confusion. Renumbered the BIP 110 detection subsection from a duplicate §5.4 to §5.6 (pre-existing numbering bug). Added §7.11 on the gap-based pool-luck formula (#92, migration 0057) including the three-iteration evolution from count-based stair-steps to the unified formula. Document History gains a v1.5 row summarising the above.
 
 ### `[Fix]` P&L Lifetime panel refreshes every 60s instead of every hour
 
 Operator caught the P&L Lifetime panel showing `unpaid earnings (Ocean) 37,482` even though Ocean had already credited a fresh ~38k-sat block ~15 minutes prior, and the OCEAN panel directly above it was showing the new total `75,719`. Cause: the `financeQuery` had `refetchInterval: 3_600_000` (1 hour) - the original reasoning was "money is slow-moving," but the unpaid-earnings number jumps the moment a new pool block lands, so 1h cadence could leave the panel ~55 minutes behind reality after a block. Dropped to 60s to match the rest of the dashboard polling. The panel's "refreshes in" countdown was anchored to the same 1h assumption; updated to 60s. Tooltip on the manual refresh button updated. /api/finance has no server-side cache, so 60s is fine on the daemon.
 
-### `[UI]` Tab refocus refreshes data instantly; acceptance/rejects follow chart range and cap at 100% (#90)
+### `[UI]` Tab refocus refreshes data instantly
 
-Three small but related dashboard fixes:
+Two small dashboard fixes:
 
 - **Refetch on focus**: React Query's `refetchOnWindowFocus` was off, so the dashboard waited up to a full 60s polling tick to catch up after the operator returned to a backgrounded tab. Flipped on globally so every query (status, metrics, ocean, stats, finance) refetches the moment the tab regains focus.
 - **No catch-up sound on tab refocus**: the block-found audio cue listens for `visibilitychange` and re-baselines silently when the tab transitions hidden → visible. So waking from sleep / unsuspending / coming back from another tab no longer fires "you missed N blocks" all at once - the cue is for "I just found one now," not a backlog replay. Real-time ringing on a backgrounded tab still works as long as the browser keeps polling.
-- **Acceptance / reject windows follow the chart-range selector**: `acceptance (1h)`, `gateway rejects (1h)`, and `pool rejects (1h)` panel rows now read e.g. `acceptance (6h)` when the operator has the 6h chart range selected, computed over the same window. Acceptance is also clamped at 100% on the daemon side - Braiins's two cumulative share counters aren't sampled atomically, so short windows occasionally read just over 100% as a sync artifact (operator caught a 100.84% reading). Mathematically `accepted ≤ purchased`; the cap absorbs the sync jitter without hiding it.
-
-en/nl/es catalogs updated for the new dynamic strings.
 
 ### `[UI]` Em/en-dashes scrubbed across the codebase
 
@@ -80,30 +92,6 @@ Slate-300 (the previous neutral grey) read as washed-out white on the dark backg
 ### `[Fix]` Block-found sound now rings on every Ocean pool block, not on on-chain payouts
 
 Operator's stated intent on #88 from day one was: hear a cue every time Ocean finds a block (~3/day at typical pool share), NOT when an on-chain payout to the configured BTC address confirms (which is rare under TIDES - only when unpaid balance crosses the ~1.05M-sat threshold - and a wallet already notifies on those). The shipped wiring listened to `reward_events` (the payout-observer's table), so the operator sat at their desk through a pool block 13 minutes ago with no sound. Switching the trigger to `/api/ocean.recent_blocks[]`: hook fires once per increment of the maximum block height across the list, baseline-on-first-poll-silently to avoid a backlog burst, and uses a fresh localStorage key (`braiins.lastSeenOceanBlockHeight`) so existing operators upgrading past this commit also get a clean silent baseline rather than a sudden replay of the last 15 historical pool blocks.
-
-### `[Fix]` Acceptance ratio belongs in the Datum panel; chart series rolls 1h to dampen ack-lag noise
-
-Operator review caught two issues with the previous shape:
-1. Acceptance was on the BRAIINS panel and the raw `pool rejects (1h)` raw count was on the DATUM panel - backwards from how the data should be read. The seller's rig submits shares over stratum to *your* Datum gateway; Datum responds accept/reject; that response is what Braiins relays back as the counter. Both numbers are Datum-side regardless of being sourced via the Braiins API. Acceptance moves to the DATUM panel.
-2. The chart's `acceptance %` series went above 100% on spikes - impossible in cumulative-ratio terms but possible per-bucket because the pool sometimes acks shares in batches (`accepted_m` jumps after `purchased_m` already counted them). Switched the chart series from per-bucket forward-deltas to a per-tick rolling 60-bucket window with a defensive `min(100)` cap, matching the panel's 1h-rolling semantics. Smooth, never artifactually >100%, no more sparse gaps from buckets that happened to have zero counter advance.
-
-Plus: `pool rejects (1h)` (the raw count from Braiins) only renders alongside `gateway rejects (1h)` (Datum's own counter) when both are present - without a side-by-side comparison the absolute count alone is just noise (raw share count at Braiins's validation difficulty looks alarming even at the 0.05% baseline that the acceptance % already signals cleanly). Cumulative `rejected shares` row dropped (duplicative with the 1h delta). Row labels renamed `gateway rejects` / `pool rejects` to underline the comparison semantic. en/nl/es catalogs updated.
-
-### `[Feature]` 1h Datum-vs-Braiins reject comparison on the Datum panel (#91)
-
-The original #91 spec called for "a 'datum rejects (1h)' row on the Datum panel + a delta vs Braiins-reported rejects so the operator can tell which leg is dropping shares" - the per-tick capture shipped earlier but the 1h-rolling row + the side-by-side Braiins comparison did not. Filling that gap. New `/api/stats` fields `datum_rejects_1h` (forward delta of the gateway's cumulative reject counter over the trailing hour) and `braiins_rejects_count_1h` (forward delta of `primary_bid_shares_rejected_m × 1_000_000`, converted to raw count for direct comparison). Datum panel now renders both as side-by-side rows so the operator can read the asymmetry directly: Datum > Braiins means the gateway filtered work that never reached the pool (good - Datum saved cost); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature per research.md §4.5). Both rows hidden when their sources are null. en/nl/es catalogs updated.
-
-### `[UI]` Acceptance + datum-rejects move from hero stat row to BRAIINS panel + hashrate chart right-axis (#90, #91)
-
-Operator review: a one-off `ACCEPTANCE 1H` card on the hero stat row was the wrong shape - it crowded an already-tight hero row and showed only a single instant value with no time series to analyse. Moved off the hero. The 1h-rolling acceptance ratio now lives as a row inside the BRAIINS panel (which is where its inputs come from - `shares_purchased_m` and `shares_accepted_m` are both Braiins-reported). The hashrate chart's right-axis dropdown gains two new options: **acceptance %** (per-bucket forward-delta ratio of the cumulative counters; the chart shows a gap on bid resets where the counter restarts at zero) and **datum rejects** (per-bucket delta of the gateway-side reject counter from #91). Both series persist in `tick_metrics` already; bucket aggregation uses `MAX(...)` for the cumulative counters so chart-bucket-to-bucket deltas read cleanly. en/nl/es catalogs updated.
-
-### `[Feature]` Datum gateway-side rejected-shares capture (heuristic, opportunistic) (#91, partial)
-
-The DATUM `/umbrel-api` poller now scans `items[]` for any tile whose `title` matches `/reject/i` and parses the leading numeric portion of `text` into `tick_metrics.datum_rejected_shares_total` (migration 0060). Most DATUM builds in May 2026 do not expose a reject tile, so the column stays null on every tick for those operators and the dashboard surface silently no-ops. The poller also logs every observed `items[].title` once per service instance (`[datum] /umbrel-api items observed: ...`), which gives the issue's Step 1 scoping data straight from the operator's running daemon - next time we look at the daemon log we will know exactly what tiles their build exposes and can refine the heuristic if needed. Status page Datum panel renders a `rejected shares` row when the value is non-null. en/nl/es catalogs updated. The "delta vs Braiins-reported rejects" comparison from the issue text is deferred until we have at least one DATUM build actually emitting the counter to design against.
-
-### `[Feature]` Bid acceptance ratio capture + 1h-rolling stat card (#90, partial)
-
-Per-tick capture of the three share counters (`shares_purchased_m`, `shares_accepted_m`, `shares_rejected_m`) from Braiins's `/spot/bid/delivery/{order_id}` endpoint, persisted onto `tick_metrics` via migration 0059. New braiins-client method `getBidDeliveryHistory(orderId)` and a matching wrapper on `BraiinsService`. Observe-time fetch picks the same primary owned bid that the existing `primary_bid_consumed_sat` snapshot uses (sort by `braiins_order_id` ascending, take first), forwards the latest delivery item's three counters into the State, and tick.ts persists. The `/api/stats` endpoint now exposes `acceptance_pct_1h` computed by folding paired forward-deltas across the last 60 minutes (skipping resets, e.g. when a bid gets replaced and the counter restarts at zero) - null when no usable counter pairs exist in the window. Status page gets a new `acceptance 1h` stat card (green ≥99.5% / amber 98-99.5% / red <98%) with an explanatory tooltip pointing at `docs/research.md` §7.5. **Deferred to a follow-up**: the dashboard alert when 1h acceptance drops below 98% - the alerts table exists but no alerts repo / surface UI shipped yet, and the threshold-crossing detection wants its own debounce machinery worth scoping properly. Issue stays open with the alert work itemised. en/nl/es catalogs updated.
 
 ### `[Feature]` Auto-save Config page with sticky header, save status indicator, and revert (#98)
 

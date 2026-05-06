@@ -348,12 +348,6 @@ CREATE TABLE tick_metrics (
   pool_hashrate_ph_avg_7d REAL,           -- trailing 7d mean
   pool_luck_24h REAL,                     -- gap-based per-tick luck = (600 / pool_share) / elapsed
   pool_luck_7d REAL,
-  -- #90 (migration 0059): per-tick bid-acceptance counters from /spot/bid/delivery
-  primary_bid_shares_purchased_m REAL,    -- in millions; cumulative on the bid
-  primary_bid_shares_accepted_m REAL,
-  primary_bid_shares_rejected_m REAL,
-  -- #91 (migration 0060): Datum gateway-side reject counter, opportunistic
-  datum_rejected_shares_total INTEGER,    -- null when DATUM does not expose a /reject/i tile
   run_mode TEXT NOT NULL,
   action_mode TEXT NOT NULL
 );
@@ -466,12 +460,7 @@ concern (not by order; the file names are authoritative):
   (0055-0057, #92 - `pool_blocks_24h_count`, `pool_blocks_7d_count`,
   `pool_hashrate_ph_avg_24h/7d`, `pool_luck_24h/7d`); block-header version
   cache for the BIP 110 crown marker (0058, #94 - separate
-  `block_version_cache` table keyed on `block_hash`); per-tick bid-acceptance
-  counters from Braiins delivery history (0059, #90 -
-  `primary_bid_shares_purchased_m`, `_accepted_m`, `_rejected_m`); Datum
-  gateway-side reject counter (0060, #91 - `datum_rejected_shares_total`,
-  null when DATUM does not expose the tile, which is the common case as of
-  May 2026).
+  `block_version_cache` table keyed on `block_hash`).
 
 ## 6. External integrations
 
