@@ -143,8 +143,30 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
   a runway forecast on the Braiins card, split P&L panels (period and lifetime), live bid table with full
   IDs, and a full config editor with live reload.
-- **BTC/USD denomination toggle** - all prices and balances can be viewed in sats or USD using a live BTC price
-  oracle (CoinGecko, Coinbase, Bitstamp, or Kraken).
+- **Unit toggles in the header** - hashrate displays as TH/s, PH/s, or EH/s and prices as sat, ₿ (BTC), or
+  USD. Both pickers persist per browser. The USD path uses a live BTC oracle (CoinGecko, Coinbase, Bitstamp,
+  or Kraken; pick one) refreshed daemon-side every 4 minutes so it stays current even when the dashboard tab
+  is closed.
+- **Pool-luck plot** - the Hashrate chart's right-axis dropdown can render a pool-luck multiplier
+  (`observed / Poisson-expected`) over a 24h or 7d trailing window. Decays continuously between finds, jumps
+  on each new pool block. The OCEAN panel shows the same number as a "X.XX× expected" annotation next to
+  `pool blocks 24h / 7d` so chart and panel always agree. Tooltips compute Ocean's live network-hashrate
+  share and the implied expected block count for the current window.
+- **BIP 110 detection** - pool blocks whose header signals support for BIP 110 (Reduced Data soft fork)
+  render with a 👑 crown icon on the chart instead of the standard cube; tooltip names the BIP. Detection
+  happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs (`blockchain.block.header`) - no
+  third-party API. A separate **BIP 110 scan card** on the Status page lets you scan the last N blocks
+  (configurable up to 2016) and see every signaling block with timestamp, version bits, and explorer link.
+- **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Four
+  bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM
+  upload up to 200 KB. Plays once per new block; the dashboard tab needs to be open.
+- **Per-chart right-axis dropdown** - render BTC/USD price, network difficulty, pool hashrate, Ocean unpaid
+  balance, estimated block reward, pool-luck (24h/7d), share-acceptance %, or share_log against the chart's
+  primary series. Independent picker per chart, persists per browser.
+- **Datum share-acceptance + reject metrics** - the Datum panel shows the share-acceptance ratio over the
+  chart-range window (capped at 100% to absorb Braiins's slight counter-sync jitter) and a side-by-side
+  comparison of Datum-gateway-side rejects vs pool-side rejects when DATUM exposes its reject counter -
+  diagnostic for stale-work issues that show up as `pool > gateway`.
 - **Multilingual UI** - every page (Status, Config, Setup wizard, Login, charts, tooltips, time-relative
   strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
   header next to "sign out"; the choice persists to localStorage and the page boots in the operator's stored
@@ -159,8 +181,10 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 Everything that influences the controller - hashrate targets, price ceilings, cheap-mode thresholds, per-bid
 budget, boot mode, payout-source backend, retention windows, the optional Datum and Ocean endpoints - is
-live-editable from the Config page. Values are validated against the same Zod schema the daemon uses at startup;
-Save writes the new row and the next tick picks it up. No daemon restart needed for any value on this page.
+live-editable from the Config page. Values are validated against the same Zod schema the daemon uses at startup,
+and the page **auto-saves** every change as you make it (a small status indicator confirms the write); the next
+tick picks the new value up. No Save button, no daemon restart needed for any value on this page. A revert link
+appears when the last change can still be rolled back to the previous value.
 
 ![Configuration page - all tunables in one place](docs/images/config.jpg)
 
