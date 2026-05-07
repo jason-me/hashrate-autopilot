@@ -207,14 +207,6 @@ msgstr "Hay una oferta activa. El próximo CREATE se dispara cuando termine - en
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminados funcionan para mineros caseros típicos; ajusta más tarde desde la página Config."
 
-#: src/pages/Status.tsx
-msgid "acceptance ({rangeLbl})"
-msgstr "aceptación ({rangeLbl})"
-
-#: src/pages/Status.tsx
-msgid "acceptance %"
-msgstr "aceptación %"
-
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Acceso"
@@ -528,6 +520,10 @@ msgstr "presupuesto"
 msgid "Budget"
 msgstr "Presupuesto"
 
+#: src/pages/Config.tsx
+msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
+msgstr "Cadencia entre reintentos cuando una alerta no se entrega o el estado malo persiste. El primer intento sale de inmediato; hasta 4 reintentos siguen a esta cadencia; el 5º lleva un mensaje final de \"abandono\" y el notificador queda en silencio hasta la recuperación."
+
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -567,6 +563,10 @@ msgstr "registro de cambios"
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
 msgstr "Suavizado del gráfico"
+
+#: src/pages/Config.tsx
+msgid "Chat ID"
+msgstr "ID de chat"
 
 #: src/pages/Config.tsx
 msgid "Cheap threshold"
@@ -762,16 +762,8 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Sondeo HTTP a /umbrel-api de Datum."
 
 #: src/pages/Status.tsx
-msgid "Datum gateway-side rejects over the chart-range window (currently {rangeLbl}): forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature)."
-msgstr "Rechazos del lado Datum gateway en la ventana del rango del gráfico (actualmente {rangeLbl}): delta hacia adelante del contador acumulado de rechazos de la gateway, omitiendo reinicios de bid y fallos de poll. Compáralo con la fila siguiente — gateway > pool significa que Datum filtró trabajo que nunca llegó a la pool (bueno); pool > gateway significa que la pool rechazó trabajo que Datum dio por bueno (firma de trabajo obsoleto)."
-
-#: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "hashrate datum"
-
-#: src/pages/Status.tsx
-msgid "datum rejects"
-msgstr "rechazos datum"
 
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
@@ -1070,10 +1062,6 @@ msgstr "Saldo completo del wallet por oferta. Actualmente ≈ {resolvedSatStr} s
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Saldo completo del wallet por oferta. Actualmente ≈ {resolvedSatStr} sat."
 
-#: src/pages/Status.tsx
-msgid "gateway rejects ({rangeLbl})"
-msgstr "rechazos del gateway ({rangeLbl})"
-
 #: src/pages/Config.tsx
 msgid "genesis version"
 msgstr "versión génesis"
@@ -1310,6 +1298,10 @@ msgid "Mining"
 msgstr "Minería"
 
 #: src/pages/Config.tsx
+msgid "minutes"
+msgstr "minutos"
+
+#: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
 msgstr "MP3 / OGG / WAV / WebM, máx. 200 KB."
 
@@ -1320,6 +1312,10 @@ msgstr "Debe ser accesible desde internet público - Braiins lo verifica."
 #: src/pages/Setup.tsx
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "debe contener un punto - sin él las shares no se acreditan en Ocean"
+
+#: src/pages/Config.tsx
+msgid "Mute all Telegram notifications"
+msgstr "Silenciar todas las notificaciones de Telegram"
 
 #: src/pages/Status.tsx
 msgid "net"
@@ -1438,6 +1434,10 @@ msgstr "no está en modo LIVE"
 msgid "not reported"
 msgstr "no reportado"
 
+#: src/pages/Config.tsx
+msgid "Notifications"
+msgstr "Notificaciones"
+
 #: src/lib/format.ts
 msgid "now"
 msgstr "ahora"
@@ -1501,6 +1501,10 @@ msgstr "Apagado"
 msgid "OK"
 msgstr "OK"
 
+#: src/pages/Config.tsx
+msgid "OK · message delivered"
+msgstr "OK · mensaje entregado"
+
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
 msgstr "En el objetivo - oferta igual a rellenable + sobrepago."
@@ -1520,6 +1524,10 @@ msgstr "Activa el modo barato solo cuando el promedio móvil del mejor precio de
 #: src/components/HashrateChart.tsx
 msgid "open in block explorer →"
 msgstr "abrir en explorador de bloques →"
+
+#: src/pages/Config.tsx
+msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
+msgstr "Abre Telegram y conversa con <0>@BotFather</0>, envía /newbot y sigue los pasos; @BotFather responde con el token. Pégalo aquí."
 
 #: src/pages/Config.tsx
 msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
@@ -1702,10 +1710,6 @@ msgstr "suerte del pool (24h)"
 msgid "pool luck (7d)"
 msgstr "suerte del pool (7d)"
 
-#: src/pages/Status.tsx
-msgid "pool rejects ({rangeLbl})"
-msgstr "rechazos del pool ({rangeLbl})"
-
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "recompensa del pool"
@@ -1723,10 +1727,6 @@ msgstr "usuarios del pool"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "workers del pool"
-
-#: src/pages/Status.tsx
-msgid "Pool-rejected shares the seller's rig reported over the same chart-range window (currently {rangeLbl}), relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots -> Datum -> Ocean is delivering stale work the pool rejects."
-msgstr "Shares rechazados por el pool que la rig del vendedor reportó durante la misma ventana de chart-range (actualmente {rangeLbl}), reenviados vía Braiins. Compara con la fila de arriba: una brecha sostenida con pool > gateway es la señal de que Knots -> Datum -> Ocean está entregando stale work que el pool rechaza."
 
 #: src/pages/Status.tsx
 msgid "port"
@@ -1797,6 +1797,10 @@ msgstr "Proyección: hashprice promedio × entregado promedio (filas de arriba),
 msgid "protocol"
 msgstr "protocolo"
 
+#: src/pages/Config.tsx
+msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet runway, etc.) to Telegram so the operator finds out within minutes, not hours. See the setup walkthrough for the @BotFather + @userinfobot steps."
+msgstr "Envía alertas de caídas (Datum inaccesible, hashrate por debajo del piso, runway del wallet, etc.) a Telegram para que el operador se entere en minutos, no en horas. Consulta la guía de configuración para los pasos con @BotFather + @userinfobot."
+
 #: src/components/HashrateChart.tsx
 msgid "range"
 msgstr "rango"
@@ -1855,6 +1859,10 @@ msgstr "Reanudar último modo"
 #: src/components/Bip110ScanCard.tsx
 msgid "retarget window:"
 msgstr "ventana de reajuste:"
+
+#: src/pages/Config.tsx
+msgid "Retry interval"
+msgstr "Intervalo de reintento"
 
 #: src/pages/Config.tsx
 msgid "revert"
@@ -1977,10 +1985,6 @@ msgstr "Elige unidad de hashrate (1 EH = 1.000 PH = 1.000.000 TH)"
 msgid "Setting up…"
 msgstr "Configurando…"
 
-#: src/pages/Status.tsx
-msgid "Share acceptance over the chart-range window (currently {rangeLbl}): (shares accepted / shares submitted) × 100, capped at 100%. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low. Cap at 100% absorbs Braiins's slight counter-sync jitter (the two cumulative counters land at slightly different times, which can read just over 100% on short windows; longer windows from the chart-range selector wash this out)."
-msgstr "Aceptación de shares en la ventana del rango del gráfico (actualmente {rangeLbl}): (shares aceptadas / shares enviadas) × 100, limitado al 100%. La rig del vendedor envía shares por stratum a TU Datum gateway, Datum responde aceptar/rechazar, y el resultado es lo que Braiins relaya como contador — así que es un número del lado Datum aunque se obtenga vía la API de Braiins. Baseline sano ≈ 99,95%; ~0,05% de rechazo de baseline es normal. Caídas sostenidas por debajo de ~99% indican trabajo obsoleto en Datum, mala configuración de identidad de worker, o dificultad de pool demasiado baja. El límite del 100% absorbe el ligero desajuste de sincronización entre los contadores de Braiins (los dos contadores acumulativos llegan en momentos algo diferentes, lo que en ventanas cortas puede leerse justo por encima del 100%; los rangos más largos del selector de gráfico lo promedian)."
-
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "share log"
@@ -2047,6 +2051,10 @@ msgstr "gastado (autopilot)"
 msgid "spent (whole account)"
 msgstr "gastado (cuenta completa)"
 
+#: src/pages/Config.tsx
+msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
+msgstr "Inicia un chat con tu bot y envía /start. Luego envía cualquier mensaje a <0>@userinfobot</0> y copia el Id numérico de vuelta en este campo. Test connection valida los valores actuales del formulario, antes de guardar."
+
 #: src/pages/Status.tsx
 msgid "status"
 msgstr "estado"
@@ -2102,6 +2110,11 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "Sondeo TCP al puerto stratum del gateway Datum."
 
 #: src/pages/Config.tsx
+msgid "Telegram bot token"
+msgstr "Token del bot de Telegram"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Test connection"
 msgstr "Probar conexión"
@@ -2110,6 +2123,7 @@ msgstr "Probar conexión"
 msgid "Test sound"
 msgstr "Probar sonido"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Testing…"
@@ -2257,6 +2271,10 @@ msgstr "A lo que apunta el controlador."
 #: src/pages/Status.tsx
 msgid "What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks."
 msgstr "Lo que nos ganó este último bloque, estimado como block_reward * share_log_pct / 100. Usa el share_log registrado en el momento del bloque cuando nuestro historial de ticks lo cubre; recurre al share_log en vivo para bloques más antiguos."
+
+#: src/pages/Config.tsx
+msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Cuando está activo, las alertas se siguen registrando en la página /alerts con estado \"silenciado\", pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."

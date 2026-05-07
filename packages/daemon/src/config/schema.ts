@@ -268,9 +268,15 @@ export const AppConfigSchema = z.object({
 
   // #100: Telegram chat id the notifier POSTs into. Empty string =
   // unconfigured (notifier short-circuits with delivery_status='failed'
-  // and a clear error message). Stored unencrypted on `config` because
-  // a chat id is not a credential; the bot_token (on `secrets`) is.
+  // and a clear error message).
   telegram_chat_id: z.string().default(''),
+
+  // #100: live-editable Telegram bot token. Same dual-location pattern
+  // as bitcoind_rpc_password: keep the secrets fallback (.env.sops.yaml /
+  // first-run wizard) AND surface a config-side editable copy. Daemon
+  // resolution at runtime: prefer config when non-empty, fall back to
+  // secrets. Empty string means "not configured".
+  telegram_bot_token: z.string().default(''),
 
   // #100: global mute toggle. When true the notifier skips the actual
   // Telegram POST but still records the alert row + retry ladder, so
@@ -369,6 +375,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   block_found_sound: 'off',
 
   telegram_chat_id: '',
+  telegram_bot_token: '',
   notifications_muted: false,
   notification_retry_interval_minutes: 30,
 };

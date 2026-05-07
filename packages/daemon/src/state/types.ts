@@ -35,6 +35,8 @@ export interface ConfigTable {
   btc_payout_address: string;
   /** #100: Telegram chat id the notifier POSTs into. Empty string = unconfigured. */
   telegram_chat_id: string;
+  /** #100: live-editable Telegram bot token. Mirrors the secrets fallback for bitcoind RPC creds. */
+  telegram_bot_token: string;
   /** #100: global mute toggle for the Telegram notifier. */
   notifications_muted: 0 | 1;
   /** #100: cadence between retry attempts when state stays bad. Default 30. */
