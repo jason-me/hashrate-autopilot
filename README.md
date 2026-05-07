@@ -54,7 +54,7 @@ operator wants to opt out of.
 ## Scope
 
 **v1 (current):** Braiins Hashpower marketplace only. Single operator. Single always-on host on a home LAN
-alongside an Umbrel Bitcoin node running [Ocean](https://ocean.xyz/) with a Datum Gateway.
+alongside a Bitcoin node (Umbrel or otherwise) running a Datum Gateway pointed at [Ocean](https://ocean.xyz/).
 
 **v2 (aspirational):** Multi-market abstraction so additional hashrate marketplaces can be plugged in behind the
 same controller and dashboard.
