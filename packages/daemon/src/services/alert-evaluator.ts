@@ -14,15 +14,22 @@
  * the alert again. That's a feature, not a bug: the operator wants a
  * fresh ping after every restart, not silence.
  *
- * This commit wires three detectors end-to-end:
- *   - datum_unreachable     (LOUD) - the 2026-05-06 motivating incident
- *   - hashrate_below_floor  (LOUD)
- *   - zero_hashrate         (LOUD)
+ * Detectors wired end-to-end:
+ *   - datum_unreachable     LOUD - the 2026-05-06 motivating incident
+ *   - hashrate_below_floor  LOUD
+ *   - zero_hashrate         LOUD
+ *   - api_unreachable       LOUD - Braiins /v1/* down for N minutes
+ *   - unknown_bid           LOUD - bid in account that we didn't create
+ *   - sustained_paused      LOUD - primary bid stays Paused across the
+ *                                  Paused/Active oscillation hazard
+ *   - beta_exit             WARN - Braiins fee_rate turned non-zero
  *
- * The remaining six detectors (api_unreachable, wallet_runway,
- * unknown_bid, sustained_paused, beta_exit, low_acceptance) are
- * scaffolded but not yet implemented - see the per-class TODOs.
- * They land in a follow-up commit alongside recovery-message polish.
+ * Two detectors are stubbed for a small follow-up commit because they
+ * need data the evaluator doesn't currently see:
+ *   - wallet_runway   needs (balance, daily-burn) - daily-burn comes
+ *                     from accountSpend or tick_metrics deltas
+ *   - low_acceptance  needs an acceptance-ratio time series; not yet
+ *                     captured in tick_metrics
  */
 
 import type { AlertManager } from './alert-manager.js';
@@ -46,6 +53,10 @@ export class AlertEvaluator {
   private datum_unreachable: EventState = INITIAL;
   private hashrate_below_floor: EventState = INITIAL;
   private zero_hashrate: EventState = INITIAL;
+  private api_unreachable: EventState = INITIAL;
+  private unknown_bid: EventState = INITIAL;
+  private sustained_paused: EventState = INITIAL;
+  private beta_exit: EventState = INITIAL;
 
   private readonly alertManager: AlertManager;
   private readonly now: () => number;
@@ -64,8 +75,13 @@ export class AlertEvaluator {
     await this.evaluateDatumUnreachable(state);
     await this.evaluateBelowFloor(state);
     await this.evaluateZeroHashrate(state);
-    // TODO(#100): api_unreachable, wallet_runway, unknown_bid,
-    //   sustained_paused, beta_exit, low_acceptance.
+    await this.evaluateApiUnreachable(state);
+    await this.evaluateUnknownBid(state);
+    await this.evaluateSustainedPaused(state);
+    await this.evaluateBetaExit(state);
+    // TODO(#100): wallet_runway needs daily-burn input; low_acceptance
+    //   needs an acceptance-ratio series in tick_metrics. Both are
+    //   scoped for a small follow-up commit.
   }
 
   private async evaluateDatumUnreachable(state: State): Promise<void> {
@@ -126,6 +142,92 @@ export class AlertEvaluator {
     });
   }
 
+  private async evaluateApiUnreachable(state: State): Promise<void> {
+    // state.market is null when the Braiins API failed this tick.
+    const isBad = state.market === null;
+    const thresholdMs = state.config.api_outage_alert_after_minutes * 60_000;
+    this.api_unreachable = await this.runTransition({
+      event_class: 'api_unreachable',
+      severity: 'LOUD',
+      isBad,
+      thresholdMs,
+      currentState: this.api_unreachable,
+      title: 'Braiins API unreachable',
+      bodyForFiring: (durMs) =>
+        `The Braiins marketplace API has been unreachable for ${formatDuration(durMs)}. The autopilot cannot read orderbook / balance / fee data and is making no decisions until it recovers.`,
+      bodyForRecovery: (durMs) =>
+        `Braiins API reachable again - was down ${formatDuration(durMs)}.`,
+    });
+  }
+
+  private async evaluateUnknownBid(state: State): Promise<void> {
+    // No threshold: an unknown bid is a "PAUSE NOW" condition per
+    // SPEC §9, so the alert fires on the first tick we see one.
+    const isBad = state.unknown_bids.length > 0;
+    this.unknown_bid = await this.runTransition({
+      event_class: 'unknown_bid',
+      severity: 'LOUD',
+      isBad,
+      thresholdMs: 0,
+      currentState: this.unknown_bid,
+      title: 'Unknown bid detected',
+      bodyForFiring: () => {
+        const ids = state.unknown_bids.map((b) => b.braiins_order_id).join(', ');
+        return `${state.unknown_bids.length} bid(s) in the Braiins account that the autopilot did not create: ${ids}. Daemon auto-paused per the unknown-order rule. Inspect via the Braiins dashboard before resuming LIVE.`;
+      },
+      bodyForRecovery: () =>
+        `Account is clean again - no unknown bids visible. Re-enable LIVE on the dashboard when ready.`,
+    });
+  }
+
+  private async evaluateSustainedPaused(state: State): Promise<void> {
+    // Primary owned bid (first non-fulfilled) carries the
+    // last_pause_reason flag. We treat "any non-null pause reason"
+    // as the bad signal; the threshold is the operator's choice of
+    // how long to wait before declaring it sustained. Reuse the
+    // pool-outage tolerance as a sensible default proxy.
+    const primary = state.owned_bids.find((b) => b.status !== 'CL_ORDER_STATE_FULFILLED');
+    const isBad = primary?.last_pause_reason != null && primary.last_pause_reason !== '';
+    const thresholdMs =
+      state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
+    this.sustained_paused = await this.runTransition({
+      event_class: 'sustained_paused',
+      severity: 'LOUD',
+      isBad: isBad ?? false,
+      thresholdMs,
+      currentState: this.sustained_paused,
+      title: 'Bid sustained-paused by Braiins',
+      bodyForFiring: (durMs) =>
+        `Primary owned bid has been Paused by Braiins for ${formatDuration(durMs)} (last_pause_reason: ${primary?.last_pause_reason ?? 'unknown'}). Likely the Paused/Active oscillation hazard - check the destination pool / Datum gateway and consider a manual edit.`,
+      bodyForRecovery: (durMs) =>
+        `Primary bid no longer flagged Paused - was paused for ${formatDuration(durMs)}.`,
+    });
+  }
+
+  private async evaluateBetaExit(state: State): Promise<void> {
+    // Beta-exit signal: Braiins applies a non-zero fee_rate to bids
+    // when the marketplace exits beta. Detectable per-bid via
+    // owned_bids[].fee_rate_pct. Fires immediately (no threshold) on
+    // first observation of a non-zero rate on any active bid.
+    const anyFeeBearing = state.owned_bids.some(
+      (b) => b.fee_rate_pct !== null && b.fee_rate_pct > 0,
+    );
+    this.beta_exit = await this.runTransition({
+      event_class: 'beta_exit',
+      severity: 'WARN',
+      isBad: anyFeeBearing,
+      thresholdMs: 0,
+      currentState: this.beta_exit,
+      title: 'Braiins beta-exit fees detected',
+      bodyForFiring: () => {
+        const sample = state.owned_bids.find((b) => (b.fee_rate_pct ?? 0) > 0);
+        return `Braiins is now charging a non-zero fee on at least one active bid (fee_rate_pct: ${sample?.fee_rate_pct ?? 'unknown'}%). The marketplace appears to have exited beta - re-evaluate the cost model and consider the documented beta-exit handling steps.`;
+      },
+      bodyForRecovery: () =>
+        `Active bids are back to fee_rate_pct = 0. Either Braiins reverted, or all fee-bearing bids settled.`,
+    });
+  }
+
   // ---------------------------------------------------------------
   // Shared transition machinery
   // ---------------------------------------------------------------
@@ -143,25 +245,25 @@ export class AlertEvaluator {
     const nowMs = this.now();
 
     if (args.isBad) {
-      // First tick observing bad: arm the timer.
-      if (args.currentState.bad_since_ms === null) {
-        return { bad_since_ms: nowMs, active_alert_id: null };
-      }
-      // Already armed - has the threshold been crossed?
+      // Arm the timer on first observation, OR fire immediately if
+      // threshold is 0 (event classes like unknown_bid + beta_exit
+      // that have no debounce - they're "PAUSE NOW" conditions).
+      const armedSince =
+        args.currentState.bad_since_ms === null ? nowMs : args.currentState.bad_since_ms;
       if (
         args.currentState.active_alert_id === null &&
-        nowMs - args.currentState.bad_since_ms >= args.thresholdMs
+        nowMs - armedSince >= args.thresholdMs
       ) {
         const id = await this.alertManager.recordAlert({
           severity: args.severity,
           title: args.title,
-          body: args.bodyForFiring(nowMs - args.currentState.bad_since_ms),
+          body: args.bodyForFiring(nowMs - armedSince),
           event_class: args.event_class,
         });
-        return { bad_since_ms: args.currentState.bad_since_ms, active_alert_id: id };
+        return { bad_since_ms: armedSince, active_alert_id: id };
       }
-      // Either already-fired or below threshold - keep state.
-      return args.currentState;
+      // Below threshold but armed - keep counting.
+      return { bad_since_ms: armedSince, active_alert_id: args.currentState.active_alert_id };
     }
 
     // Not bad. If we had armed but never fired, just clear.

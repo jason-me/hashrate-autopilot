@@ -27,11 +27,15 @@ function makeState(overrides: Partial<State>): State {
       pool_outage_blip_tolerance_seconds: 60, // → threshold = 60*5 = 300s = 5m
       below_floor_alert_after_minutes: 10,
       zero_hashrate_loud_alert_after_minutes: 15,
+      api_outage_alert_after_minutes: 10,
       minimum_floor_hashrate_ph: 0.5,
     },
+    market: {} as State['market'],
     datum: { reachable: true, connections: 1, hashrate_ph: 1, last_ok_at: 0, consecutive_failures: 0 },
     actual_hashrate: { owned_ph: 1.0, unknown_ph: 0, total_ph: 1.0 },
     below_floor_since: null,
+    owned_bids: [],
+    unknown_bids: [],
   } as unknown as State;
   return { ...base, ...overrides } as State;
 }
@@ -104,6 +108,51 @@ describe('AlertEvaluator - datum_unreachable', () => {
     now += 60_000;
     await ev.evaluate(makeState({}));
     expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+});
+
+describe('AlertEvaluator - api_unreachable', () => {
+  it('fires after the configured threshold when state.market is null', async () => {
+    const mgr = makeManager();
+    let now = 0;
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => now });
+    const bad = makeState({ market: null });
+    await ev.evaluate(bad);
+    now += 10 * 60_000;
+    await ev.evaluate(bad);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('api_unreachable');
+  });
+});
+
+describe('AlertEvaluator - unknown_bid', () => {
+  it('fires immediately when an unknown bid appears', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    const bad = makeState({
+      unknown_bids: [{ braiins_order_id: 'bid_xyz' }] as unknown as State['unknown_bids'],
+    });
+    await ev.evaluate(bad);
+    await ev.evaluate(bad);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('unknown_bid');
+    expect(mgr.recorded[0]!.body).toContain('bid_xyz');
+  });
+});
+
+describe('AlertEvaluator - beta_exit', () => {
+  it('fires immediately on the first non-zero fee_rate_pct', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    const bad = makeState({
+      owned_bids: [
+        { fee_rate_pct: 1.5, status: 'CL_ORDER_STATE_ACTIVE' },
+      ] as unknown as State['owned_bids'],
+    });
+    await ev.evaluate(bad);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.severity).toBe('WARN');
+    expect(mgr.recorded[0]!.event_class).toBe('beta_exit');
   });
 });
 
