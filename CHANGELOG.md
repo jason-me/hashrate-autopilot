@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` Revert ocean_unpaid_sat reconstruction; null out reconstructed values (#108 follow-up)
+
+The `ocean_unpaid_sat` historical reconstruction in build 262 was wrong. It used `pool_block.total_reward_sat × share_log_pct_at_block / 100` minus cumulative payouts, but `share_log_pct` is the operator's share at a specific tick - it varies as the operator's mining activity does, and using a nearest-known reading as fallback for past blocks wildly over-credits the operator on blocks before they were mining at full hashrate. The line on the chart was misleading garbage. Code reverts to leaving `ocean_unpaid_sat` alone (only Ocean's actual reading is the source of truth). One-shot cleanup nulls out any reconstructed values that the prior recompute wrote: every row whose tick_at predates the migration that introduced the column (`0053_tick_metrics_extended_capture.sql`). Post-column rows are left as-is (no marker to distinguish reconstructed from real, but those came online when Ocean integration did so contamination is bounded). Idempotent.
+
 ### `[Fix]` Full historical recompute: pool-luck, paid total, unpaid earnings (#108 follow-up)
 
 Operator reasoned: "the previous values were wrong, so why don't you recalculate all the historical luck? Also means you can retroactively populate the unpaid sat stat." Right calls, both. The spike on the chart at the deploy moment was the same systematic under-count just frozen in past `tick_metrics` rows; many older ticks also had null `network_difficulty` / `pool_hashrate_ph_avg_*` (those columns were added in migrations 0053 / 0056) so luck wasn't computable at all on them.

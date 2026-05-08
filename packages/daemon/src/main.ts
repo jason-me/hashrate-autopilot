@@ -53,6 +53,7 @@ import { AlertEvaluator } from './services/alert-evaluator.js';
 import { AlertManager } from './services/alert-manager.js';
 import { TelegramSink } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
+import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
 import type { TickResult } from './controller/tick.js';
@@ -458,6 +459,14 @@ async function bootOperational(
   // hammering Ocean. Failures here are logged but never abort boot
   // (the empty table just degrades to "no historical luck", same as
   // pre-#108 behaviour).
+  // One-shot revert: a previous build's recompute populated
+  // ocean_unpaid_sat with a wrong pool_block × share_log
+  // reconstruction. Null those values out before the chart reads
+  // them. Idempotent across boots.
+  await runOceanUnpaidCleanup({ db: handle.db, log: (m) => log(m) }).catch(
+    (err) => log(`[ocean-unpaid-cleanup] ${(err as Error).message}`),
+  );
+
   void runPoolBlocksBackfill({
     oceanClient,
     poolBlocksRepo,
@@ -465,13 +474,12 @@ async function bootOperational(
     log: (m) => log(m),
   })
     .then(() =>
-      // Historical recompute of tick_metrics counts/luck/paid_total/
-      // unpaid against the now-populated pool_blocks + reward_events.
-      // One-time correction for the systematic under-count introduced
+      // Historical recompute of tick_metrics counts/luck/paid_total
+      // against the now-populated pool_blocks + reward_events. One-
+      // time correction for the systematic under-count introduced
       // by the old 15-block-slice logic + nullable inputs on early
       // ticks; idempotent on re-boot. Awaiting the backfill chain
-      // matters - recompute reads pool_blocks, so it has to run
-      // after backfill finishes.
+      // matters - recompute reads pool_blocks.
       runPoolLuckRecompute({
         db: handle.db,
         poolBlocksRepo,

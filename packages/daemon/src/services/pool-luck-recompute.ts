@@ -27,12 +27,18 @@
  * null), and writes the recomputed counts + luck back.
  *
  * Bonus pass: cumulative `paid_total_sat` (exact - from
- * `reward_events.value_sat` running sum) and `ocean_unpaid_sat`
- * (approximate - sum of `pool_block.total_reward_sat ×
- * share_log_pct_at_block` minus cumulative payouts up to that tick).
- * Both filled only on rows where the column is currently null, so
- * Ocean's actual reported `unpaid_sat` stays the source of truth on
- * rows that already have it.
+ * `reward_events.value_sat` running sum). Filled only on rows where
+ * the column is currently null.
+ *
+ * NOT recomputed: `ocean_unpaid_sat`. The earlier attempt to
+ * reconstruct it from `pool_block.total_reward_sat × share_log_pct`
+ * was empirically wrong - share_log_pct is the operator's share at
+ * a given tick, which varies as the operator's mining activity
+ * varies, so using a fallback share_log for blocks earlier than
+ * share_log capture began wildly overcredits past blocks. Operator
+ * caught it on the chart and asked for the assumption rolled back.
+ * The on-boot cleanup that pairs with this commit (in main.ts)
+ * nulls out any reconstructed values that previously got written.
  *
  * Idempotent: subsequent boots see no change and no-op cheaply.
  */
@@ -85,21 +91,15 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
     return;
   }
 
-  // Pre-build a credits timeline for ocean_unpaid_sat reconstruction.
-  // Each pool_block adds (reward × operator_share_at_block_time) to
-  // the operator's running unpaid balance; each on-chain payout
-  // (reward_events) draws it back down. Both lists are pre-sorted
-  // ascending so we advance pointers per-tick in O(1).
-  const shareLogSeries = await loadSeries(deps.db, 'share_log_pct');
-  const blockCredits = await buildBlockCredits(deps.db, shareLogSeries);
+  // Pre-build the cumulative-payouts timeline for paid_total_sat.
+  // The on-chain ledger is exact - reward_events captures every
+  // payout and we just sum value_sat up to each tick.
   const payouts = await loadPayouts(deps.db);
 
   let totalScanned = 0;
   let totalUpdated = 0;
   let cursorTickAt = earliestEligibleTick - 1;
   let cumPaidSat = 0;
-  let cumCreditSat = 0;
-  let creditPtr = 0;
   let payoutPtr = 0;
 
   /* eslint-disable no-await-in-loop */
@@ -159,14 +159,8 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         recentBlockTimestampsMs: ts7,
       });
 
-      // Advance the credit/payout cursors past anything that
-      // happened on or before this tick. Both lists are sorted
-      // ascending so this runs in amortized O(1) per row across the
-      // whole scan.
-      while (creditPtr < blockCredits.length && blockCredits[creditPtr]!.at_ms <= tickAt) {
-        cumCreditSat += blockCredits[creditPtr]!.credit_sat;
-        creditPtr += 1;
-      }
+      // Advance the payout cursor past anything that happened on or
+      // before this tick. Sorted ascending, so amortized O(1) per row.
       while (payoutPtr < payouts.length && payouts[payoutPtr]!.at_ms <= tickAt) {
         cumPaidSat += payouts[payoutPtr]!.value_sat;
         payoutPtr += 1;
@@ -177,23 +171,13 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
       // matches the original write-side (see RewardEventsRepo).
       const paidTotal = cumPaidSat;
 
-      // ocean_unpaid_sat: only fill where the row's value is null.
-      // For rows where Ocean already reported a value, that's the
-      // source of truth and we leave it alone. The reconstructed
-      // value is approximate (TIDES has internal accounting we don't
-      // model) but produces a usable line on the historical chart.
-      const reconstructedUnpaid = Math.max(0, Math.round(cumCreditSat - cumPaidSat));
-      const oceanUnpaid =
-        row.ocean_unpaid_sat !== null ? row.ocean_unpaid_sat : reconstructedUnpaid;
-
       // Skip if nothing actually changes (idempotent re-runs no-op).
       if (
         row.pool_blocks_24h_count === count24 &&
         row.pool_blocks_7d_count === count7 &&
         approxEq(row.pool_luck_24h, luck24) &&
         approxEq(row.pool_luck_7d, luck7) &&
-        row.paid_total_sat === paidTotal &&
-        row.ocean_unpaid_sat === oceanUnpaid
+        row.paid_total_sat === paidTotal
       ) {
         continue;
       }
@@ -206,7 +190,6 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
           pool_luck_24h: luck24,
           pool_luck_7d: luck7,
           paid_total_sat: paidTotal,
-          ocean_unpaid_sat: oceanUnpaid,
         })
         .where('id', '=', row.id)
         .execute();
@@ -230,8 +213,7 @@ async function loadSeries(
   column:
     | 'network_difficulty'
     | 'pool_hashrate_ph_avg_24h'
-    | 'pool_hashrate_ph_avg_7d'
-    | 'share_log_pct',
+    | 'pool_hashrate_ph_avg_7d',
 ): Promise<readonly { readonly tick_at: number; readonly value: number }[]> {
   const rows = await db
     .selectFrom('tick_metrics')
@@ -278,35 +260,8 @@ function approxEq(a: number | null, b: number | null): boolean {
 }
 
 /**
- * Build (block_timestamp, operator_credit_sat) pairs for every
- * pool_block we have. Operator's credit on a block = block reward
- * × operator's share_log_pct at the block's timestamp / 100.
- * share_log_pct is looked up nearest-by-time from tick_metrics so
- * blocks before the share_log capture started use the closest
- * available reading.
- */
-async function buildBlockCredits(
-  db: Kysely<Database>,
-  shareLogSeries: readonly { readonly tick_at: number; readonly value: number }[],
-): Promise<readonly { readonly at_ms: number; readonly credit_sat: number }[]> {
-  if (shareLogSeries.length === 0) return [];
-  const blocks = await db
-    .selectFrom('pool_blocks')
-    .select(['timestamp_ms', 'total_reward_sat'])
-    .orderBy('timestamp_ms', 'asc')
-    .execute();
-  return blocks.map((b) => {
-    const sharePct = nearest(shareLogSeries, b.timestamp_ms) ?? 0;
-    return {
-      at_ms: b.timestamp_ms,
-      credit_sat: (b.total_reward_sat * sharePct) / 100,
-    };
-  });
-}
-
-/**
- * Cumulative-payouts source for the unpaid + paid_total recompute.
- * Excludes reorged rows; the on-chain ledger is the ground truth.
+ * Cumulative-payouts source for the paid_total recompute. Excludes
+ * reorged rows; the on-chain ledger is the ground truth.
  */
 async function loadPayouts(
   db: Kysely<Database>,
