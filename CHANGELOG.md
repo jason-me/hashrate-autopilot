@@ -2,6 +2,13 @@
 
 ## 2026-05-08
 
+### `[Fix]` DDNS "last successful push" age + status localization (#111 polish)
+
+Two related papercuts in the DDNS status block on Config:
+
+- The "last successful push" age was rendering "20582d ago" - 56 years - regardless of when the daemon actually pushed. Bug at the call site: `formatAge(Date.now() - last_pushed_at)` was passing a duration to a function that expects an absolute timestamp; internally it computed `now - duration = last_pushed_at`, then interpreted that as "time since epoch zero" ≈ today. Now passes the timestamp directly. The push WAS happening - this was a rendering bug only.
+- The `last_status` value rendered as the raw dyndns2 protocol code (`good` / `nochg` / `badauth` / etc.). Replaced with `localizeDdnsStatus()` that maps the codes to plain-English (and translated NL/ES) labels: "updated", "no change needed", "bad credentials", "hostname not found", and so on. Unrecognised codes still fall through to the raw string.
+
 ### `[UI]` Config: search box moved into the tab row
 
 Search input now sits at the right end of the tab bar instead of in its own row above the tabs. Tighter use of vertical space and the search dropdown still anchors to the input position. Operator-flagged after the previous "search above tabs" landing - "I do think it will look better in the top row."

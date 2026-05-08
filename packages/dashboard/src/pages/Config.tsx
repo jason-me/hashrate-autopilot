@@ -2637,6 +2637,38 @@ function FieldWithTestButton({
 }
 
 /**
+ * Render a dyndns2 / DuckDNS status code as a human-readable, localized
+ * label. The raw codes (`good`, `nochg`, `nohost`, `badauth`, ...)
+ * leak through to operators who don't know the protocol; this hides
+ * them behind plain English (or NL/ES) phrases. Falls back to the raw
+ * code so unrecognised statuses still render something useful.
+ */
+function localizeDdnsStatus(raw: string): string {
+  switch (raw) {
+    case 'good':
+      return t`updated`;
+    case 'nochg':
+      return t`no change needed`;
+    case 'nohost':
+      return t`hostname not found`;
+    case 'badauth':
+      return t`bad credentials`;
+    case 'notfqdn':
+      return t`not a fully-qualified hostname`;
+    case 'abuse':
+      return t`blocked - update abuse detected`;
+    case '911':
+      return t`provider error - try again later`;
+    case 'network_error':
+      return t`network error`;
+    case 'unsupported_provider':
+      return t`unsupported provider`;
+    default:
+      return raw;
+  }
+}
+
+/**
  * #112: DDNS Test connection - hits the configured provider's update
  * endpoint with the values currently in the form and surfaces the
  * provider's response (`good <ip>` / `nochg <ip>` / `badauth` / etc).
@@ -2903,7 +2935,9 @@ function DdnsSection({
                         : 'text-slate-500'
                   }
                 >
-                  {r?.ddns.last_status ?? <Trans>(no push attempted yet)</Trans>}
+                  {r?.ddns.last_status
+                    ? localizeDdnsStatus(r.ddns.last_status)
+                    : <Trans>(no push attempted yet)</Trans>}
                 </span>
               </div>
               <div className="flex flex-wrap gap-x-4">
@@ -2912,9 +2946,16 @@ function DdnsSection({
                 </span>
                 <span className="text-slate-100">
                   {r?.ddns.last_pushed_ip ?? <span className="text-slate-500">—</span>}
-                  {r?.ddns.last_pushed_at && (
+                  {r?.ddns.last_pushed_at != null && (
                     <span className="text-slate-500 ml-2">
-                      {formatAge(Date.now() - r.ddns.last_pushed_at)}
+                      {/* formatAge expects an absolute ms-epoch
+                          timestamp - NOT a duration. Passing
+                          (now - last_pushed_at) was the bug that
+                          made the display read "20582d ago" - the
+                          internal `now - ms` recovered the original
+                          timestamp, which formatAge then interpreted
+                          as "time since epoch zero" ≈ today. */}
+                      {formatAge(r.ddns.last_pushed_at)}
                     </span>
                   )}
                 </span>

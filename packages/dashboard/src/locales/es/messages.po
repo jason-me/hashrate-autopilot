@@ -388,6 +388,10 @@ msgid "Backend"
 msgstr "Backend"
 
 #: src/pages/Config.tsx
+msgid "bad credentials"
+msgstr "credenciales inválidas"
+
+#: src/pages/Config.tsx
 msgid "Balance-check backend"
 msgstr "Backend de verificación de saldo"
 
@@ -491,6 +495,10 @@ msgstr "Notificación de bloque encontrado"
 #: src/pages/Status.tsx
 msgid "blocked"
 msgstr "bloqueado"
+
+#: src/pages/Config.tsx
+msgid "blocked - update abuse detected"
+msgstr "bloqueado - abuso de actualización detectado"
 
 #: src/components/Bip110ScanCard.tsx
 #: src/pages/Config.tsx
@@ -1255,6 +1263,10 @@ msgid "Hostname"
 msgstr "Nombre de host"
 
 #: src/pages/Config.tsx
+msgid "hostname not found"
+msgstr "hostname no encontrado"
+
+#: src/pages/Config.tsx
 msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create - simpler mental model, no manual slicing."
 msgstr "Tamaño de una oferta. Pon 0 para usar todo el saldo disponible del wallet en cada creación - modelo mental más simple, sin trocear manualmente."
 
@@ -1501,6 +1513,10 @@ msgstr "neto/día ({rangeLabel})"
 msgid "network difficulty"
 msgstr "dificultad de red"
 
+#: src/pages/Config.tsx
+msgid "network error"
+msgstr "error de red"
+
 #: src/pages/Status.tsx
 msgid "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
 msgstr "Tasa de equilibrio de la red a la dificultad y recompensa de bloque actuales: (block_reward_sat * 144 bloques/día) / network_hashrate. Si pagas POR ENCIMA de esto, pierdes dinero frente a minar; por debajo, ganas. El tope max-overpay-vs-hashprice del autopilot limita tu oferta respecto a este número."
@@ -1559,6 +1575,10 @@ msgstr "Sin auto-purga; creciendo ~ {dailyStr}/día"
 msgid "no bids on this account"
 msgstr "sin ofertas en esta cuenta"
 
+#: src/pages/Config.tsx
+msgid "no change needed"
+msgstr "sin cambios"
+
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
 msgstr "No hay hashrate disponible en el mercado en este momento."
@@ -1587,6 +1607,10 @@ msgstr "Ninguno - omitir seguimiento de pagos"
 #: src/lib/labels.ts
 msgid "Normal"
 msgstr "Normal"
+
+#: src/pages/Config.tsx
+msgid "not a fully-qualified hostname"
+msgstr "hostname no totalmente cualificado"
 
 #: src/pages/Status.tsx
 msgid "Not configured"
@@ -2015,6 +2039,10 @@ msgstr "protocolo"
 #: src/pages/Config.tsx
 msgid "Provider"
 msgstr "Proveedor"
+
+#: src/pages/Config.tsx
+msgid "provider error - try again later"
+msgstr "error del proveedor - inténtalo más tarde"
 
 #: src/pages/Config.tsx
 msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet runway, etc.) to Telegram so the operator finds out within minutes, not hours. See the setup walkthrough for the @BotFather + @userinfobot steps."
@@ -2493,8 +2521,16 @@ msgid "unsaved changes…"
 msgstr "cambios sin guardar…"
 
 #: src/pages/Config.tsx
+msgid "unsupported provider"
+msgstr "proveedor no soportado"
+
+#: src/pages/Config.tsx
 msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
 msgstr "Desmarca cualquier tipo de evento que no quieras enviar. Los tipos deshabilitados se saltan en el daemon - sin Telegram, sin fila en /alerts, sin escalera de reintentos. Pasa el cursor por encima para ver la condición de disparo."
+
+#: src/pages/Config.tsx
+msgid "updated"
+msgstr "actualizado"
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
