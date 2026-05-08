@@ -343,6 +343,19 @@ async function bootOperational(
       electrsPort: cfg.payout_source === 'electrs' ? cfg.electrs_port : null,
       log: (m) => log(m),
       db: handle.db,
+      // When new reward_events rows land, immediately backfill
+      // tick_metrics.paid_total_sat across history so the chart's
+      // lifetime-earnings line shows the correct timeline without
+      // needing a second daemon restart. Idempotent + safe to run
+      // concurrently with steady-state ticks.
+      onRewardsChanged: async () => {
+        log('[payout] reward_events changed, kicking pool-luck-recompute to backfill paid_total_sat');
+        await runPoolLuckRecompute({
+          db: handle.db,
+          poolBlocksRepo,
+          log: (m) => log(m),
+        });
+      },
     });
     if (cfg.payout_source === 'electrs') {
       log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);

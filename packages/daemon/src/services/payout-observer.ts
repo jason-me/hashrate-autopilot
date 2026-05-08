@@ -43,12 +43,21 @@ export interface PayoutObserverOptions {
   readonly log?: (msg: string) => void;
   /**
    * #88: when provided, each bitcoind scan inserts any newly-seen
-   * coinbase outputs into `reward_events` so the dashboard can ring
-   * an audible cue. Optional - the reward_events table predates this
-   * wiring and the observer's primary job is the balance snapshot,
-   * not bookkeeping individual UTXOs.
+   * outputs at the payout address into `reward_events` so the
+   * dashboard can ring an audible cue and the chart's
+   * paid_total_sat series can plot actual on-chain payment timing.
+   * Optional - the reward_events table predates this wiring and the
+   * observer's primary job is the balance snapshot, not bookkeeping
+   * individual UTXOs.
    */
   readonly db?: Kysely<Database>;
+  /**
+   * Fires after a scan inserts at least one new `reward_events` row.
+   * Used to immediately trigger a backfill of `tick_metrics.paid_total_sat`
+   * (via runPoolLuckRecompute) so the chart updates without a second
+   * daemon restart. Best-effort: failures are logged and swallowed.
+   */
+  readonly onRewardsChanged?: () => Promise<void>;
 }
 
 export class PayoutObserver {
@@ -141,12 +150,19 @@ export class PayoutObserver {
     this.options.log?.(
       `[payout] via bitcoind: ${address.slice(0, 12)}… unspent=${totalSat} sat in ${result.unspents.length} outs`,
     );
-    // #88: record any newly-seen coinbase UTXOs into reward_events so
-    // the dashboard can ring the block-found cue. Best-effort: a DB
+    // Record any newly-seen UTXOs into reward_events so the chart's
+    // paid_total_sat series picks up the payment. Best-effort: a DB
     // hiccup must not block the snapshot update above.
     if (this.options.db) {
       try {
-        await this.recordNewRewardEvents(result, now());
+        const inserted = await this.recordNewRewardEvents(result, now());
+        if (inserted > 0 && this.options.onRewardsChanged) {
+          await this.options.onRewardsChanged().catch((err) =>
+            this.options.log?.(
+              `[payout] onRewardsChanged failed: ${(err as Error).message}`,
+            ),
+          );
+        }
       } catch (err) {
         this.options.log?.(`[payout] reward_events write failed: ${(err as Error).message}`);
       }
@@ -154,10 +170,23 @@ export class PayoutObserver {
   }
 
   /**
-   * Insert one row per coinbase UTXO not already in `reward_events`.
-   * Non-coinbase UTXOs at the payout address (e.g. the operator
-   * received a regular payment, or self-consolidated) are skipped -
-   * we only want to ring the cue for actual block finds.
+   * Insert one row per UTXO not already in `reward_events`.
+   *
+   * Originally we filtered on `u.coinbase === true` so only pool
+   * payout outputs landed in the table. That filter turned out to be
+   * a bug: bitcoind's `scantxoutset` does not reliably populate the
+   * `coinbase` field across versions, so the strict `=== true` check
+   * silently rejected every UTXO on setups where the field was
+   * missing or false-by-default - leaving reward_events empty even
+   * when the panel showed a non-zero unspent total. Operator hit
+   * exactly this on May 8 2026 (build 276 had the half-fix that
+   * surfaced the issue: rows still empty, chart still flat zero).
+   *
+   * Net effect of dropping the filter: any UTXO at the payout
+   * address counts as a reward event. For Ocean (TIDES pays via
+   * coinbase) this is essentially always correct. The edge case is
+   * an operator self-sending to their own payout address, which is
+   * unusual and worth surfacing on the chart anyway.
    *
    * `detected_at` is set to the BLOCK TIME (when the payout actually
    * landed on-chain), not when our scan happened to notice it. This
@@ -167,15 +196,18 @@ export class PayoutObserver {
    * show one cliff today instead of the actual payment timeline. The
    * caller's `fallbackDetectedAt` is used only when the block-time
    * lookup fails (RPC error, orphaned block, etc.).
+   *
+   * Returns the number of rows inserted, so the caller can decide
+   * whether to kick off the cumulative-paid_total_sat backfill.
    */
   private async recordNewRewardEvents(
     result: ScanTxoutSetResult,
     fallbackDetectedAt: number,
-  ): Promise<void> {
+  ): Promise<number> {
     const db = this.options.db;
-    if (!db) return;
-    const coinbaseOuts = result.unspents.filter((u) => u.coinbase === true);
-    if (coinbaseOuts.length === 0) return;
+    if (!db) return 0;
+    const candidateOuts = result.unspents;
+    if (candidateOuts.length === 0) return 0;
     // Cheap one-shot query: pull existing (txid, vout) pairs we've
     // already recorded so we only insert the deltas. The table is
     // tiny in practice (one row per pool block paid to this address)
@@ -185,8 +217,8 @@ export class PayoutObserver {
       .select(['txid', 'vout'])
       .execute();
     const seen = new Set(existing.map((r) => `${r.txid}:${r.vout}`));
-    const newOnes = coinbaseOuts.filter((u) => !seen.has(`${u.txid}:${u.vout}`));
-    if (newOnes.length === 0) return;
+    const newOnes = candidateOuts.filter((u) => !seen.has(`${u.txid}:${u.vout}`));
+    if (newOnes.length === 0) return 0;
 
     // Look up actual block timestamps (in ms since epoch) for each
     // unique block_height we're about to insert. Two batched RPC
@@ -229,8 +261,9 @@ export class PayoutObserver {
       )
       .execute();
     this.options.log?.(
-      `[payout] recorded ${newOnes.length} new reward_event row(s)`,
+      `[payout] recorded ${newOnes.length} new reward_event row(s) (scantxoutset returned ${candidateOuts.length} unspents at the payout address)`,
     );
+    return newOnes.length;
   }
 
   start(): void {
@@ -280,7 +313,14 @@ export class PayoutObserver {
     try {
       const descriptor = `addr(${address})`;
       const result: ScanTxoutSetResult = await this.options.client.scanTxoutSet([descriptor]);
-      await this.recordNewRewardEvents(result, now());
+      const inserted = await this.recordNewRewardEvents(result, now());
+      if (inserted > 0 && this.options.onRewardsChanged) {
+        await this.options.onRewardsChanged().catch((err) =>
+          this.options.log?.(
+            `[payout] onRewardsChanged failed: ${(err as Error).message}`,
+          ),
+        );
+      }
     } catch (err) {
       this.options.log?.(
         `[payout] rewards-only bitcoind scan failed: ${(err as Error).message}`,

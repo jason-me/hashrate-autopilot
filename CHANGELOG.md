@@ -2,6 +2,13 @@
 
 ## 2026-05-08
 
+### `[Fix]` Lifetime-earnings line: drop coinbase filter + auto-recompute (build 276 follow-up)
+
+Yesterday's a14900b shipped a half-fix - operator reported chart still flat zero on build 276 even after the prescribed restart-and-wait dance. Two more issues:
+
+1. The `recordNewRewardEvents` filter `u.coinbase === true` was rejecting every UTXO. bitcoind's `scantxoutset` does not reliably populate the `coinbase` field across versions; when the field is missing or false-by-default, the strict `=== true` check excluded everything and the table stayed empty. Dropped the filter entirely - any UTXO at the configured payout address now counts as a reward event. For Ocean (TIDES pays via coinbase) this is essentially always correct, and an operator self-sending to their own payout address is an edge case worth surfacing on the chart anyway.
+2. Even when reward_events DID get rows, `runPoolLuckRecompute` only ran on daemon boot - so the operator had to restart the daemon a SECOND time after the first scan completed to actually see the chart populate. That's an unacceptable UX ("upgrade my node, then 30 seconds later restart again"). Added an `onRewardsChanged` callback to PayoutObserver; main.ts wires it to invoke runPoolLuckRecompute immediately after any scan inserts new rows. Single restart = chart populated.
+
 ### `[Fix]` Electrs payout-observer now writes reward_events (chart's lifetime-earnings line)
 
 Operators on `payout_source = 'electrs'` had a flat-zero "paid earnings (lifetime)" line on the Price chart even with real on-chain payouts visible in the P&L panel. Two bugs in one:
