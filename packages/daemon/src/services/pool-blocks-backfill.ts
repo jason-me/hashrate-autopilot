@@ -21,8 +21,12 @@ import type { OceanClient } from './ocean.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 
 const PAGE_SIZE = 30;
-const MAX_PAGES = 7;          // hard cap: 210 blocks (~70 weeks at Ocean's 2026-05 find rate).
-const LOOKBACK_DAYS = 14;
+// 12 × 30 = 360 blocks. At Ocean's 2026-05 find rate (~3/day) that's
+// ~120 days of headroom on the cap; at the worst case observed in
+// 2024-12 (~9/day) it's still ~40. The lookback floor below stops
+// us early so steady-state runs don't actually paginate this deep.
+const MAX_PAGES = 12;
+const LOOKBACK_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface PoolBlocksBackfillDeps {

@@ -69,6 +69,7 @@ export interface HttpServerDeps {
   readonly ownedBidsRepo: OwnedBidsRepo;
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
+  readonly poolBlocksRepo: import('../state/repos/pool_blocks.js').PoolBlocksRepo;
   readonly bidEventsRepo: BidEventsRepo;
   readonly alertsRepo: AlertsRepo;
   readonly payoutObserver: PayoutObserver | null;
@@ -164,6 +165,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,
     tickMetricsRepo: deps.tickMetricsRepo,
+    poolBlocksRepo: deps.poolBlocksRepo,
     blockVersionService: deps.blockVersionService,
   });
   await registerFinanceRoute(app, {

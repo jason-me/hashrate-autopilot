@@ -118,6 +118,10 @@ export async function registerOceanRoute(
     oceanClient: OceanClient | null;
     configRepo: ConfigRepo;
     tickMetricsRepo: TickMetricsRepo;
+    /** #108 follow-up: persistent pool-block ledger; the chart's cube
+     * markers source from here so backfilled history renders, not just
+     * Ocean's last-15-blocks slice. */
+    poolBlocksRepo: import('../../state/repos/pool_blocks.js').PoolBlocksRepo;
     blockVersionService: BlockVersionService | null;
   },
 ): Promise<void> {
@@ -176,11 +180,37 @@ export async function registerOceanRoute(
     const now = Date.now();
     const DAY_MS = 24 * 60 * 60 * 1000;
 
-    const lastBlock = stats.recent_blocks.length > 0 ? stats.recent_blocks[0]! : null;
-    const blocks_24h = stats.recent_blocks.filter(
+    // #108 follow-up: source the historical block list from the
+    // persistent pool_blocks table, not Ocean's per-call slice.
+    // pool_blocks is upserted on every tick + by the boot-time
+    // backfill, so it covers the full lookback window with no
+    // dependency on whatever default page size Ocean returns.
+    const RECENT_BLOCKS_LOOKBACK_DAYS = 30;
+    const blocksFromTable = await deps.poolBlocksRepo
+      .recent(360)
+      .catch(() => [] as Awaited<ReturnType<typeof deps.poolBlocksRepo.recent>>);
+    const tableCutoff = now - RECENT_BLOCKS_LOOKBACK_DAYS * DAY_MS;
+    const recentBlocksMerged = blocksFromTable
+      .filter((b) => b.timestamp_ms >= tableCutoff)
+      .map((b) => ({
+        height: b.height,
+        timestamp_ms: b.timestamp_ms,
+        total_reward_sat: b.total_reward_sat,
+        subsidy_sat: b.subsidy_sat,
+        fees_sat: b.fees_sat,
+        worker: b.worker ?? '',
+        username: b.username ?? '',
+        block_hash: b.block_hash,
+      }));
+    // Fall back to Ocean's live slice if the table is empty (fresh
+    // install where backfill has not run yet).
+    const recentBlocksForUi =
+      recentBlocksMerged.length > 0 ? recentBlocksMerged : stats.recent_blocks;
+    const lastBlock = recentBlocksForUi.length > 0 ? recentBlocksForUi[0]! : null;
+    const blocks_24h = recentBlocksForUi.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < DAY_MS,
     ).length;
-    const blocks_7d = stats.recent_blocks.filter(
+    const blocks_7d = recentBlocksForUi.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
     // Pool luck readings - same formula the chart's right axis uses,
@@ -188,7 +218,7 @@ export async function registerOceanRoute(
     // pool_hashrate from the trailing daemon-side averages stored in
     // tick_metrics; without those we can fall back to the live pool
     // hashrate snapshot but it'll wobble a few percent (#92).
-    const blockTimestamps = stats.recent_blocks.map((b) => b.timestamp_ms);
+    const blockTimestamps = recentBlocksForUi.map((b) => b.timestamp_ms);
     const [poolHashrate24h, poolHashrate7d] = await Promise.all([
       deps.tickMetricsRepo.avgPoolHashratePhSince(now - DAY_MS).catch(() => null),
       deps.tickMetricsRepo.avgPoolHashratePhSince(now - 7 * DAY_MS).catch(() => null),
@@ -210,7 +240,7 @@ export async function registerOceanRoute(
       recentBlockTimestampsMs: blockTimestamps,
     });
     const shareLogAtBlock = await Promise.all(
-      stats.recent_blocks.map((b) =>
+      recentBlocksForUi.map((b) =>
         b.timestamp_ms > 0
           ? deps.tickMetricsRepo.nearestShareLogPct(
               b.timestamp_ms,
@@ -224,7 +254,7 @@ export async function registerOceanRoute(
     // negatively cached (5 min) so a single bitcoind hiccup doesn't
     // trigger N retries on every dashboard refresh.
     const signalsBip110ByBlock = await Promise.all(
-      stats.recent_blocks.map(async (b) => {
+      recentBlocksForUi.map(async (b) => {
         if (!deps.blockVersionService || !b.block_hash) return null;
         const version = await deps.blockVersionService
           .getVersion(b.block_hash, b.height ?? null)
@@ -232,7 +262,7 @@ export async function registerOceanRoute(
         return signalsBip110(version);
       }),
     );
-    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b, i) => ({
+    const our_recent_blocks: OurBlock[] = recentBlocksForUi.map((b, i) => ({
       height: b.height,
       timestamp_ms: b.timestamp_ms,
       total_reward_sat: b.total_reward_sat,
@@ -260,7 +290,7 @@ export async function registerOceanRoute(
       blocks_7d,
       pool_luck_24h,
       pool_luck_7d,
-      recent_blocks: stats.recent_blocks,
+      recent_blocks: recentBlocksForUi,
       our_recent_blocks,
       pool: stats.pool,
       user: {

@@ -628,6 +628,7 @@ async function bootOperational(
     tickMetricsRepo,
     bidEventsRepo,
     alertsRepo,
+    poolBlocksRepo,
     payoutObserver,
     oceanClient,
     accountSpend,
