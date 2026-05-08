@@ -109,6 +109,29 @@ Optional sanity check that the full alert pipeline works:
    an active alert. Subsequent retries within that window record
    as `snoozed`; recovery messages bypass snooze.
 
+## Acknowledging from Telegram (#109)
+
+Each LOUD/WARN alert message arrives with two inline buttons:
+
+- **✓ Mark as seen** - sets the alert's `acknowledged_at_ms`, exactly
+  like the dashboard's "mark as seen" button. The retry ladder stops
+  immediately; restart-survival applies (see #100). After the tap,
+  the message body is edited in place to append a confirmation line
+  and the buttons are removed.
+- **⏸ Snooze 2h** - sets `snoozed_until_ms` to two hours from now.
+  Subsequent retries within that window record as `snoozed`; the
+  recovery message bypasses snooze.
+
+The daemon reaches Telegram via long-polling `getUpdates`, so it
+works behind home NAT - no public webhook, no port forward. Single
+operator per install: button taps from any chat that isn't the
+configured `chat_id` are rejected (the bot is a single-operator
+install; routing arbitrary chat callbacks would let anyone with the
+bot's @-handle ack alerts).
+
+INFO recovery messages don't carry buttons - they already mean
+"system healthy again", nothing to acknowledge.
+
 ## Operational notes
 
 - **Token rotation**: re-run /newtoken with @BotFather (or

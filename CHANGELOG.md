@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Telegram inline-keyboard ack/snooze (#109)
+
+LOUD/WARN alert messages on Telegram now carry two inline buttons: **Mark as seen** and **Snooze 2h**. Tapping a button on the operator's phone is the same as clicking the action on the dashboard `/alerts` page - sets `acknowledged_at_ms` or `snoozed_until_ms`, stops the retry ladder, edits the message body in place to confirm, and removes the keyboard. New `TelegramReceiver` opens a single long-poll `getUpdates` connection so it works behind home NAT (no webhook required). Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected. Setup walkthrough at `docs/setup-telegram.md` updated to cover the new flow.
+
 ### `[Feature]` Paid total + lifetime earnings on the price chart (#102)
 
 Two new right-axis options on the price chart: `paid earnings (lifetime)` plots the cumulative on-chain payouts to the configured address (monotonically non-decreasing), and `lifetime earnings (paid + unpaid)` plots `paid_total + ocean_unpaid` for a clean line that survives payout cliffs. Daemon persists `paid_total_sat` per tick (migration 0066) computed from `reward_events`. Operators on `payout_source = 'none'` see null and the series degrades gracefully. Pre-install on-chain history isn't backfilled - the line starts counting from the first scan after upgrade, same as the unpaid series.

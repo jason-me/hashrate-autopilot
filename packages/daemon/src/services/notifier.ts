@@ -35,6 +35,27 @@ export interface NotificationDeliveryResult {
   readonly error: string | null;
 }
 
+/**
+ * Optional structured action affordances rendered with the message
+ * (Telegram inline-keyboard buttons today; could become Discord
+ * components or Nostr-DM-with-instructions later). Channels that
+ * don't support inline actions ignore this field; channels that do
+ * (Telegram) render the buttons and route taps back via their own
+ * receiver loop. See #109.
+ */
+export interface NotificationActionButton {
+  readonly text: string;
+  /** Channel-agnostic identifier the receiver dispatches on. */
+  readonly callback_data: string;
+}
+
+export interface SendOptions {
+  /** ID of the alert this message represents (used by the receiver to dispatch button taps). */
+  readonly alert_id?: number;
+  /** A flat row of action buttons rendered with the message. */
+  readonly action_buttons?: readonly NotificationActionButton[];
+}
+
 export interface NotificationSink {
   /**
    * Deliver a single alert payload. The body is plain UTF-8; sinks
@@ -42,7 +63,7 @@ export interface NotificationSink {
    * network failures surface as `{ ok: false, error: '...' }` so the
    * alert-manager can record the failure and schedule a retry.
    */
-  send(body: string): Promise<NotificationDeliveryResult>;
+  send(body: string, opts?: SendOptions): Promise<NotificationDeliveryResult>;
 
   /**
    * Test connectivity with a fresh (unsaved) credential set. Used by
@@ -89,17 +110,18 @@ export class TelegramSink implements NotificationSink {
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
-  async send(body: string): Promise<NotificationDeliveryResult> {
-    return this.post(body);
+  async send(body: string, opts: SendOptions = {}): Promise<NotificationDeliveryResult> {
+    return this.post(body, opts);
   }
 
   async verify(): Promise<NotificationDeliveryResult> {
     return this.post(
       'Hashrate Autopilot test message. If you see this, your bot token + chat id are wired correctly.',
+      {},
     );
   }
 
-  private async post(body: string): Promise<NotificationDeliveryResult> {
+  private async post(body: string, opts: SendOptions): Promise<NotificationDeliveryResult> {
     if (!this.bot_token || !this.chat_id) {
       return {
         ok: false,
@@ -113,6 +135,20 @@ export class TelegramSink implements NotificationSink {
     const timer = setTimeout(() => ctl.abort(), this.timeoutMs);
 
     try {
+      // #109: optional inline keyboard renders one row of action
+      // buttons (Mark as seen / Snooze 2h). Tapping sends a
+      // callback_query to the bot, which TelegramReceiver picks up
+      // via getUpdates long-poll.
+      const reply_markup = opts.action_buttons && opts.action_buttons.length > 0
+        ? {
+            inline_keyboard: [
+              opts.action_buttons.map((b) => ({
+                text: b.text,
+                callback_data: b.callback_data,
+              })),
+            ],
+          }
+        : undefined;
       const res = await this.fetchImpl(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -126,6 +162,7 @@ export class TelegramSink implements NotificationSink {
           // before passing the body in.
           parse_mode: 'HTML',
           disable_web_page_preview: true,
+          reply_markup,
         }),
         signal: ctl.signal,
       });

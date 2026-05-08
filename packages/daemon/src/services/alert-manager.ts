@@ -148,7 +148,20 @@ export class AlertManager {
       return;
     }
 
-    const result = await this.sink.send(args.body);
+    // #109: render Mark-as-seen + Snooze 2h buttons on the message
+    // for non-INFO alerts. INFO recoveries don't carry buttons - they
+    // already represent "system is healthy now", nothing to ack.
+    const action_buttons =
+      row.severity === 'INFO'
+        ? undefined
+        : [
+            { text: '✓ Mark as seen', callback_data: `ack:${row.id}` },
+            { text: '⏸ Snooze 2h', callback_data: `snooze:${row.id}:120` },
+          ];
+    const result = await this.sink.send(args.body, {
+      alert_id: row.id,
+      ...(action_buttons ? { action_buttons } : {}),
+    });
 
     if (result.ok) {
       await this.alertsRepo.markDelivered({

@@ -50,6 +50,7 @@ import { TickLoop } from './controller/loop.js';
 import { AlertEvaluator } from './services/alert-evaluator.js';
 import { AlertManager } from './services/alert-manager.js';
 import { TelegramSink } from './services/notifier.js';
+import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
@@ -497,6 +498,20 @@ async function bootOperational(
   // duplicate Telegram alert. See AlertEvaluator.hydrate JSDoc.
   await alertEvaluator.hydrate(alertsRepo);
 
+  // #109: receive button taps from Telegram messages (Mark as seen /
+  // Snooze) via getUpdates long-poll. Survives missing credentials
+  // (no token / chat) by sleeping until they're filled in.
+  const telegramReceiver = new TelegramReceiver({
+    getCredentials: () => {
+      const token = cfgRefHolder.value.telegram_bot_token || secrets.telegram_bot_token || '';
+      const chat = cfgRefHolder.value.telegram_chat_id || '';
+      return token && chat ? { bot_token: token, chat_id: chat } : null;
+    },
+    alertsRepo,
+    log: (m) => log(m),
+  });
+  telegramReceiver.start();
+
   const loop = new TickLoop({
     controller,
     intervalMs: DEFAULT_TICK_INTERVAL_MS,
@@ -639,6 +654,7 @@ async function bootOperational(
     retentionService.stop();
     hashpriceRefresher.stop();
     btcPriceRefresher.stop();
+    await telegramReceiver.stop();
     await loop.stop();
     try {
       await httpServer.stop();
