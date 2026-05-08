@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/pages/Config.tsx
-msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-
-#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr "this-is-not-a-real-id-9876"
+
+#. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -269,10 +269,6 @@ msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings
 #: src/pages/Alerts.tsx
 msgid "Alerts"
 msgstr "Alerts"
-
-#: src/pages/Alerts.tsx
-msgid "all severities"
-msgstr "all severities"
 
 #: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
@@ -1082,10 +1078,6 @@ msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a sat
 msgid "fillable"
 msgstr "fillable"
 
-#: src/pages/Alerts.tsx
-msgid "filter:"
-msgstr "filter:"
-
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "First-run setup"
@@ -1263,10 +1255,6 @@ msgstr "incorrect password"
 msgid "increase"
 msgstr "increase"
 
-#: src/pages/Alerts.tsx
-msgid "INFO"
-msgstr "INFO"
-
 #: src/pages/Status.tsx
 msgid "insufficient history"
 msgstr "insufficient history"
@@ -1334,10 +1322,6 @@ msgstr "Loading…"
 #: src/pages/Config.tsx
 msgid "Log retention"
 msgstr "Log retention"
-
-#: src/pages/Alerts.tsx
-msgid "LOUD"
-msgstr "LOUD"
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -2408,10 +2392,6 @@ msgstr "version"
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
-
-#: src/pages/Alerts.tsx
-msgid "WARN"
-msgstr "WARN"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."

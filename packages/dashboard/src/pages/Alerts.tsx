@@ -17,26 +17,17 @@ const SNOOZE_PRESETS: Array<{ minutes: number; label: () => string }> = [
   { minutes: 1440, label: () => t`24h` },
 ];
 
-const SEVERITY_FILTERS: Array<{ value: AlertSeverity | 'all'; label: () => string }> = [
-  { value: 'all', label: () => t`all severities` },
-  { value: 'LOUD', label: () => t`LOUD` },
-  { value: 'WARN', label: () => t`WARN` },
-  { value: 'INFO', label: () => t`INFO` },
-];
-
 export function Alerts() {
   const qc = useQueryClient();
   const { i18n } = useLingui();
   void i18n;
-  const [severity, setSeverity] = useState<AlertSeverity | 'all'>('all');
   const [unackOnly, setUnackOnly] = useState(false);
 
   const filters: Parameters<typeof api.alertsList>[0] = { limit: 200 };
-  if (severity !== 'all') filters.severity = severity;
   if (unackOnly) filters.unacknowledged_only = true;
 
   const query = useQuery({
-    queryKey: ['alerts', severity, unackOnly],
+    queryKey: ['alerts', unackOnly],
     queryFn: () => api.alertsList(filters),
     refetchInterval: 30_000,
   });
@@ -79,24 +70,7 @@ export function Alerts() {
       </header>
 
       <section className="flex flex-wrap items-center gap-2">
-        <span className="text-xs uppercase tracking-wider text-slate-400">
-          <Trans>filter:</Trans>
-        </span>
-        {SEVERITY_FILTERS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setSeverity(opt.value)}
-            className={
-              'px-2.5 py-1 text-xs rounded border transition ' +
-              (severity === opt.value
-                ? 'border-amber-500 bg-amber-950/30 text-amber-300'
-                : 'border-slate-800 text-slate-400 hover:bg-slate-800/40')
-            }
-          >
-            {opt.label()}
-          </button>
-        ))}
-        <label className="flex items-center gap-1.5 text-xs text-slate-300 ml-2">
+        <label className="flex items-center gap-1.5 text-xs text-slate-300">
           <input
             type="checkbox"
             checked={unackOnly}
