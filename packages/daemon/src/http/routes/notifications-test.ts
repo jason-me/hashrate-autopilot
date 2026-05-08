@@ -16,6 +16,7 @@ import { TelegramSink } from '../../services/notifier.js';
 export interface NotificationsTestRequest {
   bot_token?: string;
   chat_id?: string;
+  instance_label?: string;
 }
 
 export interface NotificationsTestResponse {
@@ -32,12 +33,13 @@ export async function registerNotificationsTestRoute(
       const body = req.body ?? {};
       const bot_token = body.bot_token?.trim() ?? '';
       const chat_id = body.chat_id?.trim() ?? '';
+      const instance_label = body.instance_label?.trim() ?? '';
 
       if (!bot_token || !chat_id) {
         return { ok: false, error: 'bot token and chat id are both required' };
       }
 
-      const sink = new TelegramSink({ bot_token, chat_id });
+      const sink = new TelegramSink({ bot_token, chat_id, instance_label });
       const result = await sink.verify();
       return { ok: result.ok, error: result.error };
     },

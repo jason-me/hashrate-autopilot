@@ -81,6 +81,15 @@ export interface NotificationSink {
 export interface TelegramSinkOptions {
   readonly bot_token: string;
   readonly chat_id: string;
+  /**
+   * Optional per-instance source identifier. When non-empty, every
+   * outbound message body is prefixed with `[<label>] ` so an
+   * operator running more than one daemon against the same
+   * bot/chat can tell which instance fired a given alert. Stripped
+   * of leading `[`/trailing `]` defensively in case the operator
+   * already wrote them.
+   */
+  readonly instance_label?: string;
   /** Override the global fetch (test seam). */
   readonly fetchImpl?: typeof fetch;
   /** Per-request timeout, ms. */
@@ -100,25 +109,33 @@ interface TelegramSendMessageResponse {
 export class TelegramSink implements NotificationSink {
   private readonly bot_token: string;
   private readonly chat_id: string;
+  private readonly instance_label: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
 
   constructor(opts: TelegramSinkOptions) {
     this.bot_token = opts.bot_token;
     this.chat_id = opts.chat_id;
+    this.instance_label = (opts.instance_label ?? '').trim().replace(/^\[+|\]+$/g, '');
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
   async send(body: string, opts: SendOptions = {}): Promise<NotificationDeliveryResult> {
-    return this.post(body, opts);
+    return this.post(this.applyInstancePrefix(body), opts);
   }
 
   async verify(): Promise<NotificationDeliveryResult> {
     return this.post(
-      'Hashrate Autopilot test message. If you see this, your bot token + chat id are wired correctly.',
+      this.applyInstancePrefix(
+        'Hashrate Autopilot test message. If you see this, your bot token + chat id are wired correctly.',
+      ),
       {},
     );
+  }
+
+  private applyInstancePrefix(body: string): string {
+    return this.instance_label ? `[${this.instance_label}] ${body}` : body;
   }
 
   private async post(body: string, opts: SendOptions): Promise<NotificationDeliveryResult> {

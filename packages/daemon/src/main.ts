@@ -502,6 +502,7 @@ async function bootOperational(
         secrets.telegram_bot_token ||
         '',
       chat_id: cfgRefHolder.value.telegram_chat_id || '',
+      instance_label: cfgRefHolder.value.telegram_instance_label || '',
     });
     void latestCfg;
   };

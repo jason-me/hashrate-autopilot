@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Telegram messages: optional per-instance label prefix
+
+Adds an optional `telegram_instance_label` config field. When set, the TelegramSink prefixes every outbound message body with `[<label>] ` (e.g. `[prod] Bid sustained-paused by Braiins...`) so an operator running multiple daemons against the same bot/chat can tell which instance fired a given alert. Lives on Config → Notifications, just below Chat ID, with a max length of 32 chars. Empty = no prefix (default, unchanged behaviour). Motivated today by an incident where a Telegram message arrived that the operator could not match to any row in the connected daemon's Alerts page - this gives every message a visible source so the question "which daemon said that?" is answerable from the chat alone. Migration 0070 adds the column. NL/ES translations included.
+
 ### `[Feature]` Block-found sound: "Ocean mining found a block" voice cue
 
 Adds a fifth bundled block-found sound alongside the existing four (cartoon cowbell, glass drop, two metallic clanks). The new option is a voice clip that says "Ocean mining found a block" - operator-supplied, just nice to have as a default option without going through the Custom upload flow. Selectable from Config → Block-found notifications → Sound dropdown.

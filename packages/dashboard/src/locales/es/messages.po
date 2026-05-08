@@ -1352,6 +1352,11 @@ msgstr "contraseña incorrecta"
 msgid "increase"
 msgstr "aumentar"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Instance label (optional)"
+msgstr "Etiqueta de instancia (opcional)"
+
 #: src/pages/Status.tsx
 msgid "insufficient history"
 msgstr "histórico insuficiente"
@@ -1810,6 +1815,10 @@ msgstr "Opcional. Endpoint /umbrel-api de Datum Gateway - p.ej. http://192.168.1
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
+
+#: src/pages/Config.tsx
+msgid "Optional. When set, every Telegram message from this daemon is prefixed with `[label] ` so you can tell which instance fired the alert if you run more than one daemon against the same bot/chat. Leave empty to send messages without a prefix."
+msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon se antepone con `[etiqueta] ` para que puedas saber qué instancia disparó la alerta si ejecutas más de un daemon contra el mismo bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
 
 #: src/pages/Config.tsx
 msgid "Other (generic dyndns2)"

@@ -165,6 +165,7 @@ const APP_CONFIG_ENV: {
   },
   telegram_chat_id: { varName: 'BHA_TELEGRAM_CHAT_ID', coerce: asString },
   telegram_bot_token: { varName: 'BHA_TELEGRAM_BOT_TOKEN', coerce: asString },
+  telegram_instance_label: { varName: 'BHA_TELEGRAM_INSTANCE_LABEL', coerce: asString },
   notifications_muted: { varName: 'BHA_NOTIFICATIONS_MUTED', coerce: asBoolean },
   notification_retry_interval_minutes: {
     varName: 'BHA_NOTIFICATION_RETRY_INTERVAL_MINUTES',

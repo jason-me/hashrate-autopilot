@@ -279,6 +279,13 @@ export const AppConfigSchema = z.object({
   // secrets. Empty string means "not configured".
   telegram_bot_token: z.string().default(''),
 
+  // Optional per-instance source label. When non-empty, the
+  // TelegramSink prefixes every outbound message with `[<label>] `,
+  // so an operator running more than one daemon against the same
+  // bot/chat (e.g. dev box + Ubuntu deployment) can tell which
+  // instance fired a given alert. Empty string = no prefix.
+  telegram_instance_label: z.string().default(''),
+
   // #100: global mute toggle. When true the notifier skips the actual
   // Telegram POST but still records the alert row + retry ladder, so
   // the operator sees on /alerts what *would* have fired.
@@ -403,6 +410,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   telegram_chat_id: '',
   telegram_bot_token: '',
+  telegram_instance_label: '',
   notifications_muted: false,
   notification_retry_interval_minutes: 30,
   notification_disabled_event_classes: [],

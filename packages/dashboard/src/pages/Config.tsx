@@ -683,7 +683,7 @@ function ConfigTabsAndContent({
     },
     notifications: {
       title: t`Notifications`,
-      labels: [t`Telegram bot token`, t`Chat ID`, t`Mute all Telegram notifications`, t`Retry interval`],
+      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`],
     },
   };
 
@@ -1502,6 +1502,7 @@ function NotificationsSection({
       api.notificationsTest({
         bot_token: draft.telegram_bot_token ?? '',
         chat_id: draft.telegram_chat_id ?? '',
+        instance_label: draft.telegram_instance_label ?? '',
       }),
   });
 
@@ -1602,6 +1603,27 @@ function NotificationsSection({
               )}
             </div>
           )}
+        </label>
+
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Instance label (optional)</Trans>
+          </span>
+          <input
+            type="text"
+            value={draft.telegram_instance_label ?? ''}
+            onChange={(e) =>
+              onChange('telegram_instance_label', e.target.value as never)
+            }
+            placeholder="prod / dev / clarent"
+            maxLength={32}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              Optional. When set, every Telegram message from this daemon is prefixed with `[label] ` so you can tell which instance fired the alert if you run more than one daemon against the same bot/chat. Leave empty to send messages without a prefix.
+            </Trans>
+          </span>
         </label>
 
         <label className="block">

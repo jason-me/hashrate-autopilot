@@ -292,6 +292,7 @@ export interface AppConfig {
   btc_payout_address: string;
   telegram_chat_id: string;
   telegram_bot_token: string;
+  telegram_instance_label: string;
   notifications_muted: boolean;
   notification_retry_interval_minutes: number;
   notification_disabled_event_classes: string[];
@@ -589,7 +590,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
-  notificationsTest: (creds: { bot_token: string; chat_id: string }) =>
+  notificationsTest: (creds: {
+    bot_token: string;
+    chat_id: string;
+    instance_label?: string;
+  }) =>
     request<NotificationsTestResponse>('/api/notifications/test', {
       method: 'POST',
       body: JSON.stringify(creds),
