@@ -335,7 +335,21 @@ async function bootOperational(
       : null;
 
   let payoutObserver: PayoutObserver | null = null;
-  if (cfg.payout_source !== 'none' && cfg.btc_payout_address && bitcoindClient) {
+  // Construction conditions:
+  // - payout_source must be enabled
+  // - we need an address to scan
+  // - we need EITHER bitcoind RPC creds (the original scantxoutset
+  //   path) OR an electrs host:port pair (the per-UTXO path added
+  //   for v1.5.2). Until v1.5.3 this branch also required
+  //   `bitcoindClient`, which silently disabled the entire observer
+  //   on Umbrel installs that don't declare bitcoind as a
+  //   dependency - even though electrs alone is sufficient. That
+  //   was the actual cause of the flat-zero lifetime-earnings line
+  //   on Umbrel after the v1.5.1/v1.5.2 fixes.
+  const hasElectrs =
+    cfg.payout_source === 'electrs' && !!cfg.electrs_host && !!cfg.electrs_port;
+  const hasBitcoind = !!bitcoindClient;
+  if (cfg.payout_source !== 'none' && cfg.btc_payout_address && (hasBitcoind || hasElectrs)) {
     payoutObserver = new PayoutObserver({
       client: bitcoindClient,
       getAddress: () => cfg.btc_payout_address,
@@ -358,12 +372,27 @@ async function bootOperational(
       },
     });
     if (cfg.payout_source === 'electrs') {
-      log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);
+      log(`payout: observer ENABLED via Electrs at ${cfg.electrs_host}:${cfg.electrs_port}${hasBitcoind ? ' (with bitcoind side-scan)' : ' (electrs-only)'}`);
     } else {
-      log('payout: using bitcoind scantxoutset (CPU-heavy, polled hourly)');
+      log('payout: observer ENABLED via bitcoind scantxoutset (CPU-heavy, polled hourly)');
     }
   } else {
-    log('payout: disabled (payout_source=none or RPC creds missing)');
+    // Explicit-cause logging: silent observer-disabled was a load-
+    // bearing surprise on Umbrel, where the construction guard fell
+    // through silently and the chart's lifetime-earnings line stayed
+    // flat zero. Spell out the exact reason the operator can grep
+    // for in the daemon log.
+    const reasons: string[] = [];
+    if (cfg.payout_source === 'none') reasons.push('payout_source=none');
+    if (!cfg.btc_payout_address) reasons.push('btc_payout_address empty');
+    if (!hasBitcoind && !hasElectrs) {
+      reasons.push(
+        cfg.payout_source === 'electrs'
+          ? 'electrs selected but electrs_host/electrs_port empty'
+          : 'no bitcoind RPC creds and electrs not configured',
+      );
+    }
+    log(`payout: observer DISABLED (${reasons.join(', ') || 'unknown'})`);
   }
 
   // BIP-110 crown marker (#94): block-header version lookup with a

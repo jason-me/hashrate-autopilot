@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.5.3"
+version: "1.5.4"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,6 +75,13 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.5.4 - the actual electrs-only fix.
+
+  FIX
+  - On-chain payouts populate the chart on Umbrel installs (and any other electrs-only setup without Bitcoin Core RPC). Previous fixes (v1.5.1 / v1.5.2) added the right code inside PayoutObserver, but main.ts's construction guard required bitcoindClient and so the observer was never instantiated when bitcoind RPC creds were absent. Relaxed the guard to allow electrs-only construction. Daemon log now explicitly reports whether the observer is ENABLED or DISABLED on startup (with the exact reason if disabled), so the next regression of this shape is grep-able from the log instead of presenting as a silent flat-zero chart.
+
+  Restart Umbrel app or scripts/deploy.sh after upgrade. Within ~60s the balance panel should populate; the chart's lifetime-earnings line backfills retroactively shortly after.
+
   v1.5.3 - "new version available" banner fix.
 
   FIX

@@ -2,6 +2,22 @@
 
 ## 2026-05-08
 
+### `[Release]` v1.5.4
+
+The actual electrs-only fix.
+
+Today's earlier v1.5.2 / v1.5.3 changelogs both claimed to fix the flat-zero "paid earnings (lifetime)" line on Umbrel; both were wrong. The code I added inside `PayoutObserver` was correct, but `main.ts`'s construction guard (`... && bitcoindClient`) prevented the observer from instantiating at all when bitcoind RPC creds were absent. So the new electrs-native code never ran on the very setups it was supposed to fix.
+
+Relaxed the guard to `(hasBitcoind || hasElectrs)`. Daemon log now spells out observer ENABLED / DISABLED status with the exact reason, so the next regression of this shape is grep-able from the daemon log instead of presenting as a silent flat-zero chart.
+
+### `[Fix]` PayoutObserver constructs without bitcoind RPC - the actual electrs-only fix
+
+Earlier today's v1.5.2 changelog claimed "Electrs payout-observer now writes reward_events" but the operator deployed v1.5.2 / v1.5.3 to their Umbrel and the chart's lifetime-earnings line stayed flat zero. Root cause: `main.ts:338`'s construction guard was `cfg.payout_source !== 'none' && cfg.btc_payout_address && bitcoindClient`. On Umbrel installs without bitcoind declared as a dependency (the default for our app), `bitcoindClient` is null, so `payoutObserver` was never instantiated at all - no scans of any kind, no balance, no reward_events. The new electrs-native reward-events code I shipped in v1.5.2 was inside an observer that never started.
+
+Fix: relax the guard to `(hasBitcoind || hasElectrs)`. When electrs is the primary path, bitcoindClient may be null. `PayoutObserverOptions.client` becomes `BitcoindClient | null`; the bitcoind-driven scan paths (`scanViaBitcoind`, `scanRewardsViaBitcoind`, the block-time lookup batch in `recordNewRewardEvents`) all early-return when client is null. The electrs side-scan timer in `start()` is also gated on `client` being present, since it does scantxoutset.
+
+Lesson: I added the electrs-native code without testing the actual electrs-only construction path. The bitcoind-still-required gate was a load-bearing assumption I forgot to update.
+
 ### `[Release]` v1.5.3
 
 Hot-fix on top of v1.5.2 for the "new version available" banner.

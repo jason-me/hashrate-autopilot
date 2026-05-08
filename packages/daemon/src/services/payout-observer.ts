@@ -34,7 +34,16 @@ export interface PayoutSnapshot {
 }
 
 export interface PayoutObserverOptions {
-  readonly client: BitcoindClient;
+  /**
+   * Bitcoind RPC client. Optional - when null, the observer only
+   * runs the electrs path (host + port required below). The
+   * bitcoind-driven scantxoutset path + the bitcoind side-scan
+   * for reward_events are skipped when client is null. This
+   * matters for Umbrel installs that haven't declared bitcoind as
+   * a dependency: on those setups bitcoindClient is null but
+   * electrs is still reachable, so the observer should still run.
+   */
+  readonly client: BitcoindClient | null;
   readonly getAddress: () => string;
   readonly electrsHost?: string | null;
   readonly electrsPort?: number | null;
@@ -85,8 +94,12 @@ export class PayoutObserver {
       try {
         if (this.options.electrsHost && this.options.electrsPort) {
           await this.scanViaElectrs(address, now, start);
-        } else {
+        } else if (this.options.client) {
           await this.scanViaBitcoind(address, now, start);
+        } else {
+          // Neither path is wired - construction-time guard in
+          // main.ts should have prevented this, but log defensively.
+          this.options.log?.('[payout] scan skipped: no electrs and no bitcoind client');
         }
       } catch (err) {
         this.lastError = (err as Error).message;
@@ -241,8 +254,12 @@ export class PayoutObserver {
     now: () => number,
     start: number,
   ): Promise<void> {
+    const client = this.options.client;
+    if (!client) {
+      throw new Error('scanViaBitcoind called with no bitcoind client - misconfiguration');
+    }
     const descriptor = `addr(${address})`;
-    const result: ScanTxoutSetResult = await this.options.client.scanTxoutSet([descriptor]);
+    const result: ScanTxoutSetResult = await client.scanTxoutSet([descriptor]);
     const totalSat = Math.round(result.total_amount * SAT_PER_BTC);
     this.lastSnapshot = {
       address,
@@ -323,11 +340,13 @@ export class PayoutObserver {
     // fallbackDetectedAt.
     const uniqueHeights = [...new Set(candidateOuts.map((u) => u.height))];
     const heightToTimeMs = new Map<number, number>();
+    const client = this.options.client;
     try {
-      const hashes = await this.options.client.batch<string>(
+      if (!client) throw new Error('no bitcoind client for block-time lookup');
+      const hashes = await client.batch<string>(
         uniqueHeights.map((h) => ({ method: 'getblockhash', params: [h] })),
       );
-      const headers = await this.options.client.batch<{ time: number }>(
+      const headers = await client.batch<{ time: number }>(
         hashes.map((h) => ({ method: 'getblockheader', params: [h, true] })),
       );
       for (let i = 0; i < uniqueHeights.length; i++) {
@@ -379,17 +398,16 @@ export class PayoutObserver {
     setTimeout(() => void this.scanOnce(), 5_000);
     this.timer = setInterval(() => void this.scanOnce(), interval);
 
-    // When electrs is the primary balance source, the snapshot path
-    // never touches reward_events - electrs's listunspent doesn't
-    // expose a coinbase flag, so we can't tell which UTXOs are pool
-    // payouts vs unrelated receipts. The fast-path electrs scan
-    // keeps the panel snappy; this side-channel hourly bitcoind
-    // scantxoutset writes the per-row reward_events ledger that
-    // powers the chart's paid_total_sat series. Without it, electrs
-    // setups had a flat-zero "paid earnings (lifetime)" line on the
-    // Price chart even with real payouts visible in P&L (incident
-    // 2026-05-08).
-    if (useElectrs && this.options.db) {
+    // Defensive belt-and-braces: when both electrs AND bitcoind are
+    // wired, the electrs path writes reward_events natively (v1.5.2)
+    // AND a parallel hourly bitcoind scantxoutset side-scan does the
+    // same. Both go through INSERT...ON CONFLICT DO NOTHING so the
+    // second one is a no-op on rows the first already covered. Worth
+    // keeping as a fallback in case electrs's listunspent ever
+    // misbehaves. Skipped entirely on electrs-only (no bitcoind
+    // client) or bitcoind-only (no electrs - the primary scan
+    // already does this work) setups.
+    if (useElectrs && this.options.db && this.options.client) {
       setTimeout(() => void this.scanRewardsViaBitcoind(), 30_000);
       this.rewardsTimer = setInterval(
         () => void this.scanRewardsViaBitcoind(),
@@ -413,11 +431,13 @@ export class PayoutObserver {
    * for the per-row reward_events ledger.
    */
   private async scanRewardsViaBitcoind(): Promise<void> {
+    const client = this.options.client;
+    if (!client) return; // no bitcoind, side-scan is a no-op
     const address = this.options.getAddress();
     const now = this.options.now ?? Date.now;
     try {
       const descriptor = `addr(${address})`;
-      const result: ScanTxoutSetResult = await this.options.client.scanTxoutSet([descriptor]);
+      const result: ScanTxoutSetResult = await client.scanTxoutSet([descriptor]);
       const inserted = await this.recordNewRewardEvents(result, now());
       if (inserted > 0 && this.options.onRewardsChanged) {
         await this.options.onRewardsChanged().catch((err) =>
