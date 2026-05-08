@@ -323,6 +323,7 @@ export interface AppConfig {
     | 'glass-drop-and-roll'
     | 'metallic-clank-1'
     | 'metallic-clank-2'
+    | 'ocean-mining-found-block'
     | 'custom';
   // #111: daemon-managed Dynamic DNS updater. Empty provider = disabled.
   ddns_provider: '' | 'noip' | 'duckdns' | 'dyndns2';

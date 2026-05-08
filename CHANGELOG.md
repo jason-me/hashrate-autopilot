@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Block-found sound: "Ocean mining found a block" voice cue
+
+Adds a fifth bundled block-found sound alongside the existing four (cartoon cowbell, glass drop, two metallic clanks). The new option is a voice clip that says "Ocean mining found a block" - operator-supplied, just nice to have as a default option without going through the Custom upload flow. Selectable from Config → Block-found notifications → Sound dropdown.
+
 ### `[Fix]` DDNS reacts immediately to ISP IP rotation (#114)
 
 Real-world ISP rotation today exposed a slow-to-react DDNS pipeline: public IP changed but the daemon kept the old IP in DNS for ~27 min before pushing the new one. Two pollers (publicIp + DDNS updater) at 5-min cadences naturally lag up to 10 min worst case, but 27 min indicated something worse - missed cycles or stale upstream caching - so we event-drive the path now. `PublicIpService` exposes an `onIpChange(newIp, oldIp)` callback that fires whenever a refresh observes a rotation (initial null → first IP doesn't count). `main.ts` wires that callback to invoke `ddnsUpdater.tick()` immediately, so the new IP propagates to the configured DDNS provider on the same iteration that we detect it instead of waiting another ~5 min. Also fixes a long-standing UX bug: clicking **Test connection** successfully no longer leaves the operator staring at a stale "Last successful push: <old IP> 27m ago" panel - the test route now records the result via a new `recordExternalPush()` method on the updater so the snapshot reflects reality. New "(checked Nm ago)" affordance next to the daemon's public IP shows poll freshness. Public-IP rotations are also logged at INFO so a future incident can be replayed from the daemon log.

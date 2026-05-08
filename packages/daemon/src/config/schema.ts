@@ -262,6 +262,7 @@ export const AppConfigSchema = z.object({
       'glass-drop-and-roll',
       'metallic-clank-1',
       'metallic-clank-2',
+      'ocean-mining-found-block',
       'custom',
     ])
     .default('off'),

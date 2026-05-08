@@ -1715,6 +1715,10 @@ msgstr "hashrate ocean"
 msgid "ocean lifetime"
 msgstr "ocean histórico total"
 
+#: src/pages/Config.tsx
+msgid "Ocean mining found a block (voice)"
+msgstr "Ocean mining ha encontrado un bloque (voz)"
+
 #: src/pages/Status.tsx
 msgid "Ocean stats API - reachable when the last /api/ocean fetch returned a pool snapshot."
 msgstr "API de estadísticas de Ocean - accesible cuando el último fetch a /api/ocean devolvió un snapshot del pool."

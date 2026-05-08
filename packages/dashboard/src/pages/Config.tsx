@@ -1182,6 +1182,7 @@ function BlockFoundSoundExtras({
     { value: 'glass-drop-and-roll', label: t`Glass drop & roll` },
     { value: 'metallic-clank-1', label: t`Metallic clank 1` },
     { value: 'metallic-clank-2', label: t`Metallic clank 2` },
+    { value: 'ocean-mining-found-block', label: t`Ocean mining found a block (voice)` },
     { value: 'custom', label: t`Custom (uploaded)` },
   ];
 

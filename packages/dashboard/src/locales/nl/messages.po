@@ -1715,6 +1715,10 @@ msgstr "Ocean hashrate"
 msgid "ocean lifetime"
 msgstr "Ocean levenslang"
 
+#: src/pages/Config.tsx
+msgid "Ocean mining found a block (voice)"
+msgstr "Ocean mining heeft een blok gevonden (stem)"
+
 #: src/pages/Status.tsx
 msgid "Ocean stats API - reachable when the last /api/ocean fetch returned a pool snapshot."
 msgstr "Ocean stats-API - bereikbaar wanneer de laatste /api/ocean fetch een pool-snapshot terugbracht."

@@ -52,6 +52,7 @@ export function blockFoundSoundUrl(choice: AppConfig['block_found_sound']): stri
     case 'glass-drop-and-roll':
     case 'metallic-clank-1':
     case 'metallic-clank-2':
+    case 'ocean-mining-found-block':
       return `/sounds/${choice}.mp3`;
   }
 }
