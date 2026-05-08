@@ -98,4 +98,37 @@ export class PoolBlocksRepo {
       .execute();
     return rows.map((r) => r.timestamp_ms);
   }
+
+  /**
+   * Count of blocks with `startMs <= timestamp_ms <= endMs`. Used by
+   * the historical pool-luck recompute (#108 follow-up) to fix
+   * tick_metrics rows whose counts were under-reported by the old
+   * 15-block-slice logic. `countSince` only bounds the lower edge;
+   * this method bounds both so a recompute for a past tick doesn't
+   * count blocks that landed after that tick.
+   */
+  async countInWindow(startMs: number, endMs: number): Promise<number> {
+    const row = await this.db
+      .selectFrom('pool_blocks')
+      .select((eb) => eb.fn.countAll<number>().as('n'))
+      .where('timestamp_ms', '>=', startMs)
+      .where('timestamp_ms', '<=', endMs)
+      .executeTakeFirstOrThrow();
+    return Number(row.n);
+  }
+
+  /**
+   * Block timestamps with `startMs <= timestamp_ms <= endMs`, newest
+   * first. Past-tick variant of `timestampsSince` for the recompute.
+   */
+  async timestampsInWindow(startMs: number, endMs: number): Promise<number[]> {
+    const rows = await this.db
+      .selectFrom('pool_blocks')
+      .select('timestamp_ms')
+      .where('timestamp_ms', '>=', startMs)
+      .where('timestamp_ms', '<=', endMs)
+      .orderBy('timestamp_ms', 'desc')
+      .execute();
+    return rows.map((r) => r.timestamp_ms);
+  }
 }

@@ -54,6 +54,7 @@ import { AlertManager } from './services/alert-manager.js';
 import { TelegramSink } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
+import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
 import type { State } from './controller/types.js';
@@ -461,9 +462,23 @@ async function bootOperational(
     oceanClient,
     poolBlocksRepo,
     log: (m) => log(m),
-  }).catch((err) =>
-    log(`[pool-blocks] backfill failed: ${(err as Error).message}`),
-  );
+  })
+    .then(() =>
+      // Historical recompute of tick_metrics counts/luck against the
+      // now-populated pool_blocks. One-time correction for the
+      // systematic under-count introduced by the old 15-block-slice
+      // logic; idempotent on re-boot. Awaiting the backfill chain
+      // matters - recompute reads pool_blocks, so it has to run
+      // after backfill finishes.
+      runPoolLuckRecompute({
+        db: handle.db,
+        poolBlocksRepo,
+        log: (m) => log(m),
+      }),
+    )
+    .catch((err) =>
+      log(`[pool-blocks] backfill/recompute failed: ${(err as Error).message}`),
+    );
 
   // #100: Telegram notifier wiring. Sink credentials are re-read from
   // the latest config snapshot on every send so live edits to bot
