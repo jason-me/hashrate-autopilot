@@ -1410,53 +1410,41 @@ function EventClassSubscriptions({
   void i18n;
   const disabled = new Set(draft.notification_disabled_event_classes);
 
-  const eventClasses: Array<{
-    id: string;
-    label: string;
-    help: string;
-    severity: 'LOUD' | 'WARN';
-  }> = [
+  const eventClasses: Array<{ id: string; label: string; help: string }> = [
     {
       id: 'datum_unreachable',
       label: t`Datum stratum unreachable`,
       help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
-      severity: 'LOUD',
     },
     {
       id: 'hashrate_below_floor',
       label: t`Hashrate below floor`,
       help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
-      severity: 'LOUD',
     },
     {
       id: 'zero_hashrate',
       label: t`Zero hashrate`,
       help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
-      severity: 'LOUD',
     },
     {
       id: 'api_unreachable',
       label: t`Braiins API unreachable`,
       help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
-      severity: 'LOUD',
     },
     {
       id: 'unknown_bid',
       label: t`Unknown bid detected`,
       help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
-      severity: 'LOUD',
     },
     {
       id: 'sustained_paused',
       label: t`Bid sustained-paused`,
       help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
-      severity: 'LOUD',
     },
     {
       id: 'beta_exit',
       label: t`Beta-exit detected`,
       help: t`Any active owned bid reports fee_rate_pct > 0.`,
-      severity: 'WARN',
     },
   ];
 
@@ -1510,10 +1498,6 @@ function EventClassSubscriptions({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {eventClasses.map((ec) => {
           const enabled = !disabled.has(ec.id);
-          const sevCls =
-            ec.severity === 'LOUD'
-              ? 'bg-red-950/40 text-red-300 border-red-800'
-              : 'bg-amber-950/40 text-amber-300 border-amber-800';
           const muted = draft.notifications_muted;
           return (
             <label
@@ -1533,18 +1517,8 @@ function EventClassSubscriptions({
                 disabled={muted}
                 className="accent-amber-400 h-4 w-4"
               />
-              <span className="flex-1 flex items-center gap-2 min-w-0">
-                <span className="text-sm text-slate-100 font-semibold truncate">
-                  {ec.label}
-                </span>
-                <span
-                  className={
-                    'inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wider border rounded ' +
-                    sevCls
-                  }
-                >
-                  {ec.severity}
-                </span>
+              <span className="flex-1 text-sm text-slate-100 font-semibold truncate">
+                {ec.label}
               </span>
               <HelpDot />
             </label>

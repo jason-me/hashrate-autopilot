@@ -216,12 +216,14 @@ export class AlertManager {
 }
 
 function formatTelegramBody(
-  severity: AlertSeverity,
+  _severity: AlertSeverity,
   title: string,
   body: string,
 ): string {
-  const prefix = severity === 'WARN' ? '[WARN] ' : severity === 'INFO' ? '' : '';
-  return `${prefix}<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
+  // Severity tags are no longer rendered - the operator's framing is
+  // "every alert that fires is just a notification, not the end of
+  // the world." Bold title for at-a-glance scanning is enough.
+  return `<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
 }
 
 function escapeHtml(s: string): string {
