@@ -547,8 +547,8 @@ msgid "Braiins marketplace API - reachable when the last observe() read market/o
 msgstr "Braiins marketplace API - reachable when the last observe() read market/orderbook/balance without error."
 
 #: src/pages/Config.tsx
-msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
-msgstr "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
+msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."
+msgstr "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."
 
 #: src/pages/Config.tsx
 msgid "BTC payout address"
@@ -1758,10 +1758,6 @@ msgstr "Pick a preset or paste your own template - at least one placeholder ({ha
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
-
-#: src/pages/Config.tsx
-msgid "Plays whatever's selected above (no save needed)."
-msgstr "Plays whatever's selected above (no save needed)."
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."

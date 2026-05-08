@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` Test sound button styled like Test connection (#104)
+
+Block-found notification's Test sound button now sits inline-right of the Sound select with the same yellow primary styling as the Telegram section's Test connection (which it tests is conceptually identical: validate the typed-but-unsaved value before saving). Old grey button on its own row below is gone. Help text moved to the standard sub-line below the row, with the "no save needed" line folded in.
+
 ### `[UI]` Stale-bundle banner after deploy (#103)
 
 Open dashboard tab no longer keeps running yesterday's JS forever after `./scripts/deploy.sh` lands a new build. The dashboard now polls `/api/build` every minute and shows an amber "New version available (build N → M). Refresh." banner at the top when the daemon's build outranks the embedded one. Click reloads. Same `BUILD_NUMBER` source-of-truth on both sides; no service worker, no PWA. Translated for en + nl + es.

@@ -547,8 +547,8 @@ msgid "Braiins marketplace API - reachable when the last observe() read market/o
 msgstr "Braiins marketplace API - bereikbaar wanneer de laatste observe() market/orderbook/balance zonder fout heeft gelezen."
 
 #: src/pages/Config.tsx
-msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
-msgstr "Browsers blokkeren audio totdat de pagina een muisklik zag; inloggen telt. De eerste poll na een verse paginalaad legt een stille basislijn vast, zodat je geen geluid krijgt voor elke achterstand."
+msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."
+msgstr "Browsers blokkeren audio totdat de pagina een muisklik registreert; inloggen telt mee. De eerste poll na een verse pagina-load legt een stille baseline vast, zodat je geen geluid krijgt voor elke achterstallige rij. Test speelt af wat hierboven geselecteerd is (opslaan niet nodig)."
 
 #: src/pages/Config.tsx
 msgid "BTC payout address"
@@ -1758,10 +1758,6 @@ msgstr "Kies een preset of plak je eigen sjabloon - er is minstens één placeho
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Speel een geluid af zodra een nieuw poolblok wordt gedetecteerd dat ons uitbetaaladres betaalt. Standaard uit. Kies een meegeleverd geluid, upload je eigen, of laat uitgeschakeld. Het geluid speelt eenmaal per nieuwe reward_events-rij; de dashboardtab moet openstaan."
-
-#: src/pages/Config.tsx
-msgid "Plays whatever's selected above (no save needed)."
-msgstr "Speelt wat hierboven is geselecteerd (opslaan niet nodig)."
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."

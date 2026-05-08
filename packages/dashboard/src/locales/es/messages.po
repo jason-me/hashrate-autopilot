@@ -547,8 +547,8 @@ msgid "Braiins marketplace API - reachable when the last observe() read market/o
 msgstr "API del marketplace de Braiins - accesible cuando el último observe() leyó market/orderbook/balance sin error."
 
 #: src/pages/Config.tsx
-msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
-msgstr "Los navegadores bloquean el audio hasta que la página detecta un clic del usuario; iniciar sesión cuenta. La primera consulta tras cargar la página establece una línea base silenciosa para que no suene por cada fila atrasada."
+msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."
+msgstr "Los navegadores bloquean el audio hasta que la página detecta un clic del usuario; iniciar sesión cuenta. El primer sondeo tras una carga de página fresca establece una línea base silenciosa, así no obtienes un sonido por cada fila pendiente. Test reproduce lo seleccionado arriba (no es necesario guardar)."
 
 #: src/pages/Config.tsx
 msgid "BTC payout address"
@@ -1758,10 +1758,6 @@ msgstr "Elige un preset o pega tu propia plantilla - se requiere al menos un pla
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Reproduce un sonido cuando se detecta un nuevo bloque del pool pagando a nuestra dirección de cobro. Apagado por defecto. Elige uno de los sonidos incluidos, sube el tuyo o déjalo deshabilitado. El sonido suena una vez por cada nueva fila de reward_events; la pestaña del panel debe estar abierta."
-
-#: src/pages/Config.tsx
-msgid "Plays whatever's selected above (no save needed)."
-msgstr "Reproduce lo seleccionado arriba (no es necesario guardar)."
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."

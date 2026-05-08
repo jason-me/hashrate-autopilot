@@ -353,23 +353,12 @@ function useSections(): Section[] {
         id: 'block-found-sound',
         title: t`Block-found notification`,
         description: t`Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open.`,
-        fields: [
-          {
-            key: 'block_found_sound',
-            label: t`Sound`,
-            kind: 'select',
-            fullWidth: true,
-            options: [
-              { value: 'off', label: t`Off` },
-              { value: 'cartoon-cowbell', label: t`Cartoon cowbell` },
-              { value: 'glass-drop-and-roll', label: t`Glass drop & roll` },
-              { value: 'metallic-clank-1', label: t`Metallic clank 1` },
-              { value: 'metallic-clank-2', label: t`Metallic clank 2` },
-              { value: 'custom', label: t`Custom (uploaded)` },
-            ],
-            help: t`Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row.`,
-          },
-        ],
+        // Sound select + Test button + custom-upload UI all live in
+        // the BlockFoundSoundExtras component (so the Test button can
+        // sit inline with the select, mirroring the Telegram section's
+        // Test connection placement). FieldSpec list is empty for this
+        // section.
+        fields: [],
       },
     ],
     // Re-derive when locale changes so all `t\`...\`` strings re-evaluate.
@@ -843,7 +832,7 @@ function SectionCard({
         ))}
       </div>
       {section.id === 'block-found-sound' && (
-        <BlockFoundSoundExtras draft={draft} />
+        <BlockFoundSoundExtras draft={draft} onChange={onChange} />
       )}
     </section>
   );
@@ -857,7 +846,13 @@ function SectionCard({
  * base64-encoded to avoid pulling in @fastify/multipart for one
  * tiny one-shot upload.
  */
-function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
+function BlockFoundSoundExtras({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
   const { i18n } = useLingui();
   void i18n;
   const choice = draft.block_found_sound;
@@ -966,8 +961,17 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
   const blobBytes = blobStatus.data?.bytes ?? null;
   const blobKb = blobBytes !== null ? (blobBytes / 1024).toFixed(1) : null;
 
+  const SOUND_OPTIONS: Array<{ value: AppConfig['block_found_sound']; label: string }> = [
+    { value: 'off', label: t`Off` },
+    { value: 'cartoon-cowbell', label: t`Cartoon cowbell` },
+    { value: 'glass-drop-and-roll', label: t`Glass drop & roll` },
+    { value: 'metallic-clank-1', label: t`Metallic clank 1` },
+    { value: 'metallic-clank-2', label: t`Metallic clank 2` },
+    { value: 'custom', label: t`Custom (uploaded)` },
+  ];
+
   return (
-    <div className="mt-2 space-y-3">
+    <div className="space-y-3">
       {/* Hidden file input stays mounted so the auto-open useEffect
           above can call .click() on it. */}
       <input
@@ -977,6 +981,47 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
         onChange={onUpload}
         className="hidden"
       />
+      {/* Sound select + Test button on a single row, mirroring the
+          Telegram section's Chat ID + Test connection layout. */}
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">
+          <Trans>Sound</Trans>
+        </span>
+        <div className="flex gap-2">
+          <select
+            value={choice}
+            onChange={(e) =>
+              onChange(
+                'block_found_sound',
+                e.target.value as AppConfig['block_found_sound'],
+              )
+            }
+            className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm"
+          >
+            {SOUND_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={playPreview}
+            disabled={!choice || choice === 'off'}
+            className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+          >
+            <Trans>Test sound</Trans>
+          </button>
+        </div>
+        <span className="block text-xs text-slate-500 mt-1">
+          <Trans>
+            Browsers block audio until the page sees a user click; logging in
+            counts. The first poll after a fresh page load establishes a silent
+            baseline so you don't get a sound for every backlog row. Test plays
+            whatever's selected above (no save needed).
+          </Trans>
+        </span>
+      </label>
       {/* Custom-upload row: button + filename info, tight under the
           dropdown. Only renders when 'custom' is the active choice. */}
       {choice === 'custom' && (
@@ -1007,23 +1052,6 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
           {uploadError && <p className="text-red-400">{uploadError}</p>}
         </div>
       )}
-      {/* Test sound stays in its own border-separated row below. */}
-      <div className="pt-3 border-t border-slate-800 flex items-center gap-2 text-xs">
-        <button
-          type="button"
-          onClick={playPreview}
-          disabled={!choice || choice === 'off'}
-          className={
-            'px-3 py-1 rounded border ' +
-            (!choice || choice === 'off'
-              ? 'border-slate-700 text-slate-600 cursor-not-allowed'
-              : 'border-slate-700 text-slate-200 hover:bg-slate-800')
-          }
-        >
-          <Trans>Test sound</Trans>
-        </button>
-        <span className="text-slate-500"><Trans>Plays whatever's selected above (no save needed).</Trans></span>
-      </div>
     </div>
   );
 }
