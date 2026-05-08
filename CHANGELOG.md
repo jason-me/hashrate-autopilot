@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` Drop network difficulty from Price chart's right axis
+
+Operator caught it on review: network difficulty was offered on both the Hashrate and Price charts' right-axis dropdowns. It belongs on Hashrate only - difficulty shifts every retarget (~2 weeks) and lines up naturally with the hashrate series. Price-chart context (sat/PH/day vs hashprice) doesn't gain anything from a difficulty overlay. Removed from the dropdown, the type union, and the right-axis branch. `readStoredPriceRightAxis` falls through to the default ('none') for any operator with the old choice persisted in localStorage. Also extracted the existing pool-block tooltip from `HashrateChart.tsx` (renamed `BlockTooltip` -> `PoolBlockTooltip`) so an upcoming Price-chart commit can reuse it for the unpaid-earnings dots.
+
 ### `[Fix]` Lifetime-earnings line: drop coinbase filter + auto-recompute (build 276 follow-up)
 
 Yesterday's a14900b shipped a half-fix - operator reported chart still flat zero on build 276 even after the prescribed restart-and-wait dance. Two more issues:

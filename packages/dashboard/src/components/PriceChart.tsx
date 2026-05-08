@@ -112,7 +112,11 @@ const COLOR_EFFECTIVE = '#34d399';
  * - 'estimated_block_reward': sat - follows the currency toggle.
  * - 'btc_usd_price': USD - always rendered as $ regardless of toggle.
  * - 'ocean_unpaid_sat': sat - follows the currency toggle.
- * - 'network_difficulty': raw integer, formatted in trillions.
+ *
+ * `network_difficulty` was previously also offered here but was
+ * redundant with the same series on the hashrate chart (operator
+ * caught it on review 2026-05-08); difficulty now lives only on the
+ * hashrate chart.
  */
 export type PriceRightAxis =
   | 'none'
@@ -121,8 +125,7 @@ export type PriceRightAxis =
   | 'btc_usd_price'
   | 'ocean_unpaid_sat'
   | 'paid_total_sat'
-  | 'lifetime_earnings_sat'
-  | 'network_difficulty';
+  | 'lifetime_earnings_sat';
 
 // Matches HashrateChart's PADDING_RIGHT_WITH_SHARE_LOG (80) so the
 // right-axis tick column lines up vertically across both stacked
@@ -555,17 +558,6 @@ export const PriceChart = memo(function PriceChart({
             stroke: '#c084fc',
             axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
-          };
-        case 'network_difficulty':
-          return {
-            values: points.map((p) => p.network_difficulty),
-            stroke: '#c084fc',
-            axisLabel: 'difficulty',
-            // Difficulty in trillions, compact - chain difficulty
-            // sits ~1.4e14, so /1e12 lands at ~140. formatCompactNumber
-            // then renders as "140".
-            formatTick: (v) =>
-              `${formatCompactNumber(v / 1e12, intlLocale)} T`,
           };
       }
     })();

@@ -125,12 +125,6 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-interface BlockTooltipState {
-  block: OurBlockMarker;
-  x: number;
-  y: number;
-  pinned: boolean;
-}
 
 /**
  * #93: which series to draw on the chart's right Y-axis.
@@ -203,7 +197,7 @@ export const HashrateChart = memo(function HashrateChart({
   const { intlLocale } = useLocale();
   const dateTimeLocale = useDateTimeLocale();
   const denomination = useDenomination();
-  const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
+  const [blockTip, setBlockTip] = useState<PoolBlockTooltipState | null>(null);
   // #105: parity with PriceChart - operator can double chart height
   // for closer inspection of floor breaches / BIP 110 marker positions.
   // State is local; PriceChart's expand toggle is independent.
@@ -824,30 +818,49 @@ export const HashrateChart = memo(function HashrateChart({
         )}
       </svg>
       {blockTip && (
-        <BlockTooltip
+        <PoolBlockTooltip
           tip={blockTip}
           explorerTemplate={blockExplorerTemplate}
           locale={intlLocale}
           shareLogPct={shareLogPct}
           onClose={closeBlockTip}
+          pinnedDomId="hashrate-chart-pinned-tooltip"
         />
       )}
     </div>
   );
 });
 
-function BlockTooltip({
+export interface PoolBlockTooltipState {
+  block: OurBlockMarker;
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+
+/**
+ * Shared between HashrateChart and PriceChart so both can render the
+ * same rich pool-block tooltip - reward, our share, BIP-110 signal,
+ * explorer link - when a marker is hovered or clicked. Caller is
+ * responsible for the marker geometry; this component only handles
+ * the floating panel + viewport-edge clamping.
+ */
+export function PoolBlockTooltip({
   tip,
   explorerTemplate,
   locale,
   shareLogPct,
   onClose,
+  pinnedDomId,
 }: {
-  tip: BlockTooltipState;
+  tip: PoolBlockTooltipState;
   explorerTemplate: string;
   locale: string | undefined;
   shareLogPct: number | null;
   onClose: () => void;
+  /** DOM id used by the host chart's outside-click listener to detect
+   *  clicks inside the pinned tooltip and avoid closing it. */
+  pinnedDomId?: string;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -883,7 +896,7 @@ function BlockTooltip({
   return (
     <div
       ref={ref}
-      id={pinned ? 'hashrate-chart-pinned-tooltip' : undefined}
+      id={pinned ? pinnedDomId : undefined}
       className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
       style={{ left: pos.left, top: pos.top }}
     >

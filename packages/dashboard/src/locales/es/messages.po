@@ -1558,7 +1558,6 @@ msgid "net/day ({rangeLabel})"
 msgstr "neto/día ({rangeLabel})"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "network difficulty"
 msgstr "dificultad de red"
 
