@@ -189,29 +189,41 @@ export class AlertManager {
     return nowMs + cfg.notification_retry_interval_minutes * 60_000;
   }
 
+  /**
+   * The Telegram sink runs with `parse_mode: 'HTML'`. Bold the title
+   * for at-a-glance scanning; HTML-escape the dynamic body so a
+   * worker name or error string with `<` or `&` in it doesn't blow
+   * up Telegram's parser. Severity is conveyed by the dashboard
+   * badge + WARN tag (if non-LOUD); we don't repeat "LOUD" in every
+   * Telegram message because every operator-pinging alert is loud
+   * by construction.
+   */
   private formatBody(args: RecordAlertArgs): string {
-    const tag = severityTag(args.severity);
-    return `${tag} ${args.title}\n\n${args.body}`;
+    return formatTelegramBody(args.severity, args.title, args.body);
   }
 
   private formatBodyFromRow(row: AlertRow): string {
-    const tag = severityTag(row.severity);
-    return `${tag} ${row.title}\n\n${row.body}`;
+    return formatTelegramBody(row.severity, row.title, row.body);
   }
 
   private givingUpBody(row: AlertRow, _nowMs: number): string {
-    const tag = severityTag(row.severity);
-    return `${tag} ${row.title} - still bad after 2h. No further notifications until recovery.`;
+    return formatTelegramBody(
+      row.severity,
+      row.title,
+      `Still bad after 2h. No further notifications until recovery.`,
+    );
   }
 }
 
-function severityTag(severity: AlertSeverity): string {
-  switch (severity) {
-    case 'LOUD':
-      return '[LOUD]';
-    case 'WARN':
-      return '[WARN]';
-    case 'INFO':
-      return '[INFO]';
-  }
+function formatTelegramBody(
+  severity: AlertSeverity,
+  title: string,
+  body: string,
+): string {
+  const prefix = severity === 'WARN' ? '[WARN] ' : severity === 'INFO' ? '' : '';
+  return `${prefix}<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

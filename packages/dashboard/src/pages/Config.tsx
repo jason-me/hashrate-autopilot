@@ -1280,26 +1280,6 @@ function NotificationsSection({
       <div className="space-y-4">
         <label className="block">
           <span className="block text-sm text-slate-300 mb-1">
-            <Trans>Mute all Telegram notifications</Trans>
-          </span>
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={draft.notifications_muted}
-              onChange={(e) => onChange('notifications_muted', e.target.checked as never)}
-              className="accent-amber-400 h-4 w-4"
-            />
-            <span className="text-xs text-slate-500">
-              <Trans>
-                When on, alerts are still recorded on the /alerts page with status
-                "muted" but nothing is sent to Telegram. Recovery messages also stay silent.
-              </Trans>
-            </span>
-          </div>
-        </label>
-
-        <label className="block">
-          <span className="block text-sm text-slate-300 mb-1">
             <Trans>Telegram bot token</Trans>
           </span>
           <input
@@ -1430,41 +1410,53 @@ function EventClassSubscriptions({
   void i18n;
   const disabled = new Set(draft.notification_disabled_event_classes);
 
-  const eventClasses: Array<{ id: string; label: string; help: string }> = [
+  const eventClasses: Array<{
+    id: string;
+    label: string;
+    help: string;
+    severity: 'LOUD' | 'WARN';
+  }> = [
     {
       id: 'datum_unreachable',
       label: t`Datum stratum unreachable`,
-      help: t`LOUD - the buyer-side gateway has been unreachable for the configured tolerance window.`,
+      help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
+      severity: 'LOUD',
     },
     {
       id: 'hashrate_below_floor',
       label: t`Hashrate below floor`,
-      help: t`LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+      help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+      severity: 'LOUD',
     },
     {
       id: 'zero_hashrate',
       label: t`Zero hashrate`,
-      help: t`LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+      help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+      severity: 'LOUD',
     },
     {
       id: 'api_unreachable',
       label: t`Braiins API unreachable`,
-      help: t`LOUD - the marketplace API has been down for api_outage_alert_after_minutes.`,
+      help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
+      severity: 'LOUD',
     },
     {
       id: 'unknown_bid',
       label: t`Unknown bid detected`,
-      help: t`LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
+      help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
+      severity: 'LOUD',
     },
     {
       id: 'sustained_paused',
       label: t`Bid sustained-paused`,
-      help: t`LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+      help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+      severity: 'LOUD',
     },
     {
       id: 'beta_exit',
       label: t`Beta-exit detected`,
-      help: t`WARN - any active owned bid reports fee_rate_pct > 0.`,
+      help: t`Any active owned bid reports fee_rate_pct > 0.`,
+      severity: 'WARN',
     },
   ];
 
@@ -1478,42 +1470,100 @@ function EventClassSubscriptions({
     );
   };
 
+  const muteHelp = i18n._(
+    'When on, alerts are still recorded on the /alerts page with status "muted" but nothing is sent to Telegram. Recovery messages also stay silent.',
+  );
+
   return (
-    <fieldset className="pt-2 border-t border-slate-800">
+    <fieldset className="pt-3 border-t border-slate-800">
       <legend className="block text-sm text-slate-300 mb-2">
-        <Trans>Event types</Trans>
+        <Trans>What to send to Telegram</Trans>
       </legend>
-      <p className="text-xs text-slate-500 mb-3">
+
+      {/* Global kill-switch sits at the top of the cluster - it's the
+          override that silences everything below regardless of the
+          per-event ticks. */}
+      <label
+        className="flex items-center gap-2 p-2 mb-2 rounded border border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+        title={muteHelp}
+      >
+        <input
+          type="checkbox"
+          checked={draft.notifications_muted}
+          onChange={(e) => onChange('notifications_muted', e.target.checked as never)}
+          className="accent-amber-400 h-4 w-4"
+        />
+        <span className="text-sm text-slate-100 font-semibold">
+          <Trans>Mute all Telegram notifications</Trans>
+        </span>
+        <HelpDot />
+      </label>
+
+      <p className="text-xs text-slate-500 mb-2">
         <Trans>
-          Untick any class you don't want pushed to Telegram. Disabled classes
-          skip the daemon entirely - no Telegram message, no /alerts row, no
-          retry ladder. Re-enable to start receiving fresh transitions; in-flight
-          bad states remain silent until they clear and a new transition fires.
+          Untick any event type you don't want pushed. Disabled types skip the
+          daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover
+          a row for the trigger condition.
         </Trans>
       </p>
-      <div className="space-y-2">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {eventClasses.map((ec) => {
           const enabled = !disabled.has(ec.id);
+          const sevCls =
+            ec.severity === 'LOUD'
+              ? 'bg-red-950/40 text-red-300 border-red-800'
+              : 'bg-amber-950/40 text-amber-300 border-amber-800';
+          const muted = draft.notifications_muted;
           return (
             <label
               key={ec.id}
-              className="flex items-start gap-2 p-2 rounded border border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+              className={
+                'flex items-center gap-2 p-2 rounded border cursor-pointer transition ' +
+                (muted
+                  ? 'border-slate-800 opacity-60'
+                  : 'border-slate-800 hover:bg-slate-800/40')
+              }
+              title={ec.help}
             >
               <input
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => toggle(ec.id, e.target.checked)}
-                className="mt-0.5 accent-amber-400 h-4 w-4"
+                disabled={muted}
+                className="accent-amber-400 h-4 w-4"
               />
-              <span>
-                <span className="text-sm text-slate-200">{ec.label}</span>
-                <span className="block text-xs text-slate-500 mt-0.5">{ec.help}</span>
+              <span className="flex-1 flex items-center gap-2 min-w-0">
+                <span className="text-sm text-slate-100 font-semibold truncate">
+                  {ec.label}
+                </span>
+                <span
+                  className={
+                    'inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wider border rounded ' +
+                    sevCls
+                  }
+                >
+                  {ec.severity}
+                </span>
               </span>
+              <HelpDot />
             </label>
           );
         })}
       </div>
     </fieldset>
+  );
+}
+
+/** Small (i) glyph that pairs with a `title=` tooltip on the parent. */
+function HelpDot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-slate-600 text-[9px] text-slate-500 leading-none"
+    >
+      i
+    </span>
   );
 }
 

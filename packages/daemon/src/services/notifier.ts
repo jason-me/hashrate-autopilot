@@ -119,9 +119,12 @@ export class TelegramSink implements NotificationSink {
         body: JSON.stringify({
           chat_id: this.chat_id,
           text: body,
-          // Plain text. We considered MarkdownV2 but it requires escaping a
-          // dozen sigils that may appear in dynamic alert bodies (worker
-          // names, error strings); plain text is more robust.
+          // HTML mode supports a small whitelist of tags (<b> / <i> /
+          // <code> etc) used by alert-manager to bold the title.
+          // Forgiving compared to MarkdownV2 (only <, >, & need
+          // escaping); the alert-manager handles that escaping
+          // before passing the body in.
+          parse_mode: 'HTML',
           disable_web_page_preview: true,
         }),
         signal: ctl.signal,

@@ -14,6 +14,11 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Cuando está activo, las alertas se siguen registrando en la página /alerts con estado \"silenciado\", pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
+
+#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
@@ -192,6 +197,10 @@ msgid "30m"
 msgstr "30m"
 
 #: src/pages/Config.tsx
+msgid "A bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+msgstr "Una puja en la cuenta que el autopilot no creó. Ya provoca auto-PAUSE."
+
+#: src/pages/Config.tsx
 msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
 msgstr "Hay una oferta activa (≈ {remainingSatStr} sat restantes). El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet (actualmente ≈ {resolvedSatStr} sat, limitado a 1 BTC)."
 
@@ -272,6 +281,10 @@ msgstr "Siempre dry-run (más seguro)"
 #: src/pages/Config.tsx
 msgid "Always live (for trusted deployments)"
 msgstr "Siempre live (para despliegues de confianza)"
+
+#: src/pages/Config.tsx
+msgid "Any active owned bid reports fee_rate_pct > 0."
+msgstr "Alguna puja propia activa reporta fee_rate_pct > 0."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -565,6 +578,10 @@ msgstr "presupuesto"
 #: src/pages/Config.tsx
 msgid "Budget"
 msgstr "Presupuesto"
+
+#: src/pages/Config.tsx
+msgid "Buyer-side gateway has been unreachable for the configured tolerance window."
+msgstr "El gateway del lado del comprador ha estado inalcanzable durante la ventana de tolerancia configurada."
 
 #: src/pages/Config.tsx
 msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
@@ -864,6 +881,10 @@ msgstr "entregado (Braiins)"
 msgid "delivered / cap"
 msgstr "entregado / tope"
 
+#: src/pages/Config.tsx
+msgid "Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+msgstr "La hashrate entregada ha estado por debajo de minimum_floor_hashrate_ph durante below_floor_alert_after_minutes."
+
 #: src/pages/Alerts.tsx
 msgid "delivery"
 msgstr "entrega"
@@ -977,6 +998,10 @@ msgstr "Tasa efectiva {sign}{deltaFormatted} bajo el hashprice ({hashpricePretty
 msgid "Effective rate equals hashprice ({hashpricePretty}) - breaking even."
 msgstr "Tasa efectiva igual al hashprice ({hashpricePretty}) - en el punto de equilibrio."
 
+#: src/pages/Config.tsx
+msgid "Effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+msgstr "Entrega efectivamente nula durante zero_hashrate_loud_alert_after_minutes."
+
 #: src/components/Bip110ScanCard.tsx
 msgid "elapsed"
 msgstr "transcurrido"
@@ -1010,10 +1035,6 @@ msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin
 #: src/pages/Config.tsx
 msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day. Database file is currently {dbStr}."
 msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin índices). Los logs crecen ~ {dailyStr}/día. El archivo de la base de datos pesa actualmente {dbStr}."
-
-#: src/pages/Config.tsx
-msgid "Event types"
-msgstr "Tipos de evento"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
@@ -1318,30 +1339,6 @@ msgstr "Retención de logs"
 msgid "LOUD"
 msgstr "LOUD"
 
-#: src/pages/Config.tsx
-msgid "LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
-msgstr "LOUD - una puja en la cuenta que el autopilot no creó. Ya provoca auto-PAUSE."
-
-#: src/pages/Config.tsx
-msgid "LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
-msgstr "LOUD - la hashrate entregada ha estado por debajo de minimum_floor_hashrate_ph durante below_floor_alert_after_minutes."
-
-#: src/pages/Config.tsx
-msgid "LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
-msgstr "LOUD - entrega efectivamente nula durante zero_hashrate_loud_alert_after_minutes."
-
-#: src/pages/Config.tsx
-msgid "LOUD - the buyer-side gateway has been unreachable for the configured tolerance window."
-msgstr "LOUD - el gateway del lado del comprador ha estado inalcanzable durante la ventana de tolerancia configurada."
-
-#: src/pages/Config.tsx
-msgid "LOUD - the marketplace API has been down for api_outage_alert_after_minutes."
-msgstr "LOUD - la API del marketplace ha estado caída durante api_outage_alert_after_minutes."
-
-#: src/pages/Config.tsx
-msgid "LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window."
-msgstr "LOUD - la puja propia principal lleva un last_pause_reason no nulo durante la ventana de tolerancia."
-
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -1353,6 +1350,10 @@ msgstr "marcar como visto"
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "mercado en este tick"
+
+#: src/pages/Config.tsx
+msgid "Marketplace API has been down for api_outage_alert_after_minutes."
+msgstr "La API del marketplace ha estado caída durante api_outage_alert_after_minutes."
 
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
@@ -1865,6 +1866,10 @@ msgid "Pricing"
 msgstr "Precios"
 
 #: src/pages/Config.tsx
+msgid "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgstr "La puja propia principal lleva un last_pause_reason no nulo durante la ventana de tolerancia."
+
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Profit & Loss"
 msgstr "Profit & Loss"
@@ -2347,8 +2352,8 @@ msgid "unsaved changes…"
 msgstr "cambios sin guardar…"
 
 #: src/pages/Config.tsx
-msgid "Untick any class you don't want pushed to Telegram. Disabled classes skip the daemon entirely - no Telegram message, no /alerts row, no retry ladder. Re-enable to start receiving fresh transitions; in-flight bad states remain silent until they clear and a new transition fires."
-msgstr "Desmarca cualquier clase que no quieras enviar a Telegram. Las clases deshabilitadas se saltan en el daemon por completo - sin mensaje de Telegram, sin fila en /alerts, sin escalera de reintentos. Vuelve a activar para recibir nuevas transiciones; los estados malos en curso permanecen en silencio hasta que se limpien y se dispare una nueva transición."
+msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
+msgstr "Desmarca cualquier tipo de evento que no quieras enviar. Los tipos deshabilitados se saltan en el daemon - sin Telegram, sin fila en /alerts, sin escalera de reintentos. Pasa el cursor por encima para ver la condición de disparo."
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
@@ -2408,10 +2413,6 @@ msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la
 msgid "WARN"
 msgstr "WARN"
 
-#: src/pages/Config.tsx
-msgid "WARN - any active owned bid reports fee_rate_pct > 0."
-msgstr "WARN - alguna puja propia activa reporta fee_rate_pct > 0."
-
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "A lo que apunta el controlador."
@@ -2420,13 +2421,13 @@ msgstr "A lo que apunta el controlador."
 msgid "What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks."
 msgstr "Lo que nos ganó este último bloque, estimado como block_reward * share_log_pct / 100. Usa el share_log registrado en el momento del bloque cuando nuestro historial de ticks lo cubre; recurre al share_log en vivo para bloques más antiguos."
 
+#: src/pages/Config.tsx
+msgid "What to send to Telegram"
+msgstr "Qué enviar a Telegram"
+
 #: src/pages/Alerts.tsx
 msgid "when"
 msgstr "cuándo"
-
-#: src/pages/Config.tsx
-msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "Cuando está activo, las alertas se siguen registrando en la página /alerts con estado \"silenciado\", pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."
