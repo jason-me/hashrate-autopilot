@@ -85,6 +85,8 @@ export interface ConfigTable {
   ddns_username: string;
   /** #111: DDNS provider credential (password / DDNS Key credential / token). */
   ddns_credential: string;
+  /** #111: dyndns2 update endpoint URL (only used when provider = 'dyndns2'). */
+  ddns_update_url: string;
   updated_at: number;
 }
 

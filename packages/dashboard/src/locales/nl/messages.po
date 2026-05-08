@@ -1321,8 +1321,8 @@ msgid "just now"
 msgstr "zojuist"
 
 #: src/pages/Config.tsx
-msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups) and DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm)."
-msgstr "Houd de hostnaam in de Pool URL verwezen naar het huidige publieke IP van deze machine. Vervangt de DDNS-client in de router-firmware. Ondersteunt No-IP (meld je aan op no-ip.com, maak een hostnaam aan en genereer dan een DDNS Key onder DDNS Keys / Groups) en DuckDNS (meld je aan op duckdns.org - gratis, zonder vervaldatum, zonder maandelijkse herbevestiging)."
+msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups), DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm), and \"Other\" for any provider that speaks the dyndns2 protocol (Dynu, FreeDNS / afraid.org, many self-hosted scripts)."
+msgstr "Houd de hostnaam in de Pool URL verwezen naar het huidige publieke IP van deze machine. Vervangt de DDNS-client in de router-firmware. Ondersteunt No-IP (meld je aan op no-ip.com, maak een hostnaam aan en genereer dan een DDNS Key onder DDNS Keys / Groups), DuckDNS (meld je aan op duckdns.org - gratis, zonder vervaldatum, zonder maandelijkse herbevestiging) en \"Overig\" voor elke provider die het dyndns2-protocol spreekt (Dynu, FreeDNS / afraid.org, veel zelf-gehoste scripts)."
 
 #: src/pages/Config.tsx
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
@@ -1758,6 +1758,10 @@ msgstr "Optioneel. Het /umbrel-api-endpoint van Datum Gateway - bijv. http://192
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Optioneel. Handig als je een tweede token alleen voor lezen wilt."
+
+#: src/pages/Config.tsx
+msgid "Other (generic dyndns2)"
+msgstr "Overig (generiek dyndns2)"
 
 #: src/components/PriceChart.tsx
 msgid "our bid"
@@ -2431,6 +2435,10 @@ msgstr "De daemon staat misschien niet in setup-modus. Herlaad de pagina of cont
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "De hostnaam die onderhouden wordt. Voor No-IP DDNS Key-groepen (de moderne auth-flow die je accountwachtwoord niet blootstelt), gebruik de speciale hostnaam all.ddnskey.com - die werkt elke hostnaam in de DDNS Key-groep in één call bij. Test connection stuurt een echte update met de waarden uit het formulier (zonder op te slaan). `nochg` en `good` zijn beide succes."
 
+#: src/pages/Config.tsx
+msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
+msgstr "Het dyndns2-compatibele update-endpoint van de provider. Voorbeelden: Dynu gebruikt https://api.dynu.com/nic/update; FreeDNS / afraid.org gebruikt https://freedns.afraid.org/nic/update; veel zelf-gehoste DDNS-scripts spreken hetzelfde protocol."
+
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx
 msgid "tick failed: {0}"
@@ -2519,6 +2527,10 @@ msgstr "niet-ondersteunde provider"
 #: src/pages/Config.tsx
 msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
 msgstr "Vink uit welk eventtype je niet wilt ontvangen. Uitgeschakelde types worden in de daemon volledig overgeslagen - geen Telegram, geen /alerts-regel, geen retry-ladder. Hover over een regel voor de trigger-conditie."
+
+#: src/pages/Config.tsx
+msgid "Update URL"
+msgstr "Update-URL"
 
 #: src/pages/Config.tsx
 msgid "updated"

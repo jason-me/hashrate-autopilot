@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` DDNS: generic dyndns2 provider (#111 follow-up)
+
+Adds **Other (generic dyndns2)** as a third DDNS provider option. dyndns2 is the 2003 update protocol almost every DDNS service speaks (Dynu, FreeDNS / afraid.org, many self-hosted scripts). Operators select Other, paste the provider's update URL (Dynu: `https://api.dynu.com/nic/update`, FreeDNS: `https://freedns.afraid.org/nic/update`, etc.), and the daemon pushes updates the same way it does for No-IP. Single code path for all dyndns2-compatible providers - no per-provider build needed when someone wants Dynu or Afraid. Migration 0068 adds the `ddns_update_url` column.
+
 ### `[UI]` Config search width + Alerts severity column dropped
 
 Two papercuts:

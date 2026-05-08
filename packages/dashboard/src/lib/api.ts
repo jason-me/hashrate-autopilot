@@ -325,10 +325,11 @@ export interface AppConfig {
     | 'metallic-clank-2'
     | 'custom';
   // #111: daemon-managed Dynamic DNS updater. Empty provider = disabled.
-  ddns_provider: '' | 'noip' | 'duckdns';
+  ddns_provider: '' | 'noip' | 'duckdns' | 'dyndns2';
   ddns_hostname: string;
   ddns_username: string;
   ddns_credential: string;
+  ddns_update_url: string;
 }
 
 export interface ConfigResponse {
@@ -528,7 +529,13 @@ export const api = {
   },
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   ddns: () => request<DdnsRouteResponse>('/api/ddns'),
-  ddnsTest: (creds: { provider: string; hostname: string; username: string; credential: string }) =>
+  ddnsTest: (creds: {
+    provider: string;
+    hostname: string;
+    username: string;
+    credential: string;
+    update_url?: string;
+  }) =>
     request<DdnsTestResponse>('/api/ddns/test', {
       method: 'POST',
       body: JSON.stringify(creds),

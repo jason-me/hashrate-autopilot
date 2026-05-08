@@ -152,6 +152,24 @@ export class DdnsUpdaterService {
       await this.pushDuckDns({ hostname, credential, ip, now });
       return;
     }
+    if (provider === 'dyndns2') {
+      const updateUrl = cfg.ddns_update_url;
+      if (!updateUrl) {
+        this.snapshot = {
+          enabled: true,
+          provider,
+          hostname,
+          last_status: 'misconfigured',
+          last_pushed_ip: this.snapshot.last_pushed_ip,
+          last_pushed_at: this.snapshot.last_pushed_at,
+          last_attempted_at: now,
+          last_error: 'dyndns2 selected but ddns_update_url is empty',
+        };
+        return;
+      }
+      await this.pushDyndns2({ updateUrl, hostname, username, credential, ip, now });
+      return;
+    }
     this.snapshot = {
       enabled: true,
       provider,
@@ -285,6 +303,73 @@ export class DdnsUpdaterService {
         last_error: msg,
       };
       this.options.log?.(`[ddns] duckdns push errored: ${msg}`);
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  /**
+   * Generic dyndns2 push. The protocol shape:
+   *   GET <updateUrl>?hostname=<host>&myip=<ip>
+   *   Authorization: Basic base64(user:pass)
+   *   Body: `<status> <ip>` first whitespace token = status code.
+   * Same response semantics as No-IP, since No-IP IS a dyndns2
+   * implementation - but we keep them as separate provider names so
+   * the operator's intent is clear in the config + UI.
+   */
+  private async pushDyndns2(args: {
+    updateUrl: string;
+    hostname: string;
+    username: string;
+    credential: string;
+    ip: string;
+    now: number;
+  }): Promise<void> {
+    const { updateUrl, hostname, username, credential, ip, now } = args;
+    const sep = updateUrl.includes('?') ? '&' : '?';
+    const url = `${updateUrl}${sep}hostname=${encodeURIComponent(hostname)}&myip=${encodeURIComponent(ip)}`;
+    const auth = Buffer.from(`${username}:${credential}`).toString('base64');
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 5_000);
+    try {
+      const resp = await this.fetcher(url, {
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'User-Agent': this.userAgent,
+        },
+        signal: ac.signal,
+      });
+      const body = (await resp.text()).trim();
+      const status = body.split(/\s+/)[0] ?? '';
+      const happy = status === 'good' || status === 'nochg';
+      this.snapshot = {
+        enabled: true,
+        provider: 'dyndns2',
+        hostname,
+        last_status: status || `HTTP ${resp.status}`,
+        last_pushed_ip: happy ? ip : this.snapshot.last_pushed_ip,
+        last_pushed_at: happy ? now : this.snapshot.last_pushed_at,
+        last_attempted_at: now,
+        last_error: happy ? null : body || `HTTP ${resp.status}`,
+      };
+      this.options.log?.(
+        happy
+          ? `[ddns] dyndns2 push: ${status} ${ip} -> ${hostname}`
+          : `[ddns] dyndns2 push failed: ${body}`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.snapshot = {
+        enabled: true,
+        provider: 'dyndns2',
+        hostname,
+        last_status: 'network_error',
+        last_pushed_ip: this.snapshot.last_pushed_ip,
+        last_pushed_at: this.snapshot.last_pushed_at,
+        last_attempted_at: now,
+        last_error: msg,
+      };
+      this.options.log?.(`[ddns] dyndns2 push errored: ${msg}`);
     } finally {
       clearTimeout(t);
     }

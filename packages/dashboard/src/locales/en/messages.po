@@ -1321,8 +1321,8 @@ msgid "just now"
 msgstr "just now"
 
 #: src/pages/Config.tsx
-msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups) and DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm)."
-msgstr "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups) and DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm)."
+msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups), DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm), and \"Other\" for any provider that speaks the dyndns2 protocol (Dynu, FreeDNS / afraid.org, many self-hosted scripts)."
+msgstr "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups), DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm), and \"Other\" for any provider that speaks the dyndns2 protocol (Dynu, FreeDNS / afraid.org, many self-hosted scripts)."
 
 #: src/pages/Config.tsx
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
@@ -1758,6 +1758,10 @@ msgstr "Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.1
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Optional. Useful if you'd like a second token only for read paths."
+
+#: src/pages/Config.tsx
+msgid "Other (generic dyndns2)"
+msgstr "Other (generic dyndns2)"
 
 #: src/components/PriceChart.tsx
 msgid "our bid"
@@ -2431,6 +2435,10 @@ msgstr "The daemon may not be in setup mode. Reload the page or check the daemon
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 
+#: src/pages/Config.tsx
+msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
+msgstr "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
+
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx
 msgid "tick failed: {0}"
@@ -2519,6 +2527,10 @@ msgstr "unsupported provider"
 #: src/pages/Config.tsx
 msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
 msgstr "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
+
+#: src/pages/Config.tsx
+msgid "Update URL"
+msgstr "Update URL"
 
 #: src/pages/Config.tsx
 msgid "updated"

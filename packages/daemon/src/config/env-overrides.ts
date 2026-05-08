@@ -179,6 +179,7 @@ const APP_CONFIG_ENV: {
   ddns_hostname: { varName: 'BHA_DDNS_HOSTNAME', coerce: asString },
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },
   ddns_credential: { varName: 'BHA_DDNS_CREDENTIAL', coerce: asString },
+  ddns_update_url: { varName: 'BHA_DDNS_UPDATE_URL', coerce: asString },
 };
 
 // ---------------------------------------------------------------------------

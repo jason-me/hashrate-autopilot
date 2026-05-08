@@ -306,10 +306,14 @@ export const AppConfigSchema = z.object({
   // are planned follow-ups. Driven by motivating incident on
   // 2026-05-07 when mynetgear.com DDNS drift caused a recurring
   // Stratum DOWN false-alarm and a 30+ minute manual diagnosis.
-  ddns_provider: z.enum(['', 'noip', 'duckdns']).default(''),
+  ddns_provider: z.enum(['', 'noip', 'duckdns', 'dyndns2']).default(''),
   ddns_hostname: z.string().default(''),
   ddns_username: z.string().default(''),
   ddns_credential: z.string().default(''),
+  // dyndns2 only: the provider-specific update endpoint, e.g.
+  // https://api.dynu.com/nic/update or https://freedns.afraid.org/nic/update.
+  // Empty when provider is not 'dyndns2'.
+  ddns_update_url: z.string().default(''),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -406,4 +410,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   ddns_hostname: '',
   ddns_username: '',
   ddns_credential: '',
+  ddns_update_url: '',
 };

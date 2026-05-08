@@ -1321,8 +1321,8 @@ msgid "just now"
 msgstr "ahora mismo"
 
 #: src/pages/Config.tsx
-msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups) and DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm)."
-msgstr "Mantén el nombre de host de la Pool URL apuntando al IP público actual de esta máquina. Reemplaza el cliente DDNS del firmware del router. Soporta No-IP (regístrate en no-ip.com, crea un nombre de host y luego genera un DDNS Key en DDNS Keys / Groups) y DuckDNS (regístrate en duckdns.org - gratis, sin vencimiento, sin reconfirmación mensual)."
+msgid "Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups), DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm), and \"Other\" for any provider that speaks the dyndns2 protocol (Dynu, FreeDNS / afraid.org, many self-hosted scripts)."
+msgstr "Mantén el nombre de host de la Pool URL apuntando al IP público actual de esta máquina. Reemplaza el cliente DDNS del firmware del router. Soporta No-IP (regístrate en no-ip.com, crea un nombre de host y luego genera un DDNS Key en DDNS Keys / Groups), DuckDNS (regístrate en duckdns.org - gratis, sin vencimiento, sin reconfirmación mensual) y \"Otro\" para cualquier proveedor que hable el protocolo dyndns2 (Dynu, FreeDNS / afraid.org, muchos scripts auto-alojados)."
 
 #: src/pages/Config.tsx
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
@@ -1758,6 +1758,10 @@ msgstr "Opcional. Endpoint /umbrel-api de Datum Gateway - p.ej. http://192.168.1
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
+
+#: src/pages/Config.tsx
+msgid "Other (generic dyndns2)"
+msgstr "Otro (dyndns2 genérico)"
 
 #: src/components/PriceChart.tsx
 msgid "our bid"
@@ -2431,6 +2435,10 @@ msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los 
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo moderno que no expone la contraseña de tu cuenta), usa el hostname especial all.ddnskey.com - actualiza cada hostname asignado al grupo del DDNS Key en una sola llamada. Test connection envía una actualización real con los valores del formulario (sin guardar). `nochg` y `good` son ambos éxito."
 
+#: src/pages/Config.tsx
+msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
+msgstr "El endpoint de actualización compatible con dyndns2 del proveedor. Ejemplos: Dynu usa https://api.dynu.com/nic/update; FreeDNS / afraid.org usa https://freedns.afraid.org/nic/update; muchos scripts DDNS auto-alojados hablan el mismo protocolo."
+
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx
 msgid "tick failed: {0}"
@@ -2519,6 +2527,10 @@ msgstr "proveedor no soportado"
 #: src/pages/Config.tsx
 msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
 msgstr "Desmarca cualquier tipo de evento que no quieras enviar. Los tipos deshabilitados se saltan en el daemon - sin Telegram, sin fila en /alerts, sin escalera de reintentos. Pasa el cursor por encima para ver la condición de disparo."
+
+#: src/pages/Config.tsx
+msgid "Update URL"
+msgstr "URL de actualización"
 
 #: src/pages/Config.tsx
 msgid "updated"

@@ -2699,15 +2699,18 @@ function DdnsCredentialFields({
         hostname: draft.ddns_hostname,
         username: draft.ddns_username,
         credential: draft.ddns_credential,
+        update_url: draft.ddns_update_url,
       }),
   });
+  const hasUsernameField =
+    draft.ddns_provider === 'noip' || draft.ddns_provider === 'dyndns2';
+  const hasUpdateUrlField = draft.ddns_provider === 'dyndns2';
   const ready =
     draft.ddns_provider !== '' &&
     draft.ddns_hostname.trim() !== '' &&
     draft.ddns_credential.trim() !== '' &&
-    // DuckDNS uses a token only - no username field. No-IP needs both.
-    (draft.ddns_provider === 'duckdns' || draft.ddns_username.trim() !== '');
-  const hasUsernameField = draft.ddns_provider === 'noip';
+    (!hasUsernameField || draft.ddns_username.trim() !== '') &&
+    (!hasUpdateUrlField || draft.ddns_update_url.trim() !== '');
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
       <label className="block sm:col-span-2">
@@ -2794,6 +2797,29 @@ function DdnsCredentialFields({
           </Trans>
         </span>
       </label>
+      {hasUpdateUrlField && (
+        <label className="block sm:col-span-2">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Update URL</Trans>
+          </span>
+          <input
+            type="text"
+            value={draft.ddns_update_url}
+            onChange={(e) => onChange('ddns_update_url', e.target.value as never)}
+            placeholder="https://api.dynu.com/nic/update"
+            autoComplete="off"
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              The provider's dyndns2-compatible update endpoint. Examples: Dynu uses
+              https://api.dynu.com/nic/update; FreeDNS / afraid.org uses
+              https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak
+              the same protocol.
+            </Trans>
+          </span>
+        </label>
+      )}
     </div>
   );
 }
@@ -2831,10 +2857,7 @@ function DdnsSection({
         </h3>
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
-            Keep the Pool URL's hostname pointed at this box's current public IP. Replaces
-            the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com -
-            create a hostname, then generate a DDNS Key under DDNS Keys / Groups) and
-            DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm).
+            Keep the Pool URL's hostname pointed at this box's current public IP. Replaces the router-firmware-based DDNS client. Supports No-IP (sign up at no-ip.com - create a hostname, then generate a DDNS Key under DDNS Keys / Groups), DuckDNS (sign up at duckdns.org - free, no expiration, no monthly re-confirm), and "Other" for any provider that speaks the dyndns2 protocol (Dynu, FreeDNS / afraid.org, many self-hosted scripts).
           </Trans>
         </p>
       </header>
@@ -2906,6 +2929,7 @@ function DdnsSection({
             <option value="">{t`Disabled`}</option>
             <option value="noip">No-IP (no-ip.com)</option>
             <option value="duckdns">DuckDNS (duckdns.org)</option>
+            <option value="dyndns2">{t`Other (generic dyndns2)`}</option>
           </select>
           <span className="block text-xs text-slate-500 mt-1">
             <Trans>

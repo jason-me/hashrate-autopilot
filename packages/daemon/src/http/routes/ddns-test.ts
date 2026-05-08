@@ -22,6 +22,8 @@ export interface DdnsTestRequest {
   hostname?: string;
   username?: string;
   credential?: string;
+  /** dyndns2 only: provider-specific update URL. */
+  update_url?: string;
 }
 
 export interface DdnsTestResponse {
@@ -41,17 +43,45 @@ export async function registerDdnsTestRoute(app: FastifyInstance): Promise<void>
       const hostname = typeof body.hostname === 'string' ? body.hostname.trim() : '';
       const username = typeof body.username === 'string' ? body.username.trim() : '';
       const credential = typeof body.credential === 'string' ? body.credential : '';
+      const updateUrl = typeof body.update_url === 'string' ? body.update_url.trim() : '';
 
       if (!provider) return { ok: false, error: 'provider is required' };
       if (!hostname) return { ok: false, error: 'hostname is required' };
-      if (!username) return { ok: false, error: 'username is required' };
       if (!credential) return { ok: false, error: 'credential is required' };
+      // username is required for dyndns2-style providers (No-IP, dyndns2);
+      // DuckDNS uses a token-only flow, no username.
+      if ((provider === 'noip' || provider === 'dyndns2') && !username) {
+        return { ok: false, error: 'username is required' };
+      }
+      if (provider === 'dyndns2' && !updateUrl) {
+        return { ok: false, error: 'update URL is required for dyndns2' };
+      }
 
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), 8_000);
       try {
         if (provider === 'noip') {
           const url = `${NOIP_UPDATE_URL}?hostname=${encodeURIComponent(hostname)}`;
+          const auth = Buffer.from(`${username}:${credential}`).toString('base64');
+          const resp = await fetch(url, {
+            headers: {
+              Authorization: `Basic ${auth}`,
+              'User-Agent': USER_AGENT,
+            },
+            signal: ac.signal,
+          });
+          const raw = (await resp.text()).trim();
+          const parts = raw.split(/\s+/);
+          const status = parts[0] ?? '';
+          const ip = parts[1] ?? '';
+          const happy = status === 'good' || status === 'nochg';
+          return happy
+            ? { ok: true, status, ip, raw }
+            : { ok: false, status, raw, error: raw || `HTTP ${resp.status}` };
+        }
+        if (provider === 'dyndns2') {
+          const sep = updateUrl.includes('?') ? '&' : '?';
+          const url = `${updateUrl}${sep}hostname=${encodeURIComponent(hostname)}`;
           const auth = Buffer.from(`${username}:${credential}`).toString('base64');
           const resp = await fetch(url, {
             headers: {

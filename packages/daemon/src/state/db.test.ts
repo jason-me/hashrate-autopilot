@@ -93,6 +93,7 @@ describe('openDatabase - migrations', () => {
       '0065_pool_blocks.sql',
       '0066_paid_total_sat.sql',
       '0067_ddns.sql',
+      '0068_ddns_update_url.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
