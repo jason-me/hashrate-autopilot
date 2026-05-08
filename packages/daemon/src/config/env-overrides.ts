@@ -139,6 +139,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_BLOCK_EXPLORER_URL_TEMPLATE',
     coerce: asString,
   },
+  block_explorer_tx_url_template: {
+    varName: 'BHA_BLOCK_EXPLORER_TX_URL_TEMPLATE',
+    coerce: asString,
+  },
   braiins_hashrate_smoothing_minutes: {
     varName: 'BHA_BRAIINS_HASHRATE_SMOOTHING_MINUTES',
     coerce: asInt,

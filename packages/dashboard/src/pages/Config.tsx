@@ -70,7 +70,12 @@ type FieldSpec = (
       label: string;
       kind: 'text_with_presets';
       help?: string;
-      presets: ReadonlyArray<{ label: string; template: string }>;
+      presets: ReadonlyArray<{
+        label: string;
+        template: string;
+        /** When set, picking this preset ALSO writes `template` to the named sibling field. Used by the block-explorer section to keep the block + tx URL templates in sync via a single preset click. */
+        secondary?: { key: keyof AppConfig; template: string };
+      }>;
     }
   | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string }
   | {
@@ -232,21 +237,63 @@ function useSections(): Section[] {
       {
         id: 'block-explorer',
         title: t`Block explorer`,
-        description: t`Used for click-through from the Ocean panel's "last pool block" row and the block-marker tooltips on the Hashrate chart. \`{hash}\` and \`{height}\` placeholders are substituted.`,
+        description: t`Used for click-through from the Ocean panel's "last pool block" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use \`{hash}\` / \`{height}\`; transaction links use \`{txid}\` / \`{hash}\`. Picking a preset sets both URLs at once.`,
         fields: [
           {
             key: 'block_explorer_url_template',
-            label: t`URL template`,
+            label: t`Block URL template`,
             kind: 'text_with_presets',
             fullWidth: true,
-            help: t`Pick a preset or paste your own template - at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
+            help: t`At least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
             presets: [
-              { label: 'mempool.space', template: 'https://mempool.space/block/{hash}' },
-              { label: 'blockstream.info', template: 'https://blockstream.info/block/{hash}' },
-              { label: 'blockchair.com', template: 'https://blockchair.com/bitcoin/block/{hash}' },
-              { label: 'btcscan.org', template: 'https://btcscan.org/block/{hash}' },
-              { label: 'btc.com', template: 'https://btc.com/btc/block/{hash}' },
+              {
+                label: 'mempool.space',
+                template: 'https://mempool.space/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://mempool.space/tx/{txid}',
+                },
+              },
+              {
+                label: 'blockstream.info',
+                template: 'https://blockstream.info/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://blockstream.info/tx/{txid}',
+                },
+              },
+              {
+                label: 'blockchair.com',
+                template: 'https://blockchair.com/bitcoin/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://blockchair.com/bitcoin/transaction/{txid}',
+                },
+              },
+              {
+                label: 'btcscan.org',
+                template: 'https://btcscan.org/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://btcscan.org/tx/{txid}',
+                },
+              },
+              {
+                label: 'btc.com',
+                template: 'https://btc.com/btc/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://btc.com/btc/transaction/{txid}',
+                },
+              },
             ],
+          },
+          {
+            key: 'block_explorer_tx_url_template',
+            label: t`Transaction URL template`,
+            kind: 'text',
+            fullWidth: true,
+            help: t`At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid}).`,
           },
         ],
       },
@@ -2406,7 +2453,12 @@ function Field({
               <button
                 key={p.label}
                 type="button"
-                onClick={() => onChange(spec.key, p.template as never)}
+                onClick={() => {
+                  onChange(spec.key, p.template as never);
+                  if (p.secondary) {
+                    onChange(p.secondary.key, p.secondary.template as never);
+                  }
+                }}
                 className={
                   'px-2 py-0.5 rounded text-[11px] border ' +
                   (active

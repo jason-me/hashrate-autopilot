@@ -1,22 +1,32 @@
 /**
  * Block-explorer URL templating (issue #22).
  *
- * The daemon stores a single string template (e.g.
- * `https://mempool.space/block/{hash}`); the dashboard substitutes
- * `{hash}` and `{height}` at click time. Both placeholders are
- * optional - the config schema enforces that at least one is present.
+ * Two flavours of template:
+ *   - Block: `block_explorer_url_template` - `{hash}` / `{height}`
+ *     placeholders. Used for pool-block markers.
+ *   - Transaction: `block_explorer_tx_url_template` - `{txid}` /
+ *     `{hash}` placeholders. Used for the Price chart's on-chain
+ *     payout dots so they deep-link to the actual transaction
+ *     rather than just the containing block.
+ *
+ * Same `applyExplorerTemplate` helper handles both - the placeholders
+ * the template uses determine which fields it needs from the
+ * caller's context object.
  */
 
 export function applyExplorerTemplate(
   template: string,
-  block: { block_hash?: string; height?: number },
+  ctx: { block_hash?: string; height?: number; txid?: string },
 ): string {
   let url = template;
-  if (block.block_hash !== undefined) {
-    url = url.split('{hash}').join(encodeURIComponent(block.block_hash));
+  if (ctx.txid !== undefined) {
+    url = url.split('{txid}').join(encodeURIComponent(ctx.txid));
   }
-  if (block.height !== undefined) {
-    url = url.split('{height}').join(String(block.height));
+  if (ctx.block_hash !== undefined) {
+    url = url.split('{hash}').join(encodeURIComponent(ctx.block_hash));
+  }
+  if (ctx.height !== undefined) {
+    url = url.split('{height}').join(String(ctx.height));
   }
   return url;
 }

@@ -352,6 +352,7 @@ export function Status() {
           rewardEvents={rewardEventsQuery.data?.events ?? []}
           ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
+          txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
         />
       </div>

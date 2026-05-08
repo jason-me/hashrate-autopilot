@@ -313,6 +313,7 @@ export interface AppConfig {
   decisions_eventful_retention_days: number;
   datum_api_url: string | null;
   block_explorer_url_template: string;
+  block_explorer_tx_url_template: string;
   braiins_hashrate_smoothing_minutes: number;
   datum_hashrate_smoothing_minutes: number;
   braiins_price_smoothing_minutes: number;

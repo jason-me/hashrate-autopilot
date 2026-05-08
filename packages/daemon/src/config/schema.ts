@@ -210,6 +210,22 @@ export const AppConfigSchema = z.object({
     )
     .default('https://mempool.space/block/{hash}'),
 
+  // Transaction-URL counterpart to the block-URL template above.
+  // Used for the on-chain payout dots on the Price chart's
+  // `paid earnings (lifetime)` line - those need to deep-link to the
+  // payout transaction, not the block. Kept as a separate template
+  // because explorers don't follow a single replacement pattern
+  // (blockchair uses /transaction/, btc.com uses /btc/transaction/).
+  // The Config UI's preset buttons set both templates atomically.
+  block_explorer_tx_url_template: z
+    .string()
+    .min(1)
+    .refine(
+      (v) => v.includes('{txid}') || v.includes('{hash}'),
+      { message: 'must contain {txid} or {hash} placeholder' },
+    )
+    .default('https://mempool.space/tx/{txid}'),
+
   // Chart smoothing - rolling-mean minute window applied client-side
   // to the hashrate chart's Braiins-delivered and Datum-received
   // series (issue #42). 1 = no smoothing. Ocean is excluded because
@@ -399,6 +415,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   datum_api_url: null,
 
   block_explorer_url_template: 'https://mempool.space/block/{hash}',
+  block_explorer_tx_url_template: 'https://mempool.space/tx/{txid}',
 
   braiins_hashrate_smoothing_minutes: 1,
   datum_hashrate_smoothing_minutes: 1,

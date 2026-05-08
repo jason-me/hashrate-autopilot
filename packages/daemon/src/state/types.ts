@@ -66,6 +66,8 @@ export interface ConfigTable {
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   overpay_sat_per_eh_day: number;
   block_explorer_url_template: string;
+  /** Transaction counterpart to block_explorer_url_template; supports `{txid}` / `{hash}` placeholders. */
+  block_explorer_tx_url_template: string;
   braiins_hashrate_smoothing_minutes: number;
   datum_hashrate_smoothing_minutes: number;
   braiins_price_smoothing_minutes: number;

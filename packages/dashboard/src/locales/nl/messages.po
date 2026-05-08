@@ -323,6 +323,14 @@ msgstr "API onbereikbaar ({0})"
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
 
+#: src/pages/Config.tsx
+msgid "At least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+msgstr ""
+
+#: src/pages/Config.tsx
+msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
+msgstr ""
+
 #: src/pages/Alerts.tsx
 msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
 msgstr "Auditspoor van elke melding die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, gesnoozed of opgegeven. Configureer de Telegram-bestemming op Config → Meldingen."
@@ -508,6 +516,10 @@ msgstr "Block explorer"
 #: src/pages/Status.tsx
 msgid "block reward"
 msgstr "blokbeloning"
+
+#: src/pages/Config.tsx
+msgid "Block URL template"
+msgstr "Blok-URL-sjabloon"
 
 #: src/pages/Config.tsx
 msgid "Block-found notification"
@@ -1959,10 +1971,6 @@ msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this
 msgstr "Per-tick bod = fillable_ask + dit. Braiins matcht pay-your-bid, dus dit is de werkelijke toeslag die je betaalt boven de goedkoopste beschikbare prijs. Hoger = beter bestand tegen korte opwaartse marktbewegingen, grotere toeslag; lager = dichter bij de goedkoopste vulbare prijs, gevoeliger voor ruis. 300 sat/PH/day is een redelijk uitgangspunt."
 
 #: src/pages/Config.tsx
-msgid "Pick a preset or paste your own template - at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
-msgstr "Kies een preset of plak je eigen sjabloon - er is minstens één placeholder ({hash} of {height}) vereist. Aangepast voorbeeld: http://umbrel.local:3006/block/{hash}."
-
-#: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Speel een geluid af zodra een nieuw poolblok wordt gedetecteerd dat ons uitbetaaladres betaalt. Standaard uit. Kies een meegeleverd geluid, upload je eigen, of laat uitgeschakeld. Het geluid speelt eenmaal per nieuwe reward_events-rij; de dashboardtab moet openstaan."
 
@@ -2551,6 +2559,10 @@ msgid "Total worker connections on Ocean (one address can have many workers)."
 msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers hebben)."
 
 #: src/pages/Config.tsx
+msgid "Transaction URL template"
+msgstr "Transactie-URL-sjabloon"
+
+#: src/pages/Config.tsx
 msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
 msgstr "Twee append-only logs voeden het dashboard. tick_metrics vormt de basis van elke grafiek; decisions is een forensisch logboek per tick, gesplitst op basis van of de autopilot een actie heeft voorgesteld. Opschonen gebeurt elk uur en bij het opstarten van de daemon. 0 in een veld = voor altijd bewaren."
 
@@ -2629,16 +2641,12 @@ msgid "uptime"
 msgstr "uptime"
 
 #: src/pages/Config.tsx
-msgid "URL template"
-msgstr "URL-sjabloon"
-
-#: src/pages/Config.tsx
 msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> crown marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
 msgstr "Wordt gebruikt door de on-chain saldocontrole van uitbetalingen (wanneer hierboven \"Bitcoin Core RPC\" is geselecteerd als backend) ÉN door de <0>BIP 110</0>-kroonmarkering op de hashrate-grafiek en de BIP 110-scan-kaart op Status - die laatste twee roepen bitcoind aan ongeacht welke uitbetaal-backend is geselecteerd. De Test-knop hieronder valideert de waarden die momenteel in het formulier staan, vóór opslaan."
 
 #: src/pages/Config.tsx
-msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."
-msgstr "Wordt gebruikt voor click-through vanuit de \"laatste pool-blok\"-rij in het Ocean-paneel en de blok-marker tooltips op de Hashrate-grafiek. `{hash}` en `{height}` placeholders worden vervangen."
+msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
+msgstr ""
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx

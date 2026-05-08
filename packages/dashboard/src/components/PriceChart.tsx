@@ -196,6 +196,7 @@ export const PriceChart = memo(function PriceChart({
   rewardEvents = [],
   ourBlocks = [],
   blockExplorerTemplate,
+  txExplorerTemplate,
   shareLogPct = null,
 }: {
   points: readonly MetricPoint[];
@@ -261,8 +262,10 @@ export const PriceChart = memo(function PriceChart({
    * chart they hovered.
    */
   ourBlocks?: readonly OurBlockMarker[];
-  /** Block-explorer URL template (`{hash}` / `{height}` placeholders). */
+  /** Block-explorer URL template for pool-block markers (`{hash}` / `{height}` placeholders). */
   blockExplorerTemplate?: string;
+  /** Transaction-explorer URL template for reward-event markers (`{txid}` / `{hash}` placeholders). */
+  txExplorerTemplate?: string;
   /** Live share_log %, used by the pool-block tooltip when there's no per-block historical capture. */
   shareLogPct?: number | null;
 }) {
@@ -1494,7 +1497,7 @@ export const PriceChart = memo(function PriceChart({
       {rewardTip && (
         <RewardEventTooltip
           tip={rewardTip}
-          explorerTemplate={blockExplorerTemplate ?? ''}
+          explorerTemplate={txExplorerTemplate ?? ''}
           locale={intlLocale}
           dateTimeLocale={dateTimeLocale}
           denomination={denomination}
@@ -1598,7 +1601,10 @@ function RewardEventTooltip({
   }, [tip.x, tip.y, reward.id]);
 
   const url = explorerTemplate
-    ? applyExplorerTemplate(explorerTemplate, { height: reward.block_height })
+    ? applyExplorerTemplate(explorerTemplate, {
+        txid: reward.txid,
+        height: reward.block_height,
+      })
     : '';
   const btc = reward.value_sat / 1e8;
   const valueText =
