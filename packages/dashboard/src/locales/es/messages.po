@@ -1299,8 +1299,8 @@ msgid "manual"
 msgstr "manual"
 
 #: src/pages/Alerts.tsx
-msgid "mark seen"
-msgstr "marcar visto"
+msgid "mark as seen"
+msgstr "marcar como visto"
 
 #: src/components/PriceChart.tsx
 msgid "market at this tick"

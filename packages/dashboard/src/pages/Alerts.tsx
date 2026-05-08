@@ -41,15 +41,24 @@ export function Alerts() {
     refetchInterval: 30_000,
   });
 
+  // Invalidate both the table query AND the nav-bar unread-count query
+  // (Layout's `['alerts-head']`) so the red badge updates the instant
+  // the operator clicks. Without the second invalidate the badge waits
+  // up to 30s for its next poll - confusingly stale right after an ack.
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ['alerts'] });
+    qc.invalidateQueries({ queryKey: ['alerts-head'] });
+  };
+
   const ack = useMutation({
     mutationFn: (id: number) => api.alertAcknowledge(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+    onSuccess: invalidateAll,
   });
 
   const snooze = useMutation({
     mutationFn: ({ id, minutes }: { id: number; minutes: number }) =>
       api.alertSnooze(id, minutes),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+    onSuccess: invalidateAll,
   });
 
   const alerts = query.data?.alerts ?? [];
@@ -194,7 +203,7 @@ function AlertRow({
             onClick={onAcknowledge}
             className="px-2 py-1 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800"
           >
-            <Trans>mark seen</Trans>
+            <Trans>mark as seen</Trans>
           </button>
         ) : (
           <span className="text-[10px] text-slate-500">
