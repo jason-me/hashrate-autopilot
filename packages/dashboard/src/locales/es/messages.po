@@ -295,6 +295,10 @@ msgstr "Siempre dry-run (más seguro)"
 msgid "Always live (for trusted deployments)"
 msgstr "Siempre live (para despliegues de confianza)"
 
+#: src/components/PriceChart.tsx
+msgid "amount"
+msgstr ""
+
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Alguna puja propia activa reporta fee_rate_pct > 0."
@@ -694,6 +698,7 @@ msgid "click outside to close"
 msgstr "haz clic fuera para cerrar"
 
 #: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "close"
 msgstr "cerrar"
@@ -1783,6 +1788,10 @@ msgstr "Destino antiguo:"
 msgid "On target - bid at fillable + overpay."
 msgstr "En el objetivo - oferta igual a rellenable + sobrepago."
 
+#: src/components/PriceChart.tsx
+msgid "ON-CHAIN PAYOUT"
+msgstr "PAGO ON-CHAIN"
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "Seguimiento de pagos on-chain (opcional)"
@@ -1796,6 +1805,7 @@ msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice 
 msgstr "Activa el modo barato solo cuando el promedio móvil del mejor precio de venta vs hashprice durante estos minutos esté por debajo del umbral. Evita que oscile por picos de mercado de un solo tick. 0 = evaluar por tick (legado). Requiere ≥5 muestras en la ventana antes de aplicarlo; por debajo de eso vuelve a la verificación spot."
 
 #: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
 msgid "open in block explorer →"
 msgstr "abrir en explorador de bloques →"
 

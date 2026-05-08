@@ -196,6 +196,16 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
+  // Reward events drive the per-payout dot markers on the Price
+  // chart's "paid earnings (lifetime)" + "lifetime earnings" lines.
+  // Cap at the API's 500-row max so deeply-paid wallets don't lose
+  // historical dots in pagination.
+  const rewardEventsQuery = useQuery({
+    queryKey: ['reward-events'],
+    queryFn: () => api.rewardEvents(500),
+    refetchInterval: 60_000,
+  });
+
   const financeQuery = useQuery({
     queryKey: ['finance'],
     queryFn: api.finance,
@@ -339,6 +349,10 @@ export function Status() {
           }
           priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
           rightAxisSeries={priceRightAxis}
+          rewardEvents={rewardEventsQuery.data?.events ?? []}
+          ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
+          blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
+          shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
         />
       </div>
 

@@ -22,7 +22,16 @@ import {
   type BidEventKind,
 } from '@braiins-hashrate/shared';
 
-import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
+import {
+  api,
+  type BidEventView,
+  type DecisionDetail,
+  type DecisionSummary,
+  type MetricPoint,
+  type OurBlockMarker,
+  type RewardEventView,
+} from '../lib/api';
+import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
 import {
@@ -35,6 +44,10 @@ import {
 } from '../lib/format';
 import { useDateTimeLocale, useLocale } from '../lib/locale';
 import { SatSymbol } from './SatSymbol';
+import {
+  PoolBlockTooltip,
+  type PoolBlockTooltipState,
+} from './HashrateChart';
 
 const WIDTH = 880;
 const HEIGHT = 200;
@@ -54,6 +67,13 @@ const COLOR_CANCEL = '#f87171';
 
 interface TooltipState {
   event: BidEventView;
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+
+interface RewardTooltipState {
+  reward: RewardEventView;
   x: number;
   y: number;
   pinned: boolean;
@@ -173,6 +193,10 @@ export const PriceChart = memo(function PriceChart({
   overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
   rightAxisSeries = 'none',
+  rewardEvents = [],
+  ourBlocks = [],
+  blockExplorerTemplate,
+  shareLogPct = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -220,11 +244,38 @@ export const PriceChart = memo(function PriceChart({
    * checkbox. The toggle migrated to this dropdown 2026-05-05.
    */
   rightAxisSeries?: PriceRightAxis;
+  /**
+   * On-chain payouts that have credited the configured payout
+   * address. Renders as small filled-circle dots on the right-axis
+   * line when `rightAxisSeries` is `paid_total_sat` or
+   * `lifetime_earnings_sat`. Click pins a tooltip with block height,
+   * payout date, sat amount, and an explorer link.
+   */
+  rewardEvents?: readonly RewardEventView[];
+  /**
+   * Recent Ocean pool blocks (TIDES-credited). Renders as small
+   * filled-circle dots on the right-axis line when `rightAxisSeries`
+   * is `ocean_unpaid_sat` or `lifetime_earnings_sat`. Reuses the
+   * pool-block tooltip from HashrateChart so the operator sees the
+   * same reward / our-share / BIP-110 context regardless of which
+   * chart they hovered.
+   */
+  ourBlocks?: readonly OurBlockMarker[];
+  /** Block-explorer URL template (`{hash}` / `{height}` placeholders). */
+  blockExplorerTemplate?: string;
+  /** Live share_log %, used by the pool-block tooltip when there's no per-block historical capture. */
+  shareLogPct?: number | null;
 }) {
   const { i18n } = useLingui();
   void i18n;
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  // Per-marker tooltip state for the new on-line dots: pool-block
+  // markers reuse the rich HashrateChart tooltip; reward-event
+  // markers use a smaller bespoke tooltip with payout date + amount
+  // + explorer link.
+  const [poolBlockTip, setPoolBlockTip] = useState<PoolBlockTooltipState | null>(null);
+  const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
   const [expanded, setExpanded] = useState(false);
   const chartHeight = expanded ? HEIGHT * 2 : HEIGHT;
   const { intlLocale } = useLocale();
@@ -873,6 +924,88 @@ export const PriceChart = memo(function PriceChart({
   }, []);
   const closeTooltip = useCallback(() => setTooltip(null), []);
 
+  // Pool-block dots (right-axis = ocean_unpaid_sat or lifetime_earnings_sat).
+  const onPoolBlockEnter = useCallback(
+    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+      setPoolBlockTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { block, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onPoolBlockLeave = useCallback(() => {
+    setPoolBlockTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onPoolBlockClick = useCallback(
+    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setPoolBlockTip({ block, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closePoolBlockTip = useCallback(() => setPoolBlockTip(null), []);
+
+  // Reward-event dots (right-axis = paid_total_sat or lifetime_earnings_sat).
+  const onRewardEnter = useCallback(
+    (reward: RewardEventView) => (e: React.MouseEvent) => {
+      setRewardTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { reward, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onRewardLeave = useCallback(() => {
+    setRewardTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onRewardClick = useCallback(
+    (reward: RewardEventView) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setRewardTip({ reward, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeRewardTip = useCallback(() => setRewardTip(null), []);
+
+  // Outside-click closes the pinned pool-block / reward tooltips.
+  // Mirrors the pattern used for the bid-event tooltip below.
+  useEffect(() => {
+    if (!poolBlockTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('price-chart-pinned-pool-block-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setPoolBlockTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [poolBlockTip?.pinned]);
+
+  useEffect(() => {
+    if (!rewardTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('price-chart-pinned-reward-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setRewardTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [rewardTip?.pinned]);
+
   useEffect(() => {
     if (!tooltip?.pinned) return;
     const onDocClick = (ev: MouseEvent) => {
@@ -901,7 +1034,35 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
+  const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
+
+  // Right-axis line value at an arbitrary timestamp - used to anchor
+  // pool-block / reward-event dots on top of the line. Walk the
+  // points array forward to the first tick at or after `ts`; if `ts`
+  // is past the last tick (markers more recent than any tick), fall
+  // back to the last non-null right-axis value.
+  const rightAxisValueAt = (ts: number): number | null => {
+    if (!rightAxis) return null;
+    for (let i = 0; i < points.length; i += 1) {
+      if (points[i]!.tick_at >= ts) {
+        const v = rightAxis.values[i];
+        return typeof v === 'number' && Number.isFinite(v) ? v : null;
+      }
+    }
+    for (let i = points.length - 1; i >= 0; i -= 1) {
+      const v = rightAxis.values[i];
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+    }
+    return null;
+  };
+
+  // Which extra marker series to render based on right-axis choice.
+  const showRewardMarkers =
+    rightAxisSeries === 'paid_total_sat' ||
+    rightAxisSeries === 'lifetime_earnings_sat';
+  const showPoolBlockMarkers =
+    rightAxisSeries === 'ocean_unpaid_sat' ||
+    rightAxisSeries === 'lifetime_earnings_sat';
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
@@ -1237,7 +1398,109 @@ export const PriceChart = memo(function PriceChart({
             </text>
           </>
         )}
+
+        {/* Reward-event dots on the right-axis line. Operator click
+            opens a pinned tooltip with payout date, sat amount, and
+            block-explorer link. Only rendered when the right-axis
+            series actually plots paid earnings. */}
+        {showRewardMarkers &&
+          rewardEvents
+            .filter(
+              (r) =>
+                !r.reorged && r.detected_at >= minX && r.detected_at <= maxX,
+            )
+            .map((r) => {
+              const v = rightAxisValueAt(r.detected_at);
+              if (v === null) return null;
+              const cx = xScale(r.detected_at);
+              const cy = rightYScale(v);
+              return (
+                <g
+                  key={`reward-${r.id}`}
+                  onMouseEnter={onRewardEnter(r)}
+                  onMouseLeave={onRewardLeave}
+                  onClick={onRewardClick(r)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r="4.5"
+                    fill="#c084fc"
+                    stroke="#0f172a"
+                    strokeWidth="1.5"
+                  />
+                  <rect
+                    x={cx - 9}
+                    y={cy - 9}
+                    width="18"
+                    height="18"
+                    fill="transparent"
+                  />
+                </g>
+              );
+            })}
+
+        {/* Pool-block dots on the right-axis line. Click opens the
+            same rich tooltip the Hashrate chart uses (reward, our
+            share, BIP-110 signal, explorer link). */}
+        {showPoolBlockMarkers &&
+          ourBlocks
+            .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
+            .map((b) => {
+              const v = rightAxisValueAt(b.timestamp_ms);
+              if (v === null) return null;
+              const cx = xScale(b.timestamp_ms);
+              const cy = rightYScale(v);
+              const fill = b.found_by_us ? '#fbbf24' : '#38bdf8';
+              return (
+                <g
+                  key={`pool-block-${b.block_hash || b.height}`}
+                  onMouseEnter={onPoolBlockEnter(b)}
+                  onMouseLeave={onPoolBlockLeave}
+                  onClick={onPoolBlockClick(b)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r="4.5"
+                    fill={fill}
+                    stroke="#0f172a"
+                    strokeWidth="1.5"
+                  />
+                  <rect
+                    x={cx - 9}
+                    y={cy - 9}
+                    width="18"
+                    height="18"
+                    fill="transparent"
+                  />
+                </g>
+              );
+            })}
       </svg>
+
+      {poolBlockTip && (
+        <PoolBlockTooltip
+          tip={poolBlockTip}
+          explorerTemplate={blockExplorerTemplate ?? ''}
+          locale={intlLocale}
+          shareLogPct={shareLogPct}
+          onClose={closePoolBlockTip}
+          pinnedDomId="price-chart-pinned-pool-block-tooltip"
+        />
+      )}
+      {rewardTip && (
+        <RewardEventTooltip
+          tip={rewardTip}
+          explorerTemplate={blockExplorerTemplate ?? ''}
+          locale={intlLocale}
+          dateTimeLocale={dateTimeLocale}
+          denomination={denomination}
+          onClose={closeRewardTip}
+        />
+      )}
 
       {tooltip && (
         <EventTooltip
@@ -1286,6 +1549,120 @@ function CheckIcon() {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 6L9 17l-5-5" />
     </svg>
+  );
+}
+
+/**
+ * Rendered when an operator hovers/clicks one of the on-chain
+ * payout dots on the right-axis paid-earnings line. Smaller than
+ * the pool-block tooltip - just the block height, payout date,
+ * sat amount, and a deep-link to the block explorer.
+ */
+function RewardEventTooltip({
+  tip,
+  explorerTemplate,
+  locale,
+  dateTimeLocale,
+  denomination,
+  onClose,
+}: {
+  tip: RewardTooltipState;
+  explorerTemplate: string;
+  locale: string | undefined;
+  dateTimeLocale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const { reward, pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, reward.id]);
+
+  const url = explorerTemplate
+    ? applyExplorerTemplate(explorerTemplate, { height: reward.block_height })
+    : '';
+  const btc = reward.value_sat / 1e8;
+  const valueText =
+    denomination.mode === 'usd' && denomination.btcPrice !== null
+      ? `$${new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(btc * denomination.btcPrice)}`
+      : denomination.mode === 'btc'
+        ? `₿ ${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8,
+          }).format(btc)}`
+        : `${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(reward.value_sat)} sat`;
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'price-chart-pinned-reward-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-violet-300">
+          <Trans>ON-CHAIN PAYOUT</Trans> · #{reward.block_height.toLocaleString(locale)}
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">
+        {formatTimestamp(reward.detected_at, dateTimeLocale)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(reward.detected_at)}</span>
+      </div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(reward.detected_at)}</div>
+
+      <div className="mt-2 flex justify-between gap-3 text-slate-300">
+        <span className="text-slate-500"><Trans>amount</Trans></span>
+        <span className="font-mono tabular-nums">{valueText}</span>
+      </div>
+
+      {url && (
+        <div className="mt-3 pt-2 border-t border-slate-800">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+          >
+            <Trans>open in block explorer →</Trans>
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -295,6 +295,10 @@ msgstr "Altijd dry-run (veiligst)"
 msgid "Always live (for trusted deployments)"
 msgstr "Altijd live (voor vertrouwde installaties)"
 
+#: src/components/PriceChart.tsx
+msgid "amount"
+msgstr ""
+
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
@@ -694,6 +698,7 @@ msgid "click outside to close"
 msgstr "klik buiten om te sluiten"
 
 #: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "close"
 msgstr "sluiten"
@@ -1783,6 +1788,10 @@ msgstr "Oude destination:"
 msgid "On target - bid at fillable + overpay."
 msgstr "Op doel - bod gelijk aan vulbaar + toeslag."
 
+#: src/components/PriceChart.tsx
+msgid "ON-CHAIN PAYOUT"
+msgstr "UITBETALING ON-CHAIN"
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "On-chain uitbetaalmonitoring (optioneel)"
@@ -1796,6 +1805,7 @@ msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice 
 msgstr "Activeer goedkoop-modus alleen wanneer het rollende gemiddelde van beste-vraagprijs t.o.v. hashprice over dit aantal minuten onder de drempel ligt. Voorkomt geflapper op enkelvoudige-tick marktpieken. 0 = per tick evalueren (legacy). Vereist ≥5 metingen in het venster voordat het gehonoreerd wordt; daaronder valt het terug op de spot-controle."
 
 #: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
 msgid "open in block explorer →"
 msgstr "open in block explorer →"
 

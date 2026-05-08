@@ -2,7 +2,9 @@
 
 ## 2026-05-08
 
-### `[UI]` Drop network difficulty from Price chart's right axis
+### `[Feature]` Price chart: clickable dots with tooltips on paid + unpaid earnings lines
+
+When the Price chart's right-axis is set to **paid earnings (lifetime)**, **unpaid earnings**, or **lifetime earnings (paid + unpaid)**, the chart now renders small clickable dots on the line at the moment of each event - one per on-chain payout for the paid line, one per Ocean pool block for the unpaid line. Hover surfaces a transient tooltip; click pins it. Reward-event tooltip shows block height + payout date + amount + a deep-link to the configured block explorer; pool-block tooltip reuses the rich tooltip from the Hashrate chart (reward, our share, BIP-110 signal, explorer link). Pool-block tooltip's `pinnedDomId` is now configurable so the price chart can host its own pinned tooltip without colliding with the hashrate chart's. Operator-confirmed scope (sparse step-events benefit from markers; continuous noisy series like BTC/USD price don't); difficulty-retarget markers on the Hashrate chart are queued separately.
 
 Operator caught it on review: network difficulty was offered on both the Hashrate and Price charts' right-axis dropdowns. It belongs on Hashrate only - difficulty shifts every retarget (~2 weeks) and lines up naturally with the hashrate series. Price-chart context (sat/PH/day vs hashprice) doesn't gain anything from a difficulty overlay. Removed from the dropdown, the type union, and the right-axis branch. `readStoredPriceRightAxis` falls through to the default ('none') for any operator with the old choice persisted in localStorage. Also extracted the existing pool-block tooltip from `HashrateChart.tsx` (renamed `BlockTooltip` -> `PoolBlockTooltip`) so an upcoming Price-chart commit can reuse it for the unpaid-earnings dots.
 
