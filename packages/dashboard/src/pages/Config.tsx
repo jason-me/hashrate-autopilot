@@ -794,6 +794,39 @@ function BidBudgetField({
   );
 }
 
+// #107: section ids that start collapsed by default. Picked for
+// "rarely touched after first-run setup" - the operator can expand
+// any of them with a click but the page no longer scrolls past
+// 2,000 px of barely-edited config every time.
+const COLLAPSED_BY_DEFAULT = new Set<string>([
+  'btc-price-oracle',
+  'block-explorer',
+  'chart-smoothing',
+  'log-retention',
+  'block-found-sound',
+  'daemon-startup',
+]);
+
+const COLLAPSED_STATE_STORAGE_KEY = 'braiins.configCollapsedSections';
+
+function readCollapsedState(): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_STATE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, boolean>;
+  } catch {
+    /* corrupt storage: start fresh */
+  }
+  return {};
+}
+
+function isSectionCollapsed(sectionId: string, stored: Record<string, boolean>): boolean {
+  if (sectionId in stored) return stored[sectionId] === true;
+  return COLLAPSED_BY_DEFAULT.has(sectionId);
+}
+
 function SectionCard({
   section,
   draft,
@@ -805,6 +838,20 @@ function SectionCard({
   locale: string | undefined;
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
+  const [storedState, setStoredState] = useState<Record<string, boolean>>(() =>
+    readCollapsedState(),
+  );
+  const collapsed = isSectionCollapsed(section.id, storedState);
+  const toggleCollapsed = () => {
+    const next = { ...storedState, [section.id]: !collapsed };
+    setStoredState(next);
+    try {
+      window.localStorage.setItem(COLLAPSED_STATE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* private mode / storage full - non-fatal */
+    }
+  };
+
   // In a side-by-side row each card is already half-width; use a single
   // column inside so the dropdown and its help text span the panel.
   const gridCls = section.sideBySide
@@ -812,27 +859,47 @@ function SectionCard({
     : 'grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3';
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full">
-      <header className="mb-3">
-        <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
-        {section.description && (
+      <header className={collapsed ? '' : 'mb-3'}>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="flex items-center gap-2 w-full text-left group"
+          aria-expanded={!collapsed}
+        >
+          <span
+            aria-hidden="true"
+            className={
+              'inline-block text-amber-400 text-xs transition-transform ' +
+              (collapsed ? '' : 'rotate-90')
+            }
+          >
+            ▶
+          </span>
+          <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
+        </button>
+        {!collapsed && section.description && (
           <p className="text-xs text-slate-500 mt-1">{section.description}</p>
         )}
-        {section.id === 'log-retention' && (
+        {!collapsed && section.id === 'log-retention' && (
           <LogRetentionTotalHint draft={draft} locale={locale} />
         )}
       </header>
-      <div className={gridCls}>
-        {section.fields.map((f) => (
-          <div
-            key={f.key as string}
-            className={!section.sideBySide && f.fullWidth ? 'sm:col-span-2' : ''}
-          >
-            <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
+      {!collapsed && (
+        <>
+          <div className={gridCls}>
+            {section.fields.map((f) => (
+              <div
+                key={f.key as string}
+                className={!section.sideBySide && f.fullWidth ? 'sm:col-span-2' : ''}
+              >
+                <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {section.id === 'block-found-sound' && (
-        <BlockFoundSoundExtras draft={draft} onChange={onChange} />
+          {section.id === 'block-found-sound' && (
+            <BlockFoundSoundExtras draft={draft} onChange={onChange} />
+          )}
+        </>
       )}
     </section>
   );

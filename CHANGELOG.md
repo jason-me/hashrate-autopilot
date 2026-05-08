@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` Config page: collapsible sections (#107 phase A)
+
+Each Config-page section now has a click-to-collapse chevron next to its title. State persists per browser via localStorage (`braiins.configCollapsedSections`). Defaults: rarely-touched sections (Daemon startup, BTC price oracle, Block explorer, Chart smoothing, Log retention, Block-found notification) start collapsed; everything else stays expanded. Cuts the default page height roughly in half. Phase B (sticky TOC sidebar) and phase C (search-by-label filter) parked for direction approval on the issue thread.
+
 ### `[Feature]` Telegram inline-keyboard ack/snooze (#109)
 
 LOUD/WARN alert messages on Telegram now carry two inline buttons: **Mark as seen** and **Snooze 2h**. Tapping a button on the operator's phone is the same as clicking the action on the dashboard `/alerts` page - sets `acknowledged_at_ms` or `snoozed_until_ms`, stops the retry ladder, edits the message body in place to confirm, and removes the keyboard. New `TelegramReceiver` opens a single long-poll `getUpdates` connection so it works behind home NAT (no webhook required). Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected. Setup walkthrough at `docs/setup-telegram.md` updated to cover the new flow.
