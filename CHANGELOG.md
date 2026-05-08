@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-07
+
+### `[Feature]` Telegram notifications for critical autopilot events (#100)
+
+Reinstates external push so the operator finds out within minutes of a stratum outage / hashrate floor breach / unknown bid / Braiins API failure / sustained-paused bid / zero hashrate / beta-exit, instead of hours later via a dashboard glance. Motivated by the 2026-05-06 incident where the stratum server went unresponsive for several hours, undetected. Channel: Telegram (centralised but battle-tested phone-push), structured around a `NotificationSink` interface so a future Nostr / ntfy / email backend slots in without re-wiring detectors. Setup walkthrough at [`docs/setup-telegram.md`](docs/setup-telegram.md).
+
+Live detectors:
+- LOUD: `datum_unreachable`, `hashrate_below_floor`, `zero_hashrate`, `api_unreachable`, `unknown_bid`, `sustained_paused`.
+- WARN: `beta_exit` (Braiins fee_rate_pct turned non-zero on any active bid).
+
+Each fires once on threshold crossing, runs through a 5-attempt retry ladder (default 30 min between attempts), and pairs an INFO recovery message with the elapsed-time text when the underlying state clears. Two detectors stubbed for follow-up plumbing: `wallet_runway` needs a daily-burn input, `low_acceptance` needs an acceptance-ratio time series in tick_metrics.
+
+Configure on Config → Notifications: bot token (password-masked, dual-located in config + secrets like the Bitcoind RPC password), chat id, **Test connection** button (sends a hello-world via the typed-but-unsaved values), global mute toggle, and per-event retry interval. New `/alerts` page surfaces the full audit trail with filter chips, paired-recovery grouping, ack + snooze (30m / 2h / 24h) inline actions, and a top-nav unread badge for un-acknowledged LOUD + WARN.
+
+Schema: migration 0062 adds `delivery_status`, `delivery_attempts`, retry timing, snooze window, paired_alert_id, channel-agnostic `delivery_meta_json`, plus `event_class`. Drops the v1.0 columns that were carried only as `@deprecated` placeholders (`config.quiet_hours_*`, `config.confirmation_timeout_minutes`, `secrets.telegram_webhook_secret`). Migration 0063 adds `config.telegram_bot_token` for the dual-location pattern. Quiet-hours config is gone for good - mute-on-demand replaces the use case.
+
+en + nl + es translations for all new operator-facing strings.
+
 ## 2026-05-06
 
 ### `[Release]` v1.5.0
