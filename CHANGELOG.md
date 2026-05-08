@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` Pool-luck history populated on fresh install (#108)
+
+Historical pool-luck plot now works on day one of a fresh install. Daemon persists every Ocean pool block it sees into a new `pool_blocks` table (migration 0065) and computes per-tick 24h/7d counts from that table at query time instead of from a cached column that couldn't reconstruct the pre-install window. On boot, a small backfill pages through Ocean's `/v1/blocks` endpoint to retro-fill the recent ~14 days, so the chart is correct the moment the operator opens the dashboard. Idempotent on re-boot; bounded to 7 pages so a long downtime fills the gap without hammering Ocean. Same change unlocks #94 (BIP 110 crown markers on historical region).
+
 ### `[UI]` HashrateChart expand/collapse toggle (#105)
 
 Hashrate chart's title now carries the same expand/collapse toggle as the price chart, doubling chart height on click for closer reading of floor breaches and BIP 110 marker positions. Each chart's expand state is independent.

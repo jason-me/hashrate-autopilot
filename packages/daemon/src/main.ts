@@ -39,6 +39,7 @@ import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
+import { PoolBlocksRepo } from './state/repos/pool_blocks.js';
 import { DecisionsRepo } from './state/repos/decisions.js';
 import { OwnedBidsRepo } from './state/repos/owned_bids.js';
 import { RuntimeStateRepo } from './state/repos/runtime_state.js';
@@ -48,6 +49,7 @@ import { TickLoop } from './controller/loop.js';
 import { AlertEvaluator } from './services/alert-evaluator.js';
 import { AlertManager } from './services/alert-manager.js';
 import { TelegramSink } from './services/notifier.js';
+import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
 import type { State } from './controller/types.js';
@@ -71,6 +73,7 @@ interface BootDeps {
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
   readonly alertsRepo: AlertsRepo;
+  readonly poolBlocksRepo: PoolBlocksRepo;
   readonly closedBidsCacheRepo: ClosedBidsCacheRepo;
   readonly secretsRepo: SecretsRepo;
   readonly secretsPath: string;
@@ -102,6 +105,7 @@ async function main(): Promise<void> {
     tickMetricsRepo: new TickMetricsRepo(handle.db),
     bidEventsRepo: new BidEventsRepo(handle.db),
     alertsRepo: new AlertsRepo(handle.db),
+    poolBlocksRepo: new PoolBlocksRepo(handle.db),
     closedBidsCacheRepo: new ClosedBidsCacheRepo(handle.db),
     secretsRepo: new SecretsRepo(handle.db),
     secretsPath,
@@ -228,6 +232,7 @@ async function bootOperational(
     tickMetricsRepo,
     bidEventsRepo,
     alertsRepo,
+    poolBlocksRepo,
     closedBidsCacheRepo,
     secretsPath,
     ageKeyPath,
@@ -430,12 +435,27 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    poolBlocksRepo,
     now: () => Date.now(),
     getHashprice: () => hashpriceCache.getFresh(HASHPRICE_STALENESS_MS),
   });
   // Restore floor-tracking state so the escalation timer keeps counting
   // across daemon restarts (#11).
   await controller.hydrate();
+
+  // #108: backfill pool-blocks from Ocean if needed so the historical
+  // pool-luck plot has data on a fresh install. Idempotent on re-boot;
+  // bounded to ~14 days so a long downtime fills the gap without
+  // hammering Ocean. Failures here are logged but never abort boot
+  // (the empty table just degrades to "no historical luck", same as
+  // pre-#108 behaviour).
+  void runPoolBlocksBackfill({
+    oceanClient,
+    poolBlocksRepo,
+    log: (m) => log(m),
+  }).catch((err) =>
+    log(`[pool-blocks] backfill failed: ${(err as Error).message}`),
+  );
 
   // #100: Telegram notifier wiring. Sink credentials are re-read from
   // the latest config snapshot on every send so live edits to bot

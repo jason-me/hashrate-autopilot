@@ -88,6 +88,13 @@ export interface OceanStats {
 
 export interface OceanClient {
   fetchStats(address: string): Promise<OceanStats | null>;
+  /**
+   * #108: paged read of Ocean's pool-wide blocks list. Used by the
+   * startup backfill that populates `pool_blocks` so the historical
+   * pool-luck plot works on a fresh install. Returns blocks newest-
+   * first (Ocean's native order).
+   */
+  fetchBlocksPage(page: number, pageSize: number): Promise<OceanBlock[]>;
 }
 
 export interface OceanClientOptions {
@@ -103,7 +110,32 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
 
   const cache = new Map<string, OceanStats>();
 
+  async function fetchBlocksPage(page: number, pageSize: number): Promise<OceanBlock[]> {
+    try {
+      const resp = await getJson(
+        fetchImpl,
+        `${OCEAN_API_BASE}/blocks/${page}/${pageSize}/0`,
+      ).catch(() => null);
+      const rawBlocks = (resp?.result as Record<string, unknown>)?.blocks;
+      if (!Array.isArray(rawBlocks)) return [];
+      return (rawBlocks as Record<string, unknown>[]).map((b) => ({
+        height: Number(b.height ?? 0),
+        timestamp_ms: parseOceanTs(b.ts),
+        total_reward_sat: Number(b.total_reward_sats ?? 0),
+        subsidy_sat: Number(b.subsidy_sats ?? 0),
+        fees_sat: Number(b.txn_fees_sats ?? 0),
+        worker: String(b.workername ?? ''),
+        username: String(b.username ?? ''),
+        block_hash: String(b.block_hash ?? ''),
+      }));
+    } catch (err) {
+      console.warn(`[ocean] fetchBlocksPage failed: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
   return {
+    fetchBlocksPage,
     async fetchStats(address: string): Promise<OceanStats | null> {
       const cached = cache.get(address);
       if (cached && now() - cached.fetched_at_ms < ttl) return cached;
@@ -204,8 +236,12 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         // mined minutes ago could appear hours off, sometimes even
         // inverting the monotonic height/time ordering. Force UTC.
         const rawBlocks = (blocksResp?.result as Record<string, unknown>)?.blocks;
+        // #108: take whatever Ocean returns (no slice). Recent_blocks
+        // is now upsert input to the persistent pool_blocks table -
+        // the more we see per call, the fewer rows the boot-time
+        // backfill has to fetch separately.
         const recent_blocks: OceanBlock[] = Array.isArray(rawBlocks)
-          ? (rawBlocks as Record<string, unknown>[]).slice(0, 15).map((b) => ({
+          ? (rawBlocks as Record<string, unknown>[]).map((b) => ({
               height: Number(b.height ?? 0),
               timestamp_ms: parseOceanTs(b.ts),
               total_reward_sat: Number(b.total_reward_sats ?? 0),

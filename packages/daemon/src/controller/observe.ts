@@ -27,6 +27,7 @@ import {
 } from '../services/pool-health.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { OwnedBidsRepo, ReconcilableBid } from '../state/repos/owned_bids.js';
+import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type {
@@ -50,6 +51,13 @@ export interface ObserveDeps {
    * `config.cheap_sustained_window_minutes > 0`.
    */
   readonly tickMetricsRepo: TickMetricsRepo;
+  /**
+   * #108: persistent ledger of Ocean pool blocks. Per-tick observation
+   * upserts the recent-blocks list returned by Ocean; the per-tick
+   * 24h/7d counts feeding pool-luck come from this repo so a fresh
+   * install with backfill plots historical luck correctly.
+   */
+  readonly poolBlocksRepo: PoolBlocksRepo;
   /**
    * Optional Datum Gateway poller. When present, invoked each tick
    * and the result goes into `state.datum`. When absent or its
@@ -169,13 +177,47 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   // logic the /api/ocean route uses to render `blocks_24h` /
   // `blocks_7d` - moved here so the value gets snapshotted into
   // tick_metrics and the chart can plot historical luck.
+  //
+  // #108: counts come from the persistent `pool_blocks` table, not
+  // from Ocean's per-tick recent_blocks slice. The slice is just the
+  // upsert input; the table is the ground truth that survives daemon
+  // restarts and covers the historical pre-install window via the
+  // boot-time backfill.
   const DAY_MS = 24 * 60 * 60 * 1000;
   const recent = oceanStats?.recent_blocks ?? [];
+  if (recent.length > 0) {
+    const valid = recent.filter((b) => b.timestamp_ms > 0 && b.height > 0);
+    if (valid.length > 0) {
+      await deps.poolBlocksRepo
+        .upsertMany(
+          valid.map((b) => ({
+            height: b.height,
+            block_hash: b.block_hash,
+            timestamp_ms: b.timestamp_ms,
+            total_reward_sat: b.total_reward_sat,
+            subsidy_sat: b.subsidy_sat,
+            fees_sat: b.fees_sat,
+            worker: b.worker || null,
+            username: b.username || null,
+          })),
+          tickAt,
+        )
+        .catch((err) => {
+          logAndReturnNull('pool_blocks.upsert', err);
+        });
+    }
+  }
   const pool_blocks_24h_count = oceanStats
-    ? recent.filter((b) => b.timestamp_ms > 0 && tickAt - b.timestamp_ms < DAY_MS).length
+    ? await deps.poolBlocksRepo.countSince(tickAt - DAY_MS).catch((err) => {
+        logAndReturnNull('pool_blocks_24h_count', err);
+        return null;
+      })
     : null;
   const pool_blocks_7d_count = oceanStats
-    ? recent.filter((b) => b.timestamp_ms > 0 && tickAt - b.timestamp_ms < 7 * DAY_MS).length
+    ? await deps.poolBlocksRepo.countSince(tickAt - 7 * DAY_MS).catch((err) => {
+        logAndReturnNull('pool_blocks_7d_count', err);
+        return null;
+      })
     : null;
   // Trailing pool-hashrate averages over the same windows as the
   // block counts above. Stored on the tick row so the chart's luck
@@ -205,7 +247,17 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   // the line decays continuously between finds and matches the
   // OCEAN panel's count-vs-expected reading at the moment of each
   // find. See `services/pool-luck.ts` for the full derivation.
-  const blockTimestamps = recent.map((b) => b.timestamp_ms);
+  // Block timestamps for pool-luck's elapsed-since-last-block math.
+  // Pull from the persistent table over the 7d window (the broader
+  // of the two pool-luck windows), so the per-window slicing inside
+  // computePoolLuck has the same data both 24h and 7d luck can rely
+  // on. Falls back to the per-tick recent list if the repo query
+  // fails for any reason.
+  const blockTimestamps = oceanStats
+    ? await deps.poolBlocksRepo
+        .timestampsSince(tickAt - 7 * DAY_MS)
+        .catch(() => recent.map((b) => b.timestamp_ms))
+    : recent.map((b) => b.timestamp_ms);
   const pool_luck_24h = oceanStats
     ? computePoolLuck({
         tickAt,

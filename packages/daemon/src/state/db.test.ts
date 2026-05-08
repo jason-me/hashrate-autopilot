@@ -90,6 +90,7 @@ describe('openDatabase - migrations', () => {
       '0062_telegram_notifications.sql',
       '0063_telegram_bot_token_on_config.sql',
       '0064_notification_disabled_event_classes.sql',
+      '0065_pool_blocks.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

@@ -408,8 +408,22 @@ export interface SecretsTable {
   updated_at: number;
 }
 
+/** #108: persisted Ocean pool blocks. See migration 0065. */
+export interface PoolBlocksTable {
+  height: number;
+  block_hash: string;
+  timestamp_ms: number;
+  total_reward_sat: number;
+  subsidy_sat: number;
+  fees_sat: number;
+  worker: string | null;
+  username: string | null;
+  observed_at_ms: number;
+}
+
 export interface Database {
   config: ConfigTable;
+  pool_blocks: PoolBlocksTable;
   runtime_state: RuntimeStateTable;
   owned_bids: OwnedBidsTable;
   deferred_actions: DeferredActionsTable;
