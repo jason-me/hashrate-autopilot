@@ -17,21 +17,36 @@
  * walked past `LOOKBACK_DAYS` worth of history.
  */
 
+import type { Kysely } from 'kysely';
+
 import type { OceanClient } from './ocean.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
+import type { Database } from '../state/types.js';
 
 const PAGE_SIZE = 30;
-// 12 × 30 = 360 blocks. At Ocean's 2026-05 find rate (~3/day) that's
-// ~120 days of headroom on the cap; at the worst case observed in
-// 2024-12 (~9/day) it's still ~40. The lookback floor below stops
-// us early so steady-state runs don't actually paginate this deep.
-const MAX_PAGES = 12;
-const LOOKBACK_DAYS = 30;
+// 24 × 30 = 720 blocks. At Ocean's 2026-05 find rate (~3/day) that's
+// ~240 days of headroom on the cap; at the worst case observed in
+// 2024-12 (~9/day) it's still ~80 days. The dynamic lookback below
+// stops us early so steady-state runs don't paginate this deep.
+const MAX_PAGES = 24;
+// Floor: always pull at least the last 30 days even on a fresh
+// install with no tick_metrics history. Ceiling: never pull more
+// than 180 days regardless of how deep the operator's history goes,
+// to bound the worst-case API load.
+const LOOKBACK_FLOOR_DAYS = 30;
+const LOOKBACK_CEILING_DAYS = 180;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface PoolBlocksBackfillDeps {
   readonly oceanClient: OceanClient;
   readonly poolBlocksRepo: PoolBlocksRepo;
+  /**
+   * Optional. When present, the backfill targets `earliest_tick - 7d`
+   * (capped at LOOKBACK_CEILING_DAYS) so the historical pool-luck
+   * recompute that runs after this has full coverage for every tick
+   * in tick_metrics. Without this dep we fall back to the floor.
+   */
+  readonly db?: Kysely<Database>;
   readonly log?: (msg: string) => void;
   readonly now?: () => number;
 }
@@ -39,16 +54,43 @@ export interface PoolBlocksBackfillDeps {
 export async function runPoolBlocksBackfill(deps: PoolBlocksBackfillDeps): Promise<void> {
   const log = deps.log ?? (() => undefined);
   const now = deps.now ?? (() => Date.now());
+  const nowMs = now();
+
+  // Dynamic lookback: pull at least enough blocks for the historical
+  // pool-luck recompute to have a 7-day window for the earliest
+  // tick_metrics row. Floor at 30 days so a fresh install still
+  // captures something useful; ceiling at 180 days so a long-running
+  // installation doesn't trigger a 360-page Ocean scrape on every
+  // boot.
+  let lookbackDays = LOOKBACK_FLOOR_DAYS;
+  if (deps.db) {
+    try {
+      const earliestTick = await deps.db
+        .selectFrom('tick_metrics')
+        .select(({ fn }) => fn.min<number>('tick_at').as('t'))
+        .executeTakeFirst();
+      if (earliestTick?.t) {
+        const tickAgeDays = Math.ceil((nowMs - earliestTick.t) / DAY_MS);
+        const desired = tickAgeDays + 7;
+        lookbackDays = Math.min(
+          LOOKBACK_CEILING_DAYS,
+          Math.max(LOOKBACK_FLOOR_DAYS, desired),
+        );
+      }
+    } catch {
+      /* leave lookbackDays at the floor */
+    }
+  }
 
   const earliest = await deps.poolBlocksRepo.earliestTimestampMs().catch(() => null);
-  const cutoff = now() - LOOKBACK_DAYS * DAY_MS;
+  const cutoff = nowMs - lookbackDays * DAY_MS;
 
   // Skip when we already have data older than the lookback window.
   if (earliest !== null && earliest <= cutoff) {
     return;
   }
 
-  log(`pool_blocks: backfill starting (earliest=${earliest === null ? 'empty' : new Date(earliest).toISOString()}, cutoff=${new Date(cutoff).toISOString()})`);
+  log(`pool_blocks: backfill starting (lookback=${lookbackDays}d, earliest=${earliest === null ? 'empty' : new Date(earliest).toISOString()}, cutoff=${new Date(cutoff).toISOString()})`);
 
   let totalUpserted = 0;
   for (let page = 0; page < MAX_PAGES; page += 1) {
@@ -69,7 +111,7 @@ export async function runPoolBlocksBackfill(deps: PoolBlocksBackfillDeps): Promi
         worker: b.worker || null,
         username: b.username || null,
       })),
-      now(),
+      nowMs,
     );
     totalUpserted += valid.length;
 

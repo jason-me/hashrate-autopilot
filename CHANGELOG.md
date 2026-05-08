@@ -2,9 +2,17 @@
 
 ## 2026-05-08
 
-### `[Fix]` Historical pool-luck recomputed against pool_blocks (#108 follow-up)
+### `[Fix]` Full historical recompute: pool-luck, paid total, unpaid earnings (#108 follow-up)
 
-Operator reasoned: "the previous values were wrong, so why don't you recalculate all the historical luck?" Right call. The spike on the chart at the deploy moment was the same systematic under-count just frozen in past `tick_metrics` rows - the backfill populated `pool_blocks` but didn't go back and fix the dependent counts. Daemon now runs a one-time historical recompute on boot after the backfill: walks every `tick_metrics` row whose 7d window has full pool_blocks coverage, recomputes counts + luck using the truthful table, writes back. Idempotent on re-boot. The chart's 7d luck line now reads smoothly across the deploy moment instead of jumping +33% in a single tick.
+Operator reasoned: "the previous values were wrong, so why don't you recalculate all the historical luck? Also means you can retroactively populate the unpaid sat stat." Right calls, both. The spike on the chart at the deploy moment was the same systematic under-count just frozen in past `tick_metrics` rows; many older ticks also had null `network_difficulty` / `pool_hashrate_ph_avg_*` (those columns were added in migrations 0053 / 0056) so luck wasn't computable at all on them.
+
+Daemon now runs a one-time historical recompute on boot after the backfill, with three improvements over the previous pass:
+
+1. **Dynamic backfill lookback**: bounds itself to `earliest_tick_at - 7d` (capped at 180 days) so the recompute has full pool_blocks coverage for every tick in `tick_metrics`. Floor at 30 days; ceiling at 180 days; max-pages 24 (was 12).
+2. **Null-input fallbacks**: `network_difficulty` and `pool_hashrate_ph_avg_*` get backfilled from the nearest-non-null tick (both are slow-moving — difficulty changes only on retarget, pool hashrate drifts a few % per day) so older ticks become computable.
+3. **Cumulative metrics**: while we're walking ticks, also fill `paid_total_sat` (exact, from `reward_events.value_sat` running sum) and `ocean_unpaid_sat` (approximate, from `pool_blocks × share_log_pct` running credit minus running payouts). Fills nulls only — Ocean's actual reported `unpaid_sat` stays the source of truth on rows that already have it.
+
+The chart's 7d luck line, paid earnings line, and unpaid earnings line now read smoothly across the entire historical range instead of starting null and then jumping at the deploy moment. Idempotent on re-boot.
 
 ### `[UI]` Config page: tabs + cross-tab search (#107)
 

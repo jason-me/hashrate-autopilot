@@ -461,13 +461,15 @@ async function bootOperational(
   void runPoolBlocksBackfill({
     oceanClient,
     poolBlocksRepo,
+    db: handle.db,
     log: (m) => log(m),
   })
     .then(() =>
-      // Historical recompute of tick_metrics counts/luck against the
-      // now-populated pool_blocks. One-time correction for the
-      // systematic under-count introduced by the old 15-block-slice
-      // logic; idempotent on re-boot. Awaiting the backfill chain
+      // Historical recompute of tick_metrics counts/luck/paid_total/
+      // unpaid against the now-populated pool_blocks + reward_events.
+      // One-time correction for the systematic under-count introduced
+      // by the old 15-block-slice logic + nullable inputs on early
+      // ticks; idempotent on re-boot. Awaiting the backfill chain
       // matters - recompute reads pool_blocks, so it has to run
       // after backfill finishes.
       runPoolLuckRecompute({
