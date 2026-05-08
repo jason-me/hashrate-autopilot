@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` Historical pool-luck recomputed against pool_blocks (#108 follow-up)
+
+Operator reasoned: "the previous values were wrong, so why don't you recalculate all the historical luck?" Right call. The spike on the chart at the deploy moment was the same systematic under-count just frozen in past `tick_metrics` rows - the backfill populated `pool_blocks` but didn't go back and fix the dependent counts. Daemon now runs a one-time historical recompute on boot after the backfill: walks every `tick_metrics` row whose 7d window has full pool_blocks coverage, recomputes counts + luck using the truthful table, writes back. Idempotent on re-boot. The chart's 7d luck line now reads smoothly across the deploy moment instead of jumping +33% in a single tick.
+
 ### `[UI]` Config page: tabs + cross-tab search (#107)
 
 Replaces the single-column scroll with **four tabs** - Strategy, Pool & Payout, Notifications, Display & Logging - and a search box above the tab bar that jumps across tabs to any matching field. Active tab is reflected in the URL (`/config?tab=pool`), so direct links / bookmarks / refresh land on the same place. Default landing tab is Strategy. Tab bar scrolls horizontally on narrow viewports. Clicking a search result switches tab, scrolls the target field into view, and briefly outlines its section in amber. Replaces the collapsibles approach (#107 phase A) that landed earlier today; the locked-in spec on #107 was tabs + search, the agent that implemented phase A had a different recommendation that contradicted the spec, and the working dashboard now matches the agreed direction. Also reverts BUILD_NUMBER 257 → not-an-issue (we're now at 259).
