@@ -29,6 +29,7 @@ function makeState(overrides: Partial<State>): State {
       zero_hashrate_loud_alert_after_minutes: 15,
       api_outage_alert_after_minutes: 10,
       minimum_floor_hashrate_ph: 0.5,
+      notification_disabled_event_classes: [],
     },
     market: {} as State['market'],
     datum: { reachable: true, connections: 1, hashrate_ph: 1, last_ok_at: 0, consecutive_failures: 0 },
@@ -153,6 +154,23 @@ describe('AlertEvaluator - beta_exit', () => {
     expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
     expect(mgr.recorded[0]!.severity).toBe('WARN');
     expect(mgr.recorded[0]!.event_class).toBe('beta_exit');
+  });
+});
+
+describe('AlertEvaluator - per-event-class opt-out (#106)', () => {
+  it('skips disabled event classes entirely - no record, no timer arming', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    const bad = makeState({
+      datum: { reachable: false, connections: 0, hashrate_ph: 0, last_ok_at: null, consecutive_failures: 5 },
+      config: {
+        ...(makeState({}).config as State['config']),
+        notification_disabled_event_classes: ['datum_unreachable'],
+      },
+    });
+    await ev.evaluate(bad);
+    await ev.evaluate(bad);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
   });
 });
 

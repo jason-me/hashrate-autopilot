@@ -395,6 +395,10 @@ msgstr "best ask"
 msgid "best bid"
 msgstr "best bid"
 
+#: src/pages/Config.tsx
+msgid "Beta-exit detected"
+msgstr "Beta-exit detected"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -408,6 +412,10 @@ msgstr "Bid above target - Braiins price-decrease cooldown active."
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bid filling at {speed}."
+
+#: src/pages/Config.tsx
+msgid "Bid sustained-paused"
+msgstr "Bid sustained-paused"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -516,6 +524,10 @@ msgstr "Braiins 10-min cooldown"
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Braiins API access"
+
+#: src/pages/Config.tsx
+msgid "Braiins API unreachable"
+msgstr "Braiins API unreachable"
 
 #: src/pages/Status.tsx
 msgid "Braiins API unreachable - waiting for connectivity."
@@ -808,6 +820,10 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Datum stats not configured - set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
+msgid "Datum stratum unreachable"
+msgstr "Datum stratum unreachable"
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 
@@ -996,6 +1012,10 @@ msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes exclu
 msgstr "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day. Database file is currently {dbStr}."
 
 #: src/pages/Config.tsx
+msgid "Event types"
+msgstr "Event types"
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 
@@ -1138,6 +1158,10 @@ msgstr "hashprice + max overpay"
 #: src/components/HashrateChart.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
+
+#: src/pages/Config.tsx
+msgid "Hashrate below floor"
+msgstr "Hashrate below floor"
 
 #: src/pages/Status.tsx
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
@@ -1293,6 +1317,30 @@ msgstr "Log retention"
 #: src/pages/Alerts.tsx
 msgid "LOUD"
 msgstr "LOUD"
+
+#: src/pages/Config.tsx
+msgid "LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+msgstr "LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+
+#: src/pages/Config.tsx
+msgid "LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+msgstr "LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+msgstr "LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the buyer-side gateway has been unreachable for the configured tolerance window."
+msgstr "LOUD - the buyer-side gateway has been unreachable for the configured tolerance window."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the marketplace API has been down for api_outage_alert_after_minutes."
+msgstr "LOUD - the marketplace API has been down for api_outage_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgstr "LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window."
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -2270,6 +2318,10 @@ msgstr "unknown"
 msgid "Unknown"
 msgstr "Unknown"
 
+#: src/pages/Config.tsx
+msgid "Unknown bid detected"
+msgstr "Unknown bid detected"
+
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Unknown bid(s) detected - next tick will PAUSE the autopilot."
@@ -2293,6 +2345,10 @@ msgstr "unsaved changes"
 #: src/pages/Config.tsx
 msgid "unsaved changes…"
 msgstr "unsaved changes…"
+
+#: src/pages/Config.tsx
+msgid "Untick any class you don't want pushed to Telegram. Disabled classes skip the daemon entirely - no Telegram message, no /alerts row, no retry ladder. Re-enable to start receiving fresh transitions; in-flight bad states remain silent until they clear and a new transition fires."
+msgstr "Untick any class you don't want pushed to Telegram. Disabled classes skip the daemon entirely - no Telegram message, no /alerts row, no retry ladder. Re-enable to start receiving fresh transitions; in-flight bad states remain silent until they clear and a new transition fires."
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
@@ -2351,6 +2407,10 @@ msgstr "Waiting for Ocean hashprice - trading is paused until the break-even ref
 #: src/pages/Alerts.tsx
 msgid "WARN"
 msgstr "WARN"
+
+#: src/pages/Config.tsx
+msgid "WARN - any active owned bid reports fee_rate_pct > 0."
+msgstr "WARN - any active owned bid reports fee_rate_pct > 0."
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
@@ -2439,3 +2499,7 @@ msgstr "You'll use this to sign in to the dashboard after setup. At least 8 char
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
+
+#: src/pages/Config.tsx
+msgid "Zero hashrate"
+msgstr "Zero hashrate"

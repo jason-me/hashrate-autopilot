@@ -395,6 +395,10 @@ msgstr "mejor precio de venta"
 msgid "best bid"
 msgstr "mejor oferta"
 
+#: src/pages/Config.tsx
+msgid "Beta-exit detected"
+msgstr "Beta-exit detectado"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -408,6 +412,10 @@ msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de Braiins
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Oferta llenando a {speed}."
+
+#: src/pages/Config.tsx
+msgid "Bid sustained-paused"
+msgstr "Puja con pausa sostenida"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -516,6 +524,10 @@ msgstr "Cooldown de 10 min de Braiins"
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Acceso a la API de Braiins"
+
+#: src/pages/Config.tsx
+msgid "Braiins API unreachable"
+msgstr "API de Braiins inalcanzable"
 
 #: src/pages/Status.tsx
 msgid "Braiins API unreachable - waiting for connectivity."
@@ -808,6 +820,10 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Estadísticas de Datum no configuradas - ajusta <0>datum_api_url</0> en Config para mostrar workers conectados y hashrate reportado. Ver <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
+msgid "Datum stratum unreachable"
+msgstr "Datum stratum inalcanzable"
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Filas del registro de decisiones donde el autopilot propuso al menos una acción de puja. Raras (~10% de los ticks) y de alto valor: este es el registro forense de \"¿por qué el autopilot creó / editó / canceló esa puja?\" Barato de mantener mucho tiempo."
 
@@ -996,6 +1012,10 @@ msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes exclu
 msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin índices). Los logs crecen ~ {dailyStr}/día. El archivo de la base de datos pesa actualmente {dbStr}."
 
 #: src/pages/Config.tsx
+msgid "Event types"
+msgstr "Tipos de evento"
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Cada reinicio vuelve a DRY_RUN. Pasas explícitamente a LIVE desde el panel."
 
@@ -1138,6 +1158,10 @@ msgstr "hashprice + sobrepago máximo"
 #: src/components/HashrateChart.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
+
+#: src/pages/Config.tsx
+msgid "Hashrate below floor"
+msgstr "Hashrate por debajo del piso"
 
 #: src/pages/Status.tsx
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
@@ -1293,6 +1317,30 @@ msgstr "Retención de logs"
 #: src/pages/Alerts.tsx
 msgid "LOUD"
 msgstr "LOUD"
+
+#: src/pages/Config.tsx
+msgid "LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+msgstr "LOUD - una puja en la cuenta que el autopilot no creó. Ya provoca auto-PAUSE."
+
+#: src/pages/Config.tsx
+msgid "LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+msgstr "LOUD - la hashrate entregada ha estado por debajo de minimum_floor_hashrate_ph durante below_floor_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+msgstr "LOUD - entrega efectivamente nula durante zero_hashrate_loud_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the buyer-side gateway has been unreachable for the configured tolerance window."
+msgstr "LOUD - el gateway del lado del comprador ha estado inalcanzable durante la ventana de tolerancia configurada."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the marketplace API has been down for api_outage_alert_after_minutes."
+msgstr "LOUD - la API del marketplace ha estado caída durante api_outage_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgstr "LOUD - la puja propia principal lleva un last_pause_reason no nulo durante la ventana de tolerancia."
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -2270,6 +2318,10 @@ msgstr "desconocido"
 msgid "Unknown"
 msgstr "Desconocido"
 
+#: src/pages/Config.tsx
+msgid "Unknown bid detected"
+msgstr "Puja desconocida detectada"
+
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Oferta(s) desconocida(s) detectada(s) - el próximo tick PAUSARÁ el autopilot."
@@ -2293,6 +2345,10 @@ msgstr "cambios sin guardar"
 #: src/pages/Config.tsx
 msgid "unsaved changes…"
 msgstr "cambios sin guardar…"
+
+#: src/pages/Config.tsx
+msgid "Untick any class you don't want pushed to Telegram. Disabled classes skip the daemon entirely - no Telegram message, no /alerts row, no retry ladder. Re-enable to start receiving fresh transitions; in-flight bad states remain silent until they clear and a new transition fires."
+msgstr "Desmarca cualquier clase que no quieras enviar a Telegram. Las clases deshabilitadas se saltan en el daemon por completo - sin mensaje de Telegram, sin fila en /alerts, sin escalera de reintentos. Vuelve a activar para recibir nuevas transiciones; los estados malos en curso permanecen en silencio hasta que se limpien y se dispare una nueva transición."
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
@@ -2351,6 +2407,10 @@ msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la
 #: src/pages/Alerts.tsx
 msgid "WARN"
 msgstr "WARN"
+
+#: src/pages/Config.tsx
+msgid "WARN - any active owned bid reports fee_rate_pct > 0."
+msgstr "WARN - alguna puja propia activa reporta fee_rate_pct > 0."
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
@@ -2439,3 +2499,7 @@ msgstr "Lo usarás para iniciar sesión en el panel tras la configuración. Al m
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Tu dirección que recibe los pagos Ocean TIDES. La identidad del worker abajo se deriva automáticamente de esto."
+
+#: src/pages/Config.tsx
+msgid "Zero hashrate"
+msgstr "Hashrate nula"

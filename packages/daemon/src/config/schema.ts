@@ -288,6 +288,14 @@ export const AppConfigSchema = z.object({
   // retries at this interval, then a final "giving up" message and
   // silence until recovery or fresh transition.
   notification_retry_interval_minutes: positiveInt.default(30),
+
+  // #106: per-event-class opt-out. Stored as a string[] in the typed
+  // config; on the SQLite side it's a comma-separated TEXT column.
+  // Empty array = all event classes enabled (the default). The
+  // AlertEvaluator short-circuits any class in this list - no alert
+  // row, no timer arming, no recovery message. New event classes
+  // default to enabled without a migration.
+  notification_disabled_event_classes: z.array(z.string()).default([]),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -378,4 +386,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   telegram_bot_token: '',
   notifications_muted: false,
   notification_retry_interval_minutes: 30,
+  notification_disabled_event_classes: [],
 };

@@ -41,6 +41,8 @@ export interface ConfigTable {
   notifications_muted: 0 | 1;
   /** #100: cadence between retry attempts when state stays bad. Default 30. */
   notification_retry_interval_minutes: number;
+  /** #106: comma-separated event_class names the operator has opted out of. */
+  notification_disabled_event_classes: string;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;

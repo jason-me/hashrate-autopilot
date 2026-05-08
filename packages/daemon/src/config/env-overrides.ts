@@ -170,6 +170,11 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_NOTIFICATION_RETRY_INTERVAL_MINUTES',
     coerce: asInt,
   },
+  notification_disabled_event_classes: {
+    varName: 'BHA_NOTIFICATION_DISABLED_EVENT_CLASSES',
+    // CSV: comma-separated event_class names. Empty string yields [].
+    coerce: (raw: string) => raw.split(',').map((s) => s.trim()).filter(Boolean),
+  },
 };
 
 // ---------------------------------------------------------------------------

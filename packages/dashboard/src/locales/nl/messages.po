@@ -395,6 +395,10 @@ msgstr "beste vraagprijs"
 msgid "best bid"
 msgstr "beste bod"
 
+#: src/pages/Config.tsx
+msgid "Beta-exit detected"
+msgstr "Beta-exit gedetecteerd"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -408,6 +412,10 @@ msgstr "Bod boven doel - Braiins-cooldown voor prijsverlaging actief."
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bod vult op {speed}."
+
+#: src/pages/Config.tsx
+msgid "Bid sustained-paused"
+msgstr "Bod aanhoudend gepauzeerd"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -516,6 +524,10 @@ msgstr "Braiins 10-min cooldown"
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Braiins API-toegang"
+
+#: src/pages/Config.tsx
+msgid "Braiins API unreachable"
+msgstr "Braiins API onbereikbaar"
 
 #: src/pages/Status.tsx
 msgid "Braiins API unreachable - waiting for connectivity."
@@ -808,6 +820,10 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Config om verbonden workers en gerapporteerde hashrate te tonen. Zie <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
+msgid "Datum stratum unreachable"
+msgstr "Datum stratum onbereikbaar"
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Rijen in het beslissingenlogboek waar de autopilot ten minste één bidactie voorstelde. Zeldzaam (~10% van de ticks) en waardevol: dit is het forensische dossier voor \"waarom maakte/bewerkte/annuleerde de autopilot dat bod?\" Goedkoop om lang te bewaren."
 
@@ -996,6 +1012,10 @@ msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes exclu
 msgstr "Geschat maximum bij huidige instellingen: ~ {totalStr} (alleen logs, exclusief indexen). Logs groeien ~ {dailyStr}/dag. Databasebestand is momenteel {dbStr}."
 
 #: src/pages/Config.tsx
+msgid "Event types"
+msgstr "Eventtypes"
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Elke herstart reset naar DRY_RUN. Je schakelt expliciet over naar LIVE vanuit het dashboard."
 
@@ -1138,6 +1158,10 @@ msgstr "hashprice + max toeslag"
 #: src/components/HashrateChart.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
+
+#: src/pages/Config.tsx
+msgid "Hashrate below floor"
+msgstr "Hashrate onder vloer"
 
 #: src/pages/Status.tsx
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
@@ -1293,6 +1317,30 @@ msgstr "Logbewaring"
 #: src/pages/Alerts.tsx
 msgid "LOUD"
 msgstr "LOUD"
+
+#: src/pages/Config.tsx
+msgid "LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+msgstr "LOUD - een bod in het account dat de autopilot niet zelf heeft aangemaakt. Triggert al een auto-PAUSE."
+
+#: src/pages/Config.tsx
+msgid "LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+msgstr "LOUD - geleverde hashrate is gedurende below_floor_alert_after_minutes onder minimum_floor_hashrate_ph gebleven."
+
+#: src/pages/Config.tsx
+msgid "LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+msgstr "LOUD - praktisch geen levering gedurende zero_hashrate_loud_alert_after_minutes."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the buyer-side gateway has been unreachable for the configured tolerance window."
+msgstr "LOUD - de gateway aan buyer-zijde is onbereikbaar geweest gedurende het ingestelde tolerantie-venster."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the marketplace API has been down for api_outage_alert_after_minutes."
+msgstr "LOUD - de marketplace-API is gedurende api_outage_alert_after_minutes uit de lucht geweest."
+
+#: src/pages/Config.tsx
+msgid "LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgstr "LOUD - het primaire eigen bod draagt een niet-leeg last_pause_reason gedurende het tolerantie-venster."
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -2270,6 +2318,10 @@ msgstr "onbekend"
 msgid "Unknown"
 msgstr "Onbekend"
 
+#: src/pages/Config.tsx
+msgid "Unknown bid detected"
+msgstr "Onbekend bod gedetecteerd"
+
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Onbekende bieding(en) gedetecteerd - volgende tick zet de autopilot op PAUSED."
@@ -2293,6 +2345,10 @@ msgstr "niet-opgeslagen wijzigingen"
 #: src/pages/Config.tsx
 msgid "unsaved changes…"
 msgstr "niet-opgeslagen wijzigingen…"
+
+#: src/pages/Config.tsx
+msgid "Untick any class you don't want pushed to Telegram. Disabled classes skip the daemon entirely - no Telegram message, no /alerts row, no retry ladder. Re-enable to start receiving fresh transitions; in-flight bad states remain silent until they clear and a new transition fires."
+msgstr "Vink uit welke klasse je niet via Telegram wilt ontvangen. Uitgeschakelde klassen worden door de daemon volledig overgeslagen - geen Telegram-bericht, geen /alerts-regel, geen retry-ladder. Inschakelen ontvangt nieuwe transities weer; lopende slechte toestanden blijven stil tot ze opklaren en een nieuwe transitie vuurt."
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
@@ -2351,6 +2407,10 @@ msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-refer
 #: src/pages/Alerts.tsx
 msgid "WARN"
 msgstr "WARN"
+
+#: src/pages/Config.tsx
+msgid "WARN - any active owned bid reports fee_rate_pct > 0."
+msgstr "WARN - een actief eigen bod rapporteert fee_rate_pct > 0."
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
@@ -2439,3 +2499,7 @@ msgstr "Hiermee log je na de setup in op het dashboard. Minimaal 8 tekens."
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hieronder wordt hier automatisch uit afgeleid."
+
+#: src/pages/Config.tsx
+msgid "Zero hashrate"
+msgstr "Geen hashrate"

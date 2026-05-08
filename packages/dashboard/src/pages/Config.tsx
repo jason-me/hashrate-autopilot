@@ -1406,8 +1406,114 @@ function NotificationsSection({
             </Trans>
           </span>
         </label>
+
+        <EventClassSubscriptions draft={draft} onChange={onChange} />
       </div>
     </section>
+  );
+}
+
+/**
+ * #106: per-event-class opt-out. One checkbox per known event class.
+ * Storage is a string[] of disabled class names; the UI renders them
+ * as enable/disable toggles for clarity ("checked = I want this
+ * alert" rather than "checked = silenced").
+ */
+function EventClassSubscriptions({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const disabled = new Set(draft.notification_disabled_event_classes);
+
+  const eventClasses: Array<{ id: string; label: string; help: string }> = [
+    {
+      id: 'datum_unreachable',
+      label: t`Datum stratum unreachable`,
+      help: t`LOUD - the buyer-side gateway has been unreachable for the configured tolerance window.`,
+    },
+    {
+      id: 'hashrate_below_floor',
+      label: t`Hashrate below floor`,
+      help: t`LOUD - delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+    },
+    {
+      id: 'zero_hashrate',
+      label: t`Zero hashrate`,
+      help: t`LOUD - effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+    },
+    {
+      id: 'api_unreachable',
+      label: t`Braiins API unreachable`,
+      help: t`LOUD - the marketplace API has been down for api_outage_alert_after_minutes.`,
+    },
+    {
+      id: 'unknown_bid',
+      label: t`Unknown bid detected`,
+      help: t`LOUD - a bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
+    },
+    {
+      id: 'sustained_paused',
+      label: t`Bid sustained-paused`,
+      help: t`LOUD - the primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+    },
+    {
+      id: 'beta_exit',
+      label: t`Beta-exit detected`,
+      help: t`WARN - any active owned bid reports fee_rate_pct > 0.`,
+    },
+  ];
+
+  const toggle = (id: string, enabled: boolean) => {
+    const next = new Set(disabled);
+    if (enabled) next.delete(id);
+    else next.add(id);
+    onChange(
+      'notification_disabled_event_classes',
+      Array.from(next).sort() as never,
+    );
+  };
+
+  return (
+    <fieldset className="pt-2 border-t border-slate-800">
+      <legend className="block text-sm text-slate-300 mb-2">
+        <Trans>Event types</Trans>
+      </legend>
+      <p className="text-xs text-slate-500 mb-3">
+        <Trans>
+          Untick any class you don't want pushed to Telegram. Disabled classes
+          skip the daemon entirely - no Telegram message, no /alerts row, no
+          retry ladder. Re-enable to start receiving fresh transitions; in-flight
+          bad states remain silent until they clear and a new transition fires.
+        </Trans>
+      </p>
+      <div className="space-y-2">
+        {eventClasses.map((ec) => {
+          const enabled = !disabled.has(ec.id);
+          return (
+            <label
+              key={ec.id}
+              className="flex items-start gap-2 p-2 rounded border border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => toggle(ec.id, e.target.checked)}
+                className="mt-0.5 accent-amber-400 h-4 w-4"
+              />
+              <span>
+                <span className="text-sm text-slate-200">{ec.label}</span>
+                <span className="block text-xs text-slate-500 mt-0.5">{ec.help}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
