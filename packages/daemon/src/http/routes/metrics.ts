@@ -81,6 +81,8 @@ export interface MetricPoint {
   readonly estimated_block_reward_sat: number | null;
   readonly btc_usd_price: number | null;
   readonly ocean_unpaid_sat: number | null;
+  /** #102: cumulative on-chain payout total at tick, sat. */
+  readonly paid_total_sat: number | null;
   // #92: pool block counts - input to the chart's pool-luck plot.
   readonly pool_blocks_24h_count: number | null;
   readonly pool_blocks_7d_count: number | null;
@@ -175,6 +177,7 @@ function toMetricPoint(r: {
   estimated_block_reward_sat: number | null;
   btc_usd_price: number | null;
   ocean_unpaid_sat: number | null;
+  paid_total_sat: number | null;
   pool_blocks_24h_count: number | null;
   pool_blocks_7d_count: number | null;
   pool_hashrate_ph_avg_24h: number | null;
@@ -217,6 +220,7 @@ function toMetricPoint(r: {
     estimated_block_reward_sat: r.estimated_block_reward_sat,
     btc_usd_price: r.btc_usd_price,
     ocean_unpaid_sat: r.ocean_unpaid_sat,
+    paid_total_sat: r.paid_total_sat,
     pool_blocks_24h_count: r.pool_blocks_24h_count,
     pool_blocks_7d_count: r.pool_blocks_7d_count,
     pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,

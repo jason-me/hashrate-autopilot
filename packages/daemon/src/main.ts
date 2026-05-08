@@ -40,6 +40,7 @@ import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { PoolBlocksRepo } from './state/repos/pool_blocks.js';
+import { RewardEventsRepo } from './state/repos/reward_events.js';
 import { DecisionsRepo } from './state/repos/decisions.js';
 import { OwnedBidsRepo } from './state/repos/owned_bids.js';
 import { RuntimeStateRepo } from './state/repos/runtime_state.js';
@@ -74,6 +75,7 @@ interface BootDeps {
   readonly bidEventsRepo: BidEventsRepo;
   readonly alertsRepo: AlertsRepo;
   readonly poolBlocksRepo: PoolBlocksRepo;
+  readonly rewardEventsRepo: RewardEventsRepo;
   readonly closedBidsCacheRepo: ClosedBidsCacheRepo;
   readonly secretsRepo: SecretsRepo;
   readonly secretsPath: string;
@@ -106,6 +108,7 @@ async function main(): Promise<void> {
     bidEventsRepo: new BidEventsRepo(handle.db),
     alertsRepo: new AlertsRepo(handle.db),
     poolBlocksRepo: new PoolBlocksRepo(handle.db),
+    rewardEventsRepo: new RewardEventsRepo(handle.db),
     closedBidsCacheRepo: new ClosedBidsCacheRepo(handle.db),
     secretsRepo: new SecretsRepo(handle.db),
     secretsPath,
@@ -233,6 +236,7 @@ async function bootOperational(
     bidEventsRepo,
     alertsRepo,
     poolBlocksRepo,
+    rewardEventsRepo,
     closedBidsCacheRepo,
     secretsPath,
     ageKeyPath,
@@ -436,6 +440,7 @@ async function bootOperational(
     tickMetricsRepo,
     bidEventsRepo,
     poolBlocksRepo,
+    rewardEventsRepo,
     now: () => Date.now(),
     getHashprice: () => hashpriceCache.getFresh(HASHPRICE_STALENESS_MS),
   });

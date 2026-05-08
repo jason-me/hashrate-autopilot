@@ -90,6 +90,8 @@ function readStoredPriceRightAxis(fallback: PriceRightAxis): PriceRightAxis {
     raw === 'estimated_block_reward' ||
     raw === 'btc_usd_price' ||
     raw === 'ocean_unpaid_sat' ||
+    raw === 'paid_total_sat' ||
+    raw === 'lifetime_earnings_sat' ||
     raw === 'network_difficulty'
   ) {
     return raw;
@@ -315,6 +317,8 @@ export function Status() {
             <option value="estimated_block_reward">{t`block reward`}</option>
             <option value="btc_usd_price">{t`BTC/USD`}</option>
             <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
+            <option value="paid_total_sat">{t`paid earnings (lifetime)`}</option>
+            <option value="lifetime_earnings_sat">{t`lifetime earnings (paid + unpaid)`}</option>
             <option value="network_difficulty">{t`network difficulty`}</option>
           </select>
         </div>

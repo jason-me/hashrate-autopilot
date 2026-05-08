@@ -44,6 +44,8 @@ export interface InsertTickMetricArgs {
   readonly braiins_total_deposited_sat: number | null;
   readonly braiins_total_spent_sat: number | null;
   readonly ocean_unpaid_sat: number | null;
+  /** #102: cumulative on-chain payout total at tick, sat. */
+  readonly paid_total_sat: number | null;
   readonly btc_usd_price: number | null;
   readonly btc_usd_price_source: string | null;
   readonly primary_bid_last_pause_reason: string | null;
@@ -99,6 +101,7 @@ export interface AggregatedTickMetricRow {
   estimated_block_reward_sat: number | null;
   btc_usd_price: number | null;
   ocean_unpaid_sat: number | null;
+  paid_total_sat: number | null;
   pool_blocks_24h_count: number | null;
   pool_blocks_7d_count: number | null;
   pool_hashrate_ph_avg_24h: number | null;
@@ -166,6 +169,7 @@ export class TickMetricsRepo {
         estimated_block_reward_sat: r.estimated_block_reward_sat,
         btc_usd_price: r.btc_usd_price,
         ocean_unpaid_sat: r.ocean_unpaid_sat,
+        paid_total_sat: r.paid_total_sat,
         pool_blocks_24h_count: r.pool_blocks_24h_count,
         pool_blocks_7d_count: r.pool_blocks_7d_count,
         pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,
@@ -216,6 +220,9 @@ export class TickMetricsRepo {
         ),
         sql<number | null>`AVG(btc_usd_price)`.as('btc_usd_price'),
         sql<number | null>`AVG(ocean_unpaid_sat)`.as('ocean_unpaid_sat'),
+        // #102: paid_total_sat is monotonic - MAX gives the end-of-bucket
+        // value so cumulative-line shape is preserved through bucketing.
+        sql<number | null>`MAX(paid_total_sat)`.as('paid_total_sat'),
         // #92: pool block counts. AVG within a bucket gives the
         // mean rolling-window count over the bucket - sensible for
         // chart smoothing because the count itself is a 24h/7d

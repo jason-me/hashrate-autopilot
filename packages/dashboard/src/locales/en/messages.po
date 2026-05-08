@@ -656,10 +656,12 @@ msgstr "close"
 msgid "closed bids"
 msgstr "closed bids"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "collapse"
 msgstr "collapse"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "Collapse to default height"
 msgstr "Collapse to default height"
@@ -1040,10 +1042,12 @@ msgstr "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the da
 msgid "Existing config detected - fields are pre-filled. Update what changed and click through."
 msgstr "Existing config detected - fields are pre-filled. Update what changed and click through."
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "expand"
 msgstr "expand"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "Expand to double height"
 msgstr "Expand to double height"
@@ -1287,6 +1291,10 @@ msgstr "last tick:"
 #: src/pages/Setup.tsx
 msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
 msgstr "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
+
+#: src/pages/Status.tsx
+msgid "lifetime earnings (paid + unpaid)"
+msgstr "lifetime earnings (paid + unpaid)"
 
 #: src/pages/Status.tsx
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
@@ -1689,6 +1697,10 @@ msgstr "owner"
 #: src/pages/Setup.tsx
 msgid "Owner token"
 msgstr "Owner token"
+
+#: src/pages/Status.tsx
+msgid "paid earnings (lifetime)"
+msgstr "paid earnings (lifetime)"
 
 #: src/pages/Login.tsx
 msgid "password"

@@ -120,6 +120,8 @@ export type PriceRightAxis =
   | 'estimated_block_reward'
   | 'btc_usd_price'
   | 'ocean_unpaid_sat'
+  | 'paid_total_sat'
+  | 'lifetime_earnings_sat'
   | 'network_difficulty';
 
 // Matches HashrateChart's PADDING_RIGHT_WITH_SHARE_LOG (80) so the
@@ -533,6 +535,24 @@ export const PriceChart = memo(function PriceChart({
             values: points.map((p) => p.ocean_unpaid_sat),
             stroke: '#c084fc',
             axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
+            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+          };
+        case 'paid_total_sat':
+          return {
+            values: points.map((p) => p.paid_total_sat),
+            stroke: '#c084fc',
+            axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
+            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+          };
+        case 'lifetime_earnings_sat':
+          return {
+            values: points.map((p) =>
+              p.paid_total_sat === null && p.ocean_unpaid_sat === null
+                ? null
+                : (p.paid_total_sat ?? 0) + (p.ocean_unpaid_sat ?? 0),
+            ),
+            stroke: '#c084fc',
+            axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'network_difficulty':

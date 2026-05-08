@@ -28,6 +28,7 @@ import {
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { OwnedBidsRepo, ReconcilableBid } from '../state/repos/owned_bids.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
+import type { RewardEventsRepo } from '../state/repos/reward_events.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type {
@@ -58,6 +59,13 @@ export interface ObserveDeps {
    * install with backfill plots historical luck correctly.
    */
   readonly poolBlocksRepo: PoolBlocksRepo;
+  /**
+   * #102: read-only access to `reward_events` for the paid_total_sat
+   * cumulative metric. Optional - when payout-observer is not wired
+   * (payout_source = 'none'), the column is left null and the chart
+   * series degrades gracefully.
+   */
+  readonly rewardEventsRepo?: RewardEventsRepo;
   /**
    * Optional Datum Gateway poller. When present, invoked each tick
    * and the result goes into `state.datum`. When absent or its
@@ -173,6 +181,19 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   const pool_hashrate_ph = oceanStats?.pool.pool_hashrate_ph ?? null;
   const pool_active_workers = oceanStats?.pool.active_workers ?? null;
   const ocean_unpaid_sat = oceanStats?.unpaid_sat ?? null;
+  // #102: cumulative on-chain payout total at this tick. Sum of every
+  // non-reorged reward_events row up to tick_at. Null when the
+  // payout-observer isn't wired (payout_source = 'none') so the
+  // chart series degrades to "no on-chain data" rather than showing
+  // a misleading flat zero line.
+  const paid_total_sat = deps.rewardEventsRepo
+    ? await deps.rewardEventsRepo
+        .sumPaidUpTo(tickAt)
+        .catch((err) => {
+          logAndReturnNull('paid_total_sat', err);
+          return null as number | null;
+        })
+    : null;
   // #92 (follow-up): pool block counts per tick. Same windowing
   // logic the /api/ocean route uses to render `blocks_24h` /
   // `blocks_7d` - moved here so the value gets snapshotted into
@@ -447,6 +468,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     braiins_total_deposited_sat,
     braiins_total_spent_sat,
     ocean_unpaid_sat,
+    paid_total_sat,
     btc_usd_price,
     btc_usd_price_source,
     pool_blocks_24h_count,

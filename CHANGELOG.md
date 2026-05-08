@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Paid total + lifetime earnings on the price chart (#102)
+
+Two new right-axis options on the price chart: `paid earnings (lifetime)` plots the cumulative on-chain payouts to the configured address (monotonically non-decreasing), and `lifetime earnings (paid + unpaid)` plots `paid_total + ocean_unpaid` for a clean line that survives payout cliffs. Daemon persists `paid_total_sat` per tick (migration 0066) computed from `reward_events`. Operators on `payout_source = 'none'` see null and the series degrades gracefully. Pre-install on-chain history isn't backfilled - the line starts counting from the first scan after upgrade, same as the unpaid series.
+
 ### `[Fix]` Pool-luck history populated on fresh install (#108)
 
 Historical pool-luck plot now works on day one of a fresh install. Daemon persists every Ocean pool block it sees into a new `pool_blocks` table (migration 0065) and computes per-tick 24h/7d counts from that table at query time instead of from a cached column that couldn't reconstruct the pre-install window. On boot, a small backfill pages through Ocean's `/v1/blocks` endpoint to retro-fill the recent ~14 days, so the chart is correct the moment the operator opens the dashboard. Idempotent on re-boot; bounded to 7 pages so a long downtime fills the gap without hammering Ocean. Same change unlocks #94 (BIP 110 crown markers on historical region).

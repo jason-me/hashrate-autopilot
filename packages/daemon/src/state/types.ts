@@ -321,6 +321,10 @@ export interface TickMetricsTable {
   braiins_total_spent_sat: number | null;
   /** Ocean unpaid earnings at tick, sat. Sharp drop = TIDES payout. */
   ocean_unpaid_sat: number | null;
+  /** #102: cumulative on-chain payout total at tick, sat. Monotonically
+   * non-decreasing (sum of reward_events.value_sat, reorged=0, detected_at <= tick_at).
+   * Pair with ocean_unpaid_sat for the lifetime-earnings derivation. */
+  paid_total_sat: number | null;
   /** BTC/USD oracle reading at tick, $. */
   btc_usd_price: number | null;
   /** Which oracle the reading came from ('coingecko' / 'coinbase' / etc), null when no reading. */

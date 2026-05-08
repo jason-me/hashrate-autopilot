@@ -656,10 +656,12 @@ msgstr "sluiten"
 msgid "closed bids"
 msgstr "gesloten biedingen"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "collapse"
 msgstr "inklappen"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "Collapse to default height"
 msgstr "Inklappen naar standaardhoogte"
@@ -1040,10 +1042,12 @@ msgstr "Elke herstart reset naar DRY_RUN. Je schakelt expliciet over naar LIVE v
 msgid "Existing config detected - fields are pre-filled. Update what changed and click through."
 msgstr "Bestaande config gedetecteerd - velden zijn vooringevuld. Pas aan wat veranderd is en ga verder."
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "expand"
 msgstr "uitklappen"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "Expand to double height"
 msgstr "Uitklappen naar dubbele hoogte"
@@ -1287,6 +1291,10 @@ msgstr "vorige tick:"
 #: src/pages/Setup.tsx
 msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
 msgstr "Laat het dashboard Ocean TIDES-uitbetalingen tonen zodra ze binnenkomen. Kies een backend die de on-chain saldo van je wallet kan lezen."
+
+#: src/pages/Status.tsx
+msgid "lifetime earnings (paid + unpaid)"
+msgstr "totale verdiensten (uitbetaald + onbetaald)"
 
 #: src/pages/Status.tsx
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
@@ -1689,6 +1697,10 @@ msgstr "eigenaar"
 #: src/pages/Setup.tsx
 msgid "Owner token"
 msgstr "Eigenaars-token"
+
+#: src/pages/Status.tsx
+msgid "paid earnings (lifetime)"
+msgstr "uitbetaald (totaal)"
 
 #: src/pages/Login.tsx
 msgid "password"
