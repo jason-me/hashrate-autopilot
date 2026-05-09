@@ -1,24 +1,14 @@
-# Hashrate Autopilot - Specification (v2.3)
+# Hashrate Autopilot - Specification (v2.4)
 
-> Status: current, aligned with code through 2026-05-02 (v1.4.8 release).
+> Status: current, aligned with code through 2026-05-09 (v1.5.4 release).
 >
-> This spec has been through three pricing regimes. **v1.x** used a depth-aware "fillable + overpay"
-> controller with escalation timers, lowering-patience, and a dampening subsystem. **v2.0** (2026-04-23,
-> same day) retired all of it on the hypothesis that Braiins matched CLOB-style and the bid was a
-> matching-access ceiling. **v2.1** (2026-04-23, hours later) reversed v2.0 after a direct A/B on the
-> live account showed Braiins matches pay-your-bid - the bid price *is* the paid price. The current
-> controller tracks `fillable_ask + overpay_sat_per_eh_day` (the v1.x primitive) without the v1.x timer
-> machinery (which was only needed to simulate that target under a misread of the mechanic); the
-> retired escalation/patience/min-lower-delta knobs stay retired.
+> This spec has been through three pricing regimes. **v1.x** used a depth-aware "fillable + overpay" controller with escalation timers, lowering-patience, and a dampening subsystem. **v2.0** (2026-04-23, same day) retired all of it on the hypothesis that Braiins matched CLOB-style and the bid was a matching-access ceiling. **v2.1** (2026-04-23, hours later) reversed v2.0 after a direct A/B on the live account showed Braiins matches pay-your-bid - the bid price *is* the paid price. The current controller tracks `fillable_ask + overpay_sat_per_eh_day` (the v1.x primitive) without the v1.x timer machinery (which was only needed to simulate that target under a misread of the mechanic); the retired escalation/patience/min-lower-delta knobs stay retired.
 >
-> Earlier history: v1.0 (2026-04-14) was built around a constraint - that Braiins requires 2FA on every
-> `POST`/`PUT` - which empirical testing on a live account on 2026-04-15 disproved for the owner-scope
-> API token. v1.1 removed the confirmation bot, quiet-hours machinery, pending-confirmation /
-> confirmation-timeout action modes, and operator-availability flag. v1.2-1.9 layered on depth-aware
-> pricing, cheap-mode opportunistic scaling, the Ocean and Datum Gateway integrations, the
-> hashprice-relative dynamic cap, and retention-managed persistence. The what-if simulator shipped in
-> v1.8 and was retired in v2.0 along with the fill-strategy knobs. See the document history at the
-> bottom for the per-version breakdown.
+> Earlier history: v1.0 (2026-04-14) was built around a constraint - that Braiins requires 2FA on every `POST`/`PUT` - which empirical testing on a live account on 2026-04-15 disproved for the owner-scope API token. v1.1 removed the confirmation bot, quiet-hours machinery, pending-confirmation / confirmation-timeout action modes, and operator-availability flag. v1.2-1.9 layered on depth-aware pricing, cheap-mode opportunistic scaling, the Ocean and Datum Gateway integrations, the hashprice-relative dynamic cap, and retention-managed persistence. The what-if simulator shipped in v1.8 and was retired in v2.0 along with the fill-strategy knobs.
+>
+> v2.2 added appliance packaging (Docker / GHCR / Umbrel / first-run web wizard); v2.3 was a doc-only consistency sweep. **v2.4** (this revision) brings the spec forward to cover the run of features shipped May 2026: the Telegram notification system (#100 / #109, including the per-event-class opt-out, the inline-keyboard ack/snooze, and the pool-block-credit "good news" toggle #117), the daemon-managed Dynamic DNS updater + public-IP visibility card (#110 / #111, supporting No-IP / DuckDNS / generic dyndns2), the stale-URL banner that catches a `destination_pool_url` mismatch on a live bid (#113), the wallet-runway alert wiring (#116, default 0 = off), the Config page reorganisation into four tabs with cross-tab search (#107), the price chart's paid / lifetime earnings series (#102) and difficulty-retarget markers, the hashrate chart's expand toggle (#105) and own-block-vs-BIP-110 marker swap (#115), and assorted Test connection buttons across the Pool URL / Datum stats API / DDNS surfaces (#112).
+>
+> See the document history at the bottom for the per-version breakdown.
 
 ## 1. Purpose
 
@@ -53,7 +43,7 @@ Umbrel, Docker and scripted installs. See README.md for details.
 
 ## 4. Runtime environment
 
-- **Host:** a dedicated always-on machine on the operator's LAN. Can be the Umbrel node itself.
+- **Host:** a dedicated always-on machine on the operator's LAN. Can be the same physical box that runs the Bitcoin node + Datum Gateway, or a separate always-on machine alongside it. Tested on bare-metal Linux, Docker on Linux, and the Umbrel app store packaging; nothing in the daemon assumes any particular Bitcoin-node platform.
 - **Network access required:** Braiins Hashpower API (internet egress - `hashpower.braiins.com`), Datum Gateway
   stratum+tcp access (LAN, typically port 23334).
 - **Network access recommended:** Bitcoin RPC or **much** better Electrs endpoint (LAN). This will allow you to
@@ -81,8 +71,7 @@ Umbrel, Docker and scripted installs. See README.md for details.
     - Fees: `GET /v1/spot/fee`
     - Market settings: `GET /v1/spot/settings`
     - Transactions (on-chain + internal): `GET /v1/account/transactions`
-- Block reward payouts observed via **Electrs** (preferred, instant lookups) or `bitcoind` RPC
-  (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) on the Umbrel node.
+- Block reward payouts observed via **Electrs** (preferred, instant lookups) or `bitcoind` RPC (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) against any reachable Bitcoin node on the LAN. The node can be Bitcoin Knots / Bitcoin Core running on Umbrel, Start9, a NAS, a VPS, or bare metal; the daemon just needs RPC or Electrum-protocol reach to it.
 - Datum Gateway endpoint reachability (TCP connect health check, port 23334).
 - Datum Gateway API (normally port 7152; no auth):
 - Ocean API (public)
@@ -115,8 +104,7 @@ The full DDL (with comments and migration numbers) lives in `architecture.md` §
 - `DELETE /v1/spot/bid` (**cancel**) - fully autonomous. The order ID is passed in the JSON body; the query-string
   form is rejected (empirical, see `docs/research.md` v1.1).
 - Dashboard UI (LAN bind).
-- No external notification channel in v1. Alerts and status are surfaced exclusively in the dashboard and the
-  decisions log.
+- **External notification channel via Telegram** (#100, shipped post-v2.3). LOUD / WARN events POST to a configured chat with an inline-keyboard ack/snooze (#109); INFO events stay dashboard-only by default with one opt-in (`notify_on_pool_block_credit`, #117). The notifier is structured around a `NotificationSink` interface so a Nostr / ntfy / email backend could be swapped in without touching the event detectors. Full event list and throttling rules in §9.1.
 
 ## 7. Run mode and the mutation gate
 
@@ -192,12 +180,8 @@ See also the "Pricing strategy" section further down - these three knobs feed th
 
 **Budget:**
 
-- `bid_budget_sat` - size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel**
-  meaning "use the full available wallet balance on each CREATE" - resolved at decision time and clamped to Braiins' 1
-  BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config.
-  When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently
-  until a balance is observed.
-- `wallet_runway_alert_days`
+- `bid_budget_sat` - size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel** meaning "use the full available wallet balance on each CREATE" - resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config. When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently until a balance is observed.
+- `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not LOUD-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeInt`.
 
 **Outage tolerance - profile selector + individual overrides:**
 
@@ -322,9 +306,32 @@ all three series on the same cadence.
 - Optional `electrs_host` + `electrs_port` (preferred over `bitcoind` RPC for balance lookups - instant)
 - `payout_source` - `none` | `electrs` | `bitcoind`
 - `block_explorer_url_template` - URL template applied at click time on every dashboard surface that links to a block (Hashrate-chart cube markers, OCEAN panel "last pool block" row, BIP 110 scan results, BlockTooltip). Placeholders `{hash}` and `{height}` are substituted; at least one must be present. Default `https://mempool.space/block/{hash}`. Privacy-conscious operators point this at their own explorer (e.g. `http://umbrel:3006/block/{hash}`); the Config page exposes mempool.space / blockstream.info / blockchair.com / btcscan.org / btc.com presets plus a free-form custom field. (#22)
-- `btc_price_source` - `none` | `coingecko` | `coinbase` | `bitstamp` | `kraken` (feeds the dashboard sat↔USD toggle)
-- `block_found_sound` - `'off'` (default) | bundled name (`cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`) | `'custom'` (operator-uploaded MP3, ≤200 KB, stored as SQLite blob via `POST /api/config/block-found-sound`). Dashboard fires the chosen sound once per new Ocean pool block (max-`height` increment over `/api/ocean.recent_blocks`); first-poll-after-load establishes a silent baseline so the existing backlog never replays. Operator's intent is "a block was found" not "an on-chain payout to my address confirmed" - the trigger is Ocean, not the `reward_events` payout-observer table. (#88, migration 0052)
+- `block_explorer_tx_url_template` - separate template for transaction links (the on-chain payout dot on the Price chart deep-links via this). Placeholders `{txid}` and `{hash}` are substituted; default `https://mempool.space/tx/{txid}`. Migration 0071 derives the value from the operator's existing block template via known-preset matching, falling back to a `/block/{hash}` -> `/tx/{txid}` string replacement (catches local-Umbrel mempool variants). Config-page presets set both block + tx templates atomically.
+- `btc_price_source` - `none` | `coingecko` | `coinbase` | `bitstamp` | `kraken` (feeds the dashboard sat <-> USD toggle)
+- `block_found_sound` - `'off'` (default) | bundled name (`cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-a-block`) | `'custom'` (operator-uploaded MP3, <=200 KB, stored as SQLite blob via `POST /api/config/block-found-sound`). Dashboard fires the chosen sound once per new Ocean pool block (max-`height` increment over `/api/ocean.recent_blocks`); first-poll-after-load establishes a silent baseline so the existing backlog never replays. Operator's intent is "a block was found" not "an on-chain payout to my address confirmed" - the trigger is Ocean, not the `reward_events` payout-observer table. (#88, migration 0052)
 - Braiins `owner_access_token` + optional `read_only_access_token` (stored in sops secrets, not the config table)
+
+**Telegram notifications (#100 / #106 / #109 / #117):**
+
+- `telegram_bot_token` - bot credential from @BotFather. Live-editable from the dashboard; mirrors the `bitcoind_rpc_password` dual-location pattern (config-table column overrides the secrets-table fallback). Empty string = unconfigured; the notifier short-circuits with `delivery_status='failed'`.
+- `telegram_chat_id` - destination chat. Numeric ID from @userinfobot. Empty = unconfigured.
+- `telegram_instance_label` - optional per-instance source label. When non-empty, the Telegram sink prefixes every message with `[<label>] ` so an operator running multiple daemons against the same bot/chat can tell them apart.
+- `notifications_muted` - global mute toggle. When `true` the notifier still records every alert row with `delivery_status='muted'` for the audit trail, but skips the Telegram POST.
+- `notification_retry_interval_minutes` - cadence between retry attempts while state remains bad. Default 30. First attempt fires immediately on threshold crossing; up to 4 retries follow at this cadence, then a final "giving up" message. Recovery messages bypass this entirely.
+- `notification_disabled_event_classes` - per-class opt-out list (`string[]`, stored as comma-separated TEXT, #106). Empty = all classes enabled. When an event_class is in the list, the AlertEvaluator short-circuits before arming any timer - no alert row, no retry, no recovery. New event classes default to enabled (no migration required when adding one).
+- `notify_on_pool_block_credit` - off-by-default INFO Telegram message at every TIDES credit (#117). Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. Severity is INFO (no retry ladder, no inline ack/snooze). The audible cue and the chart marker fire independently of this toggle.
+
+**Daemon-managed Dynamic DNS (#111):**
+
+The daemon polls `api.ipify.org` every 5 min for the box's current public IPv4, then (when configured) pushes the IP to a DDNS provider so the Braiins-facing hostname stays pointed at this machine without depending on the router's firmware. Catches the failure mode where a router-vendor DDNS service goes dark (mynetgear.com on 2026-05-07) or the router's update client silently fails. The Config page surfaces three diagnostic rows (daemon's public IP / Pool URL hostname / what the hostname resolves to) and a match / mismatch note that fires on hostname drift only - IP-only changes for the same hostname are silent (miners re-resolve on reconnect).
+
+- `ddns_provider` - `''` (disabled) | `noip` | `duckdns` | `dyndns2`. Default `''`.
+- `ddns_hostname` - the hostname being maintained (e.g. `alkimia.zapto.org`). For No-IP DDNS Key groups use the special `all.ddnskey.com` form to update every hostname in the group with one call.
+- `ddns_username` - provider username (used by No-IP and dyndns2-generic; ignored for DuckDNS, which uses a token-only flow).
+- `ddns_credential` - provider password / DDNS Key credential / DuckDNS token.
+- `ddns_update_url` - dyndns2-generic only: provider's update endpoint (e.g. `https://api.dynu.com/nic/update`). Empty for the other providers.
+
+The updater pushes on a 5-min cadence and on any save event that touches a DDNS-relevant field (`ddns_*` or `destination_pool_url`), so a config edit takes effect within seconds. Hourly heartbeat enforced even when the IP is unchanged, so providers with idle-expiry rules (No-IP free tier) stay alive. POST `/api/ddns/test` validates unsaved form values end-to-end against the provider before save.
 
 ## 9. Reliability & outage policy
 
@@ -387,7 +394,7 @@ all three series on the same cadence.
 
 **All autopilot decisions are logged** with the input state that drove them, for post-hoc debugging.
 
-### 9.1 External notification channel (#100)
+### 9.1 External notification channel (#100, shipped)
 
 The dashboard's `/alerts` page is the source of truth for the audit trail; Telegram is the
 external push channel that wakes the operator when the dashboard isn't being watched.
@@ -411,15 +418,15 @@ LOUD severity (7) - hard outages that need a phone alarm:
    `last_pause_reason` for the pool-outage tolerance window. Catches the
    Paused/Active oscillation hazard.
 
-WARN severity (2) - soft warnings that can wait for the next dashboard glance:
+WARN severity - soft warnings that can wait for the next dashboard glance:
 
 8. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
-9. **1h-rolling acceptance ratio** below 98% (re-instated from the cancellation in #90).
 
-INFO severity - dashboard-only, never Telegram:
+INFO severity (opt-in, dashboard-only by default):
 
-- Ocean own-found block (gold cube on chart already covers).
-- On-chain payout received (P&L panel already covers).
+- Ocean own-found block (gold crown on the Hashrate chart - see §12.1).
+- On-chain payout received (P&L panel).
+- Pool-block credit (TIDES) - opt-in Telegram (#117) via the `notify_on_pool_block_credit` toggle. INFO severity, no retry ladder, no inline ack/snooze. Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold.
 
 **Recovery messages**: paired with each fired LOUD or WARN. INFO severity. Body example:
 `Datum gateway reachable again - was down 22m.` Includes a `paired_alert_id` FK to the
@@ -439,14 +446,12 @@ Total: at most 5 alert messages per outage event + 1 recovery message.
 
 **Mute and snooze:**
 
-- **Global mute** (`notifications_muted` config flag): silences all Telegram POSTs;
-  alerts table still records every row with `delivery_status = 'muted'` for the audit
-  trail.
-- **Per-alert snooze**: inline action on the `/alerts` page row for any active alert.
-  Presets: 30m / 2h / 24h. While snoozed, retries record as `delivery_status = 'snoozed'`
-  instead of POSTing. Recovery messages bypass snooze.
-- **No quiet-hours config** - cancelled in v1.1 spec rewrite. Mute-on-demand replaces the
-  use case.
+- **Global mute** (`notifications_muted` config flag): silences all Telegram POSTs; alerts table still records every row with `delivery_status = 'muted'` for the audit trail.
+- **Per-event-class opt-out** (`notification_disabled_event_classes`, #106): operator picks specific event classes to silence (Datum unreachable, hashrate below floor, beta-exit, ...) from the Notifications tab on the Config page. New event classes default to enabled - no migration required when adding one.
+- **Per-alert snooze**: inline action on the `/alerts` page row for any active alert. Presets: 30m / 2h / 24h. While snoozed, retries record as `delivery_status = 'snoozed'` instead of POSTing. Recovery messages bypass snooze.
+- **Inline ack / snooze on the Telegram message itself** (#109): every LOUD / WARN firing carries `Mark as seen` and `Snooze 2h` inline-keyboard buttons. Tapping on the operator's phone sets `acknowledged_at_ms` or `snoozed_until_ms` server-side via the bot's long-polled `getUpdates` (no webhook, works behind home NAT), edits the message in place to confirm, and removes the keyboard. Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected.
+- **Per-instance label prefix** (`telegram_instance_label`): when set, the Telegram sink prefixes every message with `[<label>] ` so an operator running multiple daemons against the same bot/chat can tell them apart at a glance.
+- **No quiet-hours config** - cancelled in v1.1 spec rewrite. Mute-on-demand replaces the use case.
 
 ## 10. Ownership model
 
@@ -545,30 +550,9 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   DATUM, AVG OCEAN (three side-by-side hashrate averages), AVG COST / PH DELIVERED (same metric as the
   hero PRICE card; deliberately duplicated so each panel stands alone), AVG COST VS HASHPRICE
   (effective-vs-hashprice delta, signed).
-- **Hashrate chart.** Three series: `delivered (Braiins)` (amber), `received (Datum)` (emerald),
-  `received (Ocean)` (blue). Target + floor as dashed horizontal references. Per-series rolling-mean
-  smoothing via `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`; Ocean is
-  server-smoothed. Ocean-credited pool-block markers appear as isometric cubes (blue for TIDES,
-  gold for own-found); BIP 110-signaling blocks render as a crown icon instead of the cube
-  (#94, detection: `(version & 0xe0000000) === 0x20000000 && (version & 0x10) !== 0`,
-  block-header version cached per `block_hash` via migration 0058). Click opens the
-  `block_explorer_url_template`. A right-axis dropdown above the chart (#93, persisted to
-  localStorage) selects one secondary series: `none` (default), `share_log %` (the legacy
-  `% of Ocean` overlay; replaces the retired `show_share_log_on_hashrate_chart` checkbox),
-  `network difficulty`, `pool hashrate`, `pool luck (24h)` / `pool luck (7d)` (#92, gap-based per-tick
-  luck = `count_in_window / (pool_share × (window + elapsed) / 600)`).
-- **Price chart.** Four always-on lines: `our bid` (amber), `fillable` (cyan, the controller's tracking
-  anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red, with a red gradient above
-  the line marking the off-limits region). Bid-event dots (yellow / cyan / red) on the amber line mark
-  CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL events; clicking pins a detail panel with `fillable`,
-  `overpay`, `hashprice`, cap inputs, effective cap at that tick, and a JSON export button. Per-range
-  filtering: 3h-24h shows all four kinds; 1w drops EDIT_PRICE (it fires on most ticks during normal
-  operation and would drown the chart at that zoom); 1m / 1y / all show none. See
-  `CHART_RANGE_SPECS[r].showEventKinds` in `packages/shared/src/chart-ranges.ts`. A right-axis dropdown
-  (#93) selects one secondary series: `none` (default), `effective rate` (#90/#93 - replaces the
-  retired `show_effective_rate_on_price_chart` checkbox; the line gets its own scale on the right axis
-  so its counter-settlement volatility no longer drags the left-axis range), `block reward`,
-  `BTC/USD`, `unpaid earnings`, `network difficulty`.
+- **Hashrate chart.** Three series: `delivered (Braiins)` (amber), `received (Datum)` (emerald), `received (Ocean)` (blue). Target + floor as dashed horizontal references. Per-series rolling-mean smoothing via `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`; Ocean is server-smoothed. Each chart's title carries an **expand / collapse toggle** (#105) that doubles the chart height for closer reading. Pool-block markers (one per Ocean-credited pool block) follow a precedence-ordered shape vocabulary (#115): own block (Ocean credited the coinbase to our payout address) -> **gold CROWN**; BIP 110-signalling pool block -> **yellow CUBE** (#94, detection: `(version & 0xe0000000) === 0x20000000 && (version & 0x10) !== 0`, block-header version cached per `block_hash` via migration 0058); default pool block -> blue cube. Tooltip header label and color follow the same precedence (own > BIP 110 > default). Click opens the configured block explorer. A right-axis dropdown above the chart (#93, persisted to localStorage) selects one secondary series: `none` (default), `share_log %`, `network difficulty` (renders **difficulty-retarget markers** at every detected retarget tick - per-tick step > 0.5% with sustained-value check on the next non-null tick to filter spurious bucket-AVG detections; tooltip shows date, new difficulty, previous epoch's difficulty, and % change), `pool hashrate`, `pool luck (24h)` / `pool luck (7d)` (#92, gap-based per-tick luck = `count_in_window / (pool_share × (window + elapsed) / 600)`).
+- **Price chart.** Four always-on lines: `our bid` (amber), `fillable` (cyan, the controller's tracking anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red, with a red gradient above the line marking the off-limits region). Bid-event dots (yellow / cyan / red) on the amber line mark CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL events; clicking pins a detail panel with `fillable`, `overpay`, `hashprice`, cap inputs, effective cap at that tick, and a JSON export button. Per-range filtering: 3h-24h shows all four kinds; 1w drops EDIT_PRICE; 1m / 1y / all show none. See `CHART_RANGE_SPECS[r].showEventKinds` in `packages/shared/src/chart-ranges.ts`. A right-axis dropdown (#93) selects one secondary series: `none` (default), `effective rate` (#90/#93), `block reward`, `BTC/USD`, `unpaid earnings`, **`paid earnings (lifetime)`** (#102, monotonically non-decreasing cumulative on-chain payouts to the configured address; per-tick `paid_total_sat` derived from `reward_events` via migration 0066), **`lifetime earnings (paid + unpaid)`** (the natural metric that survives payout cliffs - paid_total + ocean_unpaid). When the right-axis is set to a step-event series (paid / unpaid / lifetime earnings), the chart renders **clickable dots** at each event - on-chain payout dots deep-link via `block_explorer_tx_url_template`, pool-block dots reuse the rich tooltip shape from the Hashrate chart (reward, our share, BIP 110 signal, explorer link).
+- **Stale-URL banner** (#113, top of page when triggered). Renders when an active Braiins bid was created with a `dest_upstream.url` whose hostname:port (case-insensitive) differs from current `destination_pool_url`. IP-only DDNS pushes for the same hostname don't trigger it. Banner shows old vs new host:port, the unconsumed_sat that would be refunded, an exit-fee caveat, and a confirm-then-cancel button that calls Braiins's CANCEL_BID. Next decision tick auto-creates a fresh bid with the new URL via the existing CREATE_BID gate.
 - **Service panels (three-column).** BRAIINS (API reachability, delivered vs target, wallet balance,
   runway at current spend rate). DATUM GATEWAY (stratum reachability, gateway-measured hashrate,
   connected workers - if `datum_api_url` is configured). OCEAN (API reachability, Ocean-credited hashrate,
@@ -592,20 +576,24 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
 
 ### 12.2 Config page
 
-One long form mirroring §8. Sections: Hashrate targets, Pool destination, Pricing (fillable-tracking
-overpay + two safety ceilings), Budget, Alerting / outage tolerance, Daemon startup, Chart smoothing
-(including the effective-line toggle and the share-log overlay toggle), Log retention, Integrations
-(Ocean / Datum / bitcoind / electrs / BTC price), On-chain payouts. Saves go through the Zod
-`AppConfigInvariantsSchema` and take effect on the next tick; no daemon restart needed.
+Reorganised in v1.5.0 (#107) from a single long-scroll form into **four tabs** with **cross-tab search**. Active tab is reflected in the URL (`/config?tab=pool`), bookmarkable and survives refresh; default landing tab is Strategy. Tab bar scrolls horizontally on narrow viewports. The search box sits above the tab bar; typing matches against field labels across all tabs and clicking a result switches to the target tab, scrolls the field into view, and briefly outlines its section in amber.
 
-### 12.3 Things the v1 spec listed but v2.1 does not ship
+| Tab | Sections |
+|---|---|
+| **Strategy** | Hashrate targets, Pricing (fillable-tracking overpay + two safety ceilings + cheap-mode), Budget, Daemon startup |
+| **Pool & Payout** | Pool destination + Test connection button, Datum stats API + Test connection button, Dynamic DNS (provider + hostname + credentials + Test connection button + diagnostic IPs - daemon's public IP, hostname resolves to, match/mismatch note), Payout source (none / electrs / bitcoind + Test connection buttons), Profit & Loss scope, BTC price oracle |
+| **Notifications** | Telegram bot token + chat ID + Test connection button, instance label, mute toggle, retry interval, wallet-runway threshold, per-event-class opt-out checklist, pool-block-credit toggle, block-found sound (off / bundled / custom upload) |
+| **Display & Logging** | Block explorer URL template + transaction URL template, chart smoothing (Braiins / Datum / Braiins price), log retention (tick metrics / decisions uneventful / decisions eventful) |
 
-For honesty against the older spec drafts: no operator-availability / quiet-hours UI, no
-per-bid operator-action menu (bump / recreate / cancel - still an option to add but not present), no
-what-if simulator (retired in v2.0), no separate Decisions tab (the bid-event pinned tooltip on the
-Price chart covers the forensic-debug use case). Alerts live in service-panel pills + the
-below-floor dashboard warning rather than a dedicated "Alerts panel" page. No external notification
-channel.
+Saves go through the Zod `AppConfigInvariantsSchema` and take effect on the next tick - no daemon restart needed. PUT `/api/config` snapshots the previous config before upsert and fires `onConfigSaved` callbacks; main.ts wires that to refresh the live `cfgRefHolder.value` immediately AND, when any DDNS-relevant field changed, kick the DDNS updater once so a Pool URL / hostname / credential edit pushes within seconds rather than waiting on the next periodic poll.
+
+### 12.3 Alerts page
+
+Dedicated `/alerts` page (post-v2.3, #100 / #109): time-ordered audit trail of every alert the daemon evaluated, with delivery status (sent / muted / snoozed / failed), per-alert acknowledge / snooze (30m / 2h / 24h presets), recovery messages grouped visually with their originating alert via `paired_alert_id` FK, and a sticky **Unacknowledged only** filter (persists per browser via localStorage, mirroring Status's chart range). A **Mark all as seen (N)** bulk button next to the filter clears every unacked row in one click - server-side via `POST /api/alerts/acknowledge-all`. Telegram messages can also be acked or snoozed in-place from the operator's phone via the inline-keyboard buttons (#109).
+
+### 12.4 Things the v1 spec listed but the current build does not ship
+
+For honesty against the older spec drafts: no operator-availability / quiet-hours UI, no per-bid operator-action menu (bump / recreate / cancel - still an option to add but not present), no what-if simulator (retired in v2.0), no separate Decisions tab (the bid-event pinned tooltip on the Price chart covers the forensic-debug use case).
 
 ## 13. Research-derived API constraints
 
@@ -636,9 +624,7 @@ Risks the operator should know about. Each is annotated with current coverage: *
 code, **[observed]** if the dashboard surfaces signal but no automatic response, or **[unhandled]** if
 neither. Unhandled items are operator-vigilance problems for v2.1.
 
-- **Dynamic home IP.** If the Umbrel endpoint's public IP rotates after a bid is funded, the bid's
-  `dest_upstream.url` can't be edited - must cancel + create. Mitigation: operator uses DDNS or a
-  static IP. **[unhandled]** - autopilot does not detect public-IP change today.
+- **Dynamic home IP.** If the destination's public IP rotates after a bid is funded, the bid's `dest_upstream.url` can't be edited - must cancel + create. **[handled]** since v1.5.0: the daemon polls `api.ipify.org` for its current public IP, can push DDNS updates itself (No-IP / DuckDNS / generic dyndns2 - see §8 "Daemon-managed Dynamic DNS"), and the Status / Config dashboard shows a stale-URL banner whenever an active bid was created with a hostname that no longer matches `destination_pool_url` (#113). The banner has a confirm-then-cancel button that triggers a fresh CREATE_BID on the next decision tick. IP-only changes for the same hostname don't trip the banner (miners re-resolve on reconnect, the bid stays valid).
 - **Datum endpoint unreachable.** Gateway disconnects stratum clients; Braiins pauses the bid.
   **[observed]** - Datum Gateway panel shows reachability, and a sustained below-floor state will
   surface the below-floor alert. No auto-cancel of the Braiins bid; operator decides.
@@ -715,3 +701,4 @@ Still open:
 | 2.1.1   | 2026-04-24 | Follow-ons to v2.1: EDIT_PRICE deadband `max(tick_size, overpay/5)` to absorb orderbook jitter (was causing a trade storm at naive tick_size tolerance); migrations 0043/0045 revised to preserve `overpay_sat_per_eh_day` through the CLOB-redesign retirements (was silently resetting every operator's value on upgrade); `show_effective_rate_on_price_chart` config toggle added with migration 0046 (effective line hidden by default because its volatility crushes the flatter-line detail); fillable drawn as first-class cyan line on the Price chart; hero PRICE and AVG COST / PH cards got explanatory tooltips; event-detail tooltip surfaces `fillable` and `overpay` as first-class rows. Docs sync against code same day - README / spec / architecture rewritten to match the pay-your-bid reality; older CLOB-era phrasing removed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | 2.2     | 2026-04-25 | Appliance packaging release (v1.3.0; closes umbrella issue #56). Three resolution layers for both config and secrets: `BHA_*` env vars (priority 1) > `.env.sops.yaml` (priority 2) > `secrets`/`config` rows in `state.db` (priority 3, populated by the new first-run web wizard). Migration 0047 adds the `secrets` table. Daemon enters `NEEDS_SETUP` mode when both config and secrets are absent, exposing only the wizard's three endpoints (`/api/health`, `/api/setup-info`, `/api/setup`); on POST /api/setup it transitions in-place to operational mode without a process restart. New public `/api/health` endpoint (`{ status, mode }`) doubles as the appliance liveness probe and the dashboard's setup-mode probe. Dockerfile + GHCR publish workflow (multi-arch `linux/amd64` + `linux/arm64`); image at `ghcr.io/<owner>/hashrate-autopilot:vX.Y.Z`. Bitcoind RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject. Wizard auto-binds the worker identity (`<btc-address>.<label>`) to the BTC payout address with a hard-red mismatch warning; same logic ported into the Config page. Power-user `setup.ts` + SOPS path is unchanged.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 2.3     | 2026-05-02 | Spec-consistency sweep through v1.4.8. §12.1 hero PRICE card description corrected to "live current owned-bid price" (the post-#69 reality - the card has shown the live bid for some time; the older "window-averaged effective rate" framing was a stale paragraph that contradicted the README and the running dashboard). No behaviour change; pure doc correctness pass. Done in lockstep with architecture v1.6 (schema additions through migration 0051, P&L spend-source clarification, /healthz -> /api/health) and a research.md tweak that retired the historical 300 sat/PH/day default in §1.8 in favour of the live 1,000. |
+| 2.4     | 2026-05-09 | Catch-up sweep with the May-2026 feature run (v1.5.0 -> v1.5.4). §6 flips "No external notification channel" to the shipped Telegram sink; §8 gains the Telegram config block (`telegram_chat_id`, `telegram_bot_token`, `telegram_instance_label`, `notifications_muted`, `notification_retry_interval_minutes`, `notification_disabled_event_classes`, `notify_on_pool_block_credit`), the Daemon-managed Dynamic DNS block (`ddns_provider` for `''`/`noip`/`duckdns`/`dyndns2`, `ddns_hostname`, `ddns_username`, `ddns_credential`, `ddns_update_url`), `block_explorer_tx_url_template`, the new bundled `ocean-mining-found-a-block` sound, and the `wallet_runway_alert_days = 0 = disabled` semantic with the new default of 0. §9.1 promoted from "planned" to "shipped" with the per-event-class opt-out (#106), inline-keyboard ack/snooze (#109), and per-instance label prefix layered on. §12.1 updated for the price chart's `paid earnings (lifetime)` and `lifetime earnings (paid + unpaid)` series (#102), the difficulty-retarget markers, the chart expand toggle (#105), the own-block-vs-BIP-110 marker swap (#115), and the stale-URL banner (#113). §12.2 rewritten for the four-tab Config layout with cross-tab search (#107) and the Test connection buttons across Pool URL / Datum API / DDNS (#112) / bitcoind / electrs / Telegram. §12.3 split: new dedicated Alerts page section (#100 / #109 with the bulk-ack and unacked-only filter), and §12.4 inherits the "things v1 listed but doesn't ship" honesty list (Telegram dropped from that list now that it ships). §14 "Dynamic home IP" landmine flipped from `[unhandled]` to `[handled]` against the new DDNS feature. Generalised "on the Umbrel node" prose throughout - the Bitcoin node can run on any platform; Umbrel is one option among several. |

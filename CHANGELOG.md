@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Docs]` spec.md catch-up sweep through v1.5.4 + remove "your Bitcoin node is on Umbrel" assumption
+
+Brought `docs/spec.md` from v2.3 (aligned through v1.4.8) to v2.4 (aligned through v1.5.4). New / updated sections cover the May-2026 feature run that wasn't yet in the spec: Telegram notifier shipped (#100 / #109 / #117) with per-event-class opt-out (#106), inline-keyboard ack/snooze, and the per-instance label prefix; daemon-managed Dynamic DNS (#110 / #111) with the No-IP / DuckDNS / generic dyndns2 provider matrix and the public-IP visibility card; stale-URL banner (#113); wallet-runway alert wiring (#116) including the new 0=disabled semantic; Config-page reorganisation into four tabs with cross-tab search (#107); paid / lifetime earnings series and difficulty-retarget markers on the price chart (#102); chart expand toggle (#105); own-block / BIP-110 marker swap (#115); Test connection buttons across Pool URL / Datum API / DDNS (#112); separate `block_explorer_tx_url_template` for tx links. New top-level Alerts page documented in §12.3. §14 "Dynamic home IP" landmine flipped from `[unhandled]` to `[handled]` against the new DDNS feature. Generalised "on the Umbrel node" prose in spec.md and research.md - the Bitcoin node can run on any platform, Umbrel is one option among several. Pre-existing em-dashes in research.md replaced with ASCII hyphens. No code change.
+
 ### `[Fix]` Wallet-runway alert: total balance, not available balance (#116 follow-up)
 
 `evaluateWalletRunway` was reading `available_balance_sat` to compute runway, but in steady state every sat is committed to a live bid - the available figure reads 0 while the balance is fully in `blocked_balance_sat` (escrowed against the bid). Result: the LOUD runway alert fired immediately on the very first tick after upgrade, because 0 / any-burn < threshold. Switched the detector to `total_balance_sat` (= available + blocked) so it matches the Status panel's runway readout exactly. Body text now says "total Braiins balance (available + blocked)" so the operator can reconcile the alert against the dashboard at a glance.
