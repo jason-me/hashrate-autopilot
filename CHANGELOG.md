@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Docs]` Overpay help text: drop "300 is reasonable", explain the edit-deadband trade-off
+
+The Overpay above fillable help text on Config -> Strategy -> Pricing prescribed "300 sat/PH/day is a reasonable starting point". Operator is now running successfully at 10 sat/PH/day and finds the prescription misleading. Replaced with a more honest framing: lower overpay is fine on a stable market, and the trade-off is mainly about edit cadence — the controller's edit-price deadband is `overpay/5`, so a 10-sat overpay results in a 2-sat deadband and a small-deadband bid that adjusts more often. "It works fine, just noisier." NL/ES translations adjusted.
+
 ### `[Infra]` Remove overpay-tuning helper (#118 cancelled)
 
 The recommendation card on Config -> Strategy -> Pricing is gone, along with the `/api/overpay-tuning` route, the bucket-curve viz, the percentile/fill-rate slider, and the bucket-storage logic on the daemon. After several rounds of methodology iteration (p95-of-gap → bucketed delivery vs gap → trust-threshold tweak + inline chart) the recommendation kept landing on the same value (100 sat/PH/day) regardless of slider position on the operator's data, because their delivery curve is empirically flat above target across all gap buckets. Operator's call: not worth the maintenance surface for the value delivered.
