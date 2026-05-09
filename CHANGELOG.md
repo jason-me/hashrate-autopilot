@@ -2,6 +2,18 @@
 
 ## 2026-05-09
 
+### `[Fix]` Wallet-runway alert: total balance, not available balance (#116 follow-up)
+
+`evaluateWalletRunway` was reading `available_balance_sat` to compute runway, but in steady state every sat is committed to a live bid - the available figure reads 0 while the balance is fully in `blocked_balance_sat` (escrowed against the bid). Result: the LOUD runway alert fired immediately on the very first tick after upgrade, because 0 / any-burn < threshold. Switched the detector to `total_balance_sat` (= available + blocked) so it matches the Status panel's runway readout exactly. Body text now says "total Braiins balance (available + blocked)" so the operator can reconcile the alert against the dashboard at a glance.
+
+### `[Fix]` Wallet-runway threshold reset to 0 for upgraders (#116 follow-up)
+
+The schema-side default was flipped from 3 to 0 in v1.5.4, but operators upgrading from an earlier version still had `wallet_runway_alert_days = 3` persisted in `state.db` from the prior default - so the "off by default" promise only applied to brand-new installs. Migration 0074 sets the value to 0 wherever it exactly matches the prior default (3), preserving any deliberate operator override (1, 2, 4, 5+, etc.). Combined with the `available → total` fix above, upgrading installs now stay silent until the operator opts in to a non-zero threshold.
+
+### `[UI]` Wallet-runway and Ocean-block toggles fold into the Notifications event grid
+
+Both new toggles were laid out as standalone fields above the per-event subscription grid - which made them hard to find ("there's no checkbox for runway in the events list?"). They now sit inside the same grid as the seven pre-existing event classes. The runway tile carries an inline days-input that appears only when the tile is checked (off → 0; on → defaults to 3 days); the Ocean-block tile is a plain checkbox like the rest. The grid is now the single canonical place to manage every Telegram event toggle.
+
 ### `[Feature]` Telegram celebration on every Ocean pool-block credit (#117)
 
 Off-by-default INFO Telegram message at every TIDES credit (every pool block where shares in our reward window get us a slice of the coinbase). Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. New `notify_on_pool_block_credit` boolean config field with matching toggle on the Notifications tab; daemon-side migration 0073 adds the column. The evaluator hydrates a `lastNotifiedBlockHeight` watermark from `pool_blocks.maxHeight()` at boot so a fresh install / long-running install upgrading does not flood Telegram with every historical credit. Severity is INFO so no retry ladder and no inline ack/snooze buttons - this is a "good news" message, not an action item. NL/ES translations included. The audible cue and the chart marker still fire independently of this toggle.

@@ -354,8 +354,13 @@ export class AlertEvaluator {
       this.wallet_runway = INITIAL;
       return;
     }
+    // Use total_balance_sat (= available + blocked) to match the
+    // Status-page runway readout. available_balance_sat alone reads
+    // 0 whenever every sat is committed to a live bid - which is the
+    // steady state in a healthy autopilot - and would fire LOUD on
+    // every tick even with months of runway in the bid escrow.
     const balanceSat =
-      state.balance?.accounts?.[0]?.available_balance_sat ?? null;
+      state.balance?.accounts?.[0]?.total_balance_sat ?? null;
     if (balanceSat === null) {
       // Braiins API down this tick - skip; the api_unreachable
       // detector covers the underlying failure already.
@@ -387,7 +392,7 @@ export class AlertEvaluator {
       disabledClasses,
       title: `Wallet runway ${runwayDays.toFixed(1)} days (below ${thresholdDays.toFixed(1)} day threshold)`,
       bodyForFiring: () =>
-        `Available Braiins balance is ${balanceSat.toLocaleString('en-US')} sat; trailing-3h burn is ${Math.round(burnPerDaySat).toLocaleString('en-US')} sat/day. At that rate the wallet hits zero in ${runwayDays.toFixed(1)} days, below the configured ${thresholdDays}-day threshold. Top up the Braiins wallet or lower the bid; without a top-up, bids will start cancelling for insufficient funds.`,
+        `Total Braiins balance (available + blocked) is ${balanceSat.toLocaleString('en-US')} sat; trailing-3h burn is ${Math.round(burnPerDaySat).toLocaleString('en-US')} sat/day. At that rate the wallet hits zero in ${runwayDays.toFixed(1)} days, below the configured ${thresholdDays}-day threshold. Top up the Braiins wallet or lower the bid; without a top-up, bids will start cancelling for insufficient funds.`,
       bodyForRecovery: () =>
         `Wallet runway back above threshold: ${runwayDays.toFixed(1)} days (threshold ${thresholdDays}). Likely a top-up landed or the burn rate dropped.`,
     });

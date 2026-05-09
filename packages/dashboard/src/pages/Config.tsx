@@ -733,7 +733,7 @@ function ConfigTabsAndContent({
     },
     notifications: {
       title: t`Notifications`,
-      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway alert threshold`, t`Telegram on every Ocean pool-block credit`],
+      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway low`, t`Ocean pool-block credited`],
     },
   };
 
@@ -1712,117 +1712,42 @@ function NotificationsSection({
           </span>
         </label>
 
-        <label className="block">
-          <span className="block text-sm text-slate-300 mb-1">
-            <Trans>Wallet runway alert threshold</Trans>
-          </span>
-          <div className="flex items-center gap-2">
-            <NumberField
-              value={draft.wallet_runway_alert_days}
-              onChange={(n) => onChange('wallet_runway_alert_days', (n ?? 0) as never)}
-              step="integer"
-              locale={locale}
-              noGrouping
-              className="w-32"
-            />
-            <span className="text-xs text-slate-500">
-              <Trans>days</Trans>
-            </span>
-          </div>
-          <span className="block text-xs text-slate-500 mt-1">
-            <Trans>
-              Fire a LOUD alert when the available Braiins balance, divided by
-              the trailing-3h burn rate, drops below this many days. <b>0 disables
-              the alert entirely</b> - useful right after setup before the wallet
-              is funded, or for an operator who tops the wallet up on a fixed
-              schedule and doesn't want runway notifications.
-            </Trans>
-          </span>
-        </label>
-
-        <label className="flex items-start gap-2 pt-1">
-          <input
-            type="checkbox"
-            checked={draft.notify_on_pool_block_credit}
-            onChange={(e) => onChange('notify_on_pool_block_credit', e.target.checked as never)}
-            className="accent-amber-400 h-4 w-4 mt-0.5"
-          />
-          <span className="text-sm text-slate-300">
-            <Trans>Telegram on every Ocean pool-block credit</Trans>
-            <span className="block text-xs text-slate-500 mt-0.5">
-              <Trans>
-                Off by default. When on, every pool block Ocean credits to your
-                payout address (i.e. every TIDES credit while you have shares in
-                the reward window) sends a small INFO message: block height, your
-                share %, your credit, and progress toward the next on-chain payout.
-                The audible cue and chart marker still fire independently.
-              </Trans>
-            </span>
-          </span>
-        </label>
-
-        <EventClassSubscriptions draft={draft} onChange={onChange} />
+        <EventClassSubscriptions draft={draft} onChange={onChange} locale={locale} />
       </div>
     </section>
   );
 }
 
 /**
- * #106: per-event-class opt-out. One checkbox per known event class.
- * Storage is a string[] of disabled class names; the UI renders them
- * as enable/disable toggles for clarity ("checked = I want this
- * alert" rather than "checked = silenced").
+ * #106: per-event-class opt-out. One tile per known event class.
+ *
+ * Backing storage is a mix of two stores:
+ * - `notification_disabled_event_classes` (string[], the original
+ *   #106 design) holds enable/disable for the seven LOUD detectors.
+ * - `wallet_runway_alert_days` (number, #116) and
+ *   `notify_on_pool_block_credit` (boolean, #117) each have their own
+ *   dedicated config field because they pre-existed the unified UI
+ *   model. They live in the same grid for operator clarity ("every
+ *   notification toggle is in one place"), the per-tile render
+ *   bridges between them.
+ *
+ * Render: tiles are sorted into the grid in a stable order; the
+ * runway tile spans both columns when checked because it carries
+ * the inline days-input.
  */
 function EventClassSubscriptions({
   draft,
   onChange,
+  locale,
 }: {
   draft: AppConfig;
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+  locale: string | undefined;
 }) {
   const { i18n } = useLingui();
-  void i18n;
   const disabled = new Set(draft.notification_disabled_event_classes);
 
-  const eventClasses: Array<{ id: string; label: string; help: string }> = [
-    {
-      id: 'datum_unreachable',
-      label: t`Datum stratum unreachable`,
-      help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
-    },
-    {
-      id: 'hashrate_below_floor',
-      label: t`Hashrate below floor`,
-      help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
-    },
-    {
-      id: 'zero_hashrate',
-      label: t`Zero hashrate`,
-      help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
-    },
-    {
-      id: 'api_unreachable',
-      label: t`Braiins API unreachable`,
-      help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
-    },
-    {
-      id: 'unknown_bid',
-      label: t`Unknown bid detected`,
-      help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
-    },
-    {
-      id: 'sustained_paused',
-      label: t`Bid sustained-paused`,
-      help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
-    },
-    {
-      id: 'beta_exit',
-      label: t`Beta-exit detected`,
-      help: t`Any active owned bid reports fee_rate_pct > 0.`,
-    },
-  ];
-
-  const toggle = (id: string, enabled: boolean) => {
+  const toggleClass = (id: string, enabled: boolean) => {
     const next = new Set(disabled);
     if (enabled) next.delete(id);
     else next.add(id);
@@ -1835,6 +1760,110 @@ function EventClassSubscriptions({
   const muteHelp = i18n._(
     'When on, alerts are still recorded on the /alerts page with status "muted" but nothing is sent to Telegram. Recovery messages also stay silent.',
   );
+
+  const muted = draft.notifications_muted;
+
+  /**
+   * Each tile carries its own enabled-getter and toggle, so the
+   * three different backing stores (disabled-list, days-number,
+   * boolean-flag) all render uniformly. `extra` injects the inline
+   * days-input on the runway tile when it's enabled.
+   */
+  const tiles: Array<{
+    id: string;
+    label: string;
+    help: string;
+    enabled: boolean;
+    setEnabled: (next: boolean) => void;
+    extra?: React.ReactNode;
+    span2?: boolean;
+  }> = [
+    {
+      id: 'datum_unreachable',
+      label: t`Datum stratum unreachable`,
+      help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
+      enabled: !disabled.has('datum_unreachable'),
+      setEnabled: (n) => toggleClass('datum_unreachable', n),
+    },
+    {
+      id: 'hashrate_below_floor',
+      label: t`Hashrate below floor`,
+      help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+      enabled: !disabled.has('hashrate_below_floor'),
+      setEnabled: (n) => toggleClass('hashrate_below_floor', n),
+    },
+    {
+      id: 'zero_hashrate',
+      label: t`Zero hashrate`,
+      help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+      enabled: !disabled.has('zero_hashrate'),
+      setEnabled: (n) => toggleClass('zero_hashrate', n),
+    },
+    {
+      id: 'api_unreachable',
+      label: t`Braiins API unreachable`,
+      help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
+      enabled: !disabled.has('api_unreachable'),
+      setEnabled: (n) => toggleClass('api_unreachable', n),
+    },
+    {
+      id: 'unknown_bid',
+      label: t`Unknown bid detected`,
+      help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
+      enabled: !disabled.has('unknown_bid'),
+      setEnabled: (n) => toggleClass('unknown_bid', n),
+    },
+    {
+      id: 'sustained_paused',
+      label: t`Bid sustained-paused`,
+      help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+      enabled: !disabled.has('sustained_paused'),
+      setEnabled: (n) => toggleClass('sustained_paused', n),
+    },
+    {
+      id: 'beta_exit',
+      label: t`Beta-exit detected`,
+      help: t`Any active owned bid reports fee_rate_pct > 0.`,
+      enabled: !disabled.has('beta_exit'),
+      setEnabled: (n) => toggleClass('beta_exit', n),
+    },
+    {
+      id: 'wallet_runway',
+      label: t`Wallet runway low`,
+      help: t`Total Braiins balance ÷ trailing-3h burn rate has dropped below the configured threshold. Off by default; tick the box and pick a day count to enable.`,
+      enabled: draft.wallet_runway_alert_days > 0,
+      setEnabled: (n) =>
+        onChange('wallet_runway_alert_days', (n ? 3 : 0) as never),
+      span2: draft.wallet_runway_alert_days > 0,
+      extra:
+        draft.wallet_runway_alert_days > 0 ? (
+          <span className="flex items-center gap-1 ml-2 text-xs text-slate-400">
+            <Trans>fire below</Trans>
+            <NumberField
+              value={draft.wallet_runway_alert_days}
+              onChange={(n) =>
+                onChange(
+                  'wallet_runway_alert_days',
+                  (n && n > 0 ? n : 1) as never,
+                )
+              }
+              step="integer"
+              locale={locale}
+              noGrouping
+              className="w-16"
+            />
+            <Trans>days</Trans>
+          </span>
+        ) : null,
+    },
+    {
+      id: 'pool_block_credited',
+      label: t`Ocean pool-block credited`,
+      help: t`Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout.`,
+      enabled: draft.notify_on_pool_block_credit,
+      setEnabled: (n) => onChange('notify_on_pool_block_credit', n as never),
+    },
+  ];
 
   return (
     <fieldset className="pt-3 border-t border-slate-800">
@@ -1863,41 +1892,39 @@ function EventClassSubscriptions({
 
       <p className="text-xs text-slate-500 mb-2">
         <Trans>
-          Untick any event type you don't want pushed. Disabled types skip the
-          daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover
-          a row for the trigger condition.
+          Tick any event type you want pushed. Untouched types skip the
+          daemon entirely - no Telegram, no /alerts row, no retry ladder.
+          Hover a row for the trigger condition.
         </Trans>
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {eventClasses.map((ec) => {
-          const enabled = !disabled.has(ec.id);
-          const muted = draft.notifications_muted;
-          return (
-            <label
-              key={ec.id}
-              className={
-                'flex items-center gap-2 p-2 rounded border cursor-pointer transition ' +
-                (muted
-                  ? 'border-slate-800 opacity-60'
-                  : 'border-slate-800 hover:bg-slate-800/40')
-              }
-              title={ec.help}
-            >
-              <input
-                type="checkbox"
-                checked={enabled}
-                onChange={(e) => toggle(ec.id, e.target.checked)}
-                disabled={muted}
-                className="accent-amber-400 h-4 w-4"
-              />
-              <span className="flex-1 text-sm text-slate-100 font-semibold truncate">
-                {ec.label}
-              </span>
-              <HelpDot />
-            </label>
-          );
-        })}
+        {tiles.map((tile) => (
+          <label
+            key={tile.id}
+            className={
+              'flex items-center gap-2 p-2 rounded border cursor-pointer transition ' +
+              (muted
+                ? 'border-slate-800 opacity-60'
+                : 'border-slate-800 hover:bg-slate-800/40') +
+              (tile.span2 ? ' sm:col-span-2' : '')
+            }
+            title={tile.help}
+          >
+            <input
+              type="checkbox"
+              checked={tile.enabled}
+              onChange={(e) => tile.setEnabled(e.target.checked)}
+              disabled={muted}
+              className="accent-amber-400 h-4 w-4"
+            />
+            <span className="flex-1 text-sm text-slate-100 font-semibold truncate">
+              {tile.label}
+            </span>
+            {tile.extra}
+            <HelpDot />
+          </label>
+        ))}
       </div>
     </fieldset>
   );

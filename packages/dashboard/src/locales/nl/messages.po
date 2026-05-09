@@ -1201,8 +1201,8 @@ msgid "fillable"
 msgstr "vulbaar"
 
 #: src/pages/Config.tsx
-msgid "Fire a LOUD alert when the available Braiins balance, divided by the trailing-3h burn rate, drops below this many days. <0>0 disables the alert entirely</0> - useful right after setup before the wallet is funded, or for an operator who tops the wallet up on a fixed schedule and doesn't want runway notifications."
-msgstr "Stuurt een LOUD-melding wanneer het beschikbare Braiins-saldo, gedeeld door het verbruiktempo van de afgelopen 3 uur, onder dit aantal dagen zakt. <0>0 schakelt de melding volledig uit</0> - handig direct na de setup voordat de wallet is gevuld, of voor een operator die de wallet op een vast schema bijvult en geen runway-meldingen wil."
+msgid "fire below"
+msgstr "vuren onder"
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -1389,6 +1389,10 @@ msgstr "onjuist wachtwoord"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "verhogen"
+
+#: src/pages/Config.tsx
+msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
+msgstr "Informatief. Standaard uit. Wanneer aan, stuurt elk blok dat Ocean op je uitbetalingsadres bijschrijft een klein INFO-bericht: blokhoogte, jouw aandeel %, jouw bijschrijving en voortgang naar de volgende on-chain uitbetaling van 1.048.576 sat."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -1773,6 +1777,11 @@ msgstr "Ocean levenslang"
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining heeft een blok gevonden (stem)"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Ocean pool-block credited"
+msgstr "Ocean pool-blok bijgeschreven"
+
 #: src/pages/Status.tsx
 msgid "Ocean stats API - reachable when the last /api/ocean fetch returned a pool snapshot."
 msgstr "Ocean stats-API - bereikbaar wanneer de laatste /api/ocean fetch een pool-snapshot terugbracht."
@@ -1797,10 +1806,6 @@ msgstr "Oceans openstaande verdiensten - wat bij de volgende uitbetaling on-chai
 #: src/pages/Config.tsx
 msgid "Off"
 msgstr "Uit"
-
-#: src/pages/Config.tsx
-msgid "Off by default. When on, every pool block Ocean credits to your payout address (i.e. every TIDES credit while you have shares in the reward window) sends a small INFO message: block height, your share %, your credit, and progress toward the next on-chain payout. The audible cue and chart marker still fire independently."
-msgstr "Standaard uit. Wanneer aangevinkt, stuurt elk poolblok dat Ocean op jouw uitbetaaladres bijschrijft (oftewel elke TIDES-credit terwijl je shares in het reward-venster hebt) een kort INFO-bericht: blokhoogte, jouw aandeel in %, jouw credit, en de voortgang naar de volgende on-chain uitbetaling. Het geluidssignaal en de grafiekmarkering blijven onafhankelijk werken."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2524,11 +2529,6 @@ msgstr "Telegram-meldingen"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
-msgid "Telegram on every Ocean pool-block credit"
-msgstr "Telegram bij elk Ocean-poolblok-credit"
-
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2567,6 +2567,10 @@ msgstr "De hostnaam die onderhouden wordt. Voor No-IP DDNS Key-groepen (de moder
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
 msgstr "Het dyndns2-compatibele update-endpoint van de provider. Voorbeelden: Dynu gebruikt https://api.dynu.com/nic/update; FreeDNS / afraid.org gebruikt https://freedns.afraid.org/nic/update; veel zelf-gehoste DDNS-scripts spreken hetzelfde protocol."
 
+#: src/pages/Config.tsx
+msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
+msgstr "Vink elk type gebeurtenis aan dat je wilt ontvangen. Niet aangevinkte types slaan de daemon volledig over - geen Telegram, geen /alerts-regel, geen retry-ladder. Beweeg over een regel voor de triggervoorwaarde."
+
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx
 msgid "tick failed: {0}"
@@ -2595,6 +2599,10 @@ msgstr "titel"
 #: src/pages/Status.tsx
 msgid "total"
 msgstr "totaal"
+
+#: src/pages/Config.tsx
+msgid "Total Braiins balance ÷ trailing-3h burn rate has dropped below the configured threshold. Off by default; tick the box and pick a day count to enable."
+msgstr "Totaal Braiins-saldo ÷ verbrandingstempo over de laatste 3 uur is onder de ingestelde drempel gezakt. Standaard uit; vink het vakje aan en kies een aantal dagen om in te schakelen."
 
 #: src/pages/Status.tsx
 msgid "Total earned at this address since first share, per Ocean."
@@ -2655,10 +2663,6 @@ msgstr "niet-opgeslagen wijzigingen…"
 #: src/pages/Config.tsx
 msgid "unsupported provider"
 msgstr "niet-ondersteunde provider"
-
-#: src/pages/Config.tsx
-msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
-msgstr "Vink uit welk eventtype je niet wilt ontvangen. Uitgeschakelde types worden in de daemon volledig overgeslagen - geen Telegram, geen /alerts-regel, geen retry-ladder. Hover over een regel voor de trigger-conditie."
 
 #: src/pages/Config.tsx
 msgid "Update URL"
@@ -2725,8 +2729,8 @@ msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-refer
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
-msgid "Wallet runway alert threshold"
-msgstr "Drempel voor wallet-runway-melding"
+msgid "Wallet runway low"
+msgstr "Wallet-runway laag"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
