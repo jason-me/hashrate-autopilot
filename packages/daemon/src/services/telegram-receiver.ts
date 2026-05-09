@@ -156,18 +156,21 @@ export class TelegramReceiver {
     const now = (this.opts.now ?? (() => Date.now()))();
     let confirmation = '';
     try {
-      if (action.kind === 'ack') {
-        await this.opts.alertsRepo.markAcknowledged(action.alert_id, now);
-        confirmation = '✓ acknowledged';
-      } else {
-        await this.opts.alertsRepo.snooze(
-          action.alert_id,
-          now + action.minutes * 60_000,
-        );
-        confirmation = `⏸ snoozed ${action.minutes}m`;
+      // ack is the only supported callback now - snooze was removed
+      // 2026-05-09 per operator request. parseCallbackData rejects
+      // anything else; the type narrows to ack here.
+      if (action.kind !== 'ack') {
+        this.log(`unsupported callback kind: ${action.kind}`);
+        await this.answerCallback(creds.bot_token, cb.id, 'unsupported');
+        return;
       }
+      await this.opts.alertsRepo.markAcknowledged(action.alert_id, now);
+      // Diagnostic: operator wanted a trace they could grep when
+      // verifying that a Telegram-side ack made it to the DB.
+      this.log(`ack from Telegram: alert_id=${action.alert_id} acknowledged_at=${now}`);
+      confirmation = '✓ acknowledged';
     } catch (err) {
-      this.log(`action ${action.kind} failed: ${(err as Error).message}`);
+      this.log(`action ack failed: ${(err as Error).message}`);
       await this.answerCallback(creds.bot_token, cb.id, 'failed');
       return;
     }
@@ -224,9 +227,7 @@ export class TelegramReceiver {
   }
 }
 
-type CallbackAction =
-  | { kind: 'ack'; alert_id: number }
-  | { kind: 'snooze'; alert_id: number; minutes: number };
+type CallbackAction = { kind: 'ack'; alert_id: number };
 
 function parseCallbackData(data: string): CallbackAction | null {
   const parts = data.split(':');
@@ -234,19 +235,9 @@ function parseCallbackData(data: string): CallbackAction | null {
     const id = Number(parts[1]);
     if (Number.isInteger(id) && id > 0) return { kind: 'ack', alert_id: id };
   }
-  if (parts.length === 3 && parts[0] === 'snooze') {
-    const id = Number(parts[1]);
-    const minutes = Number(parts[2]);
-    if (
-      Number.isInteger(id) &&
-      id > 0 &&
-      Number.isFinite(minutes) &&
-      minutes > 0 &&
-      minutes <= 24 * 60
-    ) {
-      return { kind: 'snooze', alert_id: id, minutes };
-    }
-  }
+  // Legacy `snooze:<id>:<minutes>` callbacks from messages sent by
+  // older daemon builds still arrive here; ignore them rather than
+  // erroring loudly. The snooze concept was removed 2026-05-09.
   return null;
 }
 

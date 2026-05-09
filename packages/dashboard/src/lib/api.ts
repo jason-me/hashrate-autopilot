@@ -635,11 +635,6 @@ export const api = {
       '/api/alerts/acknowledge-all',
       { method: 'POST', body: '{}' },
     ),
-  alertSnooze: (id: number, minutes: number) =>
-    request<{ ok: true; snoozed_until_ms: number }>(`/api/alerts/${id}/snooze`, {
-      method: 'POST',
-      body: JSON.stringify({ minutes }),
-    }),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
     request<FinanceRangeResponse>(

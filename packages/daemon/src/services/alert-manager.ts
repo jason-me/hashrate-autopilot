@@ -109,17 +109,9 @@ export class AlertManager {
     const due = await this.alertsRepo.nextDueRetries(nowMs);
 
     for (const row of due) {
-      // Snooze takes precedence over the retry timer firing.
-      if (row.snoozed_until_ms && row.snoozed_until_ms > nowMs) {
-        await this.alertsRepo.markMutedOrSnoozed(
-          row.id,
-          'snoozed',
-          nowMs,
-          row.snoozed_until_ms,
-        );
-        continue;
-      }
-
+      // Snooze gate removed 2026-05-09. No code path writes
+      // snoozed_until_ms any more; legacy rows with a non-null
+      // value just retry as normal.
       await this.attemptDelivery({
         id: row.id,
         severity: row.severity,
@@ -148,19 +140,16 @@ export class AlertManager {
       return;
     }
 
-    // #109: every Telegram message gets a Mark-as-seen button so the
-    // operator can ack from the chat without opening the dashboard.
-    // Snooze only applies to ERROR / WARNING firings - it suppresses
-    // the next retry-ladder ping for 2h, which is meaningless for a
-    // recovery (no pending retry to suppress) or a one-shot INFO
-    // celebration like the pool-block-credit message.
-    const isRecovery = row.paired_alert_id != null;
-    const showSnooze = !isRecovery && row.severity !== 'INFO';
+    // #109: every Telegram message gets a single Mark-as-seen button
+    // so the operator can ack from the chat without opening the
+    // dashboard. The snooze button was removed 2026-05-09 - the
+    // operator's call: "actually, just remove the whole concept of a
+    // snooze. It's utter bullshit. I think it's over the top." The
+    // event-class state machine already silences re-fires while a
+    // bad state is open, so a manual "shut up about this" knob added
+    // surface area without buying the operator anything.
     const action_buttons = [
       { text: '✓ Mark as seen', callback_data: `ack:${row.id}` },
-      ...(showSnooze
-        ? [{ text: '⏸ Snooze 2h', callback_data: `snooze:${row.id}:120` }]
-        : []),
     ];
     const result = await this.sink.send(args.body, {
       alert_id: row.id,

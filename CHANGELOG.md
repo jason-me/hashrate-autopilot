@@ -2,6 +2,21 @@
 
 ## 2026-05-09
 
+### `[Infra]` Remove snooze entirely
+
+Operator's call: "actually, just remove the whole concept of a snooze. It's utter bullshit. I think it's over the top." The event-class state machine already silences re-fires while a bad state is open (active_alert_id pins the event class until recovery), so the manual "shut up about this" knob bought no operator value beyond surface area. Pulled out:
+
+- The `⏸ Snooze 2h` button on the Telegram inline keyboard (every message now carries only `✓ Mark as seen`).
+- The 30m / 2h / 24h pill row on the dashboard /alerts row.
+- The `/api/alerts/:id/snooze` HTTP endpoint.
+- `AlertsRepo.snooze(id, until)`.
+- `api.alertSnooze` from the dashboard client.
+- The "snoozed" branch in `processDueRetries` and the matching test.
+
+Legacy `snoozed:<id>:<minutes>` callbacks from messages sent by older daemon builds get silently ignored by the receiver (rather than erroring loudly), so the chat history of an upgrading operator stays interactive. The `snoozed_until_ms` column stays in the schema for backwards-compat with old rows; no code path writes to it now. The `delivery_status='snoozed'` value is preserved because it's still used by the muted-on-send path elsewhere.
+
+Diagnostic also added: `TelegramReceiver` now logs `[telegram-rx] ack from Telegram: alert_id=N acknowledged_at=ms` on every successful ack, so operators can grep the daemon log to confirm a Telegram-side ack landed in the DB. Helps debug "I clicked acknowledge in Telegram but the dashboard still shows it as unacknowledged" - either the receiver never processed the callback (no log line at all), or the ack is in the DB and the dashboard is just polling-stale (30s cadence).
+
 ### `[Fix]` Wallet runway threshold accepts fractional days
 
 The runway-tile days input was integer-only; the schema typed it as `nonNegativeInt`. Operator wanted to set 4.1 days and got rejected. Burn rate is a continuous quantity so sub-day resolution is reasonable. Schema relaxed to `z.number().nonnegative()`; the NumberField now uses `step="any"`. 0 still disables. The "if you toggle on" default was a coerced 1; now coerces to 0.5 if the operator types 0 by accident with the tile checked.

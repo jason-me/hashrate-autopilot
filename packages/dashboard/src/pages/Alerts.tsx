@@ -1,4 +1,4 @@
-import { Trans, t } from '@lingui/macro';
+import { Trans } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
@@ -16,12 +16,6 @@ import {
 } from '../lib/api';
 import { formatAge, formatTimestamp } from '../lib/format';
 import { useLocale } from '../lib/locale';
-
-const SNOOZE_PRESETS: Array<{ minutes: number; label: () => string }> = [
-  { minutes: 30, label: () => t`30m` },
-  { minutes: 120, label: () => t`2h` },
-  { minutes: 1440, label: () => t`24h` },
-];
 
 export function Alerts() {
   const qc = useQueryClient();
@@ -74,12 +68,6 @@ export function Alerts() {
 
   const ack = useMutation({
     mutationFn: (id: number) => api.alertAcknowledge(id),
-    onSuccess: invalidateAll,
-  });
-
-  const snooze = useMutation({
-    mutationFn: ({ id, minutes }: { id: number; minutes: number }) =>
-      api.alertSnooze(id, minutes),
     onSuccess: invalidateAll,
   });
 
@@ -225,7 +213,6 @@ export function Alerts() {
                   key={row.id}
                   row={row}
                   onAcknowledge={() => ack.mutate(row.id)}
-                  onSnooze={(minutes) => snooze.mutate({ id: row.id, minutes })}
                 />
               )) /* AlertRow uses useLocale internally for the absolute timestamp formatting. */}
             </tbody>
@@ -252,11 +239,9 @@ export function Alerts() {
 function AlertRow({
   row,
   onAcknowledge,
-  onSnooze,
 }: {
   row: AlertRow;
   onAcknowledge: () => void;
-  onSnooze: (minutes: number) => void;
 }) {
   // Mirror the Status page's bids-card timestamp pattern: absolute
   // datetime in the operator's regional format on top, relative age
@@ -274,11 +259,6 @@ function AlertRow({
       </td>
       <td className="px-3 py-2">
         <DeliveryBadge status={row.delivery_status} attempts={row.delivery_attempts} />
-        {row.snoozed_until_ms !== null && row.snoozed_until_ms > Date.now() && (
-          <div className="text-[10px] text-slate-500 mt-0.5">
-            <Trans>snoozed until</Trans> {formatAge(row.snoozed_until_ms)}
-          </div>
-        )}
       </td>
       <td className="px-3 py-2 text-right whitespace-nowrap">
         {row.acknowledged_at_ms === null ? (
@@ -291,23 +271,6 @@ function AlertRow({
         ) : (
           <span className="text-[10px] text-slate-500">
             <Trans>acknowledged {formatAge(row.acknowledged_at_ms)}</Trans>
-          </span>
-        )}
-        {row.delivery_status !== 'sent' && row.delivery_status !== 'gave_up' && (
-          <span className="ml-2 inline-flex border border-slate-700 rounded overflow-hidden">
-            {SNOOZE_PRESETS.map((p, i) => (
-              <button
-                key={p.minutes}
-                onClick={() => onSnooze(p.minutes)}
-                className={
-                  'px-1.5 py-1 text-[10px] text-slate-400 hover:bg-slate-800 ' +
-                  (i > 0 ? 'border-l border-slate-700' : '')
-                }
-                title={t`snooze ${p.label()}`}
-              >
-                {p.label()}
-              </button>
-            ))}
           </span>
         )}
       </td>

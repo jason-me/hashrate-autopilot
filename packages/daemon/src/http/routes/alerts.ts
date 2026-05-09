@@ -1,10 +1,14 @@
 /**
  * Alerts HTTP routes (#100).
  *
- * Read-only listing for the dashboard `/alerts` page, plus two
- * mutate endpoints (acknowledge + snooze). The alert-manager owns
+ * Read-only listing for the dashboard `/alerts` page, plus mutate
+ * endpoints (acknowledge + acknowledge-all). The alert-manager owns
  * the *write* side for delivery state; these routes only let the
  * operator annotate rows.
+ *
+ * Snooze removed 2026-05-09 - the operator's call: the event-class
+ * state machine already silences re-fires while a bad state is
+ * open, so the snooze button bought no value beyond surface area.
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -42,15 +46,6 @@ export interface AlertsListResponse {
   has_more: boolean;
 }
 
-export interface SnoozeRequest {
-  minutes: number;
-}
-
-export interface SnoozeResponse {
-  ok: boolean;
-  snoozed_until_ms: number;
-}
-
 export interface AcknowledgeResponse {
   ok: boolean;
   acknowledged_at_ms: number;
@@ -67,15 +62,15 @@ const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARNING',
 
 /**
  * #109 follow-up (operator request 2026-05-09): when the operator
- * acks or snoozes an alert from the dashboard, mirror the same
- * Telegram-message edit that TelegramReceiver does for in-Telegram
- * acks. Strip the inline keyboard and append a confirmation footer
- * so the operator's chat history reflects the resolution regardless
- * of which surface they used.
+ * acks an alert from the dashboard, mirror the same Telegram-
+ * message edit that TelegramReceiver does for in-Telegram acks.
+ * Strip the inline keyboard and append a confirmation footer so the
+ * operator's chat history reflects the resolution regardless of
+ * which surface they used.
  *
  * The edit is best-effort: failures are logged but never block the
- * HTTP response. The dashboard already persisted the ack/snooze on
- * the alert row before this runs.
+ * HTTP response. The dashboard already persisted the ack on the
+ * alert row before this runs.
  */
 async function editTelegramMessageForRow(
   row: AlertRow,
@@ -245,33 +240,8 @@ export async function registerAlertsRoutes(
     },
   );
 
-  app.post<{ Params: { id: string }; Body: SnoozeRequest }>(
-    '/api/alerts/:id/snooze',
-    async (req, reply): Promise<SnoozeResponse | { error: string }> => {
-      const id = Number(req.params.id);
-      if (!Number.isInteger(id) || id <= 0) {
-        return reply.code(400).send({ error: 'invalid alert id' });
-      }
-      const minutes = Number(req.body?.minutes);
-      if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 24 * 60) {
-        return reply.code(400).send({ error: 'minutes must be between 1 and 1440' });
-      }
-      const existing = await deps.alertsRepo.getById(id);
-      if (!existing) {
-        return reply.code(404).send({ error: 'alert not found' });
-      }
-      const until = Date.now() + minutes * 60_000;
-      await deps.alertsRepo.snooze(id, until);
-      const cfg = await deps.configRepo.get();
-      if (cfg) {
-        await editTelegramMessageForRow(
-          existing,
-          cfg,
-          `⏸ snoozed ${minutes}m`,
-          Date.now(),
-        );
-      }
-      return { ok: true, snoozed_until_ms: until };
-    },
-  );
+  // Snooze endpoint removed 2026-05-09. Older clients calling
+  // /api/alerts/:id/snooze get a 404 from Fastify's default
+  // routing; that's fine - the dashboard no longer makes the call,
+  // and the previous behaviour was a no-op for sent alerts anyway.
 }

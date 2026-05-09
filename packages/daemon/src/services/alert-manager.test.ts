@@ -177,35 +177,8 @@ describe('AlertManager.processDueRetries', () => {
     expect(last).toMatch(/no further notifications/i);
   });
 
-  it('skips delivery while snooze is active', async () => {
-    const repo = makeRepoStub();
-    const sink = makeSink(
-      vi.fn().mockResolvedValue({ ok: true, delivery_meta_json: null, error: null }),
-    );
-    let now = 1_000_000;
-    const mgr = new AlertManager({
-      alertsRepo: repo,
-      sink,
-      getConfig: () => ({ notifications_muted: false, notification_retry_interval_minutes: 30 }),
-      now: () => now,
-    });
-    await mgr.recordAlert({
-      severity: 'ERROR',
-      title: 'X',
-      body: 'Y',
-      event_class: 'datum_unreachable',
-    });
-    // Operator hits "snooze 30m" via the dashboard. Retry is due, but
-    // snooze should short-circuit before sink.send fires.
-    repo.rows[0]!.delivery_status = 'failed';
-    repo.rows[0]!.next_retry_at_ms = 1_500_000;
-    repo.rows[0]!.snoozed_until_ms = 2_500_000;
-    (sink.send as unknown as { mockClear(): void }).mockClear();
-    now = 1_500_000; // retry timer is now due
-
-    await mgr.processDueRetries();
-    expect(sink.send).not.toHaveBeenCalled();
-    expect(repo.rows[0]!.delivery_status).toBe('snoozed');
-    expect(repo.rows[0]!.next_retry_at_ms).toBe(2_500_000);
-  });
+  // The "skips delivery while snooze is active" test was removed
+  // 2026-05-09 along with the snooze concept itself. processDueRetries
+  // no longer reads snoozed_until_ms; legacy rows with the column
+  // populated retry as if it weren't set.
 });

@@ -189,13 +189,11 @@ export class AlertsRepo {
     return Number(result.numUpdatedRows ?? 0);
   }
 
-  async snooze(id: number, untilMs: number): Promise<void> {
-    await this.db
-      .updateTable('alerts')
-      .set({ snoozed_until_ms: untilMs })
-      .where('id', '=', id)
-      .execute();
-  }
+  // Snooze removed 2026-05-09 (operator request). The
+  // `snoozed_until_ms` column stays for backwards-compat with older
+  // rows but no code path writes to it any more, and the daemon's
+  // delivery loop no longer treats `snoozed_until_ms > now` as a
+  // reason to defer a retry.
 
   async markDelivered(args: MarkDeliveredArgs): Promise<void> {
     await this.db
