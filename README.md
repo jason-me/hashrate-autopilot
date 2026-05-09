@@ -24,7 +24,7 @@ spend and on-chain receipts.
 
 ## Why this exists
 
-The Braiins Hashpower marketplace works well, but bids cancel when the wallet drains, prices drift above
+The Braiins Hashpower marketplace works well, but bids cancel when the bid drains, prices drift above
 your bid, and fills stop the moment a bid sits below the level at which enough supply is available. The
 common failure mode for a home miner is: wake up and discover that the order cancelled hours ago and
 you've been sitting at zero hashrate since. This project replaces that with a controller that quietly
@@ -54,12 +54,13 @@ operator wants to opt out of.
 ## Scope
 
 **v1 (current):** Braiins Hashpower marketplace only. Single operator. Single always-on host on a home LAN
-alongside a Bitcoin node (Umbrel or otherwise) running a Datum Gateway pointed at [Ocean](https://ocean.xyz/).
+alongside a Bitcoin node (Umbrel or otherwise) running [Datum Gateway](https://github.com/OCEAN-xyz/datum_gateway) 
+pointed at [Ocean](https://ocean.xyz/).
 
 **v2 (aspirational):** Multi-market abstraction so additional hashrate marketplaces can be plugged in behind the
 same controller and dashboard.
 
-Non-goals (v1): SaaS / multi-user, cloud deployment, hands-free wallet funding, gapless uptime.
+Non-goals: SaaS / multi-user, cloud deployment, hands-free wallet funding, gapless uptime.
 
 ## How it works
 
@@ -514,6 +515,44 @@ to a tagged release, manage the checkout manually:
 git fetch --tags && git checkout v1.3.0
 pnpm install && pnpm build && ./scripts/restart.sh
 ```
+
+#### C.5. Auto-start on boot (systemd)
+
+`scripts/start.sh` runs the daemon under nohup with a PID file. That works for interactive sessions, but it does not survive a reboot. On a dedicated bare-metal box you want the daemon to come back up automatically when the machine restarts. The standard answer on a modern Linux distro is a systemd unit, and there's a template ready to use at `scripts/hashrate-autopilot.service.example`.
+
+Setup, end-to-end:
+
+```bash
+# 1. Find the three values you'll plug into the unit file.
+whoami                                       # __USER__
+pwd                                          # __REPO_PATH__ (run from inside the repo)
+which pnpm                                   # __PNPM_PATH__
+
+# 2. Copy the template into place and edit the placeholders.
+sudo cp scripts/hashrate-autopilot.service.example \
+        /etc/systemd/system/hashrate-autopilot.service
+sudo $EDITOR /etc/systemd/system/hashrate-autopilot.service
+#   replace __USER__, __REPO_PATH__, __PNPM_PATH__ with the values from step 1.
+
+# 3. Enable + start.
+sudo systemctl daemon-reload
+sudo systemctl enable --now hashrate-autopilot
+sudo systemctl status hashrate-autopilot     # expect "active (running)"
+journalctl -u hashrate-autopilot -f          # follow live logs (Ctrl+C to stop tail)
+```
+
+Reboot once to confirm auto-start works. After a fresh reboot the dashboard should be reachable on port 3010 within ~10 s without anyone logging in.
+
+**Day-to-day under systemd:**
+
+- Logs: `journalctl -u hashrate-autopilot -f` (replaces `./scripts/logs.sh` for the systemd-managed instance).
+- Restart: `sudo systemctl restart hashrate-autopilot` (replaces `./scripts/restart.sh`).
+- Stop / start: `sudo systemctl {stop,start} hashrate-autopilot`.
+- Update: `git pull --ff-only && pnpm install && pnpm build && sudo systemctl restart hashrate-autopilot`. The existing `scripts/deploy.sh` still works for the build-and-test half but its `restart` step talks to PID files, not systemd; either edit deploy.sh's last line to call `sudo systemctl restart hashrate-autopilot` instead, or run the four commands manually.
+
+**When pnpm / node update via nvm**, the absolute path under `/home/.../node/vXX/bin/pnpm` changes. Update `ExecStart=` in the unit file and `sudo systemctl daemon-reload && sudo systemctl restart hashrate-autopilot`.
+
+If you do NOT want the daemon to auto-start at boot, skip this section entirely and stick with `./scripts/start.sh`. The two paths don't conflict, but don't run both at the same time - they'd both bind port 3010.
 
 ### Path D - Power-user CLI with SOPS
 

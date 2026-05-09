@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Docs]` Bare-metal: systemd unit template for auto-start on boot
+
+`scripts/hashrate-autopilot.service.example` is a copy-paste systemd unit template, plus a new C.5 section in the README that walks through dropping it into `/etc/systemd/system/`, filling in the user / repo path / pnpm path, and enabling it. Bare-metal operators no longer need to roll their own service file. Existing `scripts/start.sh` flow keeps working untouched - the systemd path is opt-in.
+
 ### `[Release]` v1.5.4
 
 The actual electrs-only fix.
