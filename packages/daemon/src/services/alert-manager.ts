@@ -200,7 +200,7 @@ export class AlertManager {
    * for at-a-glance scanning; HTML-escape the dynamic body so a
    * worker name or error string with `<` or `&` in it doesn't blow
    * up Telegram's parser. Severity is conveyed by the emoji + bracket
-   * label prefix on the title (🔴 [ERROR] / ⚠️ [WARNING] / ℹ️ [INFO]
+   * label prefix on the title (🔴 [IMPORTANT] / ⚠️ [WARNING] / ℹ️ [INFO]
    * / ✅ [RESOLVED]) - operator can scan the chat list at a glance
    * without opening each message.
    */
@@ -254,8 +254,8 @@ export function formatTelegramBody(
 ): string {
   const prefix = isRecovery
     ? '✅ [RESOLVED]'
-    : severity === 'ERROR'
-      ? '🔴 [ERROR]'
+    : severity === 'IMPORTANT'
+      ? '🔴 [IMPORTANT]'
       : severity === 'WARNING'
         ? '⚠️ [WARNING]'
         : 'ℹ️ [INFO]';

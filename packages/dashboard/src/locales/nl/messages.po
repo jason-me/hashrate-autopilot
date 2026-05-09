@@ -1428,6 +1428,10 @@ msgstr "id {0}"
 msgid "IDs: {0}"
 msgstr "ID's: {0}"
 
+#: src/pages/Alerts.tsx
+msgid "important"
+msgstr "belangrijk"
+
 #: src/pages/Status.tsx
 msgid "income/day est."
 msgstr "inkomen/dag schat."
@@ -1439,6 +1443,10 @@ msgstr "onjuist wachtwoord"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "verhogen"
+
+#: src/pages/Alerts.tsx
+msgid "info"
+msgstr "info"
 
 #: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
@@ -2310,6 +2318,10 @@ msgstr "Onthoud mij op dit apparaat"
 msgid "Replace file…"
 msgstr "Bestand vervangen…"
 
+#: src/pages/Alerts.tsx
+msgid "resolved"
+msgstr "opgelost"
+
 #: src/pages/Config.tsx
 msgid "Resolves to:"
 msgstr "Resolveert naar:"
@@ -2836,6 +2848,10 @@ msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-refer
 #: src/pages/Config.tsx
 msgid "Wallet runway below"
 msgstr "Wallet-runway onder"
+
+#: src/pages/Alerts.tsx
+msgid "warning"
+msgstr "waarschuwing"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."

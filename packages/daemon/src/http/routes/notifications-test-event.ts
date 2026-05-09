@@ -44,7 +44,7 @@ interface Sample {
 
 const SAMPLE_BUILDERS: Record<string, () => Sample> = {
   datum_unreachable: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Datum stratum unreachable - 12m',
     body:
       '[SAMPLE] Local stratum endpoint stopped accepting connections at sample-host:3334 12 minutes ago. ' +
@@ -53,7 +53,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   hashrate_below_floor: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Hashrate below floor (0.50 / 1.00 PH/s) for 11m',
     body:
       '[SAMPLE] Delivered 0.50 PH/s for 11m, below the configured 1.00 PH/s floor. Possible causes: ' +
@@ -61,7 +61,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   zero_hashrate: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Zero hashrate for 16m',
     body:
       '[SAMPLE] No measurable hashrate from Braiins for 16 minutes. The bid is active and funded but no ' +
@@ -69,7 +69,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   api_unreachable: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Braiins API unreachable - 12m',
     body:
       '[SAMPLE] Braiins /v1/* has been returning network errors for 12 minutes. The autopilot is in ' +
@@ -77,7 +77,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   unknown_bid: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Unknown bid detected',
     body:
       '[SAMPLE] An owned bid (B99999) appeared in the Braiins account that the autopilot did not create. ' +
@@ -86,7 +86,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   sustained_paused: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Bid sustained-paused by Braiins',
     body:
       '[SAMPLE] Primary owned bid B12345 carries last_pause_reason="not possible to deliver the hashing ' +
@@ -104,7 +104,7 @@ const SAMPLE_BUILDERS: Record<string, () => Sample> = {
     is_recovery: false,
   }),
   wallet_runway: () => ({
-    severity: 'ERROR',
+    severity: 'IMPORTANT',
     title: 'Wallet runway 1.5 days (below 3.0 day threshold)',
     body:
       '[SAMPLE] Total Braiins balance (available + blocked) is 210,000 sat; trailing-3h burn is 140,000 ' +

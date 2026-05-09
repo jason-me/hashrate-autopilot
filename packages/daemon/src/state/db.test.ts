@@ -104,6 +104,7 @@ describe('openDatabase - migrations', () => {
       '0076_alerts_retention.sql',
       '0077_bid_events_overpay_snapshot.sql',
       '0078_chart_max_markers.sql',
+      '0079_rename_error_severity_to_important.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

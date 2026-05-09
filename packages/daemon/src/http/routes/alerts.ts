@@ -58,7 +58,7 @@ export interface AcknowledgeAllResponse {
   count: number;
 }
 
-const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARNING', 'ERROR']);
+const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARNING', 'IMPORTANT']);
 
 /**
  * #109 follow-up (operator request 2026-05-09): when the operator

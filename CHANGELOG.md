@@ -2,6 +2,12 @@
 
 ## 2026-05-09
 
+### `[UI]` Severity rename ERROR -> IMPORTANT, severity-label badges back on Alerts page (#129)
+
+Top alert tier renamed from ERROR (b0b978b) to IMPORTANT. The earlier rename of LOUD -> ERROR carried the wrong framing - many of the events that fire at this tier (unknown bid detected, sustained pause, deposit returned by Braiins compliance) aren't really errors. IMPORTANT captures "this needs your attention" without the false implication that something is broken. Migration 0079 rewrites existing `severity = 'ERROR'` rows to IMPORTANT in place; idempotent. Daemon types, alert evaluator, alert manager, Telegram body prefix, dashboard API client, tests all updated. Spec §9.1 / §6 brought along.
+
+Also restores the severity-label badge in front of every Alerts-page row (red IMPORTANT / amber WARNING / slate INFO / emerald RESOLVED for paired-recovery rows). The badge was dropped earlier today on the grounds that "LOUD added no signal"; with the term renamed, the badge becomes informative again. Operator can scan severity at a glance both in the Alerts table and in the Telegram chat-list preview.
+
 ### `[Feature]` Pool-luck step markers + tooltips on the Hashrate chart (#128)
 
 When the right axis is `pool luck (24h)` or `pool luck (7d)`, the line steps up when a block enters the rolling window (numerator +1) and steps down when an old block ages out the tail (numerator -1). The dashboard now renders a small purple circle at every step and a hover/click tooltip that explains *which* block caused the change. Tooltip carries the direction (`POOL LUCK +` / `POOL LUCK -`), the block height + timestamp, the rolling-Nh from→to delta on the luck value, the pool reward, BIP-110 signal, and a click-through to the configured block explorer (works for both directions — even the aged-out block is still useful to verify on-chain). Operator: "I'm talking about these points that you draw, but there's currently no tooltip... oh, wait, this is what happened." Markers fall away automatically when the right axis is set to anything other than the two pool-luck variants. EN/NL/ES translated.

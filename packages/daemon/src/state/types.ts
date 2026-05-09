@@ -216,7 +216,7 @@ export interface RewardEventsTable {
 // alerts
 // ---------------------------------------------------------------------------
 
-export type AlertSeverity = 'INFO' | 'WARNING' | 'ERROR';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'IMPORTANT';
 export type AlertStatus = 'BUFFERED' | 'SENT' | 'FAILED';
 /** #100: per-alert delivery state, channel-agnostic. */
 export type AlertDeliveryStatus =

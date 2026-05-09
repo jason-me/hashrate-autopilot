@@ -304,7 +304,7 @@ export class AlertsRepo {
       .selectFrom('alerts')
       .select((eb) => eb.fn.countAll<number>().as('n'))
       .where('acknowledged_at_ms', 'is', null)
-      .where('severity', 'in', ['ERROR', 'WARNING'])
+      .where('severity', 'in', ['IMPORTANT', 'WARNING'])
       .executeTakeFirstOrThrow();
     return Number(row.n);
   }

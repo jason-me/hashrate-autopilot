@@ -190,7 +190,7 @@ export class AlertEvaluator {
       state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
     this.datum_unreachable = await this.runTransition({
       event_class: 'datum_unreachable',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs,
       currentState: this.datum_unreachable,
@@ -209,7 +209,7 @@ export class AlertEvaluator {
     const thresholdMs = state.config.below_floor_alert_after_minutes * 60_000;
     this.hashrate_below_floor = await this.runTransition({
       event_class: 'hashrate_below_floor',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs,
       currentState: this.hashrate_below_floor,
@@ -229,7 +229,7 @@ export class AlertEvaluator {
       state.config.zero_hashrate_loud_alert_after_minutes * 60_000;
     this.zero_hashrate = await this.runTransition({
       event_class: 'zero_hashrate',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs,
       currentState: this.zero_hashrate,
@@ -249,7 +249,7 @@ export class AlertEvaluator {
     const thresholdMs = state.config.api_outage_alert_after_minutes * 60_000;
     this.api_unreachable = await this.runTransition({
       event_class: 'api_unreachable',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs,
       currentState: this.api_unreachable,
@@ -269,7 +269,7 @@ export class AlertEvaluator {
     const isBad = state.unknown_bids.length > 0;
     this.unknown_bid = await this.runTransition({
       event_class: 'unknown_bid',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs: 0,
       currentState: this.unknown_bid,
@@ -305,7 +305,7 @@ export class AlertEvaluator {
       state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
     this.sustained_paused = await this.runTransition({
       event_class: 'sustained_paused',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad: isBad ?? false,
       thresholdMs,
       currentState: this.sustained_paused,
@@ -402,7 +402,7 @@ export class AlertEvaluator {
 
     this.wallet_runway = await this.runTransition({
       event_class: 'wallet_runway',
-      severity: 'ERROR',
+      severity: 'IMPORTANT',
       isBad,
       thresholdMs: 0,
       currentState: this.wallet_runway,
@@ -496,7 +496,7 @@ export class AlertEvaluator {
 
   private async runTransition(args: {
     event_class: string;
-    severity: 'ERROR' | 'WARNING' | 'INFO';
+    severity: 'IMPORTANT' | 'WARNING' | 'INFO';
     isBad: boolean;
     thresholdMs: number;
     currentState: EventState;

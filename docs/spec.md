@@ -104,7 +104,7 @@ The full DDL (with comments and migration numbers) lives in `architecture.md` §
 - `DELETE /v1/spot/bid` (**cancel**) - fully autonomous. The order ID is passed in the JSON body; the query-string
   form is rejected (empirical, see `docs/research.md` v1.1).
 - Dashboard UI (LAN bind).
-- **External notification channel via Telegram** (#100, shipped post-v2.3). LOUD / WARN events POST to a configured chat with an inline-keyboard ack/snooze (#109); INFO events stay dashboard-only by default with one opt-in (`notify_on_pool_block_credit`, #117). The notifier is structured around a `NotificationSink` interface so a Nostr / ntfy / email backend could be swapped in without touching the event detectors. Full event list and throttling rules in §9.1.
+- **External notification channel via Telegram** (#100, shipped post-v2.3). IMPORTANT / WARNING events POST to a configured chat with an inline-keyboard ack/snooze (#109); INFO events stay dashboard-only by default with one opt-in (`notify_on_pool_block_credit`, #117). The notifier is structured around a `NotificationSink` interface so a Nostr / ntfy / email backend could be swapped in without touching the event detectors. Full event list and throttling rules in §9.1.
 
 ## 7. Run mode and the mutation gate
 
@@ -181,7 +181,7 @@ See also the "Pricing strategy" section further down - these three knobs feed th
 **Budget:**
 
 - `bid_budget_sat` - size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel** meaning "use the full available wallet balance on each CREATE" - resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config. When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently until a balance is observed.
-- `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not LOUD-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeInt`.
+- `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not IMPORTANT-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeInt`.
 
 **Outage tolerance - profile selector + individual overrides:**
 
@@ -405,7 +405,7 @@ event detectors. Setup walkthrough at [`docs/setup-telegram.md`](setup-telegram.
 
 **Events that fire Telegram:**
 
-LOUD severity (7) - hard outages that need a phone alarm:
+IMPORTANT severity (7) - hard outages that need a phone alarm:
 
 1. **Datum stratum unreachable** for `pool_outage_blip_tolerance_seconds × 5` (the
    2026-05-06 incident that motivated this issue).
@@ -418,7 +418,7 @@ LOUD severity (7) - hard outages that need a phone alarm:
    `last_pause_reason` for the pool-outage tolerance window. Catches the
    Paused/Active oscillation hazard.
 
-WARN severity - soft warnings that can wait for the next dashboard glance:
+WARNING severity - soft warnings that can wait for the next dashboard glance:
 
 8. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
 
@@ -428,7 +428,7 @@ INFO severity (opt-in, dashboard-only by default):
 - On-chain payout received (P&L panel).
 - Pool-block credit (TIDES) - opt-in Telegram (#117) via the `notify_on_pool_block_credit` toggle. INFO severity, no retry ladder, no inline ack/snooze. Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold.
 
-**Recovery messages**: paired with each fired LOUD or WARN. INFO severity. Body example:
+**Recovery messages**: paired with each fired IMPORTANT or WARNING. INFO severity. Body example:
 `Datum gateway reachable again - was down 22m.` Includes a `paired_alert_id` FK to the
 originating alert so the dashboard groups them visually on `/alerts`.
 
@@ -449,7 +449,7 @@ Total: at most 5 alert messages per outage event + 1 recovery message.
 - **Global mute** (`notifications_muted` config flag): silences all Telegram POSTs; alerts table still records every row with `delivery_status = 'muted'` for the audit trail.
 - **Per-event-class opt-out** (`notification_disabled_event_classes`, #106): operator picks specific event classes to silence (Datum unreachable, hashrate below floor, beta-exit, ...) from the Notifications tab on the Config page. New event classes default to enabled - no migration required when adding one.
 - **Per-alert snooze**: inline action on the `/alerts` page row for any active alert. Presets: 30m / 2h / 24h. While snoozed, retries record as `delivery_status = 'snoozed'` instead of POSTing. Recovery messages bypass snooze.
-- **Inline ack / snooze on the Telegram message itself** (#109): every LOUD / WARN firing carries `Mark as seen` and `Snooze 2h` inline-keyboard buttons. Tapping on the operator's phone sets `acknowledged_at_ms` or `snoozed_until_ms` server-side via the bot's long-polled `getUpdates` (no webhook, works behind home NAT), edits the message in place to confirm, and removes the keyboard. Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected.
+- **Inline ack / snooze on the Telegram message itself** (#109): every IMPORTANT / WARNING firing carries `Mark as seen` and `Snooze 2h` inline-keyboard buttons. Tapping on the operator's phone sets `acknowledged_at_ms` or `snoozed_until_ms` server-side via the bot's long-polled `getUpdates` (no webhook, works behind home NAT), edits the message in place to confirm, and removes the keyboard. Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected.
 - **Per-instance label prefix** (`telegram_instance_label`): when set, the Telegram sink prefixes every message with `[<label>] ` so an operator running multiple daemons against the same bot/chat can tell them apart at a glance.
 - **No quiet-hours config** - cancelled in v1.1 spec rewrite. Mute-on-demand replaces the use case.
 

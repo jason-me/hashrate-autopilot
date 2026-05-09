@@ -13,6 +13,7 @@ import {
   api,
   type AlertDeliveryStatus,
   type AlertRow,
+  type AlertSeverity,
 } from '../lib/api';
 import { formatAge, formatTimestamp } from '../lib/format';
 import { useLocale } from '../lib/locale';
@@ -254,7 +255,10 @@ function AlertRow({
         <div className="text-slate-500 text-[10px] mt-0.5">{formatAge(row.created_at)}</div>
       </td>
       <td className="px-3 py-2">
-        <div className="text-slate-200">{row.title}</div>
+        <div className="flex items-center gap-2">
+          <SeverityBadge severity={row.severity} isRecovery={row.paired_alert_id !== null} />
+          <div className="text-slate-200">{row.title}</div>
+        </div>
         <div className="text-xs text-slate-500 mt-0.5 break-words max-w-xl">{row.body}</div>
       </td>
       <td className="px-3 py-2">
@@ -275,6 +279,56 @@ function AlertRow({
         )}
       </td>
     </tr>
+  );
+}
+
+/**
+ * #129: severity-label badge in front of every alert title.
+ *
+ * Three tiers - IMPORTANT (red, the high-priority bucket that fires
+ * the retry ladder + Telegram emoji prefix), WARNING (amber, soft
+ * warnings), INFO (slate, opt-in good news + recovery rows). Recovery
+ * rows are stored as INFO with a non-null `paired_alert_id`; render
+ * them as RESOLVED (emerald) so the operator can scan resolved-vs-
+ * still-firing at a glance, mirroring the Telegram message prefix.
+ */
+function SeverityBadge({
+  severity,
+  isRecovery,
+}: {
+  severity: AlertSeverity;
+  isRecovery: boolean;
+}) {
+  if (isRecovery) {
+    return (
+      <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-900/40 border border-emerald-800 text-emerald-300 whitespace-nowrap">
+        <Trans>resolved</Trans>
+      </span>
+    );
+  }
+  const cls =
+    severity === 'IMPORTANT'
+      ? 'bg-red-900/40 border-red-800 text-red-300'
+      : severity === 'WARNING'
+        ? 'bg-amber-900/40 border-amber-800 text-amber-300'
+        : 'bg-slate-800 border-slate-700 text-slate-400';
+  const label =
+    severity === 'IMPORTANT' ? (
+      <Trans>important</Trans>
+    ) : severity === 'WARNING' ? (
+      <Trans>warning</Trans>
+    ) : (
+      <Trans>info</Trans>
+    );
+  return (
+    <span
+      className={
+        'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap ' +
+        cls
+      }
+    >
+      {label}
+    </span>
   );
 }
 

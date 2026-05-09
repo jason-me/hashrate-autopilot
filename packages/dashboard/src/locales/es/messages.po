@@ -1428,6 +1428,10 @@ msgstr "id {0}"
 msgid "IDs: {0}"
 msgstr "IDs: {0}"
 
+#: src/pages/Alerts.tsx
+msgid "important"
+msgstr "importante"
+
 #: src/pages/Status.tsx
 msgid "income/day est."
 msgstr "ingreso/día est."
@@ -1439,6 +1443,10 @@ msgstr "contraseña incorrecta"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "aumentar"
+
+#: src/pages/Alerts.tsx
+msgid "info"
+msgstr "info"
 
 #: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
@@ -2310,6 +2318,10 @@ msgstr "Recordarme en este dispositivo"
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
 
+#: src/pages/Alerts.tsx
+msgid "resolved"
+msgstr "resuelto"
+
 #: src/pages/Config.tsx
 msgid "Resolves to:"
 msgstr "Se resuelve a:"
@@ -2836,6 +2848,10 @@ msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la
 #: src/pages/Config.tsx
 msgid "Wallet runway below"
 msgstr "Runway de la wallet por debajo de"
+
+#: src/pages/Alerts.tsx
+msgid "warning"
+msgstr "advertencia"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
