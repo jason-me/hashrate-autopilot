@@ -2,6 +2,21 @@
 
 ## 2026-05-09
 
+### `[Fix]` Overpay-tuning helper: bucket-based delivery curve, instant slider, no more "297 at p55" (#118 follow-up)
+
+Two real bugs in yesterday's slider+lookback build:
+
+1. **Slider drag was unusable.** Every drag step refetched `/api/overpay-tuning` for the new percentile; on a 9k-tick window that's a 200-300ms server round-trip per pixel. Replaced with a single response carrying the entire bucket array; the slider now drives a pure-JS lookup over the precomputed buckets, so drag is instant.
+2. **Methodology was wrong.** The previous "p55 of bid - fillable" answered "what gap did I run at most of the time" - which tautologically returns ~current overpay. The operator's offline analysis showed the real question is "at what overpay did delivery still meet target?" - and the answer was substantially lower than the percentile suggested. Replaced with bucket-based avg delivery: the route now buckets tracking-regime ticks into 50 sat/PH/day bins and reports avg `delivered_ph` per bucket. The dashboard's slider now reads as **"fill rate target = how much of `target_hashrate_ph` you want to deliver on average"**; client walks buckets low-to-high and picks the smallest gap whose avg delivery meets that target.
+
+Concrete effect: where the old card said `297 sat/PH/day at p55`, the new card answers "the lowest overpay where you still hit 95% of your 3 PH/s target on average was ~100 sat/PH/day" - matching the operator's own offline analysis.
+
+The 30-day savings projection is now per-bucket (counterfactual: what would you have paid if you'd run at that bucket's lower bound on every tick?), so the savings figure updates as the operator drags the slider.
+
+Frontend types and API client simplified (no more percentile param). NL/ES translations for the two new operator-facing strings.
+
+`BUILD_NUMBER` 302 → 303.
+
 ### `[UI]` Pricing section: hand-built two-column layout, fill-rate slider, lookback caveat (#118 follow-up)
 
 Three operator-driven follow-ups to yesterday's overpay-tuning helper:

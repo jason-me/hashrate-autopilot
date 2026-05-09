@@ -336,6 +336,13 @@ msgstr ""
 msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
 msgstr ""
 
+#. placeholder {0}: formatNumber( Math.round(((recommendedBucket.avg_delivered_ph ?? 0) / targetPh) * 100), {}, intlLocale, )
+#. placeholder {1}: formatNumber(targetPh, { maximumFractionDigits: 2 }, intlLocale)
+#. placeholder {2}: recommendedBucket.tick_count
+#: src/pages/Config.tsx
+msgid "At this overpay, the daemon delivered {0}% of your {1} PH/s target on average ({2} ticks). Drag the slider to trade fill rate for premium savings."
+msgstr "Bij deze overpay leverde de daemon gemiddeld {0}% van je doel van {1} PH/s ({2} ticks). Versleep de slider om vulpercentage te ruilen voor premium-besparing."
+
 #: src/pages/Alerts.tsx
 msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
 msgstr "Auditspoor van elke melding die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, gesnoozed of opgegeven. Configureer de Telegram-bestemming op Config → Meldingen."
@@ -1157,7 +1164,7 @@ msgstr "Electrs-host"
 msgid "Escalation in"
 msgstr "Escalatie over"
 
-#. placeholder {0}: formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)
+#. placeholder {0}: formatNumber( recommendedBucket.hypothetical_30d_savings_sat, {}, intlLocale, )
 #: src/pages/Config.tsx
 msgid "Estimated 30-day savings vs your current value: {0} sat."
 msgstr "Geschatte besparing over 30 dagen ten opzichte van je huidige waarde: {0} sat."
@@ -1765,8 +1772,8 @@ msgstr "niet gerapporteerd"
 
 #. placeholder {0}: data.window_days
 #: src/pages/Config.tsx
-msgid "Note: the recommendation is based on the gap distribution over the last {0} days. If you changed your overpay recently, the figures still reflect the previous setting until the window catches up."
-msgstr "Opmerking: de aanbeveling is gebaseerd op de gap-verdeling over de laatste {0} dagen. Als je je overpay onlangs hebt aangepast, weerspiegelen de cijfers nog steeds de vorige instelling totdat het venster bijgewerkt is."
+msgid "Note: the recommendation is based on the empirical delivery vs. gap curve over the last {0} days. If you changed your overpay recently, the bucket coverage still reflects the previous setting until the window catches up."
+msgstr "Opmerking: de aanbeveling is gebaseerd op de empirische delivery-vs-gap-curve over de laatste {0} dagen. Als je je overpay onlangs hebt aangepast, weerspiegelt de bucket-dekking nog steeds de vorige instelling totdat het venster bijgewerkt is."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -1975,14 +1982,6 @@ msgstr "eigenaar"
 #: src/pages/Setup.tsx
 msgid "Owner token"
 msgstr "Eigenaars-token"
-
-#. placeholder {0}: data.eligible_ticks
-#. placeholder {1}: data.capped_ticks
-#. placeholder {2}: data.under_fillable_ticks
-#. placeholder {3}: data.window_days
-#: src/pages/Config.tsx
-msgid "p{percentilePct} of bid - fillable across {0} tracking ticks ({1} capped, {2} under fillable excluded). At this overpay you would have filled {percentilePct}% of the time over the last {3} days."
-msgstr "p{percentilePct} van bod - fillable over {0} tracking-ticks ({1} gecapped, {2} onder fillable uitgesloten). Bij deze overpay zou je {percentilePct}% van de tijd gevuld zijn over de laatste {3} dagen."
 
 #: src/pages/Status.tsx
 msgid "paid earnings (lifetime)"

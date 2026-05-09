@@ -2093,14 +2093,20 @@ function OverpayTuningHelper({
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
-  // Slider state: 50%-99% in 1-pp steps. Default 95 = "fill 95% of
-  // the time", matching the original recommendation. The operator
-  // can drag it left to trade fill rate for premium savings, or
-  // right to be more conservative.
-  const [percentilePct, setPercentilePct] = useState(95);
+  // Slider semantics: "fill rate target" = how much of `target_hashrate_ph`
+  // the operator is willing to deliver on average to consider an
+  // overpay value acceptable. 95 = "must hit 95% of target on
+  // average"; lower = OK with less delivery in exchange for cheaper
+  // bids. Default 95.
+  const [fillRatePct, setFillRatePct] = useState(95);
+
+  // Single fetch, no params - the entire bucket array comes back.
+  // Slider is then pure-JS: walk buckets, find the smallest gap
+  // where avg_delivered >= target * fillRatePct/100. This makes
+  // drag feel instant.
   const tuning = useQuery({
-    queryKey: ['overpay-tuning', percentilePct],
-    queryFn: () => api.overpayTuning(percentilePct / 100),
+    queryKey: ['overpay-tuning'],
+    queryFn: () => api.overpayTuning(),
     refetchInterval: 60_000,
   });
 
@@ -2109,29 +2115,26 @@ function OverpayTuningHelper({
       ? '-'
       : `${formatNumber(Math.round(sat / 1000), {}, intlLocale)} sat/PH/day`;
 
-  // Slider is rendered identically across both states (ready /
-  // insufficient_history) so the operator can still drag it while
-  // waiting for enough data.
   const slider = (
     <div className="mt-2">
       <div className="flex items-baseline justify-between text-[11px] text-slate-400">
         <Trans>fill rate target</Trans>
         <span className="font-mono tabular-nums text-amber-200">
-          {percentilePct}%
+          {fillRatePct}%
         </span>
       </div>
       <input
         type="range"
         min={50}
-        max={99}
+        max={100}
         step={1}
-        value={percentilePct}
-        onChange={(e) => setPercentilePct(Number(e.target.value))}
+        value={fillRatePct}
+        onChange={(e) => setFillRatePct(Number(e.target.value))}
         className="w-full accent-amber-400"
       />
       <div className="flex justify-between text-[10px] text-slate-500">
         <span>50%</span>
-        <span>99%</span>
+        <span>100%</span>
       </div>
     </div>
   );
@@ -2165,10 +2168,34 @@ function OverpayTuningHelper({
     );
   }
 
-  // Recommendation matches current within 5% - disable Apply.
-  const recommended = data.recommended_sat_per_eh_day ?? 0;
+  // Walk buckets low->high; pick the smallest gap whose avg_delivered
+  // meets the slider's threshold. Untrusted buckets (avg_delivered =
+  // null because tick_count < MIN_BUCKET_TICKS) are skipped - we
+  // can't trust their average. If no bucket qualifies, fall back to
+  // the last (highest-gap) bucket with a trusted average so the
+  // operator has a fallback recommendation rather than null.
+  const targetPh = data.target_hashrate_ph;
+  const requiredDelivery = targetPh * (fillRatePct / 100);
+  const trustedBuckets = data.buckets.filter((b) => b.avg_delivered_ph !== null);
+  const qualifying = trustedBuckets.find(
+    (b) => (b.avg_delivered_ph ?? 0) >= requiredDelivery,
+  );
+  const recommendedBucket =
+    qualifying ?? trustedBuckets[trustedBuckets.length - 1] ?? null;
+  const recommended = recommendedBucket
+    ? Math.max(
+        recommendedBucket.gap_lower_sat_per_eh_day,
+        data.floor_sat_per_eh_day,
+      )
+    : null;
+
+  // "Matches current" tolerance: 5% of current OR 1 sat/PH/day,
+  // whichever is larger. Avoids the Apply button flickering on
+  // tiny rounding differences.
   const tolerance = Math.max(currentSatPerEhDay * 0.05, 1000);
-  const matchesCurrent = Math.abs(recommended - currentSatPerEhDay) <= tolerance;
+  const matchesCurrent =
+    recommended !== null &&
+    Math.abs(recommended - currentSatPerEhDay) <= tolerance;
 
   return (
     <div className="p-3 rounded border border-amber-400/40 bg-amber-400/5 text-xs h-full flex flex-col">
@@ -2177,44 +2204,50 @@ function OverpayTuningHelper({
           <Trans>Recommended (last {data.window_days}d)</Trans>
         </div>
         <div className="font-mono tabular-nums text-amber-200">
-          {formatPh(recommended)}
+          {recommended !== null ? formatPh(recommended) : '-'}
         </div>
       </div>
-      <p className="mt-1 text-slate-400">
-        <Trans>
-          p{percentilePct} of bid - fillable across {data.eligible_ticks} tracking
-          ticks ({data.capped_ticks} capped, {data.under_fillable_ticks} under
-          fillable excluded). At this overpay you would have filled {percentilePct}%
-          of the time over the last {data.window_days} days.
-        </Trans>
-      </p>
-      {data.estimated_30d_savings_sat !== null &&
-        data.estimated_30d_savings_sat > 0 && (
-          <p className="mt-1 text-slate-400">
-            <Trans>
-              Estimated 30-day savings vs your current value:{' '}
-              {formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)} sat.
-            </Trans>
-          </p>
-        )}
+      {recommendedBucket && (
+        <p className="mt-1 text-slate-400">
+          <Trans>
+            At this overpay, the daemon delivered{' '}
+            {formatNumber(
+              Math.round(((recommendedBucket.avg_delivered_ph ?? 0) / targetPh) * 100),
+              {},
+              intlLocale,
+            )}
+            % of your {formatNumber(targetPh, { maximumFractionDigits: 2 }, intlLocale)} PH/s target on average ({recommendedBucket.tick_count} ticks).
+            Drag the slider to trade fill rate for premium savings.
+          </Trans>
+        </p>
+      )}
+      {recommendedBucket && recommendedBucket.hypothetical_30d_savings_sat > 0 && (
+        <p className="mt-1 text-slate-400">
+          <Trans>
+            Estimated 30-day savings vs your current value:{' '}
+            {formatNumber(
+              recommendedBucket.hypothetical_30d_savings_sat,
+              {},
+              intlLocale,
+            )}{' '}
+            sat.
+          </Trans>
+        </p>
+      )}
       {slider}
-      {/* The 7d window is dominated by whatever overpay the operator
-          ran historically; if you JUST changed it the recommendation
-          still reflects the old setting until the window catches up.
-          Surface this so a recent edit doesn't read as a bug. */}
       <p className="mt-2 text-[10px] text-slate-500 italic">
         <Trans>
-          Note: the recommendation is based on the gap distribution over the
-          last {data.window_days} days. If you changed your overpay recently,
-          the figures still reflect the previous setting until the window
-          catches up.
+          Note: the recommendation is based on the empirical
+          delivery vs. gap curve over the last {data.window_days} days.
+          If you changed your overpay recently, the bucket coverage
+          still reflects the previous setting until the window catches up.
         </Trans>
       </p>
       <div className="mt-2 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onApply(recommended)}
-          disabled={matchesCurrent}
+          onClick={() => recommended !== null && onApply(recommended)}
+          disabled={matchesCurrent || recommended === null}
           className="px-2 py-1 text-xs rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-40"
         >
           <Trans>Apply</Trans>
