@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` Hashrate chart: crown reserved for own blocks, BIP 110 gets a yellow cube (#115)
+
+Marker semantics on the Hashrate chart's pool-block row got reordered to match operator attention. The crown was firing on the relatively common BIP 110-signalling case while the rare own-block (Ocean credited a coinbase to our payout address) used a generic cube — backwards relative to which event deserves the eye-catching shape. Now: own block → gold CROWN (the one rare, celebratory case), BIP 110-signalling pool block → yellow CUBE (still distinct, but quieter), default pool block → blue CUBE. Tooltip header label and color follow the same precedence (own > BIP 110 > default), with new `BIP 110 SIGNAL` string translated to NL/ES. The BIP 110 banner inside the tooltip body stays intact for any block where it applies, since BIP 110 status is informational independent of the marker shape.
+
 ### `[Feature]` Wallet-runway Telegram alert wired up; default 0 = off (#116)
 
 The `wallet_runway_alert_days` config field has been in the schema since #100 but the matching detector in the alert evaluator was a TODO. Wired now: per tick, the evaluator computes `available_balance_sat / (trailing-3h burn × 8)` and fires a LOUD Telegram alert (with paired recovery) when runway drops below the configured threshold. Detector is gated end-to-end on `wallet_runway_alert_days = 0` (no transition arming, no Telegram POST, no alert row), so operators can disable runway alerts without digging into the per-class opt-out. Field type relaxed from `positiveInt` to `nonNegativeInt`. Default flipped from 3 to 0 so a fresh install with an unfunded wallet doesn't immediately fire a LOUD alert mid-wizard - operator caught this as a footgun. New Notifications-tab input lets operators set / disable the threshold from the dashboard. NL/ES translations included. Tick-metrics repo now passed into AlertEvaluator so the burn-rate query lives next to its only consumer.

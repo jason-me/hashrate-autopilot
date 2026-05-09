@@ -471,6 +471,10 @@ msgstr "Biedingen"
 msgid "BIP 110 scan"
 msgstr "BIP 110 scan"
 
+#: src/components/HashrateChart.tsx
+msgid "BIP 110 SIGNAL"
+msgstr "BIP 110-SIGNAAL"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "bit"
 msgstr "bit"

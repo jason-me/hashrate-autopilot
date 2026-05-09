@@ -65,11 +65,19 @@ const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 // Gold for the rare "we found this block ourselves" case
 // (found_by_us === true). Reads as "jackpot" against the dark
-// background.
+// background. After #115 this colour drives the celebratory
+// CROWN marker for own blocks - the most attention-grabbing
+// shape on the chart for the highest-value event.
 const COLOR_OUR_BLOCK = '#fbbf24';
 // Same hue as COLOR_OCEAN by design - TIDES-credited block cubes
 // and the Ocean hashrate line share the Ocean-is-blue association.
 const COLOR_POOL_BLOCK = '#3b82f6';
+// Tailwind yellow-300 - distinct from the amber/gold of own blocks
+// and from the saturated Ocean blue of vanilla pool blocks. After
+// #115 this colour drives the BIP 110-signalling marker (a compact
+// yellow cube). Visually softer than the gold crown so the rare
+// own-block stays the loudest thing on the row.
+const COLOR_BIP110 = '#fde047';
 // Tailwind violet-400 - distinct from amber/green/blue/gray; reads
 // well against the slate background. Used for the opt-in `% of Ocean`
 // (share_log) overlay on the right Y-axis.
@@ -829,7 +837,20 @@ export const HashrateChart = memo(function HashrateChart({
             .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
             .map((b) => {
               const x = xScale(b.timestamp_ms);
-              const color = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_POOL_BLOCK;
+              // #115: marker semantics, in precedence order.
+              // - Own block (found_by_us): GOLD CROWN. The rarest,
+              //   loudest event on the chart.
+              // - BIP 110-signalling pool block: YELLOW cube. Quieter
+              //   than the gold crown but still distinct from the
+              //   default blue cube.
+              // - Anything else: default Ocean-blue cube.
+              const isOurs = b.found_by_us;
+              const isBip110 = !isOurs && b.signals_bip110 === true;
+              const color = isOurs
+                ? COLOR_OUR_BLOCK
+                : isBip110
+                  ? COLOR_BIP110
+                  : COLOR_POOL_BLOCK;
               return (
                 <g
                   key={b.block_hash || b.height}
@@ -844,9 +865,9 @@ export const HashrateChart = memo(function HashrateChart({
                     y1={PADDING.top + 8}
                     y2={chartHeight - PADDING.bottom}
                     stroke={color}
-                    strokeWidth={b.found_by_us ? '1.8' : '1'}
-                    strokeDasharray={b.found_by_us ? '4 2' : '2 3'}
-                    opacity={b.found_by_us ? '0.95' : '0.55'}
+                    strokeWidth={isOurs ? '1.8' : '1'}
+                    strokeDasharray={isOurs ? '4 2' : '2 3'}
+                    opacity={isOurs ? '0.95' : '0.55'}
                   />
                   {/* Transparent wide hit-target so hover/click on the
                       thin dashed line is forgiving. */}
@@ -857,11 +878,10 @@ export const HashrateChart = memo(function HashrateChart({
                     height={chartHeight - PADDING.bottom - PADDING.top + 9}
                     fill="transparent"
                   />
-                  {/* Marker icon: crown for BIP-110-signaling blocks
-                      (#94), small isometric cube otherwise. Same
-                      colour/position rules either way - the crown is
-                      a meaning swap, not a styling change. */}
-                  {b.signals_bip110 === true ? (
+                  {isOurs ? (
+                    // CROWN - reserved post-#115 for the rare
+                    // own-block case. Same path data as before; what
+                    // changed is the trigger condition.
                     <g
                       transform={`translate(${x - 5}, ${PADDING.top - 9})`}
                       fill={color}
@@ -874,6 +894,10 @@ export const HashrateChart = memo(function HashrateChart({
                       <line x1="0" y1="9.5" x2="10" y2="9.5" stroke={color} strokeWidth="1.4" />
                     </g>
                   ) : (
+                    // CUBE - default and BIP 110-signalling. The two
+                    // cases share the same shape; colour differs
+                    // (yellow vs blue) so BIP 110 stays scannable in
+                    // a row of pool blocks without yelling.
                     <g
                       transform={`translate(${x - 5}, ${PADDING.top - 9})`}
                       fill="none"
@@ -1038,8 +1062,21 @@ export function PoolBlockTooltip({
   const rewardBtc = block.total_reward_sat / 1e8;
   const subsidyBtc = block.subsidy_sat / 1e8;
   const feesBtc = block.fees_sat / 1e8;
-  const headerColor = block.found_by_us ? 'text-amber-300' : 'text-sky-300';
-  const kindLabel = block.found_by_us ? t`FOUND BY US` : t`POOL BLOCK`;
+  // #115: header colour + label match the chart-marker semantics:
+  // gold crown for own blocks, yellow cube for BIP 110-signalling
+  // (and not own), sky-blue cube otherwise.
+  const isOurs = block.found_by_us;
+  const isBip110 = !isOurs && block.signals_bip110 === true;
+  const headerColor = isOurs
+    ? 'text-amber-300'
+    : isBip110
+      ? 'text-yellow-200'
+      : 'text-sky-300';
+  const kindLabel = isOurs
+    ? t`FOUND BY US`
+    : isBip110
+      ? t`BIP 110 SIGNAL`
+      : t`POOL BLOCK`;
 
   return (
     <div
