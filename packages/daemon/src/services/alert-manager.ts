@@ -148,19 +148,23 @@ export class AlertManager {
       return;
     }
 
-    // #109: render Mark-as-seen + Snooze 2h buttons on the message
-    // for non-INFO alerts. INFO recoveries don't carry buttons - they
-    // already represent "system is healthy now", nothing to ack.
-    const action_buttons =
-      row.severity === 'INFO'
-        ? undefined
-        : [
-            { text: '✓ Mark as seen', callback_data: `ack:${row.id}` },
-            { text: '⏸ Snooze 2h', callback_data: `snooze:${row.id}:120` },
-          ];
+    // #109: every Telegram message gets a Mark-as-seen button so the
+    // operator can ack from the chat without opening the dashboard.
+    // Snooze only applies to ERROR / WARNING firings - it suppresses
+    // the next retry-ladder ping for 2h, which is meaningless for a
+    // recovery (no pending retry to suppress) or a one-shot INFO
+    // celebration like the pool-block-credit message.
+    const isRecovery = row.paired_alert_id != null;
+    const showSnooze = !isRecovery && row.severity !== 'INFO';
+    const action_buttons = [
+      { text: '✓ Mark as seen', callback_data: `ack:${row.id}` },
+      ...(showSnooze
+        ? [{ text: '⏸ Snooze 2h', callback_data: `snooze:${row.id}:120` }]
+        : []),
+    ];
     const result = await this.sink.send(args.body, {
       alert_id: row.id,
-      ...(action_buttons ? { action_buttons } : {}),
+      action_buttons,
     });
 
     if (result.ok) {
@@ -206,17 +210,27 @@ export class AlertManager {
    * The Telegram sink runs with `parse_mode: 'HTML'`. Bold the title
    * for at-a-glance scanning; HTML-escape the dynamic body so a
    * worker name or error string with `<` or `&` in it doesn't blow
-   * up Telegram's parser. Severity is conveyed by the dashboard
-   * badge + WARN tag (if non-LOUD); we don't repeat "LOUD" in every
-   * Telegram message because every operator-pinging alert is loud
-   * by construction.
+   * up Telegram's parser. Severity is conveyed by the emoji + bracket
+   * label prefix on the title (🔴 [ERROR] / ⚠️ [WARNING] / ℹ️ [INFO]
+   * / ✅ [RESOLVED]) - operator can scan the chat list at a glance
+   * without opening each message.
    */
   private formatBody(args: RecordAlertArgs): string {
-    return formatTelegramBody(args.severity, args.title, args.body);
+    return formatTelegramBody(
+      args.severity,
+      args.title,
+      args.body,
+      args.paired_alert_id != null,
+    );
   }
 
   private formatBodyFromRow(row: AlertRow): string {
-    return formatTelegramBody(row.severity, row.title, row.body);
+    return formatTelegramBody(
+      row.severity,
+      row.title,
+      row.body,
+      row.paired_alert_id != null,
+    );
   }
 
   private givingUpBody(row: AlertRow, _nowMs: number): string {
@@ -224,19 +238,39 @@ export class AlertManager {
       row.severity,
       row.title,
       `Still bad after 2h. No further notifications until recovery.`,
+      // Giving-up messages are retries of an original firing, never a
+      // recovery row themselves - paired_alert_id is null by
+      // construction here even if the original alert pointed somewhere.
+      false,
     );
   }
 }
 
+/**
+ * Prefix the bold title with an emoji + bracket label so the operator
+ * can scan severity at a glance both inside the message and from
+ * Telegram's chat-list preview. Bracket label survives forwarding /
+ * copy-paste even when emoji rendering varies across clients.
+ *
+ * Recovery rows (paired_alert_id != null) always render as ✅
+ * [RESOLVED] regardless of the underlying severity column - the
+ * row's INFO severity is structural ("not actionable, no retry
+ * ladder"), the operator-facing label is "the bad thing is fixed".
+ */
 function formatTelegramBody(
-  _severity: AlertSeverity,
+  severity: AlertSeverity,
   title: string,
   body: string,
+  isRecovery: boolean,
 ): string {
-  // Severity tags are no longer rendered - the operator's framing is
-  // "every alert that fires is just a notification, not the end of
-  // the world." Bold title for at-a-glance scanning is enough.
-  return `<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
+  const prefix = isRecovery
+    ? '✅ [RESOLVED]'
+    : severity === 'ERROR'
+      ? '🔴 [ERROR]'
+      : severity === 'WARNING'
+        ? '⚠️ [WARNING]'
+        : 'ℹ️ [INFO]';
+  return `<b>${prefix} ${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
 }
 
 function escapeHtml(s: string): string {

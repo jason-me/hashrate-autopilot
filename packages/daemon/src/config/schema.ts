@@ -394,7 +394,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   bid_budget_sat: 0, // 0 = use full wallet balance per CREATE (#40)
 
   // 0 = disabled. Default off so a fresh install with low (or
-  // not-yet-funded) Braiins balance doesn't immediately fire a LOUD
+  // not-yet-funded) Braiins balance doesn't immediately fire an ERROR
   // Telegram alert the moment the operator finishes the wizard. #116.
   wallet_runway_alert_days: 0,
   below_floor_alert_after_minutes: 10,

@@ -272,13 +272,13 @@ export class AlertsRepo {
     return (row as AlertRow | undefined) ?? null;
   }
 
-  /** Count of un-acknowledged alerts at LOUD or WARN severity. Drives the top-nav badge. */
+  /** Count of un-acknowledged alerts at ERROR or WARNING severity. Drives the top-nav badge. */
   async countUnacknowledgedHighSeverity(): Promise<number> {
     const row = await this.db
       .selectFrom('alerts')
       .select((eb) => eb.fn.countAll<number>().as('n'))
       .where('acknowledged_at_ms', 'is', null)
-      .where('severity', 'in', ['LOUD', 'WARN'])
+      .where('severity', 'in', ['ERROR', 'WARNING'])
       .executeTakeFirstOrThrow();
     return Number(row.n);
   }

@@ -1725,7 +1725,7 @@ function NotificationsSection({
  * Backing storage is a mix of three stores, bridged by per-tile
  * getters/setters:
  * - `notification_disabled_event_classes` (string[], the original
- *   #106 design) holds enable/disable for the seven LOUD detectors.
+ *   #106 design) holds enable/disable for the seven ERROR detectors.
  * - `wallet_runway_alert_days` (number, #116) where 0 = off and
  *   any positive integer = on with that day-threshold.
  * - `notify_on_pool_block_credit` (boolean, #117) for the

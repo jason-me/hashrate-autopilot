@@ -53,7 +53,7 @@ export interface AcknowledgeAllResponse {
   count: number;
 }
 
-const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARN', 'LOUD']);
+const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARNING', 'ERROR']);
 const VALID_DELIVERY: ReadonlySet<AlertDeliveryStatus> = new Set([
   'pending',
   'sent',

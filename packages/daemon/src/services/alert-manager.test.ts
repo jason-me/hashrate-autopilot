@@ -91,7 +91,7 @@ describe('AlertManager.recordAlert', () => {
       now: () => 1_000_000,
     });
     const id = await mgr.recordAlert({
-      severity: 'LOUD',
+      severity: 'ERROR',
       title: 'Stratum unreachable',
       body: 'Datum SV1 down for 10 min',
       event_class: 'datum_unreachable',
@@ -111,7 +111,7 @@ describe('AlertManager.recordAlert', () => {
       now: () => 2_000_000,
     });
     await mgr.recordAlert({
-      severity: 'LOUD',
+      severity: 'ERROR',
       title: 'X',
       body: 'Y',
       event_class: 'datum_unreachable',
@@ -132,7 +132,7 @@ describe('AlertManager.recordAlert', () => {
       now: () => 3_000_000,
     });
     await mgr.recordAlert({
-      severity: 'WARN',
+      severity: 'WARNING',
       title: 'X',
       body: 'Y',
       event_class: 'beta_exit',
@@ -156,7 +156,7 @@ describe('AlertManager.processDueRetries', () => {
       now: () => now,
     });
     await mgr.recordAlert({
-      severity: 'LOUD',
+      severity: 'ERROR',
       title: 'X',
       body: 'Y',
       event_class: 'datum_unreachable',
@@ -190,7 +190,7 @@ describe('AlertManager.processDueRetries', () => {
       now: () => now,
     });
     await mgr.recordAlert({
-      severity: 'LOUD',
+      severity: 'ERROR',
       title: 'X',
       body: 'Y',
       event_class: 'datum_unreachable',

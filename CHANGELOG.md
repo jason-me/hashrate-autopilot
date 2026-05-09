@@ -2,6 +2,18 @@
 
 ## 2026-05-09
 
+### `[Feature]` Telegram alerts get severity prefix, every message ack-able
+
+Operator-driven rework of how alerts read in Telegram. Three coordinated changes:
+
+1. **Severity rename: LOUD → ERROR, WARN → WARNING.** Operator: "I'm used to error / warning / info / debug, essentially. I absolutely detest [LOUD]." The `AlertSeverity` type, `recordAlert` call sites in the evaluator, the http alerts route validator, the high-severity-count query, and a stack of comments now spell ERROR / WARNING / INFO. Migration 0075 rewrites historical rows (`UPDATE alerts SET severity = 'ERROR' WHERE severity = 'LOUD'`, same for WARN → WARNING).
+
+2. **Emoji + bracket label prefix on every message.** Telegram doesn't support per-message colors; emoji + bracket label is the next-best at-a-glance cue. `formatTelegramBody` now prepends `🔴 [ERROR]` / `⚠️ [WARNING]` / `ℹ️ [INFO]` to firing messages and `✅ [RESOLVED]` to recoveries (paired_alert_id != null), all inside the existing `<b>` title. Bracket labels survive forwarding / copy-paste / screenshot OCR even when emoji rendering varies across clients.
+
+3. **Mark-as-seen button on every message, snooze only where it makes sense.** Lifted the prior INFO-no-buttons gate: every Telegram message now carries a `✓ Mark as seen` callback so the operator can ack from the chat without opening the dashboard. Snooze stays gated to ERROR / WARNING firings only - it suppresses the next retry-ladder ping for 2 h, which is meaningless for a recovery (no pending retry to suppress) or a one-shot INFO celebration like the pool-block-credit message.
+
+The `✓` prefix the evaluator manually adds to recovery titles stays intact for now - the /alerts page still relies on it as the visual recovery marker. Telegram side reads the prefix structurally via paired_alert_id and labels with `[RESOLVED]` independently. No-op effect on the dashboard alerts page in this commit; severity-badge rework on /alerts can be a follow-up if wanted.
+
 ### `[Fix]` Wallet-runway recovery title no longer says "below" when above
 
 `runTransition()` reused the firing `title` for the recovery message - so the runway recovery read "✓ Wallet runway 4.5 days (below 3.0 day threshold)" even though the body correctly said "back above threshold". Generic detectors (datum_unreachable, hashrate_below_floor, etc.) carry titles that flip to recovery cleanly with a "✓" prefix; the runway title carries parametric copy and needs a distinct recovery phrasing. Added an optional `titleForRecovery` parameter to `runTransition`; when set, the recovery row uses it verbatim (`✓ <recoveryTitle>`) instead of the prepend-and-replace hack. evaluateWalletRunway now passes "Wallet runway X.X days (above N day threshold)" for the recovery side. Other detectors keep the existing default behaviour, no test changes.

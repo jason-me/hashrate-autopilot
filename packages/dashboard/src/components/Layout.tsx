@@ -46,8 +46,8 @@ export function Layout() {
     refetchInterval: 30_000,
   });
 
-  // #100: un-acknowledged LOUD + WARN alert count, drives the small
-  // red dot on the /alerts nav tab. Same 30 s cadence as status.
+  // #100: un-acknowledged ERROR + WARNING alert count, drives the
+  // small red dot on the /alerts nav tab. Same 30 s cadence as status.
   const alertsHead = useQuery({
     queryKey: ['alerts-head'],
     queryFn: () => api.alertsList({ unacknowledged_only: true, limit: 1 }),

@@ -750,7 +750,7 @@ export interface BuildInfoResponse {
   version: string;
 }
 
-export type AlertSeverity = 'INFO' | 'WARN' | 'LOUD';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'ERROR';
 export type AlertDeliveryStatus =
   | 'pending'
   | 'sent'

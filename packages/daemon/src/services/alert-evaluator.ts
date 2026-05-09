@@ -17,14 +17,16 @@
  * This was a real complaint from the operator during #100 testing.
  *
  * Detectors wired end-to-end:
- *   - datum_unreachable     LOUD - the 2026-05-06 motivating incident
- *   - hashrate_below_floor  LOUD
- *   - zero_hashrate         LOUD
- *   - api_unreachable       LOUD - Braiins /v1/* down for N minutes
- *   - unknown_bid           LOUD - bid in account that we didn't create
- *   - sustained_paused      LOUD - primary bid stays Paused across the
- *                                  Paused/Active oscillation hazard
- *   - beta_exit             WARN - Braiins fee_rate turned non-zero
+ *   - datum_unreachable     ERROR - the 2026-05-06 motivating incident
+ *   - hashrate_below_floor  ERROR
+ *   - zero_hashrate         ERROR
+ *   - api_unreachable       ERROR - Braiins /v1/* down for N minutes
+ *   - unknown_bid           ERROR - bid in account that we didn't create
+ *   - sustained_paused      ERROR - primary bid stays Paused across the
+ *                                   Paused/Active oscillation hazard
+ *   - beta_exit             WARNING - Braiins fee_rate turned non-zero
+ *   - wallet_runway         ERROR - balance / 3h-burn drops below threshold
+ *   - pool_block_credited   INFO  - operator-celebratory TIDES credit notice
  *
  * Two detectors are stubbed for a small follow-up commit because they
  * need data the evaluator doesn't currently see:
@@ -188,7 +190,7 @@ export class AlertEvaluator {
       state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
     this.datum_unreachable = await this.runTransition({
       event_class: 'datum_unreachable',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs,
       currentState: this.datum_unreachable,
@@ -206,7 +208,7 @@ export class AlertEvaluator {
     const thresholdMs = state.config.below_floor_alert_after_minutes * 60_000;
     this.hashrate_below_floor = await this.runTransition({
       event_class: 'hashrate_below_floor',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs,
       currentState: this.hashrate_below_floor,
@@ -225,7 +227,7 @@ export class AlertEvaluator {
       state.config.zero_hashrate_loud_alert_after_minutes * 60_000;
     this.zero_hashrate = await this.runTransition({
       event_class: 'zero_hashrate',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs,
       currentState: this.zero_hashrate,
@@ -244,7 +246,7 @@ export class AlertEvaluator {
     const thresholdMs = state.config.api_outage_alert_after_minutes * 60_000;
     this.api_unreachable = await this.runTransition({
       event_class: 'api_unreachable',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs,
       currentState: this.api_unreachable,
@@ -263,7 +265,7 @@ export class AlertEvaluator {
     const isBad = state.unknown_bids.length > 0;
     this.unknown_bid = await this.runTransition({
       event_class: 'unknown_bid',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs: 0,
       currentState: this.unknown_bid,
@@ -290,7 +292,7 @@ export class AlertEvaluator {
       state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
     this.sustained_paused = await this.runTransition({
       event_class: 'sustained_paused',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad: isBad ?? false,
       thresholdMs,
       currentState: this.sustained_paused,
@@ -313,7 +315,7 @@ export class AlertEvaluator {
     );
     this.beta_exit = await this.runTransition({
       event_class: 'beta_exit',
-      severity: 'WARN',
+      severity: 'WARNING',
       isBad: anyFeeBearing,
       thresholdMs: 0,
       currentState: this.beta_exit,
@@ -385,7 +387,7 @@ export class AlertEvaluator {
 
     this.wallet_runway = await this.runTransition({
       event_class: 'wallet_runway',
-      severity: 'LOUD',
+      severity: 'ERROR',
       isBad,
       thresholdMs: 0,
       currentState: this.wallet_runway,
@@ -479,7 +481,7 @@ export class AlertEvaluator {
 
   private async runTransition(args: {
     event_class: string;
-    severity: 'LOUD' | 'WARN' | 'INFO';
+    severity: 'ERROR' | 'WARNING' | 'INFO';
     isBad: boolean;
     thresholdMs: number;
     currentState: EventState;

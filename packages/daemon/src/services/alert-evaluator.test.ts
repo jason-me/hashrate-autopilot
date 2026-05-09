@@ -77,7 +77,7 @@ describe('AlertEvaluator - datum_unreachable', () => {
     await ev.evaluate(bad);
     expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
     expect(mgr.recorded[0]!.event_class).toBe('datum_unreachable');
-    expect(mgr.recorded[0]!.severity).toBe('LOUD');
+    expect(mgr.recorded[0]!.severity).toBe('ERROR');
   });
 
   it('pairs a recovery message when Datum becomes reachable again', async () => {
@@ -152,7 +152,7 @@ describe('AlertEvaluator - beta_exit', () => {
     });
     await ev.evaluate(bad);
     expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
-    expect(mgr.recorded[0]!.severity).toBe('WARN');
+    expect(mgr.recorded[0]!.severity).toBe('WARNING');
     expect(mgr.recorded[0]!.event_class).toBe('beta_exit');
   });
 });

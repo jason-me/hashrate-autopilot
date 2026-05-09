@@ -100,6 +100,7 @@ describe('openDatabase - migrations', () => {
       '0072_reward_events_txid_vout_unique.sql',
       '0073_notify_on_pool_block_credit.sql',
       '0074_reset_default_wallet_runway_alert_days.sql',
+      '0075_rename_alert_severities.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
