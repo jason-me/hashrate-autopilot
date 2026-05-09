@@ -286,13 +286,21 @@ export class AlertEvaluator {
   }
 
   private async evaluateSustainedPaused(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
-    // Primary owned bid (first non-fulfilled) carries the
-    // last_pause_reason flag. We treat "any non-null pause reason"
-    // as the bad signal; the threshold is the operator's choice of
-    // how long to wait before declaring it sustained. Reuse the
-    // pool-outage tolerance as a sensible default proxy.
-    const primary = state.owned_bids.find((b) => b.status !== 'CL_ORDER_STATE_FULFILLED');
-    const isBad = primary?.last_pause_reason != null && primary.last_pause_reason !== '';
+    // Primary owned bid: skip fulfilled bids (they're spent).
+    // Bug 2026-05-09: the previous version read `last_pause_reason`
+    // as the "currently paused" signal, but Braiins keeps that
+    // field populated as a historical record even after the bid
+    // returns to Active - so the detector saw isBad=true for the
+    // entire 10-minute threshold window AFTER an unrelated prior
+    // pause cleared, then fired at the threshold mark with a body
+    // claiming "for 10m" while the bid was actually Active. Read
+    // the live status enum instead. The pre-existing
+    // CL_ORDER_STATE_FULFILLED predicate also never matched the
+    // real BID_STATUS_FULFILLED enum values - innocuous (it just
+    // meant the find returned the first bid unconditionally) but
+    // tightened here too.
+    const primary = state.owned_bids.find((b) => b.status !== 'BID_STATUS_FULFILLED');
+    const isBad = primary?.status === 'BID_STATUS_PAUSED';
     const thresholdMs =
       state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
     this.sustained_paused = await this.runTransition({

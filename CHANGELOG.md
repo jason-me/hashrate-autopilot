@@ -2,6 +2,12 @@
 
 ## 2026-05-09
 
+### `[Fix]` Sustained-paused detector reads live status, not the lingering `last_pause_reason`
+
+The `sustained_paused` detector read `primary.last_pause_reason != null` as the "currently paused" signal. Braiins keeps that field populated as a historical record even after the bid returns to Active — it answers "what was the last reason this bid was ever paused", not "is the bid paused right now". Empirical: operator's bid had an unrelated 24h pause that cleared at 11:44 (recovery fired correctly); 10 minutes later (at 14:44) the sustained_paused detector fired again claiming "Paused for 10m" while Braiins's order history showed the bid had been Active for the entire window. The detector saw `isBad=true` continuously because `last_pause_reason` from the cleared pause still hung on the bid record, and tripped the threshold timer ten minutes after the autopilot booted from clean.
+
+Fixed: read the actual `status === 'BID_STATUS_PAUSED'` enum instead. Body still surfaces `last_pause_reason` for diagnostic context but no longer uses it as the trigger. Also tightened a sibling predicate in the same evaluator: the "find primary bid" filter checked `status !== 'CL_ORDER_STATE_FULFILLED'` which never matches the real `BID_STATUS_FULFILLED` enum (older convention), so the find returned the first owned bid unconditionally. Innocuous in practice (operators rarely have multiple owned bids) but tightened to the correct enum value.
+
 ### `[Fix]` Recovery alert titles read positive ("Bid active again", not "✓ Bid sustained-paused")
 
 Recovery messages were rendering the firing title with a `✓` in front of it: "✓ Bid sustained-paused by Braiins" announced that the bid was no longer paused, which inverts what the title plainly says. Operator was specific: "the title should be immediately clear what it is, not a negation of what it was." Every detector now supplies a `titleForRecovery`. New phrasings:
