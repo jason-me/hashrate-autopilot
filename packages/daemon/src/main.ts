@@ -678,6 +678,7 @@ async function bootOperational(
     configRepo,
     tickMetricsRepo,
     decisionsRepo,
+    alertsRepo,
     { log: (m) => log(m) },
   );
   retentionService.start();

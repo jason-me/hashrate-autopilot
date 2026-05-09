@@ -134,6 +134,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_DECISIONS_EVENTFUL_RETENTION_DAYS',
     coerce: asInt,
   },
+  alerts_retention_days: {
+    varName: 'BHA_ALERTS_RETENTION_DAYS',
+    coerce: asInt,
+  },
   datum_api_url: { varName: 'BHA_DATUM_API_URL', coerce: asStringOrNullOnEmpty },
   block_explorer_url_template: {
     varName: 'BHA_BLOCK_EXPLORER_URL_TEMPLATE',

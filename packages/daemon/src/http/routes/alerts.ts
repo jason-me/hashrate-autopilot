@@ -21,6 +21,8 @@ export interface AlertsRouteDeps {
 
 export interface AlertsListQuery {
   since_ms?: string;
+  /** #121: cursor; rows strictly older than this. Use createdAt of the last row in the previous page. */
+  before_created_at_ms?: string;
   severity?: AlertSeverity;
   delivery_status?: AlertDeliveryStatus;
   unacknowledged_only?: string;
@@ -30,6 +32,10 @@ export interface AlertsListQuery {
 export interface AlertsListResponse {
   alerts: AlertRow[];
   unacknowledged_high_severity_count: number;
+  /** #121: total rows matching the same filter set, ignoring pagination. */
+  total_count: number;
+  /** #121: are there older rows past the returned page? */
+  has_more: boolean;
 }
 
 export interface SnoozeRequest {
@@ -72,7 +78,13 @@ export async function registerAlertsRoutes(
     async (req): Promise<AlertsListResponse> => {
       const q = req.query;
       const sinceMs = q.since_ms ? Number(q.since_ms) : undefined;
-      const limit = q.limit ? Math.max(1, Math.min(1000, Number(q.limit))) : 200;
+      const beforeCreatedAt = q.before_created_at_ms
+        ? Number(q.before_created_at_ms)
+        : undefined;
+      // #121: default page size lowered from 200 to 50; 200 was a
+      // soft wall on long-history installs. Hard cap stays at 1000
+      // so a power-user can still grab a big batch via the API.
+      const limit = q.limit ? Math.max(1, Math.min(1000, Number(q.limit))) : 50;
       const severity = q.severity && VALID_SEVERITIES.has(q.severity) ? q.severity : undefined;
       const deliveryStatus =
         q.delivery_status && VALID_DELIVERY.has(q.delivery_status) ? q.delivery_status : undefined;
@@ -80,21 +92,44 @@ export async function registerAlertsRoutes(
 
       const filters: {
         since_ms?: number;
+        before_created_at?: number;
         severity?: AlertSeverity;
         delivery_status?: AlertDeliveryStatus;
         unacknowledged_only: boolean;
         limit: number;
-      } = { unacknowledged_only: unacknowledgedOnly, limit };
+      } = {
+        unacknowledged_only: unacknowledgedOnly,
+        // Over-fetch by 1 so we can derive has_more without a second
+        // count query: if the repo returned limit+1 rows, there's at
+        // least one more page worth pulling. Drop the trailing row
+        // before returning so the operator only sees what they asked
+        // for.
+        limit: limit + 1,
+      };
       if (sinceMs !== undefined) filters.since_ms = sinceMs;
+      if (beforeCreatedAt !== undefined) filters.before_created_at = beforeCreatedAt;
       if (severity !== undefined) filters.severity = severity;
       if (deliveryStatus !== undefined) filters.delivery_status = deliveryStatus;
 
-      const [alerts, count] = await Promise.all([
+      const [overFetched, highSevCount, totalCount] = await Promise.all([
         deps.alertsRepo.list(filters),
         deps.alertsRepo.countUnacknowledgedHighSeverity(),
+        deps.alertsRepo.count({
+          ...(severity !== undefined ? { severity } : {}),
+          ...(deliveryStatus !== undefined ? { delivery_status: deliveryStatus } : {}),
+          unacknowledged_only: unacknowledgedOnly,
+        }),
       ]);
 
-      return { alerts, unacknowledged_high_severity_count: count };
+      const hasMore = overFetched.length > limit;
+      const alerts = hasMore ? overFetched.slice(0, limit) : overFetched;
+
+      return {
+        alerts,
+        unacknowledged_high_severity_count: highSevCount,
+        total_count: totalCount,
+        has_more: hasMore,
+      };
     },
   );
 

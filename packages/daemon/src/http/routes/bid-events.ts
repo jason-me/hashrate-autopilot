@@ -40,6 +40,10 @@ export interface BidEventView {
   readonly speed_limit_ph: number | null;
   readonly amount_sat: number | null;
   readonly reason: string | null;
+  /** #120: snapshot of the overpay setting at event time. Null on legacy rows. */
+  readonly overpay_sat_per_ph_day: number | null;
+  /** #120: snapshot of the dynamic-cap ceiling at event time. Null on legacy rows. */
+  readonly max_overpay_vs_hashprice_sat_per_ph_day: number | null;
 }
 
 export async function registerBidEventsRoute(
@@ -99,6 +103,8 @@ function toView(r: {
   speed_limit_ph: number | null;
   amount_sat: number | null;
   reason: string | null;
+  overpay_sat_per_eh_day: number | null;
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
 }): BidEventView {
   return {
     id: r.id,
@@ -113,5 +119,11 @@ function toView(r: {
     speed_limit_ph: r.speed_limit_ph,
     amount_sat: r.amount_sat,
     reason: r.reason,
+    overpay_sat_per_ph_day:
+      r.overpay_sat_per_eh_day !== null ? r.overpay_sat_per_eh_day / EH_PER_PH : null,
+    max_overpay_vs_hashprice_sat_per_ph_day:
+      r.max_overpay_vs_hashprice_sat_per_eh_day !== null
+        ? r.max_overpay_vs_hashprice_sat_per_eh_day / EH_PER_PH
+        : null,
   };
 }

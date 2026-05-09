@@ -18,7 +18,7 @@ import {
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
-import { formatAge } from '../lib/format';
+import { formatAge, formatNumber } from '../lib/format';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
 // #98 - auto-save defaults on; toggle persists per-browser.
@@ -377,7 +377,7 @@ function useSections(): Section[] {
       {
         id: 'log-retention',
         title: t`Log retention`,
-        description: t`Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever.`,
+        description: t`Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever.`,
         fields: [
           {
             key: 'tick_metrics_retention_days',
@@ -385,7 +385,7 @@ function useSections(): Section[] {
             kind: 'integer',
             unit: 'days',
             fullWidth: true,
-            help: t`Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows.`,
+            help: t`Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever.`,
           },
           {
             key: 'decisions_uneventful_retention_days',
@@ -399,7 +399,14 @@ function useSections(): Section[] {
             label: t`Decisions log - eventful`,
             kind: 'integer',
             unit: 'days',
-            help: t`Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for "why did the autopilot create / edit / cancel that bid?" Cheap to keep long.`,
+            help: t`Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for "why did the autopilot create / edit / cancel that bid?" Cheap to keep long. Default 0 = keep forever.`,
+          },
+          {
+            key: 'alerts_retention_days',
+            label: t`Alerts`,
+            kind: 'integer',
+            unit: 'days',
+            help: t`Telegram notification history. Small rows (just title + body strings); the in-flight retry ladder is preserved regardless of this setting - only resolved alerts (sent / failed / muted / gave_up) are eligible for pruning. Default 0 = keep forever.`,
           },
         ],
       },
@@ -1387,7 +1394,8 @@ function retentionTotalBytes(draft: AppConfig, est: StorageEstimateResponse): nu
       draft.decisions_uneventful_retention_days,
       est.decisions_uneventful,
     ) +
-    bucketProjection(draft.decisions_eventful_retention_days, est.decisions_eventful)
+    bucketProjection(draft.decisions_eventful_retention_days, est.decisions_eventful) +
+    bucketProjection(draft.alerts_retention_days, est.alerts)
   );
 }
 
@@ -1487,6 +1495,7 @@ function pickBucketForKey(
   if (key === 'tick_metrics_retention_days') return data.tick_metrics;
   if (key === 'decisions_uneventful_retention_days') return data.decisions_uneventful;
   if (key === 'decisions_eventful_retention_days') return data.decisions_eventful;
+  if (key === 'alerts_retention_days') return data.alerts;
   return undefined;
 }
 
@@ -1759,6 +1768,28 @@ function EventClassSubscriptions({
   const { i18n } = useLingui();
   const disabled = new Set(draft.notification_disabled_event_classes);
 
+  // Per-event Test button: ask the daemon to fire a sample message
+  // for this event class through the saved Telegram bot. Tracks
+  // pending/result state per-row via the most recently clicked event
+  // class so the button can show "sending..." then a brief tick or
+  // error inline.
+  const [testResult, setTestResult] = useState<
+    { event_class: string; ok: boolean; error?: string | null } | null
+  >(null);
+  const testEvent = useMutation({
+    mutationFn: (event_class: string) => api.notificationsTestEvent(event_class),
+    onSuccess: (resp, event_class) => {
+      setTestResult({ event_class, ok: resp.ok, error: resp.error });
+      // Clear the result after a short window so the row settles back
+      // to its idle state without the operator having to do anything.
+      window.setTimeout(() => setTestResult(null), 4000);
+    },
+    onError: (err: Error, event_class) => {
+      setTestResult({ event_class, ok: false, error: err.message });
+      window.setTimeout(() => setTestResult(null), 6000);
+    },
+  });
+
   const toggleClass = (id: string, enabled: boolean) => {
     const next = new Set(disabled);
     if (enabled) next.delete(id);
@@ -1899,35 +1930,67 @@ function EventClassSubscriptions({
   // the field, not on hover, and consistency wins. The runway tile's
   // single help line covers both the checkbox AND the days-input
   // (one description per logical control, not per DOM node).
-  const renderTile = (tile: Tile) => (
-    <div
-      key={tile.id}
-      className={
-        'p-2 rounded border transition ' +
-        (muted ? 'border-slate-800 opacity-60' : 'border-slate-800')
-      }
-    >
-      <label
+  const renderTile = (tile: Tile) => {
+    const pendingTest = testEvent.isPending && testEvent.variables === tile.id;
+    const showResult = testResult?.event_class === tile.id;
+    return (
+      <div
+        key={tile.id}
         className={
-          'flex items-center gap-2 ' +
-          (muted ? 'cursor-default' : 'cursor-pointer')
+          'p-2 rounded border transition ' +
+          (muted ? 'border-slate-800 opacity-60' : 'border-slate-800')
         }
       >
-        <input
-          type="checkbox"
-          checked={tile.enabled}
-          onChange={(e) => tile.setEnabled(e.target.checked)}
-          disabled={muted}
-          className="accent-amber-400 h-4 w-4"
-        />
-        <span className="text-sm text-slate-100 font-semibold">
-          {tile.label}
-        </span>
-        {tile.extra}
-      </label>
-      <p className="text-xs text-slate-500 mt-1 ml-6">{tile.help}</p>
-    </div>
-  );
+        <div className="flex items-center gap-2">
+          <label
+            className={
+              'flex items-center gap-2 flex-1 ' +
+              (muted ? 'cursor-default' : 'cursor-pointer')
+            }
+          >
+            <input
+              type="checkbox"
+              checked={tile.enabled}
+              onChange={(e) => tile.setEnabled(e.target.checked)}
+              disabled={muted}
+              className="accent-amber-400 h-4 w-4"
+            />
+            <span className="text-sm text-slate-100 font-semibold">
+              {tile.label}
+            </span>
+            {tile.extra}
+          </label>
+          {/* Test button: yellow Test pill matching the rest of the
+              dashboard's test affordances (Test connection, Test
+              sound). Sends a sample Telegram message for this
+              event class through the saved bot. */}
+          <button
+            type="button"
+            onClick={() => testEvent.mutate(tile.id)}
+            disabled={pendingTest || muted}
+            className="px-2 py-1 text-xs rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-40 whitespace-nowrap"
+          >
+            {pendingTest ? <Trans>Sending…</Trans> : <Trans>Test</Trans>}
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mt-1 ml-6">{tile.help}</p>
+        {showResult && (
+          <p
+            className={
+              'text-[11px] mt-1 ml-6 ' +
+              (testResult?.ok ? 'text-emerald-300' : 'text-red-400')
+            }
+          >
+            {testResult?.ok ? (
+              <Trans>sent · check Telegram</Trans>
+            ) : (
+              testResult?.error ?? <Trans>send failed</Trans>
+            )}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   const sectionHeader = (label: string) => (
     <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold pt-2 pb-1">
@@ -1993,6 +2056,109 @@ function HelpDot() {
     >
       i
     </span>
+  );
+}
+
+/**
+ * #118: helper card rendered inline below the Overpay field.
+ *
+ * Polls /api/overpay-tuning every 60s. When ready, shows the p95-of-7d
+ * gap recommendation, the eligible-tick count, the projected 30-day
+ * savings vs the operator's current value, and a one-click Apply
+ * button that writes the recommended value back to the field. When
+ * the daemon hasn't yet seen enough tracking-regime ticks, shows
+ * "insufficient history" with the Apply button disabled.
+ */
+function OverpayTuningHelper({
+  currentSatPerEhDay,
+  onApply,
+}: {
+  currentSatPerEhDay: number;
+  onApply: (satPerEhDay: number) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const { intlLocale } = useLocale();
+  const tuning = useQuery({
+    queryKey: ['overpay-tuning'],
+    queryFn: api.overpayTuning,
+    refetchInterval: 60_000,
+  });
+
+  if (tuning.isPending || !tuning.data) {
+    return null;
+  }
+  const data = tuning.data;
+  // Display in PH/day always; sat/EH/day -> sat/PH/day = /1000.
+  const formatPh = (sat: number | null) =>
+    sat === null
+      ? '-'
+      : `${formatNumber(Math.round(sat / 1000), {}, intlLocale)} sat/PH/day`;
+
+  if (data.status === 'insufficient_history') {
+    return (
+      <div className="mt-2 p-2 rounded border border-slate-800 bg-slate-900/40 text-xs text-slate-400">
+        <div className="font-semibold text-slate-300">
+          <Trans>Recommended (last {data.window_days}d)</Trans>
+        </div>
+        <p className="mt-0.5 text-slate-500">
+          <Trans>
+            Insufficient history ({data.eligible_ticks} of ~500 tracking ticks
+            needed). Come back after the daemon has been running ~8h or so.
+          </Trans>
+        </p>
+      </div>
+    );
+  }
+
+  // Recommendation matches current within 5% - hide Apply.
+  const recommended = data.recommended_sat_per_eh_day ?? 0;
+  const tolerance = Math.max(currentSatPerEhDay * 0.05, 1000);
+  const matchesCurrent = Math.abs(recommended - currentSatPerEhDay) <= tolerance;
+
+  return (
+    <div className="mt-2 p-2 rounded border border-amber-400/40 bg-amber-400/5 text-xs">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="font-semibold text-amber-300">
+          <Trans>Recommended (last {data.window_days}d)</Trans>
+        </div>
+        <div className="font-mono tabular-nums text-amber-200">
+          {formatPh(recommended)}
+        </div>
+      </div>
+      <p className="mt-0.5 text-slate-400">
+        <Trans>
+          p95 of bid - fillable across {data.eligible_ticks} tracking ticks
+          ({data.capped_ticks} capped, {data.under_fillable_ticks} under
+          fillable excluded). At this overpay you would have filled 95% of
+          the time.
+        </Trans>
+      </p>
+      {data.estimated_30d_savings_sat !== null &&
+        data.estimated_30d_savings_sat > 0 && (
+          <p className="mt-0.5 text-slate-400">
+            <Trans>
+              Estimated 30-day savings vs your current value:{' '}
+              {formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)} sat.
+            </Trans>
+          </p>
+        )}
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onApply(recommended)}
+          disabled={matchesCurrent}
+          className="px-2 py-1 text-xs rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-40"
+        >
+          <Trans>Apply</Trans>
+        </button>
+        {matchesCurrent && (
+          <span className="text-[11px] text-slate-500">
+            <Trans>your overpay already matches the recommendation</Trans>
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -2412,7 +2578,8 @@ function Field({
     spec.kind === 'integer' &&
     (spec.key === 'tick_metrics_retention_days' ||
       spec.key === 'decisions_uneventful_retention_days' ||
-      spec.key === 'decisions_eventful_retention_days')
+      spec.key === 'decisions_eventful_retention_days' ||
+      spec.key === 'alerts_retention_days')
   ) {
     return <RetentionField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
   }
@@ -2721,6 +2888,12 @@ function Field({
           suffix={suffix}
         />
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+        {spec.key === 'overpay_sat_per_eh_day' && (
+          <OverpayTuningHelper
+            currentSatPerEhDay={raw ?? 0}
+            onApply={(v) => onChange(spec.key, v as never)}
+          />
+        )}
       </label>
     );
   }

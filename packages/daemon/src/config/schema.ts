@@ -172,17 +172,28 @@ export const AppConfigSchema = z.object({
   //
   // `tick_metrics` is a compact numeric time series (~1,440 rows/day)
   // that backs every dashboard chart. Cheap on disk, high value as
-  // history - default 365 days so the 1y chart range works out of
-  // the box. `decisions` is a forensic decision log split into:
+  // history. `decisions` is a forensic decision log split into:
   //   - uneventful (no-proposal ticks): heavy JSON state snapshots
   //     that are the main bloat lever; default 7 days.
-  //   - eventful (≥1 proposal): rare (~10% of ticks) and high value
-  //     for "why did the autopilot do that?" questions; default 365.
+  //   - eventful (>=1 proposal): rare (~10% of ticks) and high value
+  //     for "why did the autopilot do that?" questions.
+  // `alerts` (#119) is the Telegram notification log; small rows but
+  // unbounded growth on a long-running install.
+  //
+  // Defaults: only `decisions_uneventful_retention_days` defaults to
+  // a non-zero retention because its rows are large (multi-KB JSON
+  // snapshots) and rarely useful past a week. Everything else
+  // defaults to 0 (= keep forever); operators can opt into pruning
+  // from the Config page if disk space pressure shows up. The
+  // tick_metrics chart history is the most likely thing operators
+  // will want to keep indefinitely, so 0 (= keep forever) is the
+  // friendly default there.
   //
   // Set to 0 to disable pruning for that table (keep forever).
-  tick_metrics_retention_days: nonNegativeInt.default(365),
+  tick_metrics_retention_days: nonNegativeInt.default(0),
   decisions_uneventful_retention_days: nonNegativeInt.default(7),
-  decisions_eventful_retention_days: nonNegativeInt.default(365),
+  decisions_eventful_retention_days: nonNegativeInt.default(0),
+  alerts_retention_days: nonNegativeInt.default(0),
 
   // Optional Datum Gateway stats API (issue #19). When set, the daemon
   // polls {datum_api_url}/umbrel-api each tick to record Datum's view
@@ -423,9 +434,10 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   payout_source: 'none',
 
-  tick_metrics_retention_days: 365,
+  tick_metrics_retention_days: 0,
   decisions_uneventful_retention_days: 7,
-  decisions_eventful_retention_days: 365,
+  decisions_eventful_retention_days: 0,
+  alerts_retention_days: 0,
 
   datum_api_url: null,
 

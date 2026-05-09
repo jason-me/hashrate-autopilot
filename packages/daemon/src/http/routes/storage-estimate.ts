@@ -44,6 +44,15 @@ const DECISIONS_OVERHEAD_BYTES = 80;
 const DECISIONS_UNEVENTFUL_FALLBACK_BYTES = 1500;
 const DECISIONS_EVENTFUL_FALLBACK_BYTES = 3000;
 
+/**
+ * #119: alerts table is small per-row (title + body strings, a handful
+ * of timestamps, no JSON blobs). 600 bytes/row is a generous upper
+ * bound that comfortably covers the average title+body plus the
+ * fixed-column overhead. The retention helper is informational only,
+ * so a slight overcount is the safe direction.
+ */
+const ALERTS_BYTES_PER_ROW = 600;
+
 export interface StorageEstimateBucket {
   readonly rows_per_day: number;
   readonly bytes_per_row: number;
@@ -54,6 +63,7 @@ export interface StorageEstimateResponse {
   readonly tick_metrics: StorageEstimateBucket;
   readonly decisions_uneventful: StorageEstimateBucket;
   readonly decisions_eventful: StorageEstimateBucket;
+  readonly alerts: StorageEstimateBucket;
   /** Total SQLite file size at the moment of the call, or null if not available. */
   readonly db_file_bytes: number | null;
   /** Sample window the rates were measured over, in days. */
@@ -144,6 +154,18 @@ async function computeStorageEstimate(
   `.execute(db);
   const dt = decisionsTotal.rows[0];
 
+  // alerts: count + per-day rate sampled from the same 7-day window.
+  // Bytes/row uses the constant above (no sampling) since alerts rows
+  // are uniformly small; the title + body strings dominate but vary
+  // little in practice.
+  const alertsRecent = await sql<{ rows: number }>`
+    SELECT COUNT(*) AS rows FROM alerts WHERE created_at >= ${sampleSinceMs}
+  `.execute(db);
+  const alertsTotal = await sql<{ rows: number }>`
+    SELECT COUNT(*) AS rows FROM alerts
+  `.execute(db);
+  const alertsRowsPerDay = Number(alertsRecent.rows[0]?.rows ?? 0) / SAMPLE_DAYS;
+
   // db file size - best effort. Wrapped in try/catch because the
   // table-valued pragma form (`pragma_page_count()`) is only available
   // when SQLite was compiled with SQLITE_ENABLE_PRAGMA_FUNCTIONS, which
@@ -178,6 +200,11 @@ async function computeStorageEstimate(
       rows_per_day: Math.round(evRowsPerDay),
       bytes_per_row: evBytesPerRow,
       current_rows: Number(dt?.ev ?? 0),
+    },
+    alerts: {
+      rows_per_day: Math.round(alertsRowsPerDay),
+      bytes_per_row: ALERTS_BYTES_PER_ROW,
+      current_rows: Number(alertsTotal.rows[0]?.rows ?? 0),
     },
     db_file_bytes: dbFileBytes,
     sample_days: SAMPLE_DAYS,

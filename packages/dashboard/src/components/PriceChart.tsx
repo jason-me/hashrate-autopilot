@@ -1741,16 +1741,30 @@ function EventTooltip({
     return best;
   }, [tip.pinned, tip.event.occurred_at, points]);
 
+  // #120: prefer the snapshot stored on the event row over the live
+  // config when computing historical numbers. Live config is only the
+  // fallback for legacy rows (snapshot column is null on rows
+  // pre-dating migration 0077). Without this, an operator who edited
+  // overpay or max_overpay_vs_hashprice between event-time and
+  // hover-time saw the *current* values displayed alongside the
+  // historical fillable / hashprice from `tick_metrics`, internally
+  // contradicting the marker's own reconstruction text ("fillable X +
+  // overpay Y").
+  const overpayAtEvent =
+    tip.event.overpay_sat_per_ph_day ?? overpaySatPerPhDay;
+  const maxOverpayAtEvent =
+    tip.event.max_overpay_vs_hashprice_sat_per_ph_day ?? maxOverpayVsHashpriceSatPerPhDay;
+
   const effectiveCapAtEvent = useMemo(() => {
     if (!marketAtEvent || marketAtEvent.max_bid_sat_per_ph_day === null) return null;
     const fixed = marketAtEvent.max_bid_sat_per_ph_day;
     const hashprice = marketAtEvent.hashprice_sat_per_ph_day;
     const dyn =
-      maxOverpayVsHashpriceSatPerPhDay !== null && hashprice !== null
-        ? hashprice + maxOverpayVsHashpriceSatPerPhDay
+      maxOverpayAtEvent !== null && hashprice !== null
+        ? hashprice + maxOverpayAtEvent
         : null;
     return dyn !== null ? Math.min(fixed, dyn) : fixed;
-  }, [marketAtEvent, maxOverpayVsHashpriceSatPerPhDay]);
+  }, [marketAtEvent, maxOverpayAtEvent]);
 
   // Prefetch recent decisions + the specific matched detail so the copy
   // payload reflects the rich context the operator saw in the old
@@ -1856,7 +1870,9 @@ function EventTooltip({
             hashprice_sat_per_ph_day: marketAtEvent.hashprice_sat_per_ph_day,
             max_bid_sat_per_ph_day: marketAtEvent.max_bid_sat_per_ph_day,
             effective_cap_sat_per_ph_day: effectiveCapAtEvent,
-            max_overpay_vs_hashprice_sat_per_ph_day: maxOverpayVsHashpriceSatPerPhDay,
+            // #120: snapshot, not live config.
+            overpay_sat_per_ph_day: overpayAtEvent,
+            max_overpay_vs_hashprice_sat_per_ph_day: maxOverpayAtEvent,
             our_primary_price_sat_per_ph_day: marketAtEvent.our_primary_price_sat_per_ph_day,
           }
         : null,
@@ -1956,10 +1972,10 @@ function EventTooltip({
               value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
             />
           )}
-          {overpaySatPerPhDay !== null && (
+          {overpayAtEvent !== null && (
             <Row
               label={t`overpay`}
-              value={`${formatNumber(Math.round(overpaySatPerPhDay))} sat/PH/day`}
+              value={`${formatNumber(Math.round(overpayAtEvent))} sat/PH/day`}
             />
           )}
           {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
@@ -1970,19 +1986,19 @@ function EventTooltip({
           ) : (
             <Row label={t`hashprice`} value={t`- (not recorded this tick)`} />
           )}
-          {maxOverpayVsHashpriceSatPerPhDay !== null && (
+          {maxOverpayAtEvent !== null && (
             <Row
               label={t`max overpay vs hashprice`}
-              value={`${formatNumber(Math.round(maxOverpayVsHashpriceSatPerPhDay))} sat/PH/day`}
+              value={`${formatNumber(Math.round(maxOverpayAtEvent))} sat/PH/day`}
             />
           )}
-          {maxOverpayVsHashpriceSatPerPhDay !== null &&
+          {maxOverpayAtEvent !== null &&
             marketAtEvent.hashprice_sat_per_ph_day !== null && (
               <Row
                 label={t`hashprice + max overpay`}
                 value={`${formatNumber(
                   Math.round(
-                    marketAtEvent.hashprice_sat_per_ph_day + maxOverpayVsHashpriceSatPerPhDay,
+                    marketAtEvent.hashprice_sat_per_ph_day + maxOverpayAtEvent,
                   ),
                 )} sat/PH/day`}
               />

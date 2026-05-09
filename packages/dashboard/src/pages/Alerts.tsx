@@ -4,6 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 const UNACK_ONLY_STORAGE_KEY = 'braiins.alertsUnacknowledgedOnly';
+// #121: cursor pagination page size. Server hard-cap is 1000; 50 is
+// enough to fit on a typical screen without scrolling and gives the
+// "Load older" button the time to feel useful.
+const PAGE_SIZE = 50;
 
 import {
   api,
@@ -34,12 +38,27 @@ export function Alerts() {
     window.localStorage.setItem(UNACK_ONLY_STORAGE_KEY, unackOnly ? '1' : '0');
   }, [unackOnly]);
 
-  const filters: Parameters<typeof api.alertsList>[0] = { limit: 200 };
-  if (unackOnly) filters.unacknowledged_only = true;
+  // #121: cursor pagination. The head page (most-recent 50 rows)
+  // refreshes on the same 30s cadence as before. Older pages are
+  // appended one-at-a-time when the operator clicks "Load older",
+  // and reset to empty when the filter toggle changes (otherwise
+  // the operator would see filtered + unfiltered rows interleaved).
+  const [olderPages, setOlderPages] = useState<
+    Array<{ alerts: AlertRow[]; has_more: boolean }>
+  >([]);
+
+  // Reset older pages when the filter changes; the cursor referent
+  // shifts with the filter set.
+  useEffect(() => {
+    setOlderPages([]);
+  }, [unackOnly]);
+
+  const headFilters: Parameters<typeof api.alertsList>[0] = { limit: PAGE_SIZE };
+  if (unackOnly) headFilters.unacknowledged_only = true;
 
   const query = useQuery({
     queryKey: ['alerts', unackOnly],
-    queryFn: () => api.alertsList(filters),
+    queryFn: () => api.alertsList(headFilters),
     refetchInterval: 30_000,
   });
 
@@ -68,11 +87,55 @@ export function Alerts() {
     onSuccess: invalidateAll,
   });
 
-  const alerts = query.data?.alerts ?? [];
+  // Concatenate head + older pages, dedupe on id in case a new row
+  // arrived during pagination and bumped a row from the head into a
+  // later page (rare but possible when `unackOnly` is false).
+  const alerts = useMemo(() => {
+    const seen = new Set<number>();
+    const out: AlertRow[] = [];
+    const headRows = query.data?.alerts ?? [];
+    for (const row of headRows) {
+      if (!seen.has(row.id)) {
+        seen.add(row.id);
+        out.push(row);
+      }
+    }
+    for (const page of olderPages) {
+      for (const row of page.alerts) {
+        if (!seen.has(row.id)) {
+          seen.add(row.id);
+          out.push(row);
+        }
+      }
+    }
+    return out;
+  }, [query.data, olderPages]);
+
+  // has_more comes from the most recently loaded page (the bottom of
+  // the visible list). Empty older-pages array → use the head's flag.
+  const hasMore =
+    olderPages.length > 0
+      ? olderPages[olderPages.length - 1]!.has_more
+      : (query.data?.has_more ?? false);
+
+  const totalCount = query.data?.total_count ?? alerts.length;
   const unackedCount = useMemo(
     () => alerts.filter((a) => a.acknowledged_at_ms === null).length,
     [alerts],
   );
+
+  const loadOlder = useMutation({
+    mutationFn: async () => {
+      const lastRow = alerts[alerts.length - 1];
+      if (!lastRow) throw new Error('no rows to paginate from');
+      return api.alertsList({
+        ...headFilters,
+        before_created_at_ms: lastRow.created_at,
+      });
+    },
+    onSuccess: (resp) =>
+      setOlderPages((prev) => [...prev, { alerts: resp.alerts, has_more: resp.has_more }]),
+  });
 
   return (
     <div className="space-y-4">
@@ -111,6 +174,13 @@ export function Alerts() {
             <Trans>mark all as seen ({unackedCount})</Trans>
           )}
         </button>
+        {alerts.length > 0 && (
+          <span className="ml-auto text-xs text-slate-500">
+            <Trans>
+              showing {alerts.length} of {totalCount}
+            </Trans>
+          </span>
+        )}
       </section>
 
       {query.isPending && (
@@ -159,6 +229,19 @@ export function Alerts() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => loadOlder.mutate()}
+            disabled={loadOlder.isPending}
+            className="px-3 py-1.5 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800 disabled:opacity-40"
+          >
+            {loadOlder.isPending ? <Trans>loading…</Trans> : <Trans>load older</Trans>}
+          </button>
         </div>
       )}
     </div>

@@ -59,13 +59,19 @@ export interface AlertRow {
 export interface AlertListFilters {
   /** Lower bound (inclusive) on `created_at`. Default: epoch. */
   readonly since_ms?: number;
+  /**
+   * #121: cursor for descending pagination. When set, returns rows
+   * STRICTLY OLDER than this `created_at` value. Combine with
+   * `limit` to walk back through history one page at a time.
+   */
+  readonly before_created_at?: number;
   /** Restrict to a single severity, or omit for all. */
   readonly severity?: AlertSeverity;
   /** Restrict to a single delivery status, or omit for all. */
   readonly delivery_status?: AlertDeliveryStatus;
   /** When true, only rows with `acknowledged_at_ms IS NULL`. */
   readonly unacknowledged_only?: boolean;
-  /** Soft cap on result size. Default 200. */
+  /** Soft cap on result size. Default 50. */
   readonly limit?: number;
 }
 
@@ -111,7 +117,7 @@ export class AlertsRepo {
   }
 
   async list(filters: AlertListFilters = {}): Promise<AlertRow[]> {
-    const limit = filters.limit ?? 200;
+    const limit = filters.limit ?? 50;
     let q = this.db
       .selectFrom('alerts')
       .selectAll()
@@ -119,12 +125,34 @@ export class AlertsRepo {
       .orderBy('created_at', 'desc')
       .limit(limit);
 
+    if (filters.before_created_at !== undefined)
+      q = q.where('created_at', '<', filters.before_created_at);
     if (filters.severity) q = q.where('severity', '=', filters.severity);
     if (filters.delivery_status)
       q = q.where('delivery_status', '=', filters.delivery_status);
     if (filters.unacknowledged_only) q = q.where('acknowledged_at_ms', 'is', null);
 
     return q.execute() as Promise<AlertRow[]>;
+  }
+
+  /**
+   * #121: total count under the same filter set as `list`, minus
+   * pagination (since_ms / limit / before_created_at don't affect
+   * the total). Lets the dashboard render "1234 alerts in total"
+   * regardless of how far back the operator has scrolled.
+   */
+  async count(
+    filters: Pick<AlertListFilters, 'severity' | 'delivery_status' | 'unacknowledged_only'> = {},
+  ): Promise<number> {
+    let q = this.db
+      .selectFrom('alerts')
+      .select((eb) => eb.fn.countAll<number>().as('n'));
+    if (filters.severity) q = q.where('severity', '=', filters.severity);
+    if (filters.delivery_status)
+      q = q.where('delivery_status', '=', filters.delivery_status);
+    if (filters.unacknowledged_only) q = q.where('acknowledged_at_ms', 'is', null);
+    const row = await q.executeTakeFirstOrThrow();
+    return Number(row.n);
   }
 
   async getById(id: number): Promise<AlertRow | null> {
@@ -291,5 +319,21 @@ export class AlertsRepo {
       }))
       .where('id', '=', id)
       .execute();
+  }
+
+  /**
+   * #119: prune rows older than the supplied cutoff. Only deletes
+   * rows whose retry lifecycle has resolved - 'pending' and 'snoozed'
+   * still represent in-flight work that the AlertManager would
+   * reattempt, so age alone shouldn't drop them. Returns the number
+   * of rows removed.
+   */
+  async pruneOlderThan(cutoffMs: number): Promise<number> {
+    const result = await this.db
+      .deleteFrom('alerts')
+      .where('created_at', '<', cutoffMs)
+      .where('delivery_status', 'in', ['sent', 'failed', 'gave_up', 'muted'])
+      .executeTakeFirst();
+    return Number(result.numDeletedRows ?? 0);
   }
 }

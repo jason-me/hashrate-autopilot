@@ -178,6 +178,10 @@ export interface BidEventView {
   speed_limit_ph: number | null;
   amount_sat: number | null;
   reason: string | null;
+  /** #120: snapshot of overpay setting at event time. Null on legacy rows. */
+  overpay_sat_per_ph_day: number | null;
+  /** #120: snapshot of dynamic-cap ceiling at event time. Null on legacy rows. */
+  max_overpay_vs_hashprice_sat_per_ph_day: number | null;
 }
 
 export interface PayoutsResponse {
@@ -312,6 +316,7 @@ export interface AppConfig {
   tick_metrics_retention_days: number;
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
+  alerts_retention_days: number;
   datum_api_url: string | null;
   block_explorer_url_template: string;
   block_explorer_tx_url_template: string;
@@ -601,10 +606,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(creds),
     }),
+  notificationsTestEvent: (event_class: string) =>
+    request<NotificationsTestResponse>('/api/notifications/test-event', {
+      method: 'POST',
+      body: JSON.stringify({ event_class }),
+    }),
+  overpayTuning: () => request<OverpayTuningResponse>('/api/overpay-tuning'),
   build: () => request<BuildInfoResponse>('/api/build'),
   alertsList: (filters: AlertsListFilters = {}) => {
     const qs = new URLSearchParams();
     if (filters.since_ms !== undefined) qs.set('since_ms', String(filters.since_ms));
+    if (filters.before_created_at_ms !== undefined)
+      qs.set('before_created_at_ms', String(filters.before_created_at_ms));
     if (filters.severity) qs.set('severity', filters.severity);
     if (filters.delivery_status) qs.set('delivery_status', filters.delivery_status);
     if (filters.unacknowledged_only) qs.set('unacknowledged_only', 'true');
@@ -682,6 +695,7 @@ export interface StorageEstimateResponse {
   tick_metrics: StorageEstimateBucket;
   decisions_uneventful: StorageEstimateBucket;
   decisions_eventful: StorageEstimateBucket;
+  alerts: StorageEstimateBucket;
   db_file_bytes: number | null;
   sample_days: number;
   computed_at: number;
@@ -780,6 +794,8 @@ export interface AlertRow {
 
 export interface AlertsListFilters {
   since_ms?: number;
+  /** #121: cursor for descending pagination - rows strictly older than this. */
+  before_created_at_ms?: number;
   severity?: AlertSeverity;
   delivery_status?: AlertDeliveryStatus;
   unacknowledged_only?: boolean;
@@ -789,6 +805,23 @@ export interface AlertsListFilters {
 export interface AlertsListResponse {
   alerts: AlertRow[];
   unacknowledged_high_severity_count: number;
+  /** #121: total rows matching the filter set, ignoring pagination. */
+  total_count: number;
+  /** #121: are there older rows past the returned page? */
+  has_more: boolean;
+}
+
+export interface OverpayTuningResponse {
+  current_sat_per_eh_day: number;
+  recommended_sat_per_eh_day: number | null;
+  status: 'ready' | 'insufficient_history';
+  window_days: number;
+  eligible_ticks: number;
+  capped_ticks: number;
+  under_fillable_ticks: number;
+  total_ticks: number;
+  estimated_30d_savings_sat: number | null;
+  floor_sat_per_eh_day: number;
 }
 
 export interface FinanceRangeResponse {

@@ -50,6 +50,7 @@ import { registerDecisionsRoutes } from './routes/decisions.js';
 import { registerFinanceRoute } from './routes/finance.js';
 import { registerMetricsRoute } from './routes/metrics.js';
 import { registerNotificationsTestRoute } from './routes/notifications-test.js';
+import { registerNotificationsTestEventRoute } from './routes/notifications-test-event.js';
 import { registerOceanRoute } from './routes/ocean.js';
 import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
@@ -58,6 +59,7 @@ import { registerRunModeRoute } from './routes/run-mode.js';
 import { registerStatsRoute } from './routes/stats.js';
 import { registerStatusRoute } from './routes/status.js';
 import { registerStorageEstimateRoute } from './routes/storage-estimate.js';
+import { registerOverpayTuningRoute } from './routes/overpay-tuning.js';
 import { registerDdnsRoute } from './routes/ddns.js';
 import { registerDdnsTestRoute } from './routes/ddns-test.js';
 import { registerPoolUrlTestRoute } from './routes/pool-url-test.js';
@@ -174,9 +176,11 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerElectrsTestRoute(app);
   await registerAlertsRoutes(app, { alertsRepo: deps.alertsRepo });
   await registerNotificationsTestRoute(app);
+  await registerNotificationsTestEventRoute(app, { configRepo: deps.configRepo });
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerStorageEstimateRoute(app, { db: deps.db });
+  await registerOverpayTuningRoute(app, { db: deps.db, configRepo: deps.configRepo });
   await registerRewardEventsRoute(app, { db: deps.db });
   await registerBlockFoundSoundRoute(app, { db: deps.db });
   await registerOceanRoute(app, {

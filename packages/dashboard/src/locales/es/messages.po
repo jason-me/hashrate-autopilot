@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/pages/Config.tsx
-msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "Cuando está desactivado, las alertas siguen registrándose en la página /alerts con estado \"muted\" pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
-
-#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Cuando está desactivado, las alertas siguen registrándose en la página /alerts con estado \"muted\" pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -284,6 +284,7 @@ msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el control
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
+#: src/pages/Config.tsx
 msgid "Alerts"
 msgstr "Alertas"
 
@@ -318,6 +319,10 @@ msgstr "API accesible"
 #: src/pages/Status.tsx
 msgid "API unreachable ({0})"
 msgstr "API inaccesible ({0})"
+
+#: src/pages/Config.tsx
+msgid "Apply"
+msgstr "Aplicar"
 
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -751,8 +756,8 @@ msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing c
 msgstr "Cobrado on-chain + ganancias no pagadas de Ocean - gastado en ofertas. Si falta el cobrado se trata como 0 (la fila on-chain sigue apareciendo - así el operador ve el hueco). Negativo = aún recuperando el depósito inicial."
 
 #: src/pages/Config.tsx
-msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
-msgstr "Serie temporal numérica compacta - una fila por tick (~1.440/día) con hashrate, precios, share-log %, gasto. Esto alimenta los gráficos de Hashrate / Precio / Sobrepago, así que ajústalo al rango más largo que quieras poder graficar. Barato en disco: un año son ~525k filas pequeñas."
+msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever."
+msgstr "Serie temporal numérica compacta - una fila por tick (~1.440/día) con hashrate, precios, share-log %, gasto. Es lo que respalda las gráficas Hashrate / Price / Overpay, así que configúralo al rango más largo que quieras poder graficar. Barato en disco: un año son ~525k filas pequeñas. Por defecto 0 = guardar para siempre."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -940,8 +945,8 @@ msgid "days"
 msgstr ""
 
 #: src/pages/Config.tsx
-msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
-msgstr "Filas del registro de decisiones donde el autopilot propuso al menos una acción de puja. Raras (~10% de los ticks) y de alto valor: este es el registro forense de \"¿por qué el autopilot creó / editó / canceló esa puja?\" Barato de mantener mucho tiempo."
+msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long. Default 0 = keep forever."
+msgstr "Filas del log de decisiones donde el autopilot propuso al menos una acción sobre la oferta. Raras (~10% de los ticks) y de alto valor: éste es el registro forense de \"¿por qué el autopilot creó / editó / canceló esa oferta?\". Barato de mantener mucho tiempo. Por defecto 0 = guardar para siempre."
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots - the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
@@ -1151,6 +1156,11 @@ msgstr "Host de Electrs"
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalada en"
+
+#. placeholder {0}: formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)
+#: src/pages/Config.tsx
+msgid "Estimated 30-day savings vs your current value: {0} sat."
+msgstr "Ahorro estimado en 30 días frente a tu valor actual: {0} sat."
 
 #: src/pages/Config.tsx
 msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
@@ -1407,6 +1417,11 @@ msgstr "Etiqueta de instancia (opcional)"
 msgid "insufficient history"
 msgstr "histórico insuficiente"
 
+#. placeholder {0}: data.eligible_ticks
+#: src/pages/Config.tsx
+msgid "Insufficient history ({0} of ~500 tracking ticks needed). Come back after the daemon has been running ~8h or so."
+msgstr "Histórico insuficiente ({0} de los ~500 ticks de tracking necesarios). Vuelve cuando el daemon lleve unas 8 horas en marcha."
+
 #: src/lib/format.ts
 msgid "just now"
 msgstr "ahora mismo"
@@ -1476,6 +1491,10 @@ msgstr "Live"
 msgid "LIVE"
 msgstr "LIVE"
 
+#: src/pages/Alerts.tsx
+msgid "load older"
+msgstr "cargar más antiguas"
+
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "cargando decisión…"
@@ -1484,6 +1503,7 @@ msgstr "cargando decisión…"
 msgid "Loading or daemon restart required."
 msgstr "Cargando o se requiere reiniciar el daemon."
 
+#: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -1942,6 +1962,13 @@ msgstr "propietario"
 msgid "Owner token"
 msgstr "Token de propietario"
 
+#. placeholder {0}: data.eligible_ticks
+#. placeholder {1}: data.capped_ticks
+#. placeholder {2}: data.under_fillable_ticks
+#: src/pages/Config.tsx
+msgid "p95 of bid - fillable across {0} tracking ticks ({1} capped, {2} under fillable excluded). At this overpay you would have filled 95% of the time."
+msgstr "p95 de oferta - fillable sobre {0} ticks de tracking ({1} con tope, {2} por debajo de fillable excluidos). Con este overpay habrías llenado el 95% del tiempo."
+
 #: src/pages/Status.tsx
 msgid "paid earnings (lifetime)"
 msgstr "pagado (total)"
@@ -2204,6 +2231,12 @@ msgstr "recibido (Datum)"
 msgid "received (Ocean)"
 msgstr "recibido (Ocean)"
 
+#. placeholder {0}: data.window_days
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Recommended (last {0}d)"
+msgstr "Recomendado (últimos {0}d)"
+
 #: src/components/Layout.tsx
 msgid "Refresh"
 msgstr "Recargar"
@@ -2377,9 +2410,21 @@ msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Elige unidad de hashrate (1 EH = 1.000 PH = 1.000.000 TH)"
 
 #: src/pages/Config.tsx
+msgid "send failed"
+msgstr "envío fallido"
+
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Send messages to Telegram"
 msgstr "Enviar mensajes a Telegram"
+
+#: src/pages/Config.tsx
+msgid "Sending…"
+msgstr "Enviando…"
+
+#: src/pages/Config.tsx
+msgid "sent · check Telegram"
+msgstr "enviado · revisa Telegram"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"
@@ -2401,6 +2446,11 @@ msgstr "Mostrar"
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Mostrar valor"
+
+#. placeholder {0}: alerts.length
+#: src/pages/Alerts.tsx
+msgid "showing {0} of {totalCount}"
+msgstr "mostrando {0} de {totalCount}"
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -2532,8 +2582,16 @@ msgid "Telegram bot token"
 msgstr "Token del bot de Telegram"
 
 #: src/pages/Config.tsx
+msgid "Telegram notification history. Small rows (just title + body strings); the in-flight retry ladder is preserved regardless of this setting - only resolved alerts (sent / failed / muted / gave_up) are eligible for pruning. Default 0 = keep forever."
+msgstr "Histórico de notificaciones de Telegram. Filas pequeñas (solo título + cuerpo); la cadena de reintentos en curso se preserva con independencia de este ajuste - sólo las alertas resueltas (sent / failed / muted / gave_up) son candidatas a poda. Por defecto 0 = guardar para siempre."
+
+#: src/pages/Config.tsx
 msgid "Telegram notifications"
 msgstr "Notificaciones de Telegram"
+
+#: src/pages/Config.tsx
+msgid "Test"
+msgstr "Test"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2574,6 +2632,10 @@ msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo 
 #: src/pages/Config.tsx
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
 msgstr "El endpoint de actualización compatible con dyndns2 del proveedor. Ejemplos: Dynu usa https://api.dynu.com/nic/update; FreeDNS / afraid.org usa https://freedns.afraid.org/nic/update; muchos scripts DDNS auto-alojados hablan el mismo protocolo."
+
+#: src/pages/Config.tsx
+msgid "Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
+msgstr "Tres logs solo-apend respaldan el panel: tick_metrics alimenta todas las gráficas, decisions es un log forense por tick separado por si el autopilot propuso alguna acción, y alerts es el histórico de notificaciones de Telegram. La limpieza corre cada hora y al arrancar el daemon. 0 en cualquier campo = guardar para siempre."
 
 #: src/pages/Config.tsx
 msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder."
@@ -2623,10 +2685,6 @@ msgstr "Total de conexiones de workers en Ocean (una dirección puede tener much
 #: src/pages/Config.tsx
 msgid "Transaction URL template"
 msgstr "Plantilla URL de la transacción"
-
-#: src/pages/Config.tsx
-msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
-msgstr "Dos registros append-only respaldan el panel. tick_metrics alimenta cada gráfico; decisions es un registro forense por tick, dividido según si el autopilot propuso alguna acción. La poda se ejecuta cada hora y al arrancar el daemon. 0 en cualquier campo = guardar para siempre."
 
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
@@ -2827,6 +2885,10 @@ msgstr "Lo usarás para iniciar sesión en el panel tras la configuración. Al m
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Tu dirección que recibe los pagos Ocean TIDES. La identidad del worker abajo se deriva automáticamente de esto."
+
+#: src/pages/Config.tsx
+msgid "your overpay already matches the recommendation"
+msgstr "tu overpay ya coincide con la recomendación"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate"

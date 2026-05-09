@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/pages/Config.tsx
-msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "Wanneer uit, worden alerts nog wel op de /alerts-pagina vastgelegd met status \"muted\", maar niets wordt naar Telegram verstuurd. Herstelberichten blijven ook stil."
-
-#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Wanneer uit, worden alerts nog wel op de /alerts-pagina vastgelegd met status \"muted\", maar niets wordt naar Telegram verstuurd. Herstelberichten blijven ook stil."
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -284,6 +284,7 @@ msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de cont
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
+#: src/pages/Config.tsx
 msgid "Alerts"
 msgstr "Meldingen"
 
@@ -318,6 +319,10 @@ msgstr "API bereikbaar"
 #: src/pages/Status.tsx
 msgid "API unreachable ({0})"
 msgstr "API onbereikbaar ({0})"
+
+#: src/pages/Config.tsx
+msgid "Apply"
+msgstr "Toepassen"
 
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -751,8 +756,8 @@ msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing c
 msgstr "Ontvangen on-chain + Oceans openstaande verdiensten − uitgegeven aan biedingen. Ontbrekende ontvangsten worden als 0 behandeld (de on-chain rij blijft zichtbaar - zodat de operator het gat ziet). Negatief = nog bezig met het terugverdienen van de initiële inleg."
 
 #: src/pages/Config.tsx
-msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
-msgstr "Compacte numerieke tijdreeks - één rij per tick (~1.440/dag) met hashrate, prijzen, share-log %, uitgaven. Dit voedt de grafieken Hashrate / Prijs / Overpay, dus stel het in op het langste bereik dat je wilt kunnen weergeven. Goedkoop op schijf: een jaar is ~525k kleine rijen."
+msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever."
+msgstr "Compacte numerieke tijdreeks - één rij per tick (~1.440/dag) met hashrate, prijzen, share-log %, spend. Dit voedt de grafieken Hashrate / Price / Overpay, dus stel het in op het langste bereik dat je wilt kunnen tonen. Goedkoop op schijf: een jaar is ~525k kleine rijen. Standaard 0 = altijd bewaren."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -940,8 +945,8 @@ msgid "days"
 msgstr ""
 
 #: src/pages/Config.tsx
-msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
-msgstr "Rijen in het beslissingenlogboek waar de autopilot ten minste één bidactie voorstelde. Zeldzaam (~10% van de ticks) en waardevol: dit is het forensische dossier voor \"waarom maakte/bewerkte/annuleerde de autopilot dat bod?\" Goedkoop om lang te bewaren."
+msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long. Default 0 = keep forever."
+msgstr "Decision-log-rijen waarin de autopilot ten minste één bid-actie voorstelde. Zeldzaam (~10% van de ticks) en zeer waardevol: dit is het forensische dossier voor \"waarom heeft de autopilot dat bod aangemaakt / aangepast / geannuleerd?\". Goedkoop om lang te bewaren. Standaard 0 = altijd bewaren."
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots - the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
@@ -1151,6 +1156,11 @@ msgstr "Electrs-host"
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalatie over"
+
+#. placeholder {0}: formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)
+#: src/pages/Config.tsx
+msgid "Estimated 30-day savings vs your current value: {0} sat."
+msgstr "Geschatte besparing over 30 dagen ten opzichte van je huidige waarde: {0} sat."
 
 #: src/pages/Config.tsx
 msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
@@ -1407,6 +1417,11 @@ msgstr "Instantielabel (optioneel)"
 msgid "insufficient history"
 msgstr "onvoldoende geschiedenis"
 
+#. placeholder {0}: data.eligible_ticks
+#: src/pages/Config.tsx
+msgid "Insufficient history ({0} of ~500 tracking ticks needed). Come back after the daemon has been running ~8h or so."
+msgstr "Onvoldoende geschiedenis ({0} van de benodigde ~500 tracking-ticks). Kom terug nadat de daemon ongeveer 8 uur gedraaid heeft."
+
 #: src/lib/format.ts
 msgid "just now"
 msgstr "zojuist"
@@ -1476,6 +1491,10 @@ msgstr "Live"
 msgid "LIVE"
 msgstr "LIVE"
 
+#: src/pages/Alerts.tsx
+msgid "load older"
+msgstr "oudere laden"
+
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "beslissing laden…"
@@ -1484,6 +1503,7 @@ msgstr "beslissing laden…"
 msgid "Loading or daemon restart required."
 msgstr "Laden of daemon-herstart vereist."
 
+#: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -1942,6 +1962,13 @@ msgstr "eigenaar"
 msgid "Owner token"
 msgstr "Eigenaars-token"
 
+#. placeholder {0}: data.eligible_ticks
+#. placeholder {1}: data.capped_ticks
+#. placeholder {2}: data.under_fillable_ticks
+#: src/pages/Config.tsx
+msgid "p95 of bid - fillable across {0} tracking ticks ({1} capped, {2} under fillable excluded). At this overpay you would have filled 95% of the time."
+msgstr "p95 van bod - fillable over {0} tracking-ticks ({1} gecapped, {2} onder fillable uitgesloten). Bij deze overpay zou je 95% van de tijd gevuld zijn."
+
 #: src/pages/Status.tsx
 msgid "paid earnings (lifetime)"
 msgstr "uitbetaald (totaal)"
@@ -2204,6 +2231,12 @@ msgstr "ontvangen (Datum)"
 msgid "received (Ocean)"
 msgstr "ontvangen (Ocean)"
 
+#. placeholder {0}: data.window_days
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Recommended (last {0}d)"
+msgstr "Aanbevolen (laatste {0}d)"
+
 #: src/components/Layout.tsx
 msgid "Refresh"
 msgstr "Vernieuwen"
@@ -2377,9 +2410,21 @@ msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 
 #: src/pages/Config.tsx
+msgid "send failed"
+msgstr "verzenden mislukt"
+
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Send messages to Telegram"
 msgstr "Stuur berichten naar Telegram"
+
+#: src/pages/Config.tsx
+msgid "Sending…"
+msgstr "Verzenden…"
+
+#: src/pages/Config.tsx
+msgid "sent · check Telegram"
+msgstr "verzonden · check Telegram"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"
@@ -2401,6 +2446,11 @@ msgstr "Toon"
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Toon waarde"
+
+#. placeholder {0}: alerts.length
+#: src/pages/Alerts.tsx
+msgid "showing {0} of {totalCount}"
+msgstr "toont {0} van {totalCount}"
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -2532,8 +2582,16 @@ msgid "Telegram bot token"
 msgstr "Telegram bot-token"
 
 #: src/pages/Config.tsx
+msgid "Telegram notification history. Small rows (just title + body strings); the in-flight retry ladder is preserved regardless of this setting - only resolved alerts (sent / failed / muted / gave_up) are eligible for pruning. Default 0 = keep forever."
+msgstr "Telegram-notificatiegeschiedenis. Kleine rijen (alleen titel + body-tekst); de lopende retry-ladder blijft bewaard ongeacht deze instelling - alleen afgehandelde alerts (sent / failed / muted / gave_up) komen in aanmerking voor pruning. Standaard 0 = altijd bewaren."
+
+#: src/pages/Config.tsx
 msgid "Telegram notifications"
 msgstr "Telegram-meldingen"
+
+#: src/pages/Config.tsx
+msgid "Test"
+msgstr "Test"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2574,6 +2632,10 @@ msgstr "De hostnaam die onderhouden wordt. Voor No-IP DDNS Key-groepen (de moder
 #: src/pages/Config.tsx
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
 msgstr "Het dyndns2-compatibele update-endpoint van de provider. Voorbeelden: Dynu gebruikt https://api.dynu.com/nic/update; FreeDNS / afraid.org gebruikt https://freedns.afraid.org/nic/update; veel zelf-gehoste DDNS-scripts spreken hetzelfde protocol."
+
+#: src/pages/Config.tsx
+msgid "Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
+msgstr "Drie append-only-logs ondersteunen het dashboard: tick_metrics voedt alle grafieken, decisions is een per-tick forensisch log opgesplitst naar of de autopilot een actie voorstelde, en alerts is de Telegram-notificatie-geschiedenis. Pruning draait elk uur en bij start van de daemon. 0 op een veld = altijd bewaren."
 
 #: src/pages/Config.tsx
 msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder."
@@ -2623,10 +2685,6 @@ msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers
 #: src/pages/Config.tsx
 msgid "Transaction URL template"
 msgstr "Transactie-URL-sjabloon"
-
-#: src/pages/Config.tsx
-msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
-msgstr "Twee append-only logs voeden het dashboard. tick_metrics vormt de basis van elke grafiek; decisions is een forensisch logboek per tick, gesplitst op basis van of de autopilot een actie heeft voorgesteld. Opschonen gebeurt elk uur en bij het opstarten van de daemon. 0 in een veld = voor altijd bewaren."
 
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
@@ -2827,6 +2885,10 @@ msgstr "Hiermee log je na de setup in op het dashboard. Minimaal 8 tekens."
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hieronder wordt hier automatisch uit afgeleid."
+
+#: src/pages/Config.tsx
+msgid "your overpay already matches the recommendation"
+msgstr "je overpay komt al overeen met de aanbeveling"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate"

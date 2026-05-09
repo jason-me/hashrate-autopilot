@@ -64,6 +64,7 @@ export interface ConfigTable {
   tick_metrics_retention_days: number;
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
+  alerts_retention_days: number;
   datum_api_url: string | null;
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   overpay_sat_per_eh_day: number;
@@ -287,6 +288,10 @@ export interface BidEventsTable {
   speed_limit_ph: number | null;
   amount_sat: number | null;
   reason: string | null;
+  /** #120: overpay-above-fillable in effect at the moment of the event. */
+  overpay_sat_per_eh_day: number | null;
+  /** #120: hashprice-relative cap in effect at the moment of the event. */
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
 }
 
 // ---------------------------------------------------------------------------

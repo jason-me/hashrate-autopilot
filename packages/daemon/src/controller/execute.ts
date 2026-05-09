@@ -67,7 +67,17 @@ export async function execute(
 
   for (const e of executed) {
     if (e.outcome !== 'EXECUTED') continue;
-    const event = toBidEventInsert(e.proposal, 'AUTOPILOT', state.tick_at);
+    // #120: snapshot the overpay/cap config that produced THIS event,
+    // so the chart-marker tooltip can read the historical values
+    // verbatim instead of re-reading whatever's in the live config
+    // by the time the operator hovers the marker.
+    const event = toBidEventInsert(
+      e.proposal,
+      'AUTOPILOT',
+      state.tick_at,
+      state.config.overpay_sat_per_eh_day,
+      state.config.max_overpay_vs_hashprice_sat_per_eh_day,
+    );
     if (event) {
       try {
         await deps.bidEventsRepo.insert(event);
@@ -84,7 +94,16 @@ function toBidEventInsert(
   proposal: Proposal,
   source: 'AUTOPILOT' | 'OPERATOR',
   occurredAt: number,
+  overpaySatPerEhDay: number,
+  maxOverpayVsHashpriceSatPerEhDay: number | null,
 ): Parameters<BidEventsRepo['insert']>[0] | null {
+  // #120: every event row carries the overpay/cap config snapshot;
+  // applied via spread to keep each switch arm focused on its
+  // event-shape-specific fields.
+  const snapshot = {
+    overpay_sat_per_eh_day: overpaySatPerEhDay,
+    max_overpay_vs_hashprice_sat_per_eh_day: maxOverpayVsHashpriceSatPerEhDay,
+  };
   switch (proposal.kind) {
     case 'CREATE_BID':
       return {
@@ -97,6 +116,7 @@ function toBidEventInsert(
         speed_limit_ph: proposal.speed_limit_ph,
         amount_sat: proposal.amount_sat,
         reason: proposal.reason,
+        ...snapshot,
       };
     case 'EDIT_PRICE':
       return {
@@ -109,6 +129,7 @@ function toBidEventInsert(
         speed_limit_ph: null,
         amount_sat: null,
         reason: proposal.reason,
+        ...snapshot,
       };
     case 'EDIT_SPEED':
       return {
@@ -125,6 +146,7 @@ function toBidEventInsert(
         speed_limit_ph: proposal.new_speed_limit_ph,
         amount_sat: null,
         reason: proposal.reason,
+        ...snapshot,
       };
     case 'CANCEL_BID':
       return {
@@ -137,6 +159,7 @@ function toBidEventInsert(
         speed_limit_ph: null,
         amount_sat: null,
         reason: proposal.reason,
+        ...snapshot,
       };
     case 'PAUSE':
       return null; // PAUSE is a run-mode transition, not a bid event

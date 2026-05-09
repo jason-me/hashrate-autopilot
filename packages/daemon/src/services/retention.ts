@@ -1,18 +1,23 @@
 /**
  * Periodic retention maintenance for the append-only log tables
- * (tick_metrics, decisions). Deletes rows older than per-table cutoffs
- * configured on AppConfig. Runs on a long interval (hourly by default)
- * so it doesn't thrash the DB.
+ * (tick_metrics, decisions, alerts). Deletes rows older than per-table
+ * cutoffs configured on AppConfig. Runs on a long interval (hourly by
+ * default) so it doesn't thrash the DB.
  *
  * Keep two retention horizons for `decisions`:
  *   - uneventful (empty proposed array) - short, default 7 days
- *   - eventful (at least one proposal) - long, default 90 days
+ *   - eventful (at least one proposal) - long, default keep-forever
  *
  * The vast majority of decisions rows are uneventful ticks that carry
  * no forensic value; pruning them aggressively is the whole point of
  * this service.
+ *
+ * `alerts` (#119): prune by age, gated on terminal delivery_status so
+ * a long-running outage's still-retrying row is never dropped on age
+ * alone.
  */
 
+import type { AlertsRepo } from '../state/repos/alerts.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
@@ -35,6 +40,7 @@ export class RetentionService {
   private readonly configRepo: ConfigRepo;
   private readonly tickMetricsRepo: TickMetricsRepo;
   private readonly decisionsRepo: DecisionsRepo;
+  private readonly alertsRepo: AlertsRepo;
   private readonly intervalMs: number;
   private readonly now: () => number;
   private readonly setIntervalFn: typeof setInterval;
@@ -46,11 +52,13 @@ export class RetentionService {
     configRepo: ConfigRepo,
     tickMetricsRepo: TickMetricsRepo,
     decisionsRepo: DecisionsRepo,
+    alertsRepo: AlertsRepo,
     opts: RetentionServiceOptions = {},
   ) {
     this.configRepo = configRepo;
     this.tickMetricsRepo = tickMetricsRepo;
     this.decisionsRepo = decisionsRepo;
+    this.alertsRepo = alertsRepo;
     this.intervalMs = opts.intervalMs ?? 60 * 60 * 1000;
     this.now = opts.now ?? (() => Date.now());
     this.setIntervalFn = opts.setInterval ?? setInterval;
@@ -79,6 +87,7 @@ export class RetentionService {
     tick_metrics_deleted: number;
     decisions_uneventful_deleted: number;
     decisions_eventful_deleted: number;
+    alerts_deleted: number;
   }> {
     const cfg = await this.configRepo.get();
     if (!cfg) {
@@ -86,6 +95,7 @@ export class RetentionService {
         tick_metrics_deleted: 0,
         decisions_uneventful_deleted: 0,
         decisions_eventful_deleted: 0,
+        alerts_deleted: 0,
       };
     }
     const t = this.now();
@@ -122,15 +132,26 @@ export class RetentionService {
       }
     }
 
-    if (tickMetricsDeleted + unevDeleted + evDeleted > 0) {
+    let alertsDeleted = 0;
+    if (cfg.alerts_retention_days > 0) {
+      const cutoff = t - cfg.alerts_retention_days * DAY_MS;
+      try {
+        alertsDeleted = await this.alertsRepo.pruneOlderThan(cutoff);
+      } catch (err) {
+        this.log(`[retention] alerts prune failed: ${(err as Error).message}`);
+      }
+    }
+
+    if (tickMetricsDeleted + unevDeleted + evDeleted + alertsDeleted > 0) {
       this.log(
-        `[retention] pruned: tick_metrics=${tickMetricsDeleted} decisions_uneventful=${unevDeleted} decisions_eventful=${evDeleted}`,
+        `[retention] pruned: tick_metrics=${tickMetricsDeleted} decisions_uneventful=${unevDeleted} decisions_eventful=${evDeleted} alerts=${alertsDeleted}`,
       );
     }
     return {
       tick_metrics_deleted: tickMetricsDeleted,
       decisions_uneventful_deleted: unevDeleted,
       decisions_eventful_deleted: evDeleted,
+      alerts_deleted: alertsDeleted,
     };
   }
 }

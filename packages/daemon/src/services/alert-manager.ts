@@ -257,7 +257,7 @@ export class AlertManager {
  * row's INFO severity is structural ("not actionable, no retry
  * ladder"), the operator-facing label is "the bad thing is fixed".
  */
-function formatTelegramBody(
+export function formatTelegramBody(
   severity: AlertSeverity,
   title: string,
   body: string,

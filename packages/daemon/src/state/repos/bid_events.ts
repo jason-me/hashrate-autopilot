@@ -26,6 +26,10 @@ export interface BidEventInsert {
   speed_limit_ph: number | null;
   amount_sat: number | null;
   reason: string | null;
+  /** #120: snapshot the overpay setting at event time. */
+  overpay_sat_per_eh_day: number | null;
+  /** #120: snapshot the dynamic-cap ceiling at event time. */
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
 }
 
 export interface BidEventRow extends BidEventInsert {
