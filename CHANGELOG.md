@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Fix]` Hashrate chart: pool-block click anchor scoped to the icon, not the whole vertical line
+
+The click hit-target for a pool-block marker spanned the entire chart height (a 12px-wide transparent rect from the icon down to the x-axis), so a click anywhere along the dashed vertical line opened the pool-block popup. On the 7-day range that overlapped neighbouring blocks' columns and felt arbitrary - the operator clicked on what looked like empty chart space and got a popup for a block they weren't looking at. Hit-target shrunk to a 16x16 box centered on the icon at the top of the line; the dashed line itself is now decoration only (`pointer-events="none"`). Click the crown / cube to open the popup.
+
 ### `[Feature]` Telegram messages follow operator's chosen language (#131)
 
 New `notification_locale` config field on the Notifications tab (en / nl / es, default en). All Telegram messages now render in the operator's chosen language: severity prefix (`[IMPORTANT]` / `[BELANGRIJK]` / `[IMPORTANTE]`, etc), event titles, body templates, recovery messages, "still bad after 2h" giving-up text, INFO celebrations, the new deposit-lifecycle messages from #130 - everything. Daemon-side i18n catalog at `packages/daemon/src/i18n/alert-copy.ts` holds typed string templates per locale; every detector reads its copy through `getAlertCopy(state.config.notification_locale)`. Independent from the dashboard's UI locale (which is per-browser via localStorage); a daemon needs its own notion of the operator's language for messages it pushes out without the dashboard being open. /alerts page rows show whatever language was active when they fired - history is not retroactively retranslated. Migration 0081 adds the column.

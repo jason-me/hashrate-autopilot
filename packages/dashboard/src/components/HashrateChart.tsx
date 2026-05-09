@@ -1000,14 +1000,28 @@ export const HashrateChart = memo(function HashrateChart({
                     strokeWidth={isOurs ? '1.8' : '1'}
                     strokeDasharray={isOurs ? '4 2' : '2 3'}
                     opacity={isOurs ? '0.95' : '0.55'}
+                    pointerEvents="none"
                   />
-                  {/* Transparent wide hit-target so hover/click on the
-                      thin dashed line is forgiving. */}
+                  {/* Transparent hit-target scoped to the icon area
+                      only (#post-#115). The earlier rect spanned the
+                      entire chart height to make the thin dashed line
+                      forgiving to click, but that caused every chart
+                      column near a block's vertical line to register
+                      as a pool-block click - confusing on the wider
+                      ranges where many blocks sit close together.
+                      Now the click anchor is the icon itself plus a
+                      small ~3px forgiveness margin; the dashed
+                      vertical line is decoration, not a hit target.
+                      Icon glyph is 10x10 translated to
+                      (x - 5, PADDING.top - 9), so the icon's bbox
+                      is roughly (x - 5..x + 5, PADDING.top - 9..
+                      PADDING.top + 1). The rect adds 3px slack on
+                      each axis. */}
                   <rect
-                    x={x - 6}
-                    y={PADDING.top - 9}
-                    width={12}
-                    height={chartHeight - PADDING.bottom - PADDING.top + 9}
+                    x={x - 8}
+                    y={PADDING.top - 12}
+                    width={16}
+                    height={16}
                     fill="transparent"
                   />
                   {isOurs ? (
