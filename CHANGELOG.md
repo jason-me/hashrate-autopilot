@@ -2,6 +2,15 @@
 
 ## 2026-05-09
 
+### `[Fix]` Overpay-tuning: lower bucket trust threshold + inline delivery curve (#118 follow-up)
+
+The slider on the overpay-tuning helper had no visible effect on the operator's data: dragging from 50% to 100% returned the same recommendation (100 sat/PH/day) every time. Two reasons; both addressed.
+
+1. `MIN_BUCKET_TICKS` was 30, which marked the sparse low-gap buckets ([0,50), [50,100)) as untrusted on a typical install. With a stable overpay setting the gap distribution clusters around the configured value, so low-gap buckets get few ticks. The first *trusted* bucket then exceeded the slider's 100% threshold, and dragging the slider down picked the same bucket regardless of value. Lowered to 10 — meaningful coverage without obvious noise.
+2. There was no way for the operator to *see* the bucket curve, so when the slider didn't move the recommendation they couldn't tell why. Added a small inline bar chart (gap on x-axis, avg delivered as % of target on y-axis) to the helper. Trusted buckets are slate-400, untrusted ones are slate-700 + faint, the recommended bucket is highlighted amber. Reference lines for 100% target and the slider's current threshold sit on top. Hovering a bar shows the bucket range, tick count, and avg delivered.
+
+`BUILD_NUMBER` 305 → 306.
+
 ### `[UI]` Mobile: hamburger menu collapses unit/currency/language/sign-out
 
 The top bar fit a brand + Status/Alerts/Config tabs + TH/PH/EH toggle + sats/BTC/USD toggle + language picker + sign-out button on a single row, which overflowed the right edge of mobile viewports. Operator caught it on iPhone Safari (`clarent:3010`). On `< sm` the four right-cluster controls now collapse into a hamburger popover (three-bar icon, opens a dropdown with the same controls grouped under labelled headings, click-outside dismisses). On `>= sm` the inline cluster is unchanged. Top bar stays single-row on mobile with only Status / Alerts / Config visible.

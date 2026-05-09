@@ -12,6 +12,7 @@ import {
   type AppConfig,
   type DatumTestResponse,
   type DdnsTestResponse,
+  type OverpayTuningBucket,
   type PoolUrlTestResponse,
   type StorageEstimateBucket,
   type StorageEstimateResponse,
@@ -2087,6 +2088,134 @@ function HelpDot() {
  * the daemon hasn't yet seen enough tracking-regime ticks, shows
  * "insufficient history" with the Apply button disabled.
  */
+/**
+ * Tiny inline bar chart of the gap-vs-delivery distribution from
+ * /api/overpay-tuning. Each bucket gets a vertical bar:
+ * - bar height = avg_delivered_ph as % of target (capped at 130% so
+ *   one outlier doesn't squash the rest);
+ * - bar fill   = trusted (slate-400) vs untrusted (slate-700, dashed);
+ * - the recommended bucket's bar is highlighted amber.
+ *
+ * Tick counts label the x-axis at the bottom so the operator can tell
+ * which buckets carry weight. Adds context the slider alone can't:
+ * when the curve is flat above target across all buckets, the
+ * recommendation will sit at the lowest trusted bucket regardless of
+ * the slider value, and that's now visible at a glance.
+ */
+function BucketCurve({
+  buckets,
+  targetPh,
+  threshold,
+  recommendedLowerBound,
+}: {
+  buckets: readonly OverpayTuningBucket[];
+  targetPh: number;
+  threshold: number;
+  recommendedLowerBound: number | null;
+}) {
+  const { intlLocale } = useLocale();
+  if (buckets.length === 0 || targetPh <= 0) return null;
+
+  // Bar geometry. SVG canvas is responsive in width; total height
+  // capped so the chart fits in the helper card without dominating
+  // it. Y-axis runs 0..130% of target.
+  const PADDING_X = 4;
+  const PADDING_TOP = 14;
+  const PADDING_BOTTOM = 18;
+  const BAR_GAP = 2;
+  const HEIGHT = 90;
+  const WIDTH = 100; // viewBox width; the SVG scales to its container.
+  const Y_MAX_PCT = 130;
+  const innerH = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+  const innerW = WIDTH - PADDING_X * 2;
+  const barW = (innerW - BAR_GAP * (buckets.length - 1)) / buckets.length;
+
+  const targetY = PADDING_TOP + innerH * (1 - 100 / Y_MAX_PCT);
+  const thresholdPct = Math.min((threshold / targetPh) * 100, Y_MAX_PCT);
+  const thresholdY = PADDING_TOP + innerH * (1 - thresholdPct / Y_MAX_PCT);
+
+  return (
+    <div className="mt-2">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+        <Trans>delivery vs. overpay gap</Trans>
+      </div>
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        preserveAspectRatio="none"
+        className="w-full h-20 block"
+      >
+        {/* Target reference line (100%): slate-600 dashed. */}
+        <line
+          x1={PADDING_X}
+          x2={WIDTH - PADDING_X}
+          y1={targetY}
+          y2={targetY}
+          stroke="#475569"
+          strokeWidth={0.4}
+          strokeDasharray="1.5 1.5"
+        />
+        {/* Slider threshold: amber dashed. */}
+        {threshold !== targetPh && (
+          <line
+            x1={PADDING_X}
+            x2={WIDTH - PADDING_X}
+            y1={thresholdY}
+            y2={thresholdY}
+            stroke="#fbbf24"
+            strokeWidth={0.5}
+            strokeDasharray="1 1"
+            opacity={0.7}
+          />
+        )}
+        {buckets.map((b, i) => {
+          const x = PADDING_X + i * (barW + BAR_GAP);
+          const trusted = b.avg_delivered_ph !== null;
+          const pct = trusted
+            ? Math.min(((b.avg_delivered_ph as number) / targetPh) * 100, Y_MAX_PCT)
+            : 0;
+          const h = trusted ? (innerH * pct) / Y_MAX_PCT : innerH * 0.05;
+          const y = trusted ? PADDING_TOP + innerH - h : HEIGHT - PADDING_BOTTOM - h;
+          const isRecommended =
+            recommendedLowerBound !== null &&
+            b.gap_lower_sat_per_eh_day === recommendedLowerBound;
+          const fill = isRecommended ? '#fbbf24' : trusted ? '#94a3b8' : '#334155';
+          return (
+            <g key={b.gap_lower_sat_per_eh_day}>
+              <rect
+                x={x}
+                y={y}
+                width={Math.max(barW, 0.5)}
+                height={Math.max(h, 0.5)}
+                fill={fill}
+                opacity={trusted ? 1 : 0.6}
+              >
+                <title>
+                  {b.gap_upper_sat_per_eh_day !== null
+                    ? `${b.gap_lower_sat_per_eh_day / 1000}-${b.gap_upper_sat_per_eh_day / 1000} sat/PH/day · ${b.tick_count} ticks · ${
+                        trusted
+                          ? `avg ${formatNumber((b.avg_delivered_ph as number), { maximumFractionDigits: 2 }, intlLocale)} PH/s`
+                          : 'too few ticks to trust'
+                      }`
+                    : `${b.gap_lower_sat_per_eh_day / 1000}+ sat/PH/day · ${b.tick_count} ticks · ${
+                        trusted
+                          ? `avg ${formatNumber((b.avg_delivered_ph as number), { maximumFractionDigits: 2 }, intlLocale)} PH/s`
+                          : 'too few ticks to trust'
+                      }`}
+                </title>
+              </rect>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex justify-between text-[9px] text-slate-500 mt-0.5 px-1 font-mono">
+        <span>0</span>
+        <span>250</span>
+        <span>500+</span>
+      </div>
+    </div>
+  );
+}
+
 function OverpayTuningHelper({
   currentSatPerEhDay,
   onApply,
@@ -2238,6 +2367,12 @@ function OverpayTuningHelper({
           </Trans>
         </p>
       )}
+      <BucketCurve
+        buckets={data.buckets}
+        targetPh={targetPh}
+        threshold={requiredDelivery}
+        recommendedLowerBound={recommendedBucket?.gap_lower_sat_per_eh_day ?? null}
+      />
       {slider}
       <p className="mt-2 text-[10px] text-slate-500 italic">
         <Trans>

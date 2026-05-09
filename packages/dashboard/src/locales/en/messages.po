@@ -1000,6 +1000,10 @@ msgstr "Delivered hashrate has been under minimum_floor_hashrate_ph for below_fl
 msgid "delivery"
 msgstr "delivery"
 
+#: src/pages/Config.tsx
+msgid "delivery vs. overpay gap"
+msgstr "delivery vs. overpay gap"
+
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"

@@ -59,8 +59,19 @@ const TICK_SIZE_SAT_PER_EH_DAY = 1_000;
 const MIN_TRACKING_TICKS = 500;
 /** Below this many ticks in a bucket, the bucket's avg_delivered is
  *  treated as untrusted (null) so the client skips it when finding
- *  the lowest-gap candidate. */
-const MIN_BUCKET_TICKS = 30;
+ *  the lowest-gap candidate.
+ *
+ *  Lowered to 10 (from 30) on operator feedback: with a stable
+ *  overpay setting most ticks cluster around gap ≈ overpay, so
+ *  low-gap buckets are sparse. A higher threshold marked them
+ *  untrusted and made the slider's "smallest trusted bucket"
+ *  always be the SAME bucket (just above the historical overpay),
+ *  with the result that dragging the slider had no visible
+ *  effect. 10 ticks gives meaningful coverage while keeping
+ *  obvious-noise buckets out. The dashboard-side bucket viz also
+ *  surfaces tick_count per bucket so the operator can see how
+ *  much weight to put on each bucket's average. */
+const MIN_BUCKET_TICKS = 10;
 /** Bucket width: 50 sat/PH/day = 50_000 sat/EH/day. Narrow enough
  *  to give granularity, wide enough that most buckets have ≥30
  *  ticks on a typical install. */

@@ -1000,6 +1000,10 @@ msgstr "Geleverde hashrate is gedurende below_floor_alert_after_minutes onder mi
 msgid "delivery"
 msgstr "aflevering"
 
+#: src/pages/Config.tsx
+msgid "delivery vs. overpay gap"
+msgstr "levering vs. overpay-gap"
+
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
