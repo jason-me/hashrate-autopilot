@@ -2,6 +2,10 @@
 
 ## 2026-05-10
 
+### `[UI]` Alerts page: split OPEN into OPEN + ACKNOWLEDGED (#139)
+
+Acked-but-not-recovered events used to stay in the OPEN bucket forever - INFO one-shots like `pool_block_credited` have no recovery semantics, so the recovery-pair-only bucket rule pinned them as OPEN even after the operator acked from Telegram. Split the bucket into three: OPEN (firing, not acked, not recovered) → ACKNOWLEDGED (acked, no recovery yet) → RESOLVED (recovery pair exists). The `OPEN (n)` heading counter now reflects only the "needs my attention" set; ACKNOWLEDGED gets its own slate-coloured section between OPEN and RESOLVED. Card-header right-side pill renders `OPEN · {age}` (amber) / `ACKNOWLEDGED · {age}` (slate) / `RESOLVED` (emerald) per bucket. Default expand-state: OPEN expanded, ACKNOWLEDGED + RESOLVED collapsed. Pure dashboard-side derivation from existing `acknowledged_at_ms` + `paired_alert_id` fields - no daemon change, no migration. NL ("Bevestigd") and ES ("Confirmado") translations included.
+
 ### `[UI]` Cheap mode: own section + explicit enable checkbox (#136)
 
 The three cheap-mode knobs (`cheap_target_hashrate_ph` / `cheap_threshold_pct` / `cheap_sustained_window_minutes`) used to live mixed into Hashrate Targets, with "set the threshold to 0" as the implicit on/off knob. Operator found it confusing. Pulled them into their own section between Hashrate Targets and Pricing on Config → Strategy, with an explicit "Enable cheap mode" checkbox at the top. When unchecked the three fields render at 50% opacity and are non-interactive (`opacity-50 pointer-events-none` on the wrapper); when checked they become editable. Toggling on writes `cheap_threshold_pct = 95` (the long-standing default), toggling off writes 0 — same derive-from-existing-field pattern the wallet-runway tile uses, no new column or migration. Hashrate Targets shrinks to just target + floor as a side benefit. NL ("Goedkoop-modus") and ES ("Modo barato") translations included.

@@ -294,7 +294,26 @@ function EventGroupedView({
       return haystack.includes(q);
     });
   }, [allGroups, query]);
-  const open = useMemo(() => groups.filter((g) => g.recovery === null), [groups]);
+  // #139: three-state bucket. OPEN = firing, no ack, no recovery (the
+  // "needs my attention" set). ACKNOWLEDGED = operator clicked seen
+  // (here or via Telegram) but no recovery pair has arrived yet -
+  // INFO one-shots like pool-block-credited terminate here forever
+  // since they have no recovery semantics. RESOLVED = recovery pair
+  // exists; ack state is orthogonal at that point.
+  const open = useMemo(
+    () =>
+      groups.filter(
+        (g) => g.recovery === null && g.firing.acknowledged_at_ms === null,
+      ),
+    [groups],
+  );
+  const acknowledged = useMemo(
+    () =>
+      groups.filter(
+        (g) => g.recovery === null && g.firing.acknowledged_at_ms !== null,
+      ),
+    [groups],
+  );
   const resolved = useMemo(() => groups.filter((g) => g.recovery !== null), [groups]);
 
   // Per-card expand/collapse override. Default state is computed at
@@ -324,6 +343,27 @@ function EventGroupedView({
                 group={g}
                 query={query}
                 expandedDefault={true}
+                isToggled={toggled.has(g.firing.id)}
+                onToggle={() => toggle(g.firing.id)}
+                onAcknowledge={() => onAcknowledge(g.firing.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {acknowledged.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-slate-400 mb-2">
+            <Trans>Acknowledged ({acknowledged.length})</Trans>
+          </h2>
+          <div className="space-y-2">
+            {acknowledged.map((g) => (
+              <EventCard
+                key={g.firing.id}
+                group={g}
+                query={query}
+                expandedDefault={query.trim().length > 0}
                 isToggled={toggled.has(g.firing.id)}
                 onToggle={() => toggle(g.firing.id)}
                 onAcknowledge={() => onAcknowledge(g.firing.id)}
@@ -410,11 +450,15 @@ function EventCard({
             'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap mt-0.5 ' +
             (recovery
               ? 'bg-emerald-900/30 border-emerald-800 text-emerald-300'
-              : 'bg-amber-900/30 border-amber-700 text-amber-300')
+              : firing.acknowledged_at_ms !== null
+                ? 'bg-slate-800/60 border-slate-700 text-slate-300'
+                : 'bg-amber-900/30 border-amber-700 text-amber-300')
           }
         >
           {recovery ? (
             <Trans>resolved</Trans>
+          ) : firing.acknowledged_at_ms !== null ? (
+            <Trans>acknowledged · {formatAge(firing.created_at)}</Trans>
           ) : (
             <Trans>open · {formatAge(firing.created_at)}</Trans>
           )}

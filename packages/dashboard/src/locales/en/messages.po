@@ -237,6 +237,16 @@ msgstr "A few questions to get the daemon operational. Defaults work for typical
 msgid "Access"
 msgstr "Access"
 
+#. placeholder {0}: formatAge(firing.created_at)
+#: src/pages/Alerts.tsx
+msgid "acknowledged · {0}"
+msgstr "acknowledged · {0}"
+
+#. placeholder {0}: acknowledged.length
+#: src/pages/Alerts.tsx
+msgid "Acknowledged ({0})"
+msgstr "Acknowledged ({0})"
+
 #. placeholder {0}: formatAge(row.acknowledged_at_ms)
 #: src/pages/Alerts.tsx
 msgid "acknowledged {0}"

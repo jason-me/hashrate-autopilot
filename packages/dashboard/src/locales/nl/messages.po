@@ -237,6 +237,16 @@ msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden wer
 msgid "Access"
 msgstr "Toegang"
 
+#. placeholder {0}: formatAge(firing.created_at)
+#: src/pages/Alerts.tsx
+msgid "acknowledged · {0}"
+msgstr "bevestigd · {0}"
+
+#. placeholder {0}: acknowledged.length
+#: src/pages/Alerts.tsx
+msgid "Acknowledged ({0})"
+msgstr "Bevestigd ({0})"
+
 #. placeholder {0}: formatAge(row.acknowledged_at_ms)
 #: src/pages/Alerts.tsx
 msgid "acknowledged {0}"
