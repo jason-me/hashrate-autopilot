@@ -433,11 +433,21 @@ export function Status() {
             }
           />
           <Row k={t`floor`} v={denomination.formatHashrate(s.config_summary.minimum_floor_hashrate_ph)} />
-          {s.below_floor_since && (
-            <div className="text-xs text-amber-400 mt-1">
-              <Trans>below floor since {formatAge(s.below_floor_since)}</Trans>
-            </div>
-          )}
+          {/* #144: gate on current-delivered-below-floor in addition to
+              the daemon's debounce-held `below_floor_since` timer. The
+              timer is kept non-null for ~3 above-floor ticks after a
+              real recovery (FLOOR_DEBOUNCE_TICKS in observe.ts, #10
+              -- guards against Braiins's lagged avg_speed_ph clearing
+              the drought state on a single flickered tick). Showing
+              the warning during that 3-min window misled the operator:
+              "delivered 4 PH/s, but warning says below floor". The
+              alert pipeline still uses the daemon timer untouched. */}
+          {s.below_floor_since &&
+            s.actual_hashrate_ph < s.config_summary.minimum_floor_hashrate_ph && (
+              <div className="text-xs text-amber-400 mt-1">
+                <Trans>below floor since {formatAge(s.below_floor_since)}</Trans>
+              </div>
+            )}
           {/*
            * Market + pricing block - Braiins-sourced numbers only.
            * Fillable-at-target leads (what we'd actually pay). Then
