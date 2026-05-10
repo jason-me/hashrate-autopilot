@@ -91,36 +91,32 @@ two paths:
    the typed-but-unsaved values; saving is a separate explicit step
    (mirrors the Bitcoin Core RPC test flow).
 
-## Step 4: verify retry / mute / snooze behaviour
+## Step 4: verify retry / mute behaviour
 
 Optional sanity check that the full alert pipeline works:
 
 1. With the autopilot running LIVE, briefly stop your Datum gateway.
-2. Wait `pool_outage_blip_tolerance_seconds × 5` (default 5 minutes).
-3. The first LOUD alert should arrive on Telegram. The `/alerts`
-   page records the row with `delivery_status: sent`.
-4. Restart Datum. Within ~1 minute an INFO recovery message arrives
-   (`Datum gateway reachable again - was down 5m`).
-5. Toggle **Mute all Telegram notifications** on Config →
+2. Wait the configured `datum_unreachable_alert_after_minutes`
+   (default 10 minutes; lower it on the Notifications tab if you'd
+   rather not wait).
+3. The first IMPORTANT alert should arrive on Telegram. The
+   `/alerts` page records the row with `delivery_status: sent`.
+4. Restart Datum. Within ~1 minute a recovery message arrives
+   (`Datum gateway reachable again - was down 10m`).
+5. Toggle **Send messages to Telegram** off on Config →
    Notifications. Stop Datum again. The next alert lands on
    `/alerts` with `delivery_status: muted`; no Telegram message
-   fires. Toggle mute back off when done.
-6. From the `/alerts` row's actions column, click `30m` snooze on
-   an active alert. Subsequent retries within that window record
-   as `snoozed`; recovery messages bypass snooze.
+   fires. Toggle the master switch back on when done.
 
 ## Acknowledging from Telegram (#109)
 
-Each LOUD/WARN alert message arrives with two inline buttons:
+Each IMPORTANT / WARNING alert message arrives with an inline button:
 
 - **✓ Mark as seen** - sets the alert's `acknowledged_at_ms`, exactly
   like the dashboard's "mark as seen" button. The retry ladder stops
   immediately; restart-survival applies (see #100). After the tap,
   the message body is edited in place to append a confirmation line
-  and the buttons are removed.
-- **⏸ Snooze 2h** - sets `snoozed_until_ms` to two hours from now.
-  Subsequent retries within that window record as `snoozed`; the
-  recovery message bypasses snooze.
+  and the button is removed.
 
 The daemon reaches Telegram via long-polling `getUpdates`, so it
 works behind home NAT - no public webhook, no port forward. Single
@@ -129,8 +125,9 @@ configured `chat_id` are rejected (the bot is a single-operator
 install; routing arbitrary chat callbacks would let anyone with the
 bot's @-handle ack alerts).
 
-INFO recovery messages don't carry buttons - they already mean
-"system healthy again", nothing to acknowledge.
+INFO firings (pool block credited, Braiins deposit detected /
+available) carry no inline button - they don't escalate, so there's
+no ack flow to drive. Recovery messages similarly carry no button.
 
 ## Operational notes
 

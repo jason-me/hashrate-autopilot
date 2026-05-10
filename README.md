@@ -113,9 +113,11 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   effective rate stays available on the stats card alongside).
 - **Cheap-mode opportunistic scaling** - when the market price (best ask) drops below a configurable
   percentage of the break-even hashprice, the autopilot scales the target up to
-  `cheap_target_hashrate_ph` to capture cheap capacity. Reverts when the market recovers. A
-  `cheap_sustained_window_minutes` knob enables hysteresis: cheap-mode only engages when the rolling
-  average over that window is below threshold, avoiding flap on single-tick spikes.
+  `cheap_target_hashrate_ph` to capture cheap capacity. Reverts when the market recovers. Lives in
+  its own Config → Strategy section with an explicit **Enable cheap mode** checkbox; the three knobs
+  (scale-up target, threshold %, sustained-window minutes) grey out when the checkbox is off. The
+  sustained-window knob is the hysteresis lever: cheap-mode only engages when the rolling average
+  over that window is below the threshold, so a single-tick price spike doesn't flap the target.
 - **Ocean pool integration** - reads hashprice, pool earnings, time-to-payout, Ocean-credited hashrate, and
   recent pool blocks from the Ocean API. Hashprice is plotted historically on the price chart. Ocean-credited
   hashrate is a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. An
@@ -158,12 +160,18 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs (`blockchain.block.header`) - no
   third-party API. A separate **BIP 110 scan card** on the Status page lets you scan the last N blocks
   (configurable up to 2016) and see every signaling block with timestamp, version bits, and explorer link.
-- **Telegram notifications** - LOUD alerts (Datum unreachable, hashrate below floor, Braiins API down,
-  unknown bid, sustained-paused, zero hashrate) and WARN alerts (beta-exit fees) push to a Telegram bot
-  with a 5-attempt retry ladder, paired recovery messages on state-clear, global mute toggle, and per-alert
-  snooze (30m / 2h / 24h). Setup walkthrough at [`docs/setup-telegram.md`](docs/setup-telegram.md). The
-  notifier is structured around a `NotificationSink` interface so a future Nostr / ntfy / email backend
-  can slot in without touching the event detectors. Audit trail at the dedicated `/alerts` page.
+- **Telegram notifications** - three severity tiers across ten event classes. **IMPORTANT** (red, with a
+  retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
+  hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
+  threshold, and the Braiins-side compliance-returned deposit. **WARNING** (amber): Braiins beta-exit
+  fees detected. **INFO** (slate, opt-in good news): pool block credited via TIDES, Braiins deposit
+  detected (mempool / first-confirmation), Braiins deposit available (compliance-cleared and spendable).
+  Each event class has its own opt-out toggle; timer-driven events carry an inline minute threshold so
+  the operator can tune "how long bad before I get paged" per-event. Messages localise to the operator's
+  chosen language (English / Dutch / Spanish, independent of the dashboard's display language). Setup
+  walkthrough at [`docs/setup-telegram.md`](docs/setup-telegram.md). The notifier is structured around a
+  `NotificationSink` interface so a future Nostr / ntfy / email backend can slot in without touching the
+  event detectors. Audit trail at the dedicated `/alerts` page.
 - **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Four
   bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM
   upload up to 200 KB. Plays once per new block; the dashboard tab needs to be open.
@@ -182,18 +190,25 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 ## Alerts
 
-Every notification the daemon records - sent, failed, muted, snoozed, given-up - lands in an append-only
-audit trail at `/alerts`.
+Every notification the daemon records - sent, failed, muted, given-up - lands in an append-only audit
+trail at `/alerts`.
 
 ![Alerts page - audit trail of every notification](docs/images/alerts.jpg)
 
-Filter to unacknowledged only (sticky across reloads), mark them all as seen with a single button, or
-snooze individual rows for 30 min / 2 h / 24 h. LOUD and WARN firings carry inline **Mark as seen** and
-**Snooze 2h** buttons in the Telegram message itself - tapping a button on your phone routes back through
-the bot's `getUpdates` long-poll and updates the row server-side, so the dashboard badge clears even
-without opening the page. INFO recoveries (`✓ Hashrate back at or above floor`, `✓ Zero hashrate`) post
-to the same chat for context but don't carry buttons - there's nothing to dismiss on a "system is healthy
-now" message. The badge on the nav tab counts only unacknowledged firings; recoveries don't bump it.
+Events render as collapsible cards grouped into three buckets: **OPEN** (firing, not yet seen),
+**ACKNOWLEDGED** (you've clicked seen but the bad state hasn't cleared, or it's an INFO one-shot
+like pool-block-credited that has no recovery), and **RESOLVED** (recovery message has paired in).
+Open cards render expanded by default; the other two collapse to a header. A free-text search box
+filters across titles + bodies with hit-highlighting. Filter "unacknowledged only" is sticky across
+reloads, "mark all as seen" clears the OPEN bucket with a single click. Each Telegram firing carries
+an inline **Mark as seen** button; tapping it on your phone routes back through the bot's
+`getUpdates` long-poll and updates the row server-side, so the dashboard badge clears even without
+opening the page. The badge on the nav tab counts only unacknowledged IMPORTANT/WARNING firings;
+INFO and recoveries don't bump it.
+
+A bottom-right **toast** also appears in the dashboard the moment a new alert lands, severity-coloured
+to match (red / amber / slate / emerald for resolved), with a 5 s auto-dismiss for INFO/recoveries and
+15 s for the louder ones. Click to navigate to /alerts, or × to dismiss silently.
 
 Telegram setup is a 60-second walkthrough at [`docs/setup-telegram.md`](docs/setup-telegram.md): chat to
 @BotFather, paste the token, paste your numeric chat id from @userinfobot, click Test connection. If you
@@ -215,11 +230,14 @@ The page is split across four tabs, each grouping fields by intent.
 
 ![Config → Strategy tab](docs/images/config-strategy.jpg)
 
-**Hashrate targets** (target, floor, cheap-mode scale-up target + threshold + sustained-window minutes),
-**Pricing** (the fillable-tracking `overpay_sat_per_eh_day` cushion plus the two safety ceilings
-`max_bid_sat_per_eh_day` and `max_overpay_vs_hashprice_sat_per_eh_day`), **Budget** (per-bid `amount_sat`;
-set to 0 to use the full available wallet balance on each `CREATE_BID`, clamped to Braiins' 1 BTC per-bid
-cap), and **Daemon startup** (boot mode - always dry-run / resume last / always live).
+**Hashrate targets** (just `target_hashrate_ph` + `minimum_floor_hashrate_ph` - the floor below which
+the safety detector escalates), **Cheap mode** (its own section with an explicit Enable checkbox; when
+ticked, the three fields - scale-up target, threshold percent, sustained-window minutes - become
+editable), **Pricing** (the fillable-tracking `overpay_sat_per_eh_day` cushion plus the two safety
+ceilings `max_bid_sat_per_eh_day` and `max_overpay_vs_hashprice_sat_per_eh_day`), **Budget** (per-bid
+`amount_sat`; set to 0 to use the full available wallet balance on each `CREATE_BID`, clamped to
+Braiins' 1 BTC per-bid cap), and **Daemon startup** (boot mode - always dry-run / resume last / always
+live).
 
 ### Pool & Payout
 
@@ -236,10 +254,19 @@ header toggle; CoinGecko / Coinbase / Bitstamp / Kraken).
 
 ![Config → Notifications tab](docs/images/config-notifications.jpg)
 
-**Telegram notifications** (bot token, chat id, optional instance label, retry interval, per-event-class
-mute toggles - nine event types each individually opt-out-able) and **Block-found audible cue** (off by
-default; pick from five bundled cues - cartoon cowbell, glass drop, two metallic clanks, an "Ocean mining
-found a block" voice clip - or upload your own MP3 / OGG / WAV / WebM up to 200 KB).
+**Telegram notifications** - bot token, chat id, optional instance label, retry interval, master
+**Send messages to Telegram** switch, and a language picker (alert copy can run in a different
+language from the dashboard if you'd rather read the chat in English while the UI is in Dutch). Below
+that, ten event-class tiles grouped by source (Datum / Braiins marketplace / Ocean), each with a
+severity pill (IMPORTANT red, WARNING amber, INFO slate) so the operator can tell at a glance which
+bucket each one fires at. Tiles for timer-driven events (Datum unreachable, hashrate floor, zero
+hashrate, API unreachable, sustained-paused, wallet runway) carry an inline minute input so the
+threshold is tunable per event without leaving the page. Every tile has a **Test** button that pushes
+a sample message to Telegram.
+
+**Block-found audible cue** (off by default; pick from five bundled cues - cartoon cowbell, glass
+drop, two metallic clanks, an "Ocean mining found a block" voice clip - or upload your own MP3 / OGG
+/ WAV / WebM up to 200 KB).
 
 ### Display & Logging
 
@@ -249,9 +276,11 @@ found a block" voice clip - or upload your own MP3 / OGG / WAV / WebM up to 200 
 explorer** (separate URL templates for blocks and transactions; preset buttons for mempool.space /
 blockstream.info / blockchair / btcscan / btc.com set both at once, custom self-hosted explorers can fill
 in either independently), **Chart smoothing** (rolling-mean window per-source on the hashrate chart plus
-the price-chart `our bid` / `effective` smoothing), and **Log retention** for the append-only
-`tick_metrics` and `decisions` tables (with a live storage-estimate hint so you can see how big the DB
-will grow before you commit).
+the price-chart `our bid` / `effective` smoothing), **Chart markers** (cap on the max number of bid-event
+markers rendered on the Price chart - over the cap, EDIT_PRICE markers drop out first since they're the
+high-frequency, low-information class), and **Log retention** for the four append-only logs
+(`tick_metrics`, `alerts`, eventful + uneventful `decisions`) with a live storage-estimate hint so you
+can see how big the DB will grow before you commit.
 
 For appliance / Docker setups every configurable field is also overridable via `BHA_*` environment
 variables - priority is `env > db > defaults`, read once at boot and re-validated through the same

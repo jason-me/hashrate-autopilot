@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.5.4"
+version: "1.6.0"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,6 +75,30 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.6.0 - alerts pipeline maturity pass.
+
+  NEW
+  - In-dashboard toast notifications: when a new alert lands, a small toast slides in at the bottom-right with severity-coloured border, severity pill, title, and body preview. Click navigates to /alerts; auto-dismiss timing depends on severity (5 s for INFO and recoveries, 15 s for IMPORTANT / WARNING).
+  - Braiins deposit lifecycle restored: two Telegram messages per deposit - "Detected" when Braiins first observes the on-chain transaction (mempool / first-confirmation), then "Available" 6-12 min later once compliance has cleared and the funds are spendable on the marketplace. A third "Returned" IMPORTANT message fires on the rare case compliance bounces the deposit back.
+  - Alerts page redesign: flat row list replaced with collapsible event cards grouped into OPEN / ACKNOWLEDGED / RESOLVED buckets. Open cards expand by default; the others collapse to a header. Free-text search box filters across titles + bodies with hit-highlighting. Severity badges restored on every row.
+  - Multilingual Telegram messages: alert copy follows the operator's chosen Telegram language (English / Dutch / Spanish), independent of the dashboard's display language.
+  - Notifications config rebuild: every event-class tile carries a severity pill (IMPORTANT red, WARNING amber, INFO slate) matching the chat conventions. Timer-driven events have inline minute thresholds; Datum-unreachable and sustained-paused now have independent config fields (previously both fell out of pool_outage_blip_tolerance_seconds × 5).
+  - Cheap mode now lives in its own section on Config → Strategy with an explicit Enable checkbox - no more "set threshold to 0 to disable" guessing.
+  - Pool-luck step markers on the Hashrate chart: line steps up at every pool-block credit, decays continuously between blocks.
+
+  FIXES
+  - Severity rename ERROR → IMPORTANT; new INFO tier explicitly for opt-in good news (pool block credited, deposit lifecycle).
+  - Recovery alert titles read positive ("Bid active again", not "✓ Bid sustained-paused").
+  - Sustained-paused detector reads the live status, not the lingering last_pause_reason that would keep it firing after recovery.
+  - Wallet-runway threshold accepts fractional days (0.5, 1.5, ...).
+  - Snooze removed entirely; replaced by the simpler ack-only model that survives all flows (dashboard, Telegram button, restart).
+  - Unicode arrows (→) in Telegram messages instead of ASCII (->); matches the rest of the rich-Unicode formatting.
+  - Deposit-detected message reframes compliance screening as the rare case (it's the 3-confirmation typical path, not the 48-hour edge case).
+  - Sticky upgrade banner: the "new version available" prompt now stays pinned at the top of the viewport on scroll.
+  - Chart markers: cap on max bid-event markers rendered; over the cap, EDIT_PRICE markers drop out first.
+
+  Restart Umbrel app after upgrade. First watcher poll silently absorbs already-credited historical deposits, so no Telegram flood - only future deposits produce events.
+
   v1.5.4 - the actual electrs-only fix.
 
   FIX

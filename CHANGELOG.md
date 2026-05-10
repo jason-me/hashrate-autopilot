@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-05-10
+## 2026-05-10 · v1.6.0
 
 ### `[Fix]` Deposit lifecycle: type-mismatch in watcher + restore balance-delta _detected (#143)
 
