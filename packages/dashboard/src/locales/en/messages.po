@@ -1432,6 +1432,10 @@ msgstr "IDs: {0}"
 msgid "important"
 msgstr "important"
 
+#: src/pages/Config.tsx
+msgid "IMPORTANT"
+msgstr "IMPORTANT"
+
 #: src/pages/Status.tsx
 msgid "income/day est."
 msgstr "income/day est."
@@ -1447,6 +1451,10 @@ msgstr "increase"
 #: src/pages/Alerts.tsx
 msgid "info"
 msgstr "info"
+
+#: src/pages/Config.tsx
+msgid "INFO"
+msgstr "INFO"
 
 #: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
@@ -2879,6 +2887,10 @@ msgstr "Wallet runway below"
 #: src/pages/Alerts.tsx
 msgid "warning"
 msgstr "warning"
+
+#: src/pages/Config.tsx
+msgid "WARNING"
+msgstr "WARNING"
 
 #. placeholder {0}: formatDuration(durationOpenMs)
 #: src/pages/Alerts.tsx

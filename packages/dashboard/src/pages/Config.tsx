@@ -9,6 +9,7 @@ import { StaleUrlBanner } from '../components/StaleUrlBanner';
 import {
   api,
   UnauthorizedError,
+  type AlertSeverity,
   type AppConfig,
   type DatumTestResponse,
   type DdnsTestResponse,
@@ -1773,6 +1774,18 @@ type Tile = {
   enabled: boolean;
   setEnabled: (next: boolean) => void;
   extra?: React.ReactNode;
+  /**
+   * #138: severity bucket the tile's event_class fires at. Drives
+   * the small `IMPORTANT` / `WARNING` / `INFO` pill on the tile so
+   * the operator can tell at a glance whether disabling a row
+   * silences a page-someone alert vs an informational ping.
+   *
+   * Source of truth: each detector's `severity:` argument in
+   * `packages/daemon/src/services/alert-evaluator.ts`. The
+   * mapping is static (assigned at code time, not configurable per-
+   * install), so a const lookup is enough — no API call needed.
+   */
+  severity: AlertSeverity;
 };
 
 function EventClassSubscriptions({
@@ -1864,6 +1877,7 @@ function EventClassSubscriptions({
       help: t`Buyer-side gateway has been unreachable for at least this many minutes.`,
       enabled: !disabled.has('datum_unreachable'),
       setEnabled: (n) => toggleClass('datum_unreachable', n),
+      severity: 'IMPORTANT',
       extra: minutesInput(
         'datum_unreachable_alert_after_minutes',
         !disabled.has('datum_unreachable'),
@@ -1878,6 +1892,7 @@ function EventClassSubscriptions({
       help: t`Delivered hashrate has been under your floor for at least this many minutes.`,
       enabled: !disabled.has('hashrate_below_floor'),
       setEnabled: (n) => toggleClass('hashrate_below_floor', n),
+      severity: 'IMPORTANT',
       extra: minutesInput('below_floor_alert_after_minutes', !disabled.has('hashrate_below_floor')),
     },
     {
@@ -1886,6 +1901,7 @@ function EventClassSubscriptions({
       help: t`Effectively zero delivery for at least this many minutes.`,
       enabled: !disabled.has('zero_hashrate'),
       setEnabled: (n) => toggleClass('zero_hashrate', n),
+      severity: 'IMPORTANT',
       extra: minutesInput('zero_hashrate_loud_alert_after_minutes', !disabled.has('zero_hashrate')),
     },
     {
@@ -1894,6 +1910,7 @@ function EventClassSubscriptions({
       help: t`Marketplace API has been unreachable for at least this many minutes.`,
       enabled: !disabled.has('api_unreachable'),
       setEnabled: (n) => toggleClass('api_unreachable', n),
+      severity: 'IMPORTANT',
       extra: minutesInput('api_outage_alert_after_minutes', !disabled.has('api_unreachable')),
     },
     {
@@ -1902,6 +1919,7 @@ function EventClassSubscriptions({
       help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
       enabled: !disabled.has('unknown_bid'),
       setEnabled: (n) => toggleClass('unknown_bid', n),
+      severity: 'IMPORTANT',
     },
     {
       id: 'sustained_paused',
@@ -1909,6 +1927,7 @@ function EventClassSubscriptions({
       help: t`Primary owned bid has been Paused by Braiins for at least this many minutes.`,
       enabled: !disabled.has('sustained_paused'),
       setEnabled: (n) => toggleClass('sustained_paused', n),
+      severity: 'IMPORTANT',
       extra: minutesInput(
         'sustained_paused_alert_after_minutes',
         !disabled.has('sustained_paused'),
@@ -1920,6 +1939,7 @@ function EventClassSubscriptions({
       help: t`Any active owned bid reports fee_rate_pct > 0.`,
       enabled: !disabled.has('beta_exit'),
       setEnabled: (n) => toggleClass('beta_exit', n),
+      severity: 'WARNING',
     },
     {
       id: 'braiins_deposit',
@@ -1928,10 +1948,16 @@ function EventClassSubscriptions({
       // #130's interview - one toggle for "deposit-related events"
       // rather than three sub-toggles. The per-event-class opt-out
       // can still silence individual events for fine-grained tuning.
+      //
+      // Severity pill shows INFO because the typical case (Detected
+      // / Available) is informational; the rare Returned event
+      // upgrades to IMPORTANT, but for the operator-facing toggle
+      // INFO is the more honest baseline.
       label: t`Braiins deposit lifecycle`,
       help: t`Off by default. When on, sends an INFO message when Braiins detects a deposit and another when it's cleared compliance and is spendable. Sends an IMPORTANT message if Braiins's compliance returns the deposit (real money on the line).`,
       enabled: draft.notify_on_braiins_deposit,
       setEnabled: (n) => onChange('notify_on_braiins_deposit', n as never),
+      severity: 'INFO',
     },
     {
       id: 'wallet_runway',
@@ -1942,6 +1968,7 @@ function EventClassSubscriptions({
       label: t`Wallet runway below`,
       help: t`Total Braiins balance ÷ trailing-3h burn rate has dropped below the configured threshold. Off by default; tick the box and pick a day count to enable.`,
       enabled: runwayOn,
+      severity: 'IMPORTANT',
       // Toggling on resets the threshold to 3 days; toggling off
       // collapses to 0 (the daemon's "alert disabled" sentinel).
       setEnabled: (n) =>
@@ -1998,6 +2025,7 @@ function EventClassSubscriptions({
       help: t`Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout.`,
       enabled: draft.notify_on_pool_block_credit,
       setEnabled: (n) => onChange('notify_on_pool_block_credit', n as never),
+      severity: 'INFO',
     },
   ];
 
@@ -2037,6 +2065,11 @@ function EventClassSubscriptions({
             </span>
             {tile.extra}
           </label>
+          {/* #138: severity pill so the operator can tell at a
+              glance whether disabling a tile silences a page-someone
+              alert vs an informational ping. Sits between the label
+              and the Test button; not interactive. */}
+          <SeverityPill severity={tile.severity} />
           {/* Test button: yellow Test pill matching the rest of the
               dashboard's test affordances (Test connection, Test
               sound). Sends a sample Telegram message for this
@@ -2155,6 +2188,37 @@ function EventClassSubscriptions({
         </div>
       </div>
     </fieldset>
+  );
+}
+
+/**
+ * #138: severity badge rendered on each Notifications-tab tile.
+ * Colours match the Telegram-side `formatTelegramBody` prefix
+ * conventions (red `[IMPORTANT]`, amber `[WARNING]`, slate
+ * `[INFO]`) so the operator's two surfaces - chat and config page
+ * - read consistently. Non-interactive; the title attribute
+ * carries the bucket name in a hover-tooltip for screen readers
+ * and the curious.
+ */
+function SeverityPill({ severity }: { severity: AlertSeverity }) {
+  const cls =
+    severity === 'IMPORTANT'
+      ? 'bg-red-500/15 text-red-300 border-red-500/40'
+      : severity === 'WARNING'
+        ? 'bg-amber-400/15 text-amber-300 border-amber-400/40'
+        : 'bg-slate-700/40 text-slate-300 border-slate-600';
+  const label =
+    severity === 'IMPORTANT' ? t`IMPORTANT` : severity === 'WARNING' ? t`WARNING` : t`INFO`;
+  return (
+    <span
+      title={label}
+      className={
+        'inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded border whitespace-nowrap ' +
+        cls
+      }
+    >
+      {label}
+    </span>
   );
 }
 

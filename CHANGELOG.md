@@ -2,6 +2,10 @@
 
 ## 2026-05-10
 
+### `[UI]` Notifications config: severity pill on every event-class tile (#138)
+
+Each tile on Config → Notifications now carries a small `IMPORTANT` (red) / `WARNING` (amber) / `INFO` (slate) pill alongside the label, so the operator can tell at a glance which severity bucket each event fires at without remembering or reading source. Mapping mirrors each detector's `severity:` argument in `alert-evaluator.ts`: datum_unreachable / hashrate_below_floor / zero_hashrate / api_unreachable / unknown_bid / sustained_paused / wallet_runway / braiins_deposit_returned → IMPORTANT; beta_exit → WARNING; pool_block_credited / braiins_deposit_detected / braiins_deposit_available → INFO. The deposit-lifecycle tile carries `INFO` because the typical case (Detected / Available) is informational; the rare Returned event upgrades to IMPORTANT but the tile baseline stays INFO. NL ("BELANGRIJK" / "WAARSCHUWING" / "INFO") and ES ("IMPORTANTE" / "ADVERTENCIA" / "INFO") translations included.
+
 ### `[Fix]` Telegram messages use Unicode `→` instead of ASCII `->` (#137)
 
 The pool-block-credited body and one admin-error string used `->` where the rest of the formatting (bold, emoji, italics) is rich Unicode. Operator caught the visual mismatch in NL: `Jouw aandeel: 0.0133% -> ~41,482 sat`. Fixed in all three locale catalogs (EN / NL / ES) plus the "saved on Config → Notifications" admin error. Daemon log lines (`[ddns] noip push: ${status} ${ip} -> ${hostname}`, `[public-ip] IP changed: ...`) deliberately keep the ASCII arrow for grep-friendliness — they don't reach Telegram.
