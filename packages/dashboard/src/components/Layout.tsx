@@ -85,28 +85,36 @@ export function Layout() {
 
   return (
     <div className="min-h-full flex flex-col">
-      {newBuildAvailable && buildInfo.data && (
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-amber-400 text-slate-900 text-sm py-2 px-4 text-center hover:bg-amber-300 transition cursor-pointer flex items-center justify-center gap-2"
-        >
-          <span>
-            <Trans>
-              New version available (build {__BUILD_NUMBER__} → {buildInfo.data.build}).
-            </Trans>
-          </span>
-          <span className="font-semibold underline">
-            <Trans>Refresh</Trans>
-          </span>
-        </button>
-      )}
-      {/* Top bar: brand on the left, nav tabs in the middle, run-mode +
-          balance + locale + sign-out on the right. Replaces the old
-          left sidebar - the dashboard is dense enough that giving up
-          ~14 rem of permanent left chrome to widen the work area
-          makes a real difference, especially for the new vertical
-          Money panel. */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 backdrop-blur">
+      {/* Sticky cluster: upgrade banner + top nav. Wrapped together so
+          both stay pinned at the top of the viewport on scroll. The
+          banner only renders when a newer build is available; in that
+          case the header sits below it within the same sticky region.
+          Without the wrapper, the banner would scroll away while the
+          header stayed pinned - operator misses the upgrade prompt as
+          soon as they scroll into the charts. */}
+      <div className="sticky top-0 z-30">
+        {newBuildAvailable && buildInfo.data && (
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-amber-400 text-slate-900 text-sm py-2 px-4 text-center hover:bg-amber-300 transition cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>
+              <Trans>
+                New version available (build {__BUILD_NUMBER__} → {buildInfo.data.build}).
+              </Trans>
+            </span>
+            <span className="font-semibold underline">
+              <Trans>Refresh</Trans>
+            </span>
+          </button>
+        )}
+        {/* Top bar: brand on the left, nav tabs in the middle, run-mode +
+            balance + locale + sign-out on the right. Replaces the old
+            left sidebar - the dashboard is dense enough that giving up
+            ~14 rem of permanent left chrome to widen the work area
+            makes a real difference, especially for the new vertical
+            Money panel. */}
+        <header className="bg-slate-900 border-b border-slate-800 backdrop-blur">
         <div className="px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
           <div className="flex items-center gap-3 mr-4">
             <div className="text-amber-400 font-semibold leading-tight">Hashrate Autopilot</div>
@@ -160,7 +168,8 @@ export function Layout() {
             <MobileMenu onSignOut={logout} />
           </div>
         </div>
-      </header>
+        </header>
+      </div>
 
       <main className="flex-1 overflow-auto">
         {/* Use the full viewport width - the operator runs this

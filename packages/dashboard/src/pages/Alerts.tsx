@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/macro';
+import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,7 +15,7 @@ import {
   type AlertRow,
   type AlertSeverity,
 } from '../lib/api';
-import { formatAge, formatTimestamp } from '../lib/format';
+import { formatAge, formatDuration, formatTimestamp } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
 export function Alerts() {
@@ -33,6 +33,11 @@ export function Alerts() {
   useEffect(() => {
     window.localStorage.setItem(UNACK_ONLY_STORAGE_KEY, unackOnly ? '1' : '0');
   }, [unackOnly]);
+
+  // #134 follow-up: free-text search across event titles + bodies.
+  // Pure client-side filter; the highlight rendering wraps matches in
+  // <mark>. Empty query disables both filtering and highlighting.
+  const [searchQuery, setSearchQuery] = useState('');
 
   // #121: cursor pagination. The head page (most-recent 50 rows)
   // refreshes on the same 30s cadence as before. Older pages are
@@ -164,6 +169,13 @@ export function Alerts() {
             <Trans>mark all as seen ({unackedCount})</Trans>
           )}
         </button>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t`Search titles + bodies...`}
+          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 w-48"
+        />
         {alerts.length > 0 && (
           <span className="ml-auto text-xs text-slate-500">
             <Trans>
@@ -192,6 +204,7 @@ export function Alerts() {
       {alerts.length > 0 && (
         <EventGroupedView
           alerts={alerts}
+          query={searchQuery}
           onAcknowledge={(id) => ack.mutate(id)}
         />
       )}
@@ -254,12 +267,33 @@ function groupIntoEvents(alerts: AlertRow[]): AlertEventGroup[] {
 
 function EventGroupedView({
   alerts,
+  query,
   onAcknowledge,
 }: {
   alerts: AlertRow[];
+  query: string;
   onAcknowledge: (id: number) => void;
 }) {
-  const groups = useMemo(() => groupIntoEvents(alerts), [alerts]);
+  const allGroups = useMemo(() => groupIntoEvents(alerts), [alerts]);
+  // #134 follow-up: free-text filter. Match firing.title|body and
+  // recovery.title|body against the lowercased query. Empty query
+  // disables filtering. Highlighting at render time uses the same
+  // query string.
+  const groups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allGroups;
+    return allGroups.filter((g) => {
+      const haystack = [
+        g.firing.title,
+        g.firing.body,
+        g.recovery?.title ?? '',
+        g.recovery?.body ?? '',
+      ]
+        .join('\n')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [allGroups, query]);
   const open = useMemo(() => groups.filter((g) => g.recovery === null), [groups]);
   const resolved = useMemo(() => groups.filter((g) => g.recovery !== null), [groups]);
 
@@ -288,6 +322,7 @@ function EventGroupedView({
               <EventCard
                 key={g.firing.id}
                 group={g}
+                query={query}
                 expandedDefault={true}
                 isToggled={toggled.has(g.firing.id)}
                 onToggle={() => toggle(g.firing.id)}
@@ -308,7 +343,12 @@ function EventGroupedView({
               <EventCard
                 key={g.firing.id}
                 group={g}
-                expandedDefault={false}
+                query={query}
+                // When a search query is active, expand resolved cards
+                // by default too - the operator is hunting for
+                // something specific and wants to see body text without
+                // an extra click.
+                expandedDefault={query.trim().length > 0}
                 isToggled={toggled.has(g.firing.id)}
                 onToggle={() => toggle(g.firing.id)}
                 onAcknowledge={() => onAcknowledge(g.firing.id)}
@@ -323,12 +363,14 @@ function EventGroupedView({
 
 function EventCard({
   group,
+  query,
   expandedDefault,
   isToggled,
   onToggle,
   onAcknowledge,
 }: {
   group: AlertEventGroup;
+  query: string;
   expandedDefault: boolean;
   isToggled: boolean;
   onToggle: () => void;
@@ -352,7 +394,9 @@ function EventCard({
         <SeverityBadge severity={firing.severity} isRecovery={false} />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-            <span className="text-sm text-slate-100">{firing.title}</span>
+            <span className="text-sm text-slate-100">
+              <HighlightText text={firing.title} query={query} />
+            </span>
             <span className="text-xs text-slate-500 whitespace-nowrap">
               {formatTimestamp(firing.created_at, intlLocale)}
             </span>
@@ -379,13 +423,9 @@ function EventCard({
 
       {expanded && (
         <div className="border-t border-slate-800 px-3 py-2 space-y-2 bg-slate-950/40">
-          <EntryRow
-            kind="fired"
-            row={firing}
-            timestampLabel={formatTimestamp(firing.created_at, intlLocale)}
-            ageLabel={formatAge(firing.created_at)}
-            onAcknowledge={onAcknowledge}
-          />
+          {/* Resolved first, Fired below: within the card, the newest
+              entry sits on top so the reading order matches the
+              page-level newest-first ordering. */}
           {recovery && (
             <EntryRow
               kind="resolved"
@@ -393,9 +433,18 @@ function EventCard({
               timestampLabel={formatTimestamp(recovery.created_at, intlLocale)}
               ageLabel={formatAge(recovery.created_at)}
               durationOpenMs={durationOpenMs}
+              query={query}
               onAcknowledge={() => {}}
             />
           )}
+          <EntryRow
+            kind="fired"
+            row={firing}
+            timestampLabel={formatTimestamp(firing.created_at, intlLocale)}
+            ageLabel={formatAge(firing.created_at)}
+            query={query}
+            onAcknowledge={onAcknowledge}
+          />
         </div>
       )}
     </div>
@@ -408,6 +457,7 @@ function EntryRow({
   timestampLabel,
   ageLabel,
   durationOpenMs,
+  query,
   onAcknowledge,
 }: {
   kind: 'fired' | 'resolved';
@@ -415,6 +465,7 @@ function EntryRow({
   timestampLabel: string;
   ageLabel: string;
   durationOpenMs?: number;
+  query: string;
   onAcknowledge: () => void;
 }) {
   return (
@@ -428,11 +479,13 @@ function EntryRow({
           {kind === 'resolved' && durationOpenMs !== undefined && (
             <>
               {' · '}
-              <Trans>was open for {formatAge(Date.now() - durationOpenMs)}</Trans>
+              <Trans>was open for {formatDuration(durationOpenMs)}</Trans>
             </>
           )}
         </div>
-        <div className="text-xs text-slate-300 mt-0.5 break-words max-w-2xl">{row.body}</div>
+        <div className="text-xs text-slate-300 mt-0.5 break-words max-w-2xl">
+          <HighlightText text={row.body} query={query} />
+        </div>
         <div className="mt-1">
           <DeliveryBadge status={row.delivery_status} attempts={row.delivery_attempts} />
         </div>
@@ -527,5 +580,32 @@ function DeliveryBadge({
       {status}
       {attempts > 0 && ` · ${attempts}`}
     </span>
+  );
+}
+
+/**
+ * #134 follow-up: render text with case-insensitive substring matches
+ * wrapped in <mark>. Empty query falls through to plain text. The
+ * regex-escape lets the operator search for strings that contain
+ * regex metacharacters (`.`, `(`, `*`) without breaking the splitter.
+ */
+function HighlightText({ text, query }: { text: string; query: string }) {
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'ig'));
+  const lower = q.toLowerCase();
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === lower ? (
+          <mark key={i} className="bg-amber-400/40 text-amber-100 rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
   );
 }

@@ -2,6 +2,15 @@
 
 ## 2026-05-09
 
+### `[UI]` Sticky upgrade banner + Alerts polish (#134 follow-ups)
+
+Three small things bundled:
+
+1. **Sticky upgrade banner.** The yellow "New version available (build X → Y)" banner used to scroll away with the page; the operator missed the upgrade prompt as soon as they scrolled into the charts. Wrapped the banner + top nav in a single `sticky top-0 z-30` container so both stay pinned at the top of the viewport.
+2. **Alerts entry order swap.** Within an event card, Resolved now sits ABOVE Fired - newest-on-top reading order matches the page-level Open / Resolved sections (which already sort newest-first). Operator caught that the prior order was inverted.
+3. **Alerts: "was open for X" no longer shows the spurious "ago" suffix.** New `formatDuration(ms)` helper renders raw durations as "6m" / "1h 22m" / "2d 5h" without the relative-from-now suffix that `formatAge()` carries. Used by the Resolved entry's "was open for X" line.
+4. **Alerts: free-text search with highlighting.** New search input next to the unack-only filter on the Alerts page header. Matches case-insensitively against firing.title, firing.body, recovery.title, recovery.body. Filter is pure client-side; matched substrings are wrapped in `<mark>` with an amber tint, both in the event-card title and in the entry bodies. When a search is active, resolved cards auto-expand by default so the operator can see body matches without an extra click. NL / ES translations included.
+
 ### `[UI]` Alerts page: event-grouped view with Open / Resolved sections (#134)
 
 The Alerts page was a flat row list - each firing got one row, each recovery got a separate row, the operator visually paired them by matching titles. Restructured into an event-grouped view: each event renders as a card with a header (severity badge + firing title + status pill) and two collapsible entries underneath (Fired + Resolved). Open events sit pinned at the top in their own section; resolved events sit below. Open events render expanded by default; resolved events render collapsed (click the chevron to expand). Per-card expand toggle is component-local React state, no localStorage. Grouping is purely client-side - the existing `/api/alerts` cursor-pagination contract didn't change. The "mark all as seen" + unack-only filter + "load older" pagination all still work at the event level. NL / ES translations included for the new section labels.

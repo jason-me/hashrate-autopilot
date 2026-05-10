@@ -2482,6 +2482,10 @@ msgstr "Scanning…"
 msgid "Search settings..."
 msgstr "Search settings..."
 
+#: src/pages/Alerts.tsx
+msgid "Search titles + bodies..."
+msgstr "Search titles + bodies..."
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Select display currency"
@@ -2875,7 +2879,7 @@ msgstr "Wallet runway below"
 msgid "warning"
 msgstr "warning"
 
-#. placeholder {0}: formatAge(Date.now() - durationOpenMs)
+#. placeholder {0}: formatDuration(durationOpenMs)
 #: src/pages/Alerts.tsx
 msgid "was open for {0}"
 msgstr "was open for {0}"

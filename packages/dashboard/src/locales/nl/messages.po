@@ -2482,6 +2482,10 @@ msgstr "Bezig met scannen…"
 msgid "Search settings..."
 msgstr "Zoek instellingen..."
 
+#: src/pages/Alerts.tsx
+msgid "Search titles + bodies..."
+msgstr "Zoek in titels + bodies..."
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Kies weergavevaluta"
@@ -2875,7 +2879,7 @@ msgstr "Wallet-runway onder"
 msgid "warning"
 msgstr "waarschuwing"
 
-#. placeholder {0}: formatAge(Date.now() - durationOpenMs)
+#. placeholder {0}: formatDuration(durationOpenMs)
 #: src/pages/Alerts.tsx
 msgid "was open for {0}"
 msgstr "was open gedurende {0}"

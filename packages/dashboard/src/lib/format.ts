@@ -182,6 +182,29 @@ export function formatAge(ms: number | null | undefined, now: number = Date.now(
 }
 
 /**
+ * Format a raw duration (in ms) as "Xs", "Xm", "Xh Ym", "Xd Yh" - the
+ * same shape as {@link formatAgeMinutes} but without the trailing
+ * "ago", because the value is a duration not an offset-from-now. Used
+ * by event cards on the Alerts page ("was open for 6m") where the
+ * value is `recovery.created_at - firing.created_at`.
+ */
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || ms < 0) return '-';
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const totalMin = Math.floor(totalSec / 60);
+  if (totalMin < 60) return `${totalMin}m`;
+  const totalHr = Math.floor(totalMin / 60);
+  if (totalHr < 24) {
+    const m = totalMin - totalHr * 60;
+    return m > 0 ? `${totalHr}h ${m}m` : `${totalHr}h`;
+  }
+  const totalDay = Math.floor(totalHr / 24);
+  const h = totalHr - totalDay * 24;
+  return h > 0 ? `${totalDay}d ${h}h` : `${totalDay}d`;
+}
+
+/**
  * Two-unit age at minute resolution - "just now", "5m ago", "18h 22m ago",
  * "2d 5h ago". No seconds (too noisy for static popovers); single-unit
  * {@link formatAge} loses the minute detail past an hour ("18h ago").

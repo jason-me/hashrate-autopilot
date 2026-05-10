@@ -2482,6 +2482,10 @@ msgstr "Escaneando…"
 msgid "Search settings..."
 msgstr "Buscar configuración..."
 
+#: src/pages/Alerts.tsx
+msgid "Search titles + bodies..."
+msgstr "Buscar en títulos + cuerpos..."
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Elige moneda de visualización"
@@ -2875,7 +2879,7 @@ msgstr "Runway de la wallet por debajo de"
 msgid "warning"
 msgstr "advertencia"
 
-#. placeholder {0}: formatAge(Date.now() - durationOpenMs)
+#. placeholder {0}: formatDuration(durationOpenMs)
 #: src/pages/Alerts.tsx
 msgid "was open for {0}"
 msgstr "estuvo abierto durante {0}"
