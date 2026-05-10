@@ -36,8 +36,6 @@ import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { PublicIpService } from './services/public-ip.js';
 import { DdnsUpdaterService } from './services/ddns-updater.js';
-import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher.js';
-import { BraiinsDepositsRepo } from './state/repos/braiins_deposits.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
 import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
@@ -574,6 +572,7 @@ async function bootOperational(
     alertManager,
     tickMetricsRepo,
     poolBlocksRepo,
+    log: (m) => log(m),
   });
   // Rebuild in-memory event state from the alerts table so a daemon
   // restart while a bad state is still active does not fire a
@@ -716,22 +715,14 @@ async function bootOperational(
   ddnsUpdaterRef.value = ddnsUpdater;
   ddnsUpdater.start();
 
-  // #130: Braiins on-chain deposit lifecycle watcher. Polls the
-  // /v1/account/transaction/on-chain endpoint, persists per-deposit
-  // state, and fires Telegram alerts on Detected / Available /
-  // Returned transitions. The toggle (`notify_on_braiins_deposit`)
-  // gates the Telegram POST, but the watcher always polls and
-  // updates the local table so toggling-on later does not flood with
-  // backlog.
-  const braiinsDepositsRepo = new BraiinsDepositsRepo(handle.db);
-  const braiinsDepositWatcher = new BraiinsDepositWatcherService({
-    cfgRef: cfgRefHolder,
-    braiinsClient,
-    depositsRepo: braiinsDepositsRepo,
-    alertManager,
-    log: (m) => log(m),
-  });
-  braiinsDepositWatcher.start();
+  // #132: Braiins-deposit detection moved into AlertEvaluator's
+  // per-tick path (it reads `state.braiins_total_deposited_sat`
+  // deltas). The pre-#132 standalone BraiinsDepositWatcherService +
+  // braiins_deposits table + on-chain-transactions polling are
+  // retired - the on-chain endpoint was producing zero rows in
+  // practice. The migration's table stays as harmless dead weight,
+  // matching the legacy-column precedent
+  // (hibernate_on_expensive_market etc).
 
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
@@ -814,7 +805,6 @@ async function bootOperational(
     btcPriceRefresher.stop();
     publicIpService.stop();
     ddnsUpdater.stop();
-    braiinsDepositWatcher.stop();
     await telegramReceiver.stop();
     await loop.stop();
     try {

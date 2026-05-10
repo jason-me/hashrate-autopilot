@@ -571,6 +571,25 @@ export class TickMetricsRepo {
   }
 
   /**
+   * Most recent non-null `braiins_total_deposited_sat` snapshot.
+   * Used by the deposit-detected alert evaluator (#132) to hydrate
+   * the post-restart baseline so a daemon coming back from downtime
+   * does NOT silently miss a deposit that happened during the gap -
+   * the next live tick's higher balance reads as a delta against the
+   * last persisted tick, not against the current balance.
+   */
+  async latestBraiinsTotalDeposited(): Promise<number | null> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select('braiins_total_deposited_sat')
+      .where('braiins_total_deposited_sat', 'is not', null)
+      .orderBy('tick_at', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    return row?.braiins_total_deposited_sat ?? null;
+  }
+
+  /**
    * Timestamp of the earliest recorded tick, or `null` if the table is
    * empty. Used by the `all` preset to size its aggregation bucket to
    * whatever history actually exists.

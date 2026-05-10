@@ -138,20 +138,20 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
-  // #130: deposit-lifecycle preview. The tile id on the dashboard
-  // (`braiins_deposit`) is a master toggle that gates three real
-  // event classes - the test message previews the typical happy
-  // path's last step (Available), since that's the most common
-  // operator-facing message. Returned would be IMPORTANT; rendering
-  // an IMPORTANT [TEST] alongside a separate INFO [TEST] would be
-  // noisier than the value of testing each variant.
+  // #130 + #132: deposit detection. The lifecycle variants
+  // (Available / Returned) collapsed into a single Detected event in
+  // #132 when the source pivoted from the on-chain endpoint to
+  // tick_metrics deltas - the balance only goes up once the funds
+  // are spendable, so Detected and Available are the same moment in
+  // operator-time. Test message previews exactly that.
   braiins_deposit: (locale) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'INFO',
-      title: c.braiins_deposit_available_title(),
-      body: c.braiins_deposit_available_body({
+      title: c.braiins_deposit_detected_title(),
+      body: c.braiins_deposit_detected_body({
         amount: '0.01000000 BTC (1,000,000 sat)',
+        address_short: null,
       }),
       is_recovery: false,
     };

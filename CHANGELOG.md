@@ -2,6 +2,23 @@
 
 ## 2026-05-09
 
+### `[Fix]` Deposit detection: pivot to tick_metrics deltas, drop the on-chain endpoint dependency (#132 + #133)
+
+The `BraiinsDepositWatcherService` shipped in #130 was polling `/v1/account/transaction/on-chain` and writing to a per-tx_id idempotency table; in practice that endpoint produced zero rows in the operator's setup despite a real 500k-sat deposit landing on the account. Migration 0080's table sat empty; no `[deposits]` log lines anywhere. The signal was actually trivially visible from `tick_metrics.braiins_total_deposited_sat` (which the daemon writes every minute) - just compare adjacent ticks.
+
+Pivoted the detection into `AlertEvaluator.evaluateBraiinsDeposit()` which reads `state.braiins_total_deposited_sat` directly. Lazy baseline hydrated from `TickMetricsRepo.latestBraiinsTotalDeposited()` on the first tick after boot, so a daemon coming back from a downtime gap that bridged a deposit still detects it on the first post-restart tick (the persisted tick_metrics row reflects the pre-gap balance; the live current balance is higher; delta fires). The `Available` and `Returned` lifecycle variants from #130 collapse into a single `braiins_deposit_detected` event - balance only goes up once funds are spendable, so Detected and Available are the same moment in operator-time. Balance-going-down is a rare-but-documented case (compliance return); detector logs it and silently advances baseline rather than fire a misleading "deposit returned" message.
+
+Also #133: every `evaluateBraiinsDeposit()` tick now emits a one-line positive-success summary on the daemon log, regardless of whether anything changed. Silence is no longer ambiguous. Sample lines:
+
+```
+[deposits] tick: balance=4,310,322 sat (no change)
+[deposits] tick: baseline hydrated to 3,810,322 sat (from latest tick_metrics); current=3,810,322
+[deposits] tick: balance=4,810,322 sat (+500,000 sat - firing braiins_deposit_detected)
+[deposits] tick: balance=4,810,322 sat (+500,000 sat, master-toggle off - silent absorb)
+```
+
+Standalone `BraiinsDepositWatcherService` removed; `BraiinsDepositsRepo` + migration 0080's table stay in tree as harmless dead weight per the legacy-column precedent. Test endpoint's `braiins_deposit` sample now previews the Detected variant (was previewing the now-defunct Available variant).
+
 ### `[Fix]` Test message on the Notifications tab now follows `notification_locale` (#131 follow-up)
 
 The Test button next to each event-class tile was rendering hard-coded English samples even when the operator had set `notification_locale = nl` (or `es`). Operator caught it: "I pressed a test message, but I had the language set in Dutch, but I got an English test message." Refactored `notifications-test-event.ts`'s SAMPLE_BUILDERS to be locale-aware - each builder now reads its title + body from the same `getAlertCopy(locale)` catalog the live alert path uses, fed with synthetic-but-plausible args (12m durations, 0.50 / 1.00 PH/s, fee_pct 1.5%, etc). Severity prefix is also locale-aware via `formatTelegramBody(..., locale)`. Net: the Test button now previews exactly what the real alert will look like, in the language the operator picked. Removed the `[SAMPLE]` body-prefix hedge - the `[TEST]` title prefix already disambiguates from a real fired alert in chat history.

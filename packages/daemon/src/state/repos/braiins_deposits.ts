@@ -1,21 +1,17 @@
 /**
- * Repository for the `braiins_deposits` table (#130).
+ * Repository for the `braiins_deposits` table (#130 - DEAD WEIGHT
+ * post-#132).
  *
- * One row per Braiins-side on-chain deposit ever observed by the
- * watcher. The `notified_*` flags are per-event idempotency markers
- * so the same deposit doesn't refire its lifecycle alert on every
- * poll cycle.
- *
- * Returns are detected via a non-null `last_seen_return_tx_id`
- * (per Braiins OpenAPI: `return_tx_id` is "returned deposits only"),
- * which is more reliable than guessing the `DepositStatus` enum
- * mapping. "Available" is best-effort: we use the highest enum value
- * we observe (3 by default, matching the assumed
- * pending/confirming/under-review/completed ordering) AND a null
- * `return_tx_id` as the "deposit is now spendable on Braiins" cue.
- * If empirical Braiins responses use a different mapping, the
- * threshold constant in `services/braiins-deposit-watcher.ts` is the
- * single point of update.
+ * The on-chain-transaction polling design that this table backed was
+ * retired in #132 - the Braiins endpoint produced zero rows in
+ * practice and the per-tick `tick_metrics.braiins_total_deposited_sat`
+ * delta turned out to be a far simpler and more reliable signal. No
+ * code in the daemon writes or reads this table any longer; the
+ * migration (0080) and this repo are kept in tree for schema
+ * continuity, mirroring the legacy-column precedent
+ * (`hibernate_on_expensive_market` and friends). A future cleanup
+ * commit could drop the table via DROP TABLE migration if it ever
+ * matters; for now the cost of leaving it is one empty SQLite table.
  */
 
 import type { Kysely } from 'kysely';
