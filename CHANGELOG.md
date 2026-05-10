@@ -2,6 +2,10 @@
 
 ## 2026-05-10 · v1.6.0
 
+### `[Fix]` Config page header no longer overlaps the global nav (#145)
+
+The Config page's section header (Configuration title + auto-save controls + Strategy / Pool & Payout / Notifications / Display & Logging tab row + search box) used `sticky top-0 z-30`, the same positioning as Layout's own global nav cluster. Two stickies sharing top:0 and z-30 collide; DOM order won, so the page-level header rendered ON TOP of the nav, occluding "Hashrate Autopilot / Status / Alerts / Config" at the top of the screen. Dropped the sticky from Config; it now scrolls normally under the global nav, matching Status / Alerts behaviour. The tab-strip-sticky affordance is gone for now - if it's wanted back, we'll rebuild it inside the global sticky cluster so stacking has a single source.
+
 ### `[Fix]` Status panel: "below floor since Nm" warning gated on current-delivered-below-floor (#144)
 
 Operator screenshot: `delivered 4.06 PH/s`, `floor 1.00 PH/s`, `below floor since 3m ago` -- a 4x-above-floor reading paired with a "below floor" warning. Daemon-side `computeBelowFloorSince` holds the `below_floor_since` timer through a 3-tick recovery hysteresis (`FLOOR_DEBOUNCE_TICKS`) after delivered actually recovers, to guard against Braiins's lagged `avg_speed_ph` resetting the drought clock on a single flickered tick (#10). That debounce is intentional and the alert evaluator's `evaluateBelowFloor` still reads it as the `isBad` predicate. But the dashboard rendered the warning text purely on `below_floor_since != null`, exposing the internal debounce as if it were live state. Gated the text on `actual_hashrate_ph < minimum_floor_hashrate_ph` so a recovered drought clears the warning immediately while leaving the alert pipeline untouched.

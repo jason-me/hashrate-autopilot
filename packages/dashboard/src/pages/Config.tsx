@@ -626,7 +626,14 @@ export function Config() {
           stale URL is a Config-page-side mistake the operator just
           made. */}
       <StaleUrlBanner />
-      <header className="sticky top-0 z-30 -mx-4 px-4 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800 flex flex-wrap items-center gap-3">
+      {/* #145: dropped `sticky top-0 z-30` - it collided with Layout's
+          own sticky-top-0 z-30 nav cluster, and DOM-order put this
+          header on top, occluding the global nav. The header now
+          scrolls normally with the page (same behaviour as Status /
+          Alerts). If sticky tab-row affordance is wanted back, build
+          a tab-strip-only sticky inside Layout's sticky cluster so
+          stacking is single-source. */}
+      <header className="-mx-4 px-4 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl text-slate-100">
             <Trans>Configuration</Trans>
