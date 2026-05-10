@@ -1052,6 +1052,10 @@ msgstr "Uitgeschakeld (geen payout-tracking)"
 msgid "Disabled (sats only)"
 msgstr "Uitgeschakeld (alleen sats)"
 
+#: src/components/AlertToast.tsx
+msgid "Dismiss"
+msgstr "Sluiten"
+
 #: src/pages/Config.tsx
 msgid "Display"
 msgstr "Weergave"
@@ -2364,6 +2368,7 @@ msgstr "Onthoud mij op dit apparaat"
 msgid "Replace file…"
 msgstr "Bestand vervangen…"
 
+#: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx

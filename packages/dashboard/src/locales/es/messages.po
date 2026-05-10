@@ -1052,6 +1052,10 @@ msgstr "Deshabilitado (sin seguimiento de pagos)"
 msgid "Disabled (sats only)"
 msgstr "Desactivado (solo sats)"
 
+#: src/components/AlertToast.tsx
+msgid "Dismiss"
+msgstr "Cerrar"
+
 #: src/pages/Config.tsx
 msgid "Display"
 msgstr "Visualización"
@@ -2364,6 +2368,7 @@ msgstr "Recordarme en este dispositivo"
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
 
+#: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx

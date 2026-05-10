@@ -1052,6 +1052,10 @@ msgstr "Disabled (no payout tracking)"
 msgid "Disabled (sats only)"
 msgstr "Disabled (sats only)"
 
+#: src/components/AlertToast.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
 #: src/pages/Config.tsx
 msgid "Display"
 msgstr "Display"
@@ -2364,6 +2368,7 @@ msgstr "Remember me on this device"
 msgid "Replace file…"
 msgstr "Replace file…"
 
+#: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx

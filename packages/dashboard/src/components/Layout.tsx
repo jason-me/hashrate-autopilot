@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { api } from '../lib/api';
+import { api, type AlertRow } from '../lib/api';
 import { clearPassword } from '../lib/auth';
 import { useBlockFoundSound } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
@@ -14,6 +14,9 @@ import { LanguagePicker } from './LanguagePicker';
 import { BtcSymbol } from './BtcSymbol';
 import { ModeBadge } from './ModeBadge';
 import { SatSymbol } from './SatSymbol';
+import { ToastStack } from './ToastStack';
+
+const TOAST_LAST_SEEN_KEY = 'braiins.alertsLastToastId';
 
 // Nav items are translated at render time. Using `t\`...\`` inside the
 // component (rather than at module load) so the active locale wins -
@@ -47,14 +50,58 @@ export function Layout() {
     refetchInterval: 30_000,
   });
 
-  // #100: un-acknowledged ERROR + WARNING alert count, drives the
-  // small red dot on the /alerts nav tab. Same 30 s cadence as status.
+  // #100 + #142: dual-purpose query. The badge count comes from the
+  // server-computed `unacknowledged_high_severity_count` (independent
+  // of any filter), and the freshly-fetched `alerts[]` list feeds the
+  // toast-stack detector below. We drop the unack-only filter and
+  // bump limit so a burst of arrivals between polls (rare, but
+  // possible) all surface as toasts.
   const alertsHead = useQuery({
     queryKey: ['alerts-head'],
-    queryFn: () => api.alertsList({ unacknowledged_only: true, limit: 1 }),
+    queryFn: () => api.alertsList({ limit: 10 }),
     refetchInterval: 30_000,
   });
   const unreadCount = alertsHead.data?.unacknowledged_high_severity_count ?? 0;
+
+  // #142: in-dashboard toast stack. Tracks the max alert id we've
+  // already shown a toast for via localStorage so a page reload doesn't
+  // replay every recent alert as a fresh toast. The very first
+  // successful poll baselines without firing any toast.
+  const [toasts, setToasts] = useState<AlertRow[]>([]);
+  const lastSeenIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const stored = window.localStorage.getItem(TOAST_LAST_SEEN_KEY);
+    lastSeenIdRef.current = stored !== null ? Number.parseInt(stored, 10) : null;
+  }, []);
+  useEffect(() => {
+    const alerts = alertsHead.data?.alerts;
+    if (!alerts || alerts.length === 0) return;
+    const maxId = alerts.reduce((acc, a) => (a.id > acc ? a.id : acc), 0);
+    if (lastSeenIdRef.current === null) {
+      // First mount baseline: capture the watermark, no toasts.
+      lastSeenIdRef.current = maxId;
+      window.localStorage.setItem(TOAST_LAST_SEEN_KEY, String(maxId));
+      return;
+    }
+    if (maxId <= lastSeenIdRef.current) return;
+    const cutoff = lastSeenIdRef.current;
+    // Push newest-last so the stack grows from the top, matching
+    // ToastStack's bottom-aligned visual order.
+    const fresh = alerts
+      .filter((a) => a.id > cutoff)
+      .sort((a, b) => a.id - b.id);
+    if (fresh.length === 0) return;
+    setToasts((prev) => [...prev, ...fresh]);
+    lastSeenIdRef.current = maxId;
+    window.localStorage.setItem(TOAST_LAST_SEEN_KEY, String(maxId));
+  }, [alertsHead.data]);
+
+  const dismissToast = (id: number) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  const activateToast = (id: number) => {
+    dismissToast(id);
+    navigate('/alerts');
+  };
 
   // #103: poll the daemon's running build number and surface a
   // banner when the dashboard's embedded copy lags behind. Without
@@ -191,6 +238,11 @@ export function Layout() {
           <Trans>changelog</Trans>
         </a>
       </footer>
+      <ToastStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+        onActivate={activateToast}
+      />
     </div>
   );
 }
