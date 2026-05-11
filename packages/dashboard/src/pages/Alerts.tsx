@@ -294,12 +294,14 @@ function EventGroupedView({
       return haystack.includes(q);
     });
   }, [allGroups, query]);
-  // #139: three-state bucket. OPEN = firing, no ack, no recovery (the
-  // "needs my attention" set). ACKNOWLEDGED = operator clicked seen
-  // (here or via Telegram) but no recovery pair has arrived yet -
-  // INFO one-shots like pool-block-credited terminate here forever
-  // since they have no recovery semantics. RESOLVED = recovery pair
-  // exists; ack state is orthogonal at that point.
+  // #139: bucket model. OPEN = firing, no ack, no recovery (the
+  // "needs my attention" set). #153: ACKNOWLEDGED + RESOLVED merged
+  // into a single bucket sorted strictly newest-first across both
+  // states. The boundary between the two states never represented a
+  // time boundary - in the previous two-section layout a 2-min-ago
+  // recovery could appear visually below a 1-day-old ack, breaking
+  // chronological reading. The per-card right-side pill still
+  // distinguishes RESOLVED (emerald) vs ACKNOWLEDGED (slate).
   const open = useMemo(
     () =>
       groups.filter(
@@ -307,14 +309,17 @@ function EventGroupedView({
       ),
     [groups],
   );
-  const acknowledged = useMemo(
+  const done = useMemo(
     () =>
-      groups.filter(
-        (g) => g.recovery === null && g.firing.acknowledged_at_ms !== null,
-      ),
+      groups
+        .filter(
+          (g) =>
+            g.recovery !== null ||
+            (g.recovery === null && g.firing.acknowledged_at_ms !== null),
+        )
+        .sort((a, b) => b.firing.created_at - a.firing.created_at),
     [groups],
   );
-  const resolved = useMemo(() => groups.filter((g) => g.recovery !== null), [groups]);
 
   // Per-card expand/collapse override. Default state is computed at
   // render time: open events expanded, resolved collapsed. The set
@@ -352,42 +357,19 @@ function EventGroupedView({
         </section>
       )}
 
-      {acknowledged.length > 0 && (
+      {done.length > 0 && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-slate-400 mb-2">
-            <Trans>Acknowledged ({acknowledged.length})</Trans>
+            <Trans>Acknowledged and resolved ({done.length})</Trans>
           </h2>
           <div className="space-y-2">
-            {acknowledged.map((g) => (
+            {done.map((g) => (
               <EventCard
                 key={g.firing.id}
                 group={g}
                 query={query}
-                expandedDefault={query.trim().length > 0}
-                isToggled={toggled.has(g.firing.id)}
-                onToggle={() => toggle(g.firing.id)}
-                onAcknowledge={() => onAcknowledge(g.firing.id)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {resolved.length > 0 && (
-        <section>
-          <h2 className="text-xs uppercase tracking-wider text-slate-500 mb-2">
-            <Trans>Resolved ({resolved.length})</Trans>
-          </h2>
-          <div className="space-y-2">
-            {resolved.map((g) => (
-              <EventCard
-                key={g.firing.id}
-                group={g}
-                query={query}
-                // When a search query is active, expand resolved cards
-                // by default too - the operator is hunting for
-                // something specific and wants to see body text without
-                // an extra click.
+                // Collapse by default. Search-active expands so the
+                // operator can scan body text without per-row clicks.
                 expandedDefault={query.trim().length > 0}
                 isToggled={toggled.has(g.firing.id)}
                 onToggle={() => toggle(g.firing.id)}

@@ -242,15 +242,15 @@ msgstr "Acceso"
 msgid "acknowledged · {0}"
 msgstr "confirmado · {0}"
 
-#. placeholder {0}: acknowledged.length
-#: src/pages/Alerts.tsx
-msgid "Acknowledged ({0})"
-msgstr "Confirmado ({0})"
-
 #. placeholder {0}: formatAge(row.acknowledged_at_ms)
 #: src/pages/Alerts.tsx
 msgid "acknowledged {0}"
 msgstr "confirmado {0}"
+
+#. placeholder {0}: done.length
+#: src/pages/Alerts.tsx
+msgid "Acknowledged and resolved ({0})"
+msgstr "Confirmado y resuelto ({0})"
 
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
@@ -2530,11 +2530,6 @@ msgstr "Reemplazar archivo…"
 #: src/pages/Alerts.tsx
 msgid "resolved"
 msgstr "resuelto"
-
-#. placeholder {0}: resolved.length
-#: src/pages/Alerts.tsx
-msgid "Resolved ({0})"
-msgstr "Resueltos ({0})"
 
 #: src/pages/Config.tsx
 msgid "Resolves to:"

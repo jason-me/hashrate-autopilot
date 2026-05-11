@@ -242,15 +242,15 @@ msgstr "Toegang"
 msgid "acknowledged · {0}"
 msgstr "bevestigd · {0}"
 
-#. placeholder {0}: acknowledged.length
-#: src/pages/Alerts.tsx
-msgid "Acknowledged ({0})"
-msgstr "Bevestigd ({0})"
-
 #. placeholder {0}: formatAge(row.acknowledged_at_ms)
 #: src/pages/Alerts.tsx
 msgid "acknowledged {0}"
 msgstr "bevestigd {0}"
+
+#. placeholder {0}: done.length
+#: src/pages/Alerts.tsx
+msgid "Acknowledged and resolved ({0})"
+msgstr "Bevestigd en opgelost ({0})"
 
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
@@ -2530,11 +2530,6 @@ msgstr "Bestand vervangen…"
 #: src/pages/Alerts.tsx
 msgid "resolved"
 msgstr "opgelost"
-
-#. placeholder {0}: resolved.length
-#: src/pages/Alerts.tsx
-msgid "Resolved ({0})"
-msgstr "Opgelost ({0})"
 
 #: src/pages/Config.tsx
 msgid "Resolves to:"
