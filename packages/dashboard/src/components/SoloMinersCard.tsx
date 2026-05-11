@@ -41,7 +41,17 @@ export function SoloMinersCard() {
   // no empty card - operators who haven't opted in see no clutter.
   if (!query.data || !query.data.snapshot.enabled) return null;
 
-  const { entries } = query.data.snapshot;
+  // Sort alphabetically by label (case-insensitive); ties fall back
+  // to natural-order IP comparison so a single-digit-octet IP doesn't
+  // sort after a triple-digit one (192.168.1.9 before 192.168.1.10).
+  // Operator preference: labels carry intent, so they're the primary
+  // key. IP is the tiebreaker for "same label" edge cases.
+  const entries = [...query.data.snapshot.entries].sort((a, b) => {
+    const la = a.device.label.toLowerCase();
+    const lb = b.device.label.toLowerCase();
+    if (la !== lb) return la < lb ? -1 : 1;
+    return compareIpv4(a.device.ip, b.device.ip);
+  });
   if (entries.length === 0) {
     return (
       <section>
@@ -315,6 +325,25 @@ function rejectionClass(pct: number | null): string {
   if (pct >= 10) return 'text-red-300';
   if (pct >= 5) return 'text-amber-300';
   return 'text-slate-200';
+}
+
+function compareIpv4(a: string, b: string): number {
+  // Octet-aware compare so "192.168.1.9" sorts before "192.168.1.10".
+  // For non-IPv4 inputs (e.g. an IPv6 literal or a hostname) we fall
+  // back to a plain string compare, which is fine since the alphabetic
+  // label sort upstream will have handled almost every case anyway.
+  const aIsIp4 = /^\d+\.\d+\.\d+\.\d+$/.test(a);
+  const bIsIp4 = /^\d+\.\d+\.\d+\.\d+$/.test(b);
+  if (aIsIp4 && bIsIp4) {
+    const ap = a.split('.').map(Number);
+    const bp = b.split('.').map(Number);
+    for (let i = 0; i < 4; i++) {
+      const d = (ap[i] ?? 0) - (bp[i] ?? 0);
+      if (d !== 0) return d;
+    }
+    return 0;
+  }
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 function computeRejectionPct(

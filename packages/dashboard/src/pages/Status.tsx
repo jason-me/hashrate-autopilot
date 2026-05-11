@@ -87,7 +87,13 @@ function readStoredHashrateRightAxis(
     raw === 'network_difficulty' ||
     raw === 'pool_hashrate' ||
     raw === 'pool_luck_24h' ||
-    raw === 'pool_luck_7d'
+    raw === 'pool_luck_7d' ||
+    // #149: solo-mining series options. Without these here, picking
+    // one of them and refreshing fell back to 'none' instead of
+    // restoring the operator's selection.
+    raw === 'solo_hashrate' ||
+    raw === 'solo_device_count' ||
+    raw === 'solo_max_temp'
   ) {
     return raw;
   }
@@ -99,11 +105,16 @@ function readStoredPriceRightAxis(fallback: PriceRightAxis): PriceRightAxis {
   const raw = window.localStorage.getItem(PRICE_RIGHT_AXIS_KEY);
   if (
     raw === 'none' ||
+    // effective_rate was missing from this allow-list - pre-existing
+    // bug; operators picking it then refreshing got 'none' back.
+    raw === 'effective_rate' ||
     raw === 'estimated_block_reward' ||
     raw === 'btc_usd_price' ||
     raw === 'ocean_unpaid_sat' ||
     raw === 'paid_total_sat' ||
-    raw === 'lifetime_earnings_sat'
+    raw === 'lifetime_earnings_sat' ||
+    // #149: solo-mining power series.
+    raw === 'solo_power_watts'
   ) {
     return raw;
   }
