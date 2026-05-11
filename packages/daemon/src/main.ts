@@ -593,11 +593,23 @@ async function bootOperational(
   // duplicate Telegram alert. See AlertEvaluator.hydrate JSDoc.
   await alertEvaluator.hydrate(alertsRepo);
 
-  // #109: receive button taps from Telegram messages (Mark as seen /
-  // Snooze) via getUpdates long-poll. Survives missing credentials
+  // #109: receive button taps from Telegram messages (Mark as seen)
+  // via getUpdates long-poll. Survives missing credentials
   // (no token / chat) by sleeping until they're filled in.
+  //
+  // #152: also honours the master `notifications_muted` switch.
+  // Without this gate, an operator running multiple installs against
+  // the same Telegram bot but with mute on for the secondary install
+  // would still race-consume getUpdates events on the secondary -
+  // each Telegram update is delivered to whichever poller wins, and
+  // the secondary's DB doesn't have the corresponding alert row, so
+  // markAcknowledged silently no-ops while the secondary still edits
+  // the Telegram message footer. Result: "acked in Telegram, unacked
+  // on the primary's dashboard." Mute = full disengagement from the
+  // Telegram bot (inbound + outbound) so the primary can poll cleanly.
   const telegramReceiver = new TelegramReceiver({
     getCredentials: () => {
+      if (cfgRefHolder.value.notifications_muted) return null;
       const token = cfgRefHolder.value.telegram_bot_token || secrets.telegram_bot_token || '';
       const chat = cfgRefHolder.value.telegram_chat_id || '';
       return token && chat ? { bot_token: token, chat_id: chat } : null;
