@@ -15,8 +15,8 @@ import {
   type AlertRow,
   type AlertSeverity,
 } from '../lib/api';
-import { formatAge, formatDuration, formatTimestamp } from '../lib/format';
-import { useLocale } from '../lib/locale';
+import { formatAge, formatDuration } from '../lib/format';
+import { useFormatters } from '../lib/locale';
 
 export function Alerts() {
   const qc = useQueryClient();
@@ -416,7 +416,7 @@ function EventCard({
   onToggle: () => void;
   onAcknowledge: () => void;
 }) {
-  const { intlLocale } = useLocale();
+  const fmt = useFormatters();
   const expanded = isToggled ? !expandedDefault : expandedDefault;
   const { firing, recovery } = group;
   const durationOpenMs =
@@ -438,7 +438,7 @@ function EventCard({
               <HighlightText text={firing.title} query={query} />
             </span>
             <span className="text-xs text-slate-500 whitespace-nowrap">
-              {formatTimestamp(firing.created_at, intlLocale)}
+              {fmt.timestamp(firing.created_at)}
             </span>
             <span className="text-[10px] text-slate-500 whitespace-nowrap">
               {formatAge(firing.created_at)}
@@ -474,7 +474,7 @@ function EventCard({
             <EntryRow
               kind="resolved"
               row={recovery}
-              timestampLabel={formatTimestamp(recovery.created_at, intlLocale)}
+              timestampLabel={fmt.timestamp(recovery.created_at)}
               ageLabel={formatAge(recovery.created_at)}
               durationOpenMs={durationOpenMs}
               query={query}
@@ -484,7 +484,7 @@ function EventCard({
           <EntryRow
             kind="fired"
             row={firing}
-            timestampLabel={formatTimestamp(firing.created_at, intlLocale)}
+            timestampLabel={fmt.timestamp(firing.created_at)}
             ageLabel={formatAge(firing.created_at)}
             query={query}
             onAcknowledge={onAcknowledge}

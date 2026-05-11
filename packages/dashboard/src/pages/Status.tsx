@@ -42,14 +42,13 @@ import {
   formatNumber,
   formatSatPerPH,
   formatSats,
-  formatTimestamp,
   formatTimestampUtc,
 } from '../lib/format';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
-import { useDateTimeLocale, useLocale } from '../lib/locale';
+import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { localizedRangeLabel } from '../lib/range-label';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
@@ -117,6 +116,7 @@ export function Status() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
+  const fmt = useFormatters();
   const denomination = useDenomination();
   const { i18n } = useLingui();
   void i18n;
@@ -541,7 +541,7 @@ export function Status() {
                     <td className="py-2 px-3 text-xs">
                       {b.created_at_ms ? (
                         <>
-                          <div className="text-slate-300">{formatTimestamp(b.created_at_ms)}</div>
+                          <div className="text-slate-300">{fmt.timestamp(b.created_at_ms)}</div>
                           <div className="text-[11px] text-slate-500">
                             {formatTimestampUtc(b.created_at_ms)}
                           </div>
@@ -926,6 +926,7 @@ function NextActionFooter({
   nextTickAt: number | null;
   tickIntervalMs: number;
 }) {
+  const fmt = useFormatters();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -944,7 +945,7 @@ function NextActionFooter({
       <span title={tickAt !== null ? formatTimestampUtc(tickAt) : ''}>
         <Trans>last tick:</Trans>{' '}
         <span className="text-slate-400">
-          {tickAt !== null ? formatTimestamp(tickAt) : '-'}
+          {tickAt !== null ? fmt.timestamp(tickAt) : '-'}
         </span>
         {tickAt !== null && (
           <span className="ml-1 text-slate-600">({formatAge(tickAt)})</span>

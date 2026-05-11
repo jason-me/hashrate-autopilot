@@ -38,11 +38,10 @@ import {
   formatAgeMinutes,
   formatCompactNumber,
   formatNumber,
-  formatTimestamp,
   formatTimestampHuman,
   formatTimestampUtc,
 } from '../lib/format';
-import { useDateTimeLocale, useLocale } from '../lib/locale';
+import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { SatSymbol } from './SatSymbol';
 import {
   PoolBlockTooltip,
@@ -1634,6 +1633,8 @@ function RewardEventTooltip({
 }) {
   const { i18n } = useLingui();
   void i18n;
+  void dateTimeLocale;
+  const fmt = useFormatters();
   const { reward, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -1702,7 +1703,7 @@ function RewardEventTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {formatTimestamp(reward.detected_at, dateTimeLocale)}
+        {fmt.timestamp(reward.detected_at)}
         <span className="text-slate-500 ml-2">· {formatAgeMinutes(reward.detected_at)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(reward.detected_at)}</div>
@@ -1743,6 +1744,7 @@ function EventTooltip({
 }) {
   const { i18n } = useLingui();
   void i18n;
+  const fmt = useFormatters();
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -1954,7 +1956,7 @@ function EventTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {formatTimestamp(e.occurred_at)}
+        {fmt.timestamp(e.occurred_at)}
         <span className="text-slate-500 ml-2">· {formatAgeMinutes(e.occurred_at)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(e.occurred_at)}</div>

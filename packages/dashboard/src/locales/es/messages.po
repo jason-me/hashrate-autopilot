@@ -31,10 +31,6 @@ msgstr "- (no registrado este tick)"
 msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger - accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
 msgstr "\"Solo autopilot\" suma lo consumido en las ofertas que el daemon ha etiquetado en su libro contable - exacto para lo que *este* autopilot ha costado. \"Cuenta completa\" suma counters_committed.amount_consumed_sat en cada oferta de /v1/spot/bid - cubre ofertas activas + históricas (incluyendo cualquiera colocada antes de activar el autopilot). Puede retrasarse respecto a la última hora de consumo de ofertas activas."
 
-#: src/pages/Config.tsx
-msgid "\"system default\" follows your browser. The other entries lock to a specific format regardless of browser language."
-msgstr "\"predeterminado del sistema\" sigue tu navegador. Las otras opciones fijan un formato específico sin importar el idioma del navegador."
-
 #: src/pages/Status.tsx
 msgid "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
 msgstr ""
@@ -128,6 +124,10 @@ msgstr "{n} semana"
 #: src/pages/Status.tsx
 msgid "{n} weeks"
 msgstr "{n} semanas"
+
+#: src/pages/Config.tsx
+msgid "{sample} (no grouping)"
+msgstr "{sample} (sin agrupación)"
 
 #: src/lib/format.ts
 msgid "{seconds}s ago"
@@ -948,6 +948,10 @@ msgid "dashboard sign-in"
 msgstr "iniciar sesión en el panel"
 
 #: src/pages/Config.tsx
+msgid "Date layout"
+msgstr "Formato de fecha"
+
+#: src/pages/Config.tsx
 msgid "Datum"
 msgstr "Datum"
 
@@ -1425,8 +1429,8 @@ msgid "How many sats we'd earn from the next block Ocean finds, assuming current
 msgstr "Cuántos sats ganaríamos del próximo bloque que encuentre Ocean, asumiendo que se mantiene el share_log actual. Igual a (next_block_reward * share_log_pct / 100). Verifica contra una recompensa típica de bloque de Ocean (~3,13 BTC)."
 
 #: src/pages/Config.tsx
-msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally - every operator can pick their own."
-msgstr "Cómo se muestran los números y fechas en este navegador. No cambia el idioma de la UI. Se guarda localmente - cada operador puede elegir el suyo."
+msgid "How numbers and dates render in this browser. Month names follow the UI language picker (top-right). Saved locally - every operator can pick their own."
+msgstr "Cómo se muestran los números y las fechas en este navegador. Los nombres de los meses siguen el selector de idioma de la UI (arriba a la derecha). Se guarda localmente - cada operador puede elegir su preferencia."
 
 #: src/pages/Config.tsx
 msgid "How the daemon checks your BTC payout balance. Pick a backend and fill in the connection details. Requires a restart to take effect."
@@ -1851,8 +1855,8 @@ msgid "now"
 msgstr "ahora"
 
 #: src/pages/Config.tsx
-msgid "Number & date format"
-msgstr "Formato de números y fechas"
+msgid "Number format"
+msgstr "Formato numérico"
 
 #: src/pages/Config.tsx
 msgid "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above - the worker identity is auto-derived from it."
@@ -2010,6 +2014,10 @@ msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
 #: src/pages/Config.tsx
 msgid "Optional. When set, every Telegram message from this daemon is prefixed with `[label] ` so you can tell which instance fired the alert if you run more than one daemon against the same bot/chat. Leave empty to send messages without a prefix."
 msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon se antepone con `[etiqueta] ` para que puedas saber qué instancia disparó la alerta si ejecutas más de un daemon contra el mismo bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
+
+#: src/pages/Config.tsx
+msgid "Order, separators, 12h vs 24h. Month names always follow your UI language."
+msgstr "Orden, separadores, 12h frente a 24h. Los nombres de los meses siempre siguen el idioma de la UI."
 
 #: src/pages/Config.tsx
 msgid "Other (generic dyndns2)"
@@ -2671,6 +2679,11 @@ msgstr "Suma a través de ofertas terminales - estado CANCELED o FULFILLED (is_c
 msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
 msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de /v1/spot/bid - cubre ofertas activas + históricas, incluyendo cualquiera que existiera antes de activar el autopilot. Puede retrasarse respecto a la última hora de consumo de ofertas activas (Braiins solo actualiza los contadores comprometidos en cada tick de liquidación horario). Cambia en Config → panel P&L."
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "system default"
+msgstr "predeterminado del sistema"
+
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "target"
@@ -2745,6 +2758,10 @@ msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo 
 #: src/pages/Config.tsx
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses https://api.dynu.com/nic/update; FreeDNS / afraid.org uses https://freedns.afraid.org/nic/update; many self-hosted DDNS scripts speak the same protocol."
 msgstr "El endpoint de actualización compatible con dyndns2 del proveedor. Ejemplos: Dynu usa https://api.dynu.com/nic/update; FreeDNS / afraid.org usa https://freedns.afraid.org/nic/update; muchos scripts DDNS auto-alojados hablan el mismo protocolo."
+
+#: src/pages/Config.tsx
+msgid "Thousands and decimal separators."
+msgstr "Separadores de millares y decimales."
 
 #: src/pages/Config.tsx
 msgid "Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."

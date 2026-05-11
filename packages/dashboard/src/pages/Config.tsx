@@ -19,8 +19,14 @@ import {
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
-import { formatAge, formatNumber } from '../lib/format';
-import { LOCALE_PRESETS, useLocale } from '../lib/locale';
+import { formatAge, formatTimestampSample } from '../lib/format';
+import {
+  DATE_LAYOUT_PRESETS,
+  NUMBER_LOCALE_PRESETS,
+  useDateTimeLocale,
+  useLocale,
+  type DateLayout,
+} from '../lib/locale';
 
 // #98 - auto-save defaults on; toggle persists per-browser.
 const AUTOSAVE_STORAGE_KEY = 'braiins.configAutoSave';
@@ -1626,8 +1632,21 @@ function pickBucketForKey(
  * UI language. UI strings stay English regardless until proper i18n
  * (#1) lands.
  */
+/**
+ * #147: two independent dropdowns - number-separator preset on the
+ * left, date-layout preset on the right. Month-name *language*
+ * follows the UI language picker (top-right of the header) and has
+ * no control here on purpose: an English-UI operator who picks
+ * European number separators still sees `Apr` / `May`, not
+ * `apr` / `mei`.
+ */
 function DisplaySettingsSection() {
-  const { selected, setSelected } = useLocale();
+  const { numberLocale, dateLayout, setNumberLocale, setDateLayout } = useLocale();
+  const dateTimeLocale = useDateTimeLocale();
+  // Fixed sample timestamp for the date-layout preview labels: 2026-04-16, 17:00.
+  // Picked to match the spec's worked example so the picker reads
+  // exactly like the issue body.
+  const sampleMs = new Date(2026, 3, 16, 17, 0, 0).getTime();
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <header className="mb-3">
@@ -1636,35 +1655,65 @@ function DisplaySettingsSection() {
         </h3>
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
-            How numbers and dates render in this browser. Doesn't change the
-            UI language. Saved locally - every operator can pick their own.
+            How numbers and dates render in this browser. Month names follow
+            the UI language picker (top-right). Saved locally - every operator
+            can pick their own.
           </Trans>
         </p>
       </header>
-      <label className="block max-w-md">
-        <span className="block text-sm text-slate-300 mb-1">
-          <Trans>Number &amp; date format</Trans>
-        </span>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-        >
-          {LOCALE_PRESETS.map((p) => (
-            <option key={p.code} value={p.code}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-        <span className="block text-xs text-slate-500 mt-1">
-          <Trans>
-            "system default" follows your browser. The other entries lock
-            to a specific format regardless of browser language.
-          </Trans>
-        </span>
-      </label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Number format</Trans>
+          </span>
+          <select
+            value={numberLocale}
+            onChange={(e) => setNumberLocale(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          >
+            {NUMBER_LOCALE_PRESETS.map((p) => (
+              <option key={p.code} value={p.code}>
+                {numberLocaleLabel(p.code, p.sample)}
+              </option>
+            ))}
+          </select>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>Thousands and decimal separators.</Trans>
+          </span>
+        </label>
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Date layout</Trans>
+          </span>
+          <select
+            value={dateLayout}
+            onChange={(e) => setDateLayout(e.target.value as DateLayout)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          >
+            {DATE_LAYOUT_PRESETS.map((layout) => (
+              <option key={layout} value={layout}>
+                {dateLayoutLabel(layout, sampleMs, dateTimeLocale)}
+              </option>
+            ))}
+          </select>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>Order, separators, 12h vs 24h. Month names always follow your UI language.</Trans>
+          </span>
+        </label>
+      </div>
     </section>
   );
+}
+
+function numberLocaleLabel(code: string, sample: string): string {
+  if (code === 'system') return t`system default`;
+  if (code === 'no-grouping') return t`${sample} (no grouping)`;
+  return sample;
+}
+
+function dateLayoutLabel(layout: DateLayout, sampleMs: number, uiLocale: string): string {
+  if (layout === 'system') return t`system default`;
+  return formatTimestampSample(sampleMs, uiLocale, layout);
 }
 
 /**

@@ -2,23 +2,78 @@
  * Formatting helpers for the dashboard. Prices are displayed in
  * sat/PH/day throughout (API already returns them in that unit).
  *
- * Default locale is read from localStorage (`braiins.displayLocale`)
- * every call so the sidebar selector takes effect without threading
- * `locale` through every component. Pass an explicit locale to
- * override per call.
+ * #147: separators-of-concerns refactor. Two independent format
+ * preferences:
+ *
+ *   - `numberLocale`: drives `Intl.NumberFormat` (thousands / decimal
+ *     separators only). Read from localStorage `braiins.numberLocale`.
+ *   - `dateLayout`: drives date/time layout (order, separators, 12h
+ *     vs 24h). Read from localStorage `braiins.dateLayout`.
+ *
+ * Month-name language follows the *UI language* picker (Lingui),
+ * NOT either of the format preferences - so an English-UI operator
+ * who picks `1.234,56` European separators still sees `Apr` /
+ * `May`, not `apr` / `mei`. See `lib/locale.ts` for the seam.
+ *
+ * Default values are read every call so the sidebar selectors take
+ * effect without threading args through every component. Pass an
+ * explicit locale/options object to override per call.
  */
 
 import { t } from '@lingui/macro';
 
 type Locale = string | undefined;
 
-const LOCALE_STORAGE_KEY = 'braiins.displayLocale';
+const NUMBER_LOCALE_STORAGE_KEY = 'braiins.numberLocale';
+const DATE_LAYOUT_STORAGE_KEY = 'braiins.dateLayout';
 
 function defaultLocale(): Locale {
   if (typeof window === 'undefined') return undefined;
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (!stored || stored === 'auto') return undefined;
+  const stored = window.localStorage.getItem(NUMBER_LOCALE_STORAGE_KEY);
+  if (!stored || stored === 'auto' || stored === 'system') return undefined;
   return stored;
+}
+
+function defaultDateLayout(): DateLayout {
+  if (typeof window === 'undefined') return 'system';
+  const stored = window.localStorage.getItem(DATE_LAYOUT_STORAGE_KEY);
+  if (isDateLayout(stored)) return stored;
+  return 'system';
+}
+
+/**
+ * Discrete date-layout enum. `system` means "let
+ * `toLocaleString(uiLocale)` decide" - the original behaviour, useful
+ * as a no-opinion fallback. The other variants are hand-assembled
+ * from numeric parts so layout + 12h/24h are pinned regardless of
+ * the UI language.
+ */
+export type DateLayout =
+  | 'system'
+  | 'us'
+  | 'eu-spaced-24h'
+  | 'slash-dmy-24h'
+  | 'iso'
+  | 'slash-mdy-12h';
+
+const DATE_LAYOUTS: ReadonlyArray<DateLayout> = [
+  'system',
+  'us',
+  'eu-spaced-24h',
+  'slash-dmy-24h',
+  'iso',
+  'slash-mdy-12h',
+];
+
+function isDateLayout(v: string | null | undefined): v is DateLayout {
+  return v !== null && v !== undefined && (DATE_LAYOUTS as readonly string[]).includes(v);
+}
+
+export interface FormatTimestampOptions {
+  /** UI-language locale (drives month-name language). */
+  uiLocale?: string;
+  /** Layout enum (drives order / separators / 12h vs 24h). */
+  layout?: DateLayout;
 }
 
 export function formatNumber(
@@ -112,19 +167,131 @@ export function formatHashratePH(
   }).format(n)} PH/s`;
 }
 
+/**
+ * Render a timestamp using the operator's date-layout preference.
+ *
+ * Backwards-compatible signature:
+ *   - `formatTimestamp(ms)` reads numberLocale + dateLayout from
+ *     localStorage (legacy default path).
+ *   - `formatTimestamp(ms, "nl-NL")` is the *old* bare-locale form
+ *     and is treated as `{ uiLocale: "nl-NL", layout: 'system' }`.
+ *     Kept so #147's migration can ship without rewriting every
+ *     non-leak call site at once; new call sites should pass the
+ *     options object.
+ *   - `formatTimestamp(ms, { uiLocale, layout })` is the post-#147
+ *     idiomatic form. `uiLocale` drives month-name language;
+ *     `layout` drives ordering / separators / 12h vs 24h.
+ */
 export function formatTimestamp(
   ms: number | null | undefined,
-  locale: Locale = defaultLocale(),
+  opts: Locale | FormatTimestampOptions = {},
 ): string {
   if (!ms) return '-';
-  return new Date(ms).toLocaleString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  const o: FormatTimestampOptions =
+    opts === undefined || typeof opts === 'string'
+      ? { uiLocale: opts ?? undefined, layout: defaultDateLayout() }
+      : opts;
+  const layout: DateLayout = o.layout ?? defaultDateLayout();
+  const uiLocale = o.uiLocale;
+  const d = new Date(ms);
+
+  if (layout === 'system') {
+    return d.toLocaleString(uiLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
+
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  // Month-name in the operator's UI language (Apr / apr / abr / Mai).
+  // Fall back to en-US so the build doesn't break under jsdom in
+  // tests where Intl is partial.
+  const monthShort = new Intl.DateTimeFormat(uiLocale ?? 'en-US', { month: 'short' }).format(d);
+  const Y = d.getFullYear();
+  const M = pad(d.getMonth() + 1);
+  const D = pad(d.getDate());
+  const dayNum = d.getDate();
+  const h24 = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const sec = pad(d.getSeconds());
+  const h12Raw = ((d.getHours() + 11) % 12) + 1;
+  const h12 = pad(h12Raw);
+  const ampm = d.getHours() < 12 ? 'AM' : 'PM';
+
+  let datePart: string;
+  let timePart: string;
+  switch (layout) {
+    case 'us':
+      datePart = `${monthShort} ${dayNum}, ${Y}`;
+      timePart = `${h12Raw}:${min}:${sec} ${ampm}`;
+      break;
+    case 'eu-spaced-24h':
+      datePart = `${dayNum} ${monthShort} ${Y}`;
+      timePart = `${h24}:${min}:${sec}`;
+      break;
+    case 'slash-dmy-24h':
+      datePart = `${D}/${M}/${Y}`;
+      timePart = `${h24}:${min}:${sec}`;
+      break;
+    case 'iso':
+      datePart = `${Y}-${M}-${D}`;
+      timePart = `${h24}:${min}:${sec}`;
+      break;
+    case 'slash-mdy-12h':
+      datePart = `${M}/${D}/${Y}`;
+      timePart = `${h12}:${min}:${sec} ${ampm}`;
+      break;
+  }
+  return `${datePart}, ${timePart}`;
+}
+
+/**
+ * Compact, secondsless variant for the format-picker preview labels
+ * on the Config page. Same layout rules as `formatTimestamp` minus
+ * seconds, so the dropdown options match the canonical "shape
+ * sample" used in #147's spec.
+ */
+export function formatTimestampSample(
+  ms: number,
+  uiLocale: string | undefined,
+  layout: DateLayout,
+): string {
+  if (layout === 'system') {
+    return new Date(ms).toLocaleString(uiLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  const d = new Date(ms);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const monthShort = new Intl.DateTimeFormat(uiLocale ?? 'en-US', { month: 'short' }).format(d);
+  const Y = d.getFullYear();
+  const M = pad(d.getMonth() + 1);
+  const D = pad(d.getDate());
+  const dayNum = d.getDate();
+  const h24 = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const h12Raw = ((d.getHours() + 11) % 12) + 1;
+  const ampm = d.getHours() < 12 ? 'AM' : 'PM';
+  switch (layout) {
+    case 'us':
+      return `${monthShort} ${dayNum}, ${Y}, ${h12Raw}:${min} ${ampm}`;
+    case 'eu-spaced-24h':
+      return `${dayNum} ${monthShort} ${Y}, ${h24}:${min}`;
+    case 'slash-dmy-24h':
+      return `${D}/${M}/${Y}, ${h24}:${min}`;
+    case 'iso':
+      return `${Y}-${M}-${D}, ${h24}:${min}`;
+    case 'slash-mdy-12h':
+      return `${M}/${D}/${Y}, ${h12Raw}:${min} ${ampm}`;
+  }
 }
 
 /**

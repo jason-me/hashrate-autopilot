@@ -29,11 +29,10 @@ import {
   formatAgeMinutes,
   formatCompactNumber,
   formatNumber,
-  formatTimestamp,
   formatTimestampUtc,
 } from '../lib/format';
 import { useDenomination } from '../lib/denomination';
-import { useDateTimeLocale, useLocale } from '../lib/locale';
+import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { localizedRangeLabel } from '../lib/range-label';
 
@@ -1190,6 +1189,7 @@ export function PoolBlockTooltip({
 }) {
   const { i18n } = useLingui();
   void i18n;
+  const fmt = useFormatters();
   const { block, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -1255,7 +1255,7 @@ export function PoolBlockTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {formatTimestamp(block.timestamp_ms, locale)}
+        {fmt.timestamp(block.timestamp_ms)}
         <span className="text-slate-500 ml-2">· {formatAgeMinutes(block.timestamp_ms)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(block.timestamp_ms)}</div>
@@ -1348,6 +1348,8 @@ function RetargetTooltip({
   dateTimeLocale: string | undefined;
   onClose: () => void;
 }) {
+  void dateTimeLocale;
+  const fmt = useFormatters();
   const { i18n } = useLingui();
   void i18n;
   const { event, pinned } = tip;
@@ -1410,7 +1412,7 @@ function RetargetTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {formatTimestamp(event.tick_at, dateTimeLocale)}
+        {fmt.timestamp(event.tick_at)}
         <span className="text-slate-500 ml-2">· {formatAgeMinutes(event.tick_at)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(event.tick_at)}</div>
@@ -1550,6 +1552,7 @@ function PoolLuckStepTooltip({
 }) {
   const { i18n } = useLingui();
   void i18n;
+  const fmt = useFormatters();
   const { event, pinned } = tip;
   const { kind, block, luckBefore, luckAfter, windowMs } = event;
   const ref = useRef<HTMLDivElement | null>(null);
@@ -1612,7 +1615,7 @@ function PoolLuckStepTooltip({
         {directionText}
       </div>
       <div className="text-slate-500 mt-2 text-[11px]">
-        <Trans>block found:</Trans> {formatTimestamp(block.timestamp_ms, locale)}
+        <Trans>block found:</Trans> {fmt.timestamp(block.timestamp_ms)}
       </div>
       <div className="text-slate-500 text-[10px]">
         {formatTimestampUtc(block.timestamp_ms)}
@@ -1620,7 +1623,7 @@ function PoolLuckStepTooltip({
       {kind === 'out' && (
         <div className="text-slate-500 mt-1 text-[11px]">
           <Trans>aged out:</Trans>{' '}
-          {formatTimestamp(block.timestamp_ms + windowMs, locale)}
+          {fmt.timestamp(block.timestamp_ms + windowMs)}
         </div>
       )}
       <div className="mt-2 space-y-0.5 text-slate-300">
