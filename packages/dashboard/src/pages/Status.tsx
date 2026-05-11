@@ -192,6 +192,7 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
+
   const statsQuery = useQuery({
     queryKey: ['stats', chartRange],
     queryFn: () => api.stats(chartRange),
@@ -247,6 +248,24 @@ export function Status() {
     queryFn: () => api.config(),
     staleTime: 60_000,
   });
+
+  // #149: per-tick fleet-aggregated solo-mining series for the chart
+  // right-axis options (solo_hashrate / solo_device_count /
+  // solo_max_temp / solo_power_watts). Only fetched when the master
+  // toggle is on; otherwise the query is disabled and the charts
+  // render no right-axis line. `since` follows the chart range so we
+  // don't pull a week of samples to fill a 3h window.
+  const soloMiningEnabled = configQuery.data?.config?.solo_mining_enabled ?? false;
+  const soloSeriesQuery = useQuery({
+    queryKey: ['solo-fleet-series', chartRange],
+    queryFn: () => {
+      const windowMs = CHART_RANGE_SPECS[chartRange].windowMs ?? 24 * 60 * 60_000;
+      return api.soloFleetSeries(Date.now() - windowMs);
+    },
+    enabled: soloMiningEnabled,
+    refetchInterval: 60_000,
+  });
+  const soloSeries = soloMiningEnabled ? (soloSeriesQuery.data?.rows ?? []) : [];
 
   // Operator availability removed from the UI (API bids bypass 2FA;
   // see research.md §0.9). Backend field remains in case Braiins
@@ -347,6 +366,14 @@ export function Status() {
             <option value="pool_hashrate">{t`pool hashrate`}</option>
             <option value="pool_luck_24h">{t`pool luck (24h)`}</option>
             <option value="pool_luck_7d">{t`pool luck (7d)`}</option>
+            {/* #149: solo-mining series only listed when the master toggle is on. */}
+            {soloMiningEnabled && (
+              <>
+                <option value="solo_hashrate">{t`solo hashrate`}</option>
+                <option value="solo_device_count">{t`solo device count`}</option>
+                <option value="solo_max_temp">{t`solo max temp`}</option>
+              </>
+            )}
           </select>
         </div>
         <HashrateChart
@@ -359,6 +386,7 @@ export function Status() {
           braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
           datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
           rightAxisSeries={hashrateRightAxis}
+          soloSeries={soloSeries}
         />
       </div>
       <div className="space-y-1">
@@ -378,6 +406,10 @@ export function Status() {
             <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
             <option value="paid_total_sat">{t`paid earnings (lifetime)`}</option>
             <option value="lifetime_earnings_sat">{t`lifetime earnings (paid + unpaid)`}</option>
+            {/* #149: solo power (W) only listed when the master toggle is on. */}
+            {soloMiningEnabled && (
+              <option value="solo_power_watts">{t`solo power (W)`}</option>
+            )}
           </select>
         </div>
         <PriceChart
@@ -394,6 +426,7 @@ export function Status() {
           }
           priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
           rightAxisSeries={priceRightAxis}
+          soloSeries={soloSeries}
           rewardEvents={rewardEventsQuery.data?.events ?? EMPTY_REWARD_EVENTS}
           ourBlocks={oceanQuery.data?.our_recent_blocks ?? EMPTY_OUR_BLOCKS}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}

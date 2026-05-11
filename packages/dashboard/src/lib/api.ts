@@ -415,6 +415,18 @@ export interface SoloScanResponse {
   error: string | null;
 }
 
+export interface SoloFleetSeriesRow {
+  tick_at: number;
+  total_hashrate_ghs: number | null;
+  total_power_w: number | null;
+  max_temp_c: number | null;
+  device_count: number;
+}
+
+export interface SoloFleetSeriesResponse {
+  rows: SoloFleetSeriesRow[];
+}
+
 export interface SoloMinersResponse {
   devices: SoloMinerDevice[];
   snapshot: {
@@ -656,6 +668,10 @@ export const api = {
     request<{ ok: boolean }>(`/api/solo-miners/${id}`, { method: 'DELETE' }),
   scanSoloMiners: () =>
     request<SoloScanResponse>('/api/solo-miners/scan', { method: 'POST' }),
+  soloFleetSeries: (sinceMs?: number) => {
+    const q = sinceMs !== undefined ? `?since=${sinceMs}` : '';
+    return request<SoloFleetSeriesResponse>(`/api/solo-miners/series${q}`);
+  },
   staleUrls: () => request<StaleUrlsResponse>('/api/stale-urls'),
   cancelStaleUrlBid: (bidId: string) =>
     request<{ ok: boolean; error?: string }>('/api/stale-urls/cancel', {

@@ -140,6 +140,23 @@ export async function registerSoloMinersRoute(
     return { ok: true };
   });
 
+  // GET /api/solo-miners/series?since=<ms> - per-tick aggregated
+  // series for the chart right-axis options. Returns one row per
+  // tick_at with summed hashrate (GH/s), summed power (W), max
+  // temperature (°C) across {temp_c, vr_temp_c}, and the active
+  // device count. Default `since` = now() - 24h.
+  app.get<{ Querystring: { since?: string } }>(
+    '/api/solo-miners/series',
+    async (req) => {
+      const sinceRaw = Number.parseInt(req.query.since ?? '', 10);
+      const since = Number.isFinite(sinceRaw) && sinceRaw > 0
+        ? sinceRaw
+        : Date.now() - 24 * 60 * 60 * 1000;
+      const rows = await deps.soloMinersRepo.fleetSeriesSince(since);
+      return { rows };
+    },
+  );
+
   // POST /api/solo-miners/scan - one-shot scan of the daemon's local
   // /24 for AxeOS-shaped responses. Returns a candidate list with
   // ASIC + version + hashrate readings; the dashboard renders a

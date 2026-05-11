@@ -2767,6 +2767,18 @@ msgstr "Signaleert BIP 110 (Reduced Data softfork)"
 msgid "signing in…"
 msgstr "bezig met aanmelden…"
 
+#: src/pages/Status.tsx
+msgid "solo device count"
+msgstr "solo apparaataantal"
+
+#: src/pages/Status.tsx
+msgid "solo hashrate"
+msgstr "solo hashrate"
+
+#: src/pages/Status.tsx
+msgid "solo max temp"
+msgstr "solo max temp"
+
 #: src/pages/Config.tsx
 msgid "Solo miner offline / zero hashrate"
 msgstr "Solo-miner offline / nul hashrate"
@@ -2792,6 +2804,10 @@ msgstr "Solo-miners"
 #: src/pages/Config.tsx
 msgid "Solo miners (Bitaxe / AxeOS)"
 msgstr "Solo-miners (Bitaxe / AxeOS)"
+
+#: src/pages/Status.tsx
+msgid "solo power (W)"
+msgstr "solo vermogen (W)"
 
 #: src/components/SoloMinersCard.tsx
 msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."

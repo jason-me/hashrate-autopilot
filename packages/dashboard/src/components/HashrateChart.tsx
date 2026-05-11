@@ -162,7 +162,22 @@ export type HashrateRightAxis =
   | 'network_difficulty'
   | 'pool_hashrate'
   | 'pool_luck_24h'
-  | 'pool_luck_7d';
+  | 'pool_luck_7d'
+  // #149: solo-mining fleet series. Fed from /api/solo-miners/series
+  // (separate query, not from MetricPoint). All three render in the
+  // shared right-axis purple.
+  | 'solo_hashrate'
+  | 'solo_device_count'
+  | 'solo_max_temp';
+
+/** Per-tick aggregated fleet series row from /api/solo-miners/series. */
+export interface SoloSeriesRow {
+  tick_at: number;
+  total_hashrate_ghs: number | null;
+  total_power_w: number | null;
+  max_temp_c: number | null;
+  device_count: number;
+}
 
 interface RightAxisSpec {
   /** Per-point values pulled off MetricPoint. */
@@ -185,6 +200,7 @@ export const HashrateChart = memo(function HashrateChart({
   braiinsSmoothingMinutes = 1,
   datumSmoothingMinutes = 1,
   rightAxisSeries = 'none',
+  soloSeries = [],
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -214,6 +230,8 @@ export const HashrateChart = memo(function HashrateChart({
    *  When the chosen series has no non-null values in the visible
    *  range the axis silently hides itself. */
   rightAxisSeries?: HashrateRightAxis;
+  /** #149: per-tick aggregated solo-mining fleet series; only used when rightAxisSeries is one of the `solo_*` variants. */
+  soloSeries?: ReadonlyArray<SoloSeriesRow>;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -470,6 +488,42 @@ export const HashrateChart = memo(function HashrateChart({
             axisLabel: `pool ${denomination.hashrateSuffix}`,
             stroke: '#c084fc',
           };
+        case 'solo_hashrate': {
+          // Map per-tick fleet series onto the same x-axis as the
+          // left series. Use the points' tick_at as keys and project
+          // the SUM(hashrate_*_ghs across devices). Ghs -> Th/s for
+          // tile readability; format follows the same compact rules
+          // as the other right-axis number tiles.
+          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.total_hashrate_ghs]));
+          return {
+            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            formatTick: (v) => {
+              if (v >= 1e6) return `${(v / 1e6).toFixed(2)} PH/s`;
+              if (v >= 1000) return `${(v / 1000).toFixed(2)} TH/s`;
+              return `${v.toFixed(0)} GH/s`;
+            },
+            axisLabel: 'solo hashrate',
+            stroke: '#c084fc',
+          };
+        }
+        case 'solo_device_count': {
+          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.device_count]));
+          return {
+            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            formatTick: (v) => v.toFixed(0),
+            axisLabel: 'solo devices',
+            stroke: '#c084fc',
+          };
+        }
+        case 'solo_max_temp': {
+          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.max_temp_c]));
+          return {
+            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            formatTick: (v) => `${v.toFixed(1)} °C`,
+            axisLabel: 'solo max temp',
+            stroke: '#c084fc',
+          };
+        }
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
           // Gap-based pool luck, computed per tick on the daemon side
@@ -673,6 +727,7 @@ export const HashrateChart = memo(function HashrateChart({
     braiinsSmoothingMinutes,
     datumSmoothingMinutes,
     rightAxisSeries,
+    soloSeries,
     denomination,
     intlLocale,
     chartHeight,

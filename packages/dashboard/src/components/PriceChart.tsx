@@ -144,7 +144,18 @@ export type PriceRightAxis =
   | 'btc_usd_price'
   | 'ocean_unpaid_sat'
   | 'paid_total_sat'
-  | 'lifetime_earnings_sat';
+  | 'lifetime_earnings_sat'
+  // #149: solo-mining total power draw (W) across the fleet.
+  | 'solo_power_watts';
+
+/** Per-tick aggregated fleet series row from /api/solo-miners/series. */
+export interface SoloSeriesRow {
+  tick_at: number;
+  total_hashrate_ghs: number | null;
+  total_power_w: number | null;
+  max_temp_c: number | null;
+  device_count: number;
+}
 
 // Matches HashrateChart's PADDING_RIGHT_WITH_SHARE_LOG (80) so the
 // right-axis tick column lines up vertically across both stacked
@@ -199,6 +210,7 @@ export const PriceChart = memo(function PriceChart({
   shareLogPct = null,
   markersHiddenKind = null,
   markersHiddenCount = 0,
+  soloSeries = [],
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -280,6 +292,8 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenKind?: null | 'edit_price' | 'all';
   /** #123: how many markers were dropped (for the inline hint text). */
   markersHiddenCount?: number;
+  /** #149: per-tick aggregated solo-mining fleet series; used when rightAxisSeries == 'solo_power_watts'. */
+  soloSeries?: ReadonlyArray<SoloSeriesRow>;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -565,7 +579,10 @@ export const PriceChart = memo(function PriceChart({
         case 'effective_rate':
           return {
             values: points.map((p) => effectiveByTick.get(p.tick_at) ?? null),
-            stroke: COLOR_EFFECTIVE,
+            // #149: right-axis colour convention - operator wants
+            // every right-axis series rendered in a consistent purple
+            // since only one ever shows at a time. Was green (#34d399).
+            stroke: '#c084fc',
             axisLabel: 'effective (sat/PH/day)',
             formatTick: (v) =>
               new Intl.NumberFormat(intlLocale, {
@@ -614,6 +631,19 @@ export const PriceChart = memo(function PriceChart({
             axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
+        case 'solo_power_watts': {
+          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.total_power_w]));
+          return {
+            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            stroke: '#c084fc',
+            axisLabel: 'solo power (W)',
+            // Watts displayed without the `k` shortening - home Bitaxe
+            // fleets are typically 15-100W where kW scale would round
+            // to zero.
+            formatTick: (v) =>
+              `${new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 1 }).format(v)} W`,
+          };
+        }
         case 'lifetime_earnings_sat':
           return {
             values: points.map((p) =>
@@ -897,7 +927,7 @@ export const PriceChart = memo(function PriceChart({
         );
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight };
-  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, denomination, intlLocale]);
+  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];

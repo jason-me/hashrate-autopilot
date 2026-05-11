@@ -243,6 +243,81 @@ export class SoloMinersRepo {
       .executeTakeFirst();
     return Number(result.numDeletedRows ?? 0);
   }
+
+  /**
+   * #149: aggregated per-tick fleet series for the chart right-axis.
+   * One row per `tick_at`, summed / maxed across the devices that
+   * reported data for that tick. Used by `GET /api/solo-miners/series`
+   * which feeds the four new chart right-axis options.
+   */
+  async fleetSeriesSince(since_tick_at: number): Promise<
+    Array<{
+      tick_at: number;
+      total_hashrate_ghs: number | null;
+      total_power_w: number | null;
+      max_temp_c: number | null;
+      device_count: number;
+    }>
+  > {
+    const rows = await this.db
+      .selectFrom('solo_miner_samples')
+      .where('tick_at', '>=', since_tick_at)
+      .groupBy('tick_at')
+      .select((eb) => [
+        'tick_at',
+        eb.fn.sum<number | null>('hashrate_10m_ghs').as('hr_10m_sum'),
+        eb.fn.sum<number | null>('hashrate_1m_ghs').as('hr_1m_sum'),
+        eb.fn.sum<number | null>('hashrate_instant_ghs').as('hr_instant_sum'),
+        eb.fn.sum<number | null>('power_w').as('power_sum'),
+        eb.fn.max<number | null>('temp_c').as('temp_max'),
+        eb.fn.max<number | null>('vr_temp_c').as('vr_temp_max'),
+        eb.fn
+          .sum<number>(
+            eb
+              .case()
+              .when(
+                eb.and([
+                  eb('reachable', '=', 1),
+                  eb.or([
+                    eb('hashrate_10m_ghs', '>', 0),
+                    eb('hashrate_1m_ghs', '>', 0),
+                    eb('hashrate_instant_ghs', '>', 0),
+                  ]),
+                ]),
+              )
+              .then(1)
+              .else(0)
+              .end(),
+          )
+          .as('active_count'),
+      ])
+      .orderBy('tick_at', 'asc')
+      .execute();
+    return rows.map((r) => {
+      const hr =
+        coalesceNum(r.hr_10m_sum) ?? coalesceNum(r.hr_1m_sum) ?? coalesceNum(r.hr_instant_sum);
+      const temp = maxNullable(coalesceNum(r.temp_max), coalesceNum(r.vr_temp_max));
+      return {
+        tick_at: Number(r.tick_at),
+        total_hashrate_ghs: hr,
+        total_power_w: coalesceNum(r.power_sum),
+        max_temp_c: temp,
+        device_count: Number(r.active_count ?? 0),
+      };
+    });
+  }
+}
+
+function coalesceNum(v: number | null | undefined): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function maxNullable(a: number | null, b: number | null): number | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.max(a, b);
 }
 
 function toRow(row: {
