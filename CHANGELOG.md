@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[Docs]` Hero "delivered" tooltip + IP/host column widened to fit an IPv4 (#156)
+
+Two related polish items. (1) Hero `DELIVERED` number wrapped in a Tooltip explaining that it shows Braiins's `state_estimate.avg_speed_ph` (reacts to CREATE/EDIT_SPEED within ~3 min) while the Hashrate-chart orange line plots a different signal derived from the consumed-sat counter (Δconsumed / (bid × Δt)) - real billing, but lags because matched shares have to accumulate. The two read different numbers right after a capacity bump and that's working as intended (#52 chose the counter signal so the chart goes to zero correctly during a Datum outage). NL and ES translations included. (2) Solo-miners device-row IP/host column was at `w-36` (144px) which truncated `192.168.1.127` mid-octet on mobile. Bumped to `w-44` (176px) - one extra character of mono space. Label still has its `min-w-[8rem]` floor so the bump doesn't squeeze Label on narrow viewports.
+
 ### `[Docs]` Overpay-above-fillable help: drop the "single-digit values are fine" recommendation
 
 Operator caught that the help text under `Overpay above fillable` ended with "Single-digit values are fine on a stable market." which reads as concrete advice. Recommending a specific overpay budget isn't the dashboard's place — it depends on each operator's risk tolerance, wallet runway, and how much trading noise they're willing to absorb. Reworded the trailing sentence to describe the mechanical tradeoff only ("Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)") without prescribing a value range. NL + ES updated.
