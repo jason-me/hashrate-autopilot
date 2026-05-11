@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[Fix]` DDNS: DuckDNS auto-update never fired (#150)
+
+The DDNS updater's `tick()` guard required `provider && hostname && username && credential` to all be truthy before issuing a push. DuckDNS doesn't use `username` (its wire protocol is `?domains=<sub>&token=<credential>&ip=<ip>`), and the dashboard correctly hides the username field for DuckDNS (`Config.tsx` `hasUsernameField` only matches `noip`/`dyndns2`). So `cfg.ddns_username` was empty for any clean DuckDNS install, the guard short-circuited every tick, and auto-push silently stopped firing. The manual Test connection button worked because it bypasses `tick()` entirely. Operator caught it - a DuckDNS-configured daemon was showing `Last successful push: 15h ago` while a sibling daemon on `dyndns2` was pushing every 5 min normally. Fix is a one-line predicate: `const requiresUsername = provider === 'noip' || provider === 'dyndns2';` and only then `(requiresUsername && !username)` participates in the disabled check. No regression for noip/dyndns2; `pushDuckDns()` itself never read `username`.
+
 ### `[Fix]` Solo-mining: integer-tick mode for the device-count right-axis series (#149 follow-up)
 
 Operator picked `solo device count` on 3h, all three devices were healthy (count = 3 every tick), the Y-axis rendered as `3 / 3 / 3 / 3` stacked four times. On 24h the same chart correctly showed 0/1/2/3/4 because a brief dropout introduced variation. Root cause: `niceYTicks` for a constant series degenerated into a tight band (2.97-3.03) with seven 0.01-step ticks; `formatTick: v => v.toFixed(0)` then rounded all of them to "3". Added a `tickHint: 'integer'` field to the right-axis spec; when set, the tick generator builds integer-only ticks from 0 up to `max(observed + 1, 3)` so the band always has at least a 0-1-2-3 frame. Applied to `solo_device_count`. The non-integer solo series (hashrate, max temp, power) stay on the existing nice-tick path.

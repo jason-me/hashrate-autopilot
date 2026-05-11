@@ -127,7 +127,15 @@ export class DdnsUpdaterService {
     const username = cfg.ddns_username;
     const credential = cfg.ddns_credential;
 
-    if (!provider || !hostname || !username || !credential) {
+    // #150: DuckDNS uses only `credential` (the per-account token);
+    // `username` is not part of its wire protocol. The dashboard
+    // hides the username field for DuckDNS (Config.tsx
+    // `hasUsernameField`), so for a clean DuckDNS setup
+    // `cfg.ddns_username` is empty. A blanket `!username` guard would
+    // disable auto-push for every DuckDNS install. Match the
+    // dashboard's per-provider rule here.
+    const requiresUsername = provider === 'noip' || provider === 'dyndns2';
+    if (!provider || !hostname || !credential || (requiresUsername && !username)) {
       // Disabled or incompletely configured. Reflect that in the
       // snapshot so the dashboard can render "not configured" cleanly,
       // but don't touch last_pushed_* - that history belongs to the
