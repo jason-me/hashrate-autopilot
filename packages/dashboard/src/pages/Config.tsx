@@ -1887,9 +1887,17 @@ function SoloMinersSection({
                         the previous "remove" text button into a single-
                         glyph action, with the confirm() dialog kept as
                         the destructive guardrail. */}
+                    {/* Column widths picked so the two text inputs
+                        share the row roughly 60/40 in favour of Label.
+                        Was: Label uncapped + IP at w-48 (192px), which
+                        on mobile left Label squeezed to ~50px showing
+                        only "BitA" of a 7-char "BitAxe1" label. Now
+                        Label gets its own w-32 minimum and IP shrinks
+                        to w-36 (just enough for 13-char "192.168.1.127"
+                        in monospace at text-xs). */}
                     <th className="text-left font-normal py-1 pr-3 w-8"><Trans>On</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3"><Trans>Label</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3 w-48"><Trans>IP / host</Trans></th>
+                    <th className="text-left font-normal py-1 pr-3 min-w-[8rem]"><Trans>Label</Trans></th>
+                    <th className="text-left font-normal py-1 pr-3 w-36"><Trans>IP / host</Trans></th>
                     <th className="w-8"></th>
                   </tr>
                 </thead>
@@ -2872,16 +2880,18 @@ function EventClassSubscriptions({
           (muted ? 'border-slate-800 opacity-60' : 'border-slate-800')
         }
       >
-        {/* flex-wrap: on narrow viewports the severity pill + Test
-            button drop to a second row underneath the checkbox+label,
-            instead of squeezing the label or overflowing the right
-            margin. `flex-1` on the label still claims remaining space
-            so labels with inline minute inputs (e.g. wallet runway)
-            don't shrink unnecessarily on wide screens. */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Tile redesign for tighter mobile fit. Header row is just
+            checkbox + label + severity pill + Test button; the inline
+            minute / day input (`tile.extra`) gets its own row below,
+            indented under the label. The prior single-row layout had
+            the input nested INSIDE the label as a flex sibling, which
+            on narrow viewports overlapped with the severity pill
+            because both jockeyed for the right edge. Help text stays
+            on the last row, full-width under the label indent. */}
+        <div className="flex items-start gap-2">
           <label
             className={
-              'flex items-center gap-2 flex-1 min-w-0 ' +
+              'flex items-start gap-2 flex-1 min-w-0 ' +
               (muted ? 'cursor-default' : 'cursor-pointer')
             }
           >
@@ -2890,31 +2900,27 @@ function EventClassSubscriptions({
               checked={tile.enabled}
               onChange={(e) => tile.setEnabled(e.target.checked)}
               disabled={muted}
-              className="accent-amber-400 h-4 w-4 flex-shrink-0"
+              className="accent-amber-400 h-4 w-4 flex-shrink-0 mt-0.5"
             />
-            <span className="text-sm text-slate-100 font-semibold">
+            <span className="text-sm text-slate-100 font-semibold leading-tight">
               {tile.label}
             </span>
-            {tile.extra}
           </label>
-          {/* #138: severity pill so the operator can tell at a
-              glance whether disabling a tile silences a page-someone
-              alert vs an informational ping. Sits between the label
-              and the Test button; not interactive. */}
           <SeverityPill severity={tile.severity} />
-          {/* Test button: yellow Test pill matching the rest of the
-              dashboard's test affordances (Test connection, Test
-              sound). Sends a sample Telegram message for this
-              event class through the saved bot. */}
           <button
             type="button"
             onClick={() => testEvent.mutate(tile.id)}
             disabled={pendingTest || muted}
-            className="px-2 py-1 text-xs rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-40 whitespace-nowrap"
+            className="px-2 py-1 text-xs rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-40 whitespace-nowrap flex-shrink-0"
           >
             {pendingTest ? <Trans>Sending…</Trans> : <Trans>Test</Trans>}
           </button>
         </div>
+        {tile.extra && (
+          <div className="mt-2 ml-6" onClick={(e) => e.stopPropagation()}>
+            {tile.extra}
+          </div>
+        )}
         <p className="text-xs text-slate-500 mt-1 ml-6">{tile.help}</p>
         {showResult && (
           <p
