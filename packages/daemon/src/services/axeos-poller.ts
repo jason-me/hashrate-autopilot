@@ -81,8 +81,16 @@ export class AxeOSPoller {
    * One iteration. Called from the main daemon tick loop. Never
    * throws - any per-device error is captured into that device's
    * snapshot entry as `reachable: false, error: <message>`.
+   *
+   * `canonicalTickAt` (optional, post-#149-part4 follow-up) lets
+   * the caller pin the persisted sample's tick_at to the same
+   * value `tick_metrics` uses for the same tick. Without it, each
+   * subsystem captured its own `Date.now()` and produced ~500ms-
+   * 1s drift between the two tables - which broke the chart's
+   * exact-match `tick_at` join and rendered the new right-axis
+   * series empty even with thousands of samples in the table.
    */
-  async tick(): Promise<void> {
+  async tick(canonicalTickAt?: number): Promise<void> {
     const cfg = this.options.cfgRef.value;
     if (!cfg.solo_mining_enabled) {
       this.snapshot = { enabled: false, entries: [] };
@@ -95,7 +103,7 @@ export class AxeOSPoller {
       return;
     }
 
-    const tickAt = this.now();
+    const tickAt = canonicalTickAt ?? this.now();
     const results = await Promise.allSettled(
       devices.map(async (d) => ({ device: d, result: await this.client.getSystemInfo(d.ip) })),
     );

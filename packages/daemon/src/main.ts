@@ -627,8 +627,10 @@ async function bootOperational(
       // #149: AxeOS poll for the operator's solo-mining devices. No-op
       // when `solo_mining_enabled` is false. Fire-and-forget like the
       // others above so a slow Bitaxe doesn't drag the tick loop.
+      // Pass the canonical tick_at so persisted samples share the
+      // exact tick_at value tick_metrics uses (chart join needs it).
       void axeOSPoller
-        .tick()
+        .tick(r.state.tick_at)
         .catch((err) => log(`[axeos-poller] ${(err as Error)?.message ?? err}`));
     },
     onError: (err) => log(`[tick] error: ${(err as Error)?.message ?? err}`),

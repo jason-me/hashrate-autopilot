@@ -31,6 +31,7 @@ import {
   type OurBlockMarker,
   type RewardEventView,
 } from '../lib/api';
+import { projectSoloSeries } from './HashrateChart';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
@@ -632,9 +633,13 @@ export const PriceChart = memo(function PriceChart({
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'solo_power_watts': {
-          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.total_power_w]));
+          // Nearest-neighbor join with 15s tolerance - see HashrateChart's
+          // projectSoloSeries comment for the rationale. tick_metrics
+          // and solo_miner_samples are written at slightly-different
+          // moments during the same controller tick.
+          const xs = points.map((p) => p.tick_at);
           return {
-            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            values: projectSoloSeries(xs, soloSeries, (r) => r.total_power_w),
             stroke: '#c084fc',
             axisLabel: 'solo power (W)',
             // Watts displayed without the `k` shortening - home Bitaxe

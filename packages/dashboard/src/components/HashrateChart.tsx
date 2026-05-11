@@ -179,6 +179,48 @@ export interface SoloSeriesRow {
   device_count: number;
 }
 
+/**
+ * Project the fleet's per-tick series onto the chart's x-axis using
+ * nearest-neighbor matching with a 15s tolerance. The series and
+ * the chart points come from two different SQLite tables whose
+ * tick_at values can be offset by hundreds of ms (each subsystem
+ * captures its own Date.now() during the tick), so an exact-match
+ * join misses every row. 15s is well within the 60s tick cadence
+ * but tight enough to never bridge a missing tick.
+ *
+ * Both inputs are assumed sorted ascending by tick_at - the
+ * daemon side does ORDER BY tick_at ASC and points[] is built from
+ * a similarly-ordered query. Linear two-pointer walk: O(n + m).
+ */
+export const SOLO_SERIES_TOLERANCE_MS = 15_000;
+
+export function projectSoloSeries(
+  pointTickAts: ReadonlyArray<number>,
+  series: ReadonlyArray<SoloSeriesRow>,
+  pick: (r: SoloSeriesRow) => number | null,
+): (number | null)[] {
+  if (series.length === 0) return pointTickAts.map(() => null);
+  const out = new Array<number | null>(pointTickAts.length);
+  let j = 0;
+  for (let i = 0; i < pointTickAts.length; i++) {
+    const t = pointTickAts[i]!;
+    // Advance j while the next series row would be a closer match.
+    while (
+      j + 1 < series.length &&
+      Math.abs(series[j + 1]!.tick_at - t) <= Math.abs(series[j]!.tick_at - t)
+    ) {
+      j++;
+    }
+    const closest = series[j]!;
+    if (Math.abs(closest.tick_at - t) <= SOLO_SERIES_TOLERANCE_MS) {
+      out[i] = pick(closest);
+    } else {
+      out[i] = null;
+    }
+  }
+  return out;
+}
+
 interface RightAxisSpec {
   /** Per-point values pulled off MetricPoint. */
   values: (number | null)[];
@@ -489,14 +531,18 @@ export const HashrateChart = memo(function HashrateChart({
             stroke: '#c084fc',
           };
         case 'solo_hashrate': {
-          // Map per-tick fleet series onto the same x-axis as the
-          // left series. Use the points' tick_at as keys and project
-          // the SUM(hashrate_*_ghs across devices). Ghs -> Th/s for
-          // tile readability; format follows the same compact rules
-          // as the other right-axis number tiles.
-          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.total_hashrate_ghs]));
+          // Project the per-tick fleet series onto the chart's x-axis.
+          // We deliberately use nearest-neighbor matching with a ±15s
+          // tolerance rather than an exact `tick_at` join: each
+          // subsystem (`tick_metrics`, `solo_miner_samples`) captures
+          // its own `Date.now()` during the tick, so the two tables
+          // can be offset by hundreds of ms. The fix on the daemon
+          // side pins both to the canonical tick_at going forward;
+          // this fallback keeps pre-fix historical samples renderable
+          // and any future skew tolerable.
+          const xs = points.map((p) => p.tick_at);
           return {
-            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            values: projectSoloSeries(xs, soloSeries, (r) => r.total_hashrate_ghs),
             formatTick: (v) => {
               if (v >= 1e6) return `${(v / 1e6).toFixed(2)} PH/s`;
               if (v >= 1000) return `${(v / 1000).toFixed(2)} TH/s`;
@@ -507,18 +553,18 @@ export const HashrateChart = memo(function HashrateChart({
           };
         }
         case 'solo_device_count': {
-          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.device_count]));
+          const xs = points.map((p) => p.tick_at);
           return {
-            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            values: projectSoloSeries(xs, soloSeries, (r) => r.device_count),
             formatTick: (v) => v.toFixed(0),
             axisLabel: 'solo devices',
             stroke: '#c084fc',
           };
         }
         case 'solo_max_temp': {
-          const byTick = new Map(soloSeries.map((r) => [r.tick_at, r.max_temp_c]));
+          const xs = points.map((p) => p.tick_at);
           return {
-            values: points.map((p) => byTick.get(p.tick_at) ?? null),
+            values: projectSoloSeries(xs, soloSeries, (r) => r.max_temp_c),
             formatTick: (v) => `${v.toFixed(1)} °C`,
             axisLabel: 'solo max temp',
             stroke: '#c084fc',
