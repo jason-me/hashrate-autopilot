@@ -257,6 +257,7 @@ msgid "action mode blocks this"
 msgstr "action mode blocks this"
 
 #: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "active"
 msgstr "active"
 
@@ -480,6 +481,8 @@ msgstr "best ask"
 msgid "best bid"
 msgstr "best bid"
 
+#: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Best diff"
 msgstr "Best diff"
@@ -1244,6 +1247,10 @@ msgstr "Effective rate equals hashprice ({hashpricePretty}) - breaking even."
 msgid "Effectively zero delivery for at least this many minutes."
 msgstr "Effectively zero delivery for at least this many minutes."
 
+#: src/components/SoloMinersCard.tsx
+msgid "Efficiency"
+msgstr "Efficiency"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "elapsed"
 msgstr "elapsed"
@@ -1368,6 +1375,7 @@ msgid "First-run setup"
 msgstr "First-run setup"
 
 #: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "Fleet"
 msgstr "Fleet"
 
@@ -1463,6 +1471,8 @@ msgstr "hashprice + max overpay"
 
 #: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
+#: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 #: src/pages/Config.tsx
 msgid "Hashrate"
@@ -2288,8 +2298,8 @@ msgid "Per-hostname DDNS Key user, not your account login."
 msgstr "Per-hostname DDNS Key user, not your account login."
 
 #: src/pages/Config.tsx
-msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price; the controller's edit-price deadband is overpay/5, so expect more frequent bid adjustments at low values - it works fine, just noisier. Single-digit values are fine on a stable market."
-msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price; the controller's edit-price deadband is overpay/5, so expect more frequent bid adjustments at low values - it works fine, just noisier. Single-digit values are fine on a stable market."
+msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)."
+msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)."
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -2387,6 +2397,8 @@ msgstr "port"
 msgid "Port"
 msgstr "Port"
 
+#: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Power"
 msgstr "Power"
@@ -2519,6 +2531,7 @@ msgstr "refreshing…"
 msgid "Refundable on cancel:"
 msgstr "Refundable on cancel:"
 
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Rejected"
 msgstr "Rejected"
@@ -2951,6 +2964,7 @@ msgid "Telegram notifications"
 msgstr "Telegram notifications"
 
 #: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "Temp"
 msgstr "Temp"
 
@@ -3089,10 +3103,12 @@ msgid "unpaid earnings (Ocean)"
 msgstr "unpaid earnings (Ocean)"
 
 #: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "unreachable"
 msgstr "unreachable"
 
 #. placeholder {0}: entry.error
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "unreachable: {0}"
 msgstr "unreachable: {0}"
@@ -3136,6 +3152,7 @@ msgid "uptime"
 msgstr "uptime"
 
 #: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "Uptime"
 msgstr "Uptime"
 
@@ -3172,6 +3189,7 @@ msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgid "version"
 msgstr "version"
 
+#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"
 msgstr "VR temp"

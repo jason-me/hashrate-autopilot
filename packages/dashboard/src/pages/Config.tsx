@@ -192,7 +192,7 @@ function useSections(): Section[] {
             key: 'overpay_sat_per_eh_day',
             label: t`Overpay above fillable`,
             kind: 'price_sat_per_eh_day',
-            help: t`Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price; the controller's edit-price deadband is overpay/5, so expect more frequent bid adjustments at low values - it works fine, just noisier. Single-digit values are fine on a stable market.`,
+            help: t`Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5).`,
           },
           {
             key: 'max_bid_sat_per_eh_day',

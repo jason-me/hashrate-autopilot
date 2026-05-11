@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[Docs]` Overpay-above-fillable help: drop the "single-digit values are fine" recommendation
+
+Operator caught that the help text under `Overpay above fillable` ended with "Single-digit values are fine on a stable market." which reads as concrete advice. Recommending a specific overpay budget isn't the dashboard's place — it depends on each operator's risk tolerance, wallet runway, and how much trading noise they're willing to absorb. Reworded the trailing sentence to describe the mechanical tradeoff only ("Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)") without prescribing a value range. NL + ES updated.
+
 ### `[UI]` Mobile responsiveness pass 3: Solo-miners Label column + Notification tile layout (#155)
 
 Two more operator-flagged things from the pass-2 walkthrough. **Solo-miners device table**: the Label column was getting squeezed to ~50 px on mobile because the IP column had a fixed `w-48` (192 px) hint and no width was hinted on Label. So "BitAxe1" / "BitAxe2" / "BitAxe3" all rendered as "BitA" clipped. Reallocated: Label gets `min-w-[8rem]` (128 px), IP shrinks to `w-36` (144 px, comfortably fits "192.168.1.127" in monospace text-xs). Both inputs now read at a glance. **Notification tile layout**: the per-tile inline minute / day input (`tile.extra`) was rendered as a flex child INSIDE the `<label>`, alongside the label text. On mobile, when the row crowded, the input overlapped with the severity pill that sat to the right of the label. Restructured: header row is now strictly `[checkbox + label text]` + `[pill]` + `[Test]`; the optional inline editor drops to its own row underneath, indented under the label. Help text stays on the last row at full width. Layout is now visually consistent across breakpoints — the input "[10] minutes" reads as a sub-field of "Datum stratum unreachable for", which is arguably clearer than the prior inline trailing-fragment composition anyway.
