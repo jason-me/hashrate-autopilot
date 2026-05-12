@@ -156,8 +156,9 @@ Expected response:
 }
 ```
 
-Hashrate is in Th/s. The daemon converts to PH/s (÷ 1000) for the
-chart.
+The hashrate unit is in `subtext` and switches by magnitude - Datum
+prints `Th/s` below ~1 PH/s and `Ph/s` above. The daemon reads the
+unit each poll and converts to PH/s accordingly.
 
 ### Step 5 - Configure the autopilot
 
@@ -244,16 +245,6 @@ given app version, and that's enough for now.
    showing reachability, connected workers, and Datum-reported
    hashrate - with a "not configured" empty state when
    `datum_api_url` is null.
-
-## Future enhancements
-
-Once the Datum API is exposed, the panel could grow:
-
-- **Datum-reported hashrate vs Braiins-reported** - overlay on the
-  hashrate chart as a dashed line.
-- **Share rejection rate** from Datum, if exposed.
-- **Upstream latency** - Datum's round-trip time to Ocean's
-  stratum endpoint.
 
 ## Probe script
 
