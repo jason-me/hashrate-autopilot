@@ -132,7 +132,11 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   our-share for the block based on the current share_log.
 - **Datum Gateway integration (optional)** - when `datum_api_url` is configured, the daemon polls Datum's
   `/umbrel-api` each tick and records the gateway-measured hashrate alongside the Braiins-reported number. A
-  sustained gap means Braiins is billing for hashrate the gateway never saw. See
+  sustained gap means Braiins is billing for hashrate the gateway never saw. Despite the name, `/umbrel-api`
+  is a Datum Gateway endpoint, not an Umbrel one - it's compiled into the Datum binary when built with
+  `DATUM_API_FOR_UMBREL` (the Umbrel image is built that way; the endpoint exists on the Datum side and
+  Umbrel just consumes it for its app-card widget). The default port is 7152, which the Umbrel image
+  rewires to container port 21000 - that's why the setup doc maps host `7152 → container 21000`. See
   [`docs/setup-datum-api.md`](docs/setup-datum-api.md) - on Umbrel the API port is not exposed by default and
   needs a one-line compose edit plus a full OS reboot (tested and stable since 2026-04-19).
 - **Measured P&L and runway** - spend is read from Braiins' account transaction ledger (settled cost, not

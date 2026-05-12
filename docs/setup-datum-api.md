@@ -20,6 +20,18 @@ hashrate - but the Umbrel app package only maps the stratum port
 (23334) to the host network. The API port is live inside the Docker
 container but unreachable from the LAN.
 
+Despite the name, `/umbrel-api` is a **Datum Gateway** endpoint, not
+an Umbrel-side proxy. It's defined in
+[`datum_gateway/src/datum_api.c`](https://github.com/OCEAN-xyz/datum_gateway/blob/master/src/datum_api.c)
+under `#ifdef DATUM_API_FOR_UMBREL` - the Umbrel Datum image
+(`ghcr.io/retropex/datum:v1.14`) is built with that flag, so the
+endpoint lives in the Datum process itself. Umbrel just renders the
+JSON it returns into the small stats widget on the app card. The
+default Datum API port is 7152; the Umbrel image rewires that to
+container port 21000 internally to fit Umbrel's app-proxy
+convention, which is why the host:7152 → container:21000 mapping
+below works.
+
 The fix is a one-line edit to the Datum app's `docker-compose.yml`
 to add a second host→container port mapping, followed by a full
 umbrelOS reboot so Docker re-reads the file.
