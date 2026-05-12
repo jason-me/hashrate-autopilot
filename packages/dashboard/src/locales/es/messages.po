@@ -285,10 +285,13 @@ msgstr "Sats realmente consumidos en las últimas 3 h, escalado a una tasa de 24
 msgid "Add"
 msgstr "Anadir"
 
-#. placeholder {0}: candidates.filter((c) => c.pick && !c.already_added).length
 #: src/pages/Config.tsx
-msgid "Add {0} selected"
-msgstr "Anadir {0} seleccionados"
+#~ msgid "Add {0} selected"
+#~ msgstr "Anadir {0} seleccionados"
+
+#: src/pages/Config.tsx
+msgid "Add {pickedCount} selected"
+msgstr ""
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2434,6 +2437,15 @@ msgstr "Precios"
 #: src/pages/Config.tsx
 msgid "Primary owned bid has been Paused by Braiins for at least this many minutes."
 msgstr "La oferta primaria lleva al menos este número de minutos en Paused por Braiins."
+
+#. placeholder {0}: candidates.length
+#: src/pages/Config.tsx
+msgid "Probed {total} hosts. Found {0} device(s)."
+msgstr "{total} hosts escaneados. Encontrados {0} dispositivo(s)."
+
+#: src/pages/Config.tsx
+msgid "Probing {done} of {total}…"
+msgstr "Escaneando {done} de {total}…"
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx

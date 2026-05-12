@@ -285,10 +285,13 @@ msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiin
 msgid "Add"
 msgstr "Add"
 
-#. placeholder {0}: candidates.filter((c) => c.pick && !c.already_added).length
 #: src/pages/Config.tsx
-msgid "Add {0} selected"
-msgstr "Add {0} selected"
+#~ msgid "Add {0} selected"
+#~ msgstr "Add {0} selected"
+
+#: src/pages/Config.tsx
+msgid "Add {pickedCount} selected"
+msgstr "Add {pickedCount} selected"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2434,6 +2437,15 @@ msgstr "Pricing"
 #: src/pages/Config.tsx
 msgid "Primary owned bid has been Paused by Braiins for at least this many minutes."
 msgstr "Primary owned bid has been Paused by Braiins for at least this many minutes."
+
+#. placeholder {0}: candidates.length
+#: src/pages/Config.tsx
+msgid "Probed {total} hosts. Found {0} device(s)."
+msgstr "Probed {total} hosts. Found {0} device(s)."
+
+#: src/pages/Config.tsx
+msgid "Probing {done} of {total}…"
+msgstr "Probing {done} of {total}…"
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx

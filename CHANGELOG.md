@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-11
+
+### `[Fix]` Solo-miner scan: chunked sweep with progress bar; fixes intermittent empty results (#156 follow-up)
+
+v1.7.1 fixed the wrong-subnet symptom but operator testing showed the scan was still flaky - repeated clicks sometimes returned `No AxeOS devices found` even when a known-good device was on the typed CIDR; success appeared once the per-tick poller had kept ARP warm. Root cause: `axeos-scanner.ts` fired all 254 probes in one `Promise.all` with a 200ms per-IP timeout. From a Docker container the path is `container -> docker bridge -> host NAT -> switch -> AP -> ESP32` and cold-ARP routinely blows past 200ms; the burst of 254 simultaneous SYNs also overwhelms ESP-Miner's small HTTP stack and the Wi-Fi AP's ARP table, dropping the actual responses. Redesign: scanner is now a singleton-stateful background sweeper. `POST /api/solo-miners/scan` kicks off a run and returns immediately. Probe loop runs at concurrency 8 with a 1.5s per-IP timeout (worst-case full /24 ~48s, typically much faster because non-existent IPs RST quickly). New `GET /api/solo-miners/scan/status` exposes `{state, cidr, done, total, candidates, error}`; the dashboard polls every ~400ms while running and renders a progress bar + "Probing X of 254…" + a live candidate table that grows as discoveries land. Operator label/pick edits survive across polls. Duplicate Scan clicks while running return 409 instead of forking the worker. NL + ES translations included.
+
 ## 2026-05-11 · v1.7.1
 
 ### `[Release]` v1.7.1 - solo-miner scan works on Umbrel (#156)

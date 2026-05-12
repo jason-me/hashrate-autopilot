@@ -157,23 +157,36 @@ export async function registerSoloMinersRoute(
     },
   );
 
-  // POST /api/solo-miners/scan - one-shot scan of the daemon's local
-  // /24 for AxeOS-shaped responses. Returns a candidate list with
-  // ASIC + version + hashrate readings; the dashboard renders a
-  // confirmation dialog and POSTs the selected candidates back as
-  // individual create calls. Scan-then-save (not scan-and-save) so
-  // operators stay in control of what gets persisted - matches the
-  // mutation-gate philosophy.
-  // #156: optional `cidr` in the request body lets the operator point
-  // the scan at a /24 other than the daemon's own interface. Needed on
-  // Umbrel where the container sees the docker bridge subnet, never
-  // the host LAN where the Bitaxes live.
+  // /24 scan for AxeOS-shaped responders.
+  //
+  // POST /api/solo-miners/scan - kicks off a background sweep at
+  //   concurrency 8 with a 1500ms per-IP timeout. Returns immediately
+  //   with the initial status. 409 if a scan is already running.
+  //   Optional body: { cidr } - operator-supplied /24 override. Needed
+  //   on Umbrel where the daemon container sees the docker bridge
+  //   subnet, not the host LAN where the Bitaxes actually live (#156).
+  // GET /api/solo-miners/scan/status - current scan state for the
+  //   dashboard's progress-bar poll. {state, cidr, done, total,
+  //   candidates, error, started_at, finished_at}.
+  //
+  // Two-step (kick-off + poll status) so the dashboard can show a
+  // progress bar and stream candidate discoveries as they happen
+  // instead of blocking on a single 30-60s request - previous one-shot
+  // implementation was the source of the empty-result intermittency
+  // operators saw on Umbrel.
   const scanner = new AxeOSScanner({ repo: deps.soloMinersRepo });
   app.post<{ Body?: { cidr?: string } }>(
     '/api/solo-miners/scan',
-    async (req) => {
+    async (req, reply) => {
       const cidr = typeof req.body?.cidr === 'string' ? req.body.cidr : undefined;
-      return scanner.scan(cidr);
+      const result = scanner.start(cidr);
+      if (!result.ok && result.error === 'scan already in progress') {
+        reply.code(409);
+      }
+      return result;
     },
   );
+  app.get('/api/solo-miners/scan/status', async () => {
+    return scanner.getStatus();
+  });
 }

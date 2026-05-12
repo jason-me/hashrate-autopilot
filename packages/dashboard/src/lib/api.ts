@@ -409,10 +409,23 @@ export interface SoloScanCandidate {
   already_added: boolean;
 }
 
-export interface SoloScanResponse {
+export type SoloScanState = 'idle' | 'running' | 'done' | 'error';
+
+export interface SoloScanStatus {
+  state: SoloScanState;
   cidr: string;
+  done: number;
+  total: number;
   candidates: SoloScanCandidate[];
   error: string | null;
+  started_at: number;
+  finished_at: number | null;
+}
+
+export interface SoloScanStartResponse {
+  ok: boolean;
+  error: string | null;
+  status: SoloScanStatus;
 }
 
 export interface SoloFleetSeriesRow {
@@ -666,11 +679,13 @@ export const api = {
     }),
   deleteSoloMiner: (id: number) =>
     request<{ ok: boolean }>(`/api/solo-miners/${id}`, { method: 'DELETE' }),
-  scanSoloMiners: (cidr?: string) =>
-    request<SoloScanResponse>('/api/solo-miners/scan', {
+  startSoloMinersScan: (cidr?: string) =>
+    request<SoloScanStartResponse>('/api/solo-miners/scan', {
       method: 'POST',
       body: JSON.stringify(cidr && cidr.trim() ? { cidr: cidr.trim() } : {}),
     }),
+  soloMinersScanStatus: () =>
+    request<SoloScanStatus>('/api/solo-miners/scan/status'),
   soloFleetSeries: (sinceMs?: number) => {
     const q = sinceMs !== undefined ? `?since=${sinceMs}` : '';
     return request<SoloFleetSeriesResponse>(`/api/solo-miners/series${q}`);

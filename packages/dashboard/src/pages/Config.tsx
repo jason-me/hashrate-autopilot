@@ -2131,23 +2131,24 @@ function SoloThresholdInputs({
  * operator confirm which ones to persist. Already-saved IPs are
  * rendered greyed-out + non-selectable so a repeat scan after
  * adding two units doesn't tempt the operator to dupe-insert.
+ *
+ * #156 follow-up: scan runs as a background sweep on the daemon
+ * (concurrency 8, 1.5s per-IP timeout). Modal opens immediately on
+ * click and polls /scan/status every ~400ms to render a progress
+ * bar + live candidate list while the sweep is running. Replaces
+ * the old one-shot 254-way `Promise.all` that intermittently came
+ * back empty under Docker + Wi-Fi conditions.
  */
 function ScanLocalNetworkButton() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<
-    Array<{
-      ip: string;
-      asic_model: string | null;
-      version: string | null;
-      hashrate_ghs: number | null;
-      already_added: boolean;
-      label: string;
-      pick: boolean;
-    }>
-  >([]);
-  const [cidr, setCidr] = useState<string>('');
+  // Operator-editable candidate list, keyed by IP. We merge server
+  // candidates into this map on each poll: new IPs get a fresh
+  // default label + pick state; existing IPs keep the operator's
+  // edits intact.
+  const [edits, setEdits] = useState<
+    Record<string, { label: string; pick: boolean }>
+  >({});
   // #156: subnet-override input. On Umbrel the daemon's auto-detected /24
   // is the docker bridge (10.21.0.0/24), so the scan finds nothing - the
   // operator types their home LAN here (e.g. 192.168.1.0/24). Persist
@@ -2169,38 +2170,62 @@ function ScanLocalNetworkButton() {
     }
   };
 
-  const scanMutation = useMutation({
-    mutationFn: () => api.scanSoloMiners(subnetOverride),
-    onSuccess: (resp) => {
-      if (resp.error) {
-        setScanError(resp.error);
-        setCandidates([]);
-        setOpen(true);
-        return;
+  const statusQuery = useQuery({
+    queryKey: ['solo-miners-scan-status'],
+    queryFn: () => api.soloMinersScanStatus(),
+    enabled: open,
+    // Fast poll while the sweep is in flight; stop once we've reached
+    // a terminal state so the modal isn't generating idle traffic.
+    refetchInterval: (q) => {
+      const s = q.state.data?.state;
+      return s === 'running' ? 400 : false;
+    },
+    refetchOnWindowFocus: false,
+  });
+  const status = statusQuery.data;
+
+  // Merge newly-discovered candidates into the edits map. Existing
+  // entries are left alone so operator label/pick edits survive
+  // across polls.
+  useEffect(() => {
+    if (!status) return;
+    setEdits((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const c of status.candidates) {
+        if (!(c.ip in next)) {
+          next[c.ip] = {
+            label: defaultLabelFor(c),
+            pick: !c.already_added,
+          };
+          changed = true;
+        }
       }
-      setScanError(null);
-      setCidr(resp.cidr);
-      setCandidates(
-        resp.candidates.map((c) => ({
-          ...c,
-          label: defaultLabelFor(c),
-          pick: !c.already_added,
-        })),
-      );
+      return changed ? next : prev;
+    });
+  }, [status]);
+
+  const startMutation = useMutation({
+    mutationFn: () => api.startSoloMinersScan(subnetOverride),
+    onMutate: () => {
+      setEdits({});
       setOpen(true);
     },
-    onError: (e) => {
-      setScanError(e instanceof Error ? e.message : String(e));
-      setCandidates([]);
-      setOpen(true);
+    onSuccess: () => {
+      // Kick the status query so the progress UI populates without
+      // waiting for the first refetch tick.
+      void statusQuery.refetch();
     },
   });
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
-      const picked = candidates.filter((c) => c.pick && !c.already_added);
+      const picked = (status?.candidates ?? []).filter(
+        (c) => edits[c.ip]?.pick && !c.already_added,
+      );
       for (const c of picked) {
-        await api.createSoloMiner({ label: c.label.trim() || c.ip, ip: c.ip });
+        const label = (edits[c.ip]?.label ?? defaultLabelFor(c)).trim() || c.ip;
+        await api.createSoloMiner({ label, ip: c.ip });
       }
     },
     onSuccess: () => {
@@ -2208,6 +2233,27 @@ function ScanLocalNetworkButton() {
       qc.invalidateQueries({ queryKey: ['solo-miners'] });
     },
   });
+
+  const onClose = (): void => {
+    setOpen(false);
+    // Keep the last scan's edits cached for the session - if the
+    // operator reopens before refreshing, they see the most recent
+    // results without re-triggering a sweep.
+  };
+
+  const candidates = status?.candidates ?? [];
+  const isRunning = status?.state === 'running';
+  const isDone = status?.state === 'done';
+  const startError = startMutation.data && !startMutation.data.ok
+    ? startMutation.data.error
+    : null;
+  const scanError = startError ?? status?.error ?? null;
+  const total = status?.total ?? 0;
+  const done = status?.done ?? 0;
+  const progressPct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  const pickedCount = candidates.filter(
+    (c) => edits[c.ip]?.pick && !c.already_added,
+  ).length;
 
   return (
     <>
@@ -2225,18 +2271,18 @@ function ScanLocalNetworkButton() {
         />
         <button
           type="button"
-          onClick={() => scanMutation.mutate()}
-          disabled={scanMutation.isPending}
+          onClick={() => startMutation.mutate()}
+          disabled={startMutation.isPending || isRunning}
           className="text-[11px] text-amber-300 border border-amber-700 rounded px-2 py-0.5 hover:bg-amber-500/10 disabled:opacity-40"
         >
-          {scanMutation.isPending ? <Trans>scanning…</Trans> : <Trans>Scan local network</Trans>}
+          {isRunning ? <Trans>scanning…</Trans> : <Trans>Scan local network</Trans>}
         </button>
       </div>
 
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
         >
           <div
             className="bg-slate-900 border border-slate-700 rounded-lg p-4 w-full max-w-2xl max-h-[80vh] overflow-auto"
@@ -2245,22 +2291,51 @@ function ScanLocalNetworkButton() {
             <div className="flex items-baseline justify-between mb-3">
               <h3 className="text-sm text-slate-100">
                 <Trans>Scan results</Trans>{' '}
-                {cidr && (
-                  <span className="text-[11px] text-slate-500 font-mono ml-1">{cidr}</span>
+                {status?.cidr && (
+                  <span className="text-[11px] text-slate-500 font-mono ml-1">{status.cidr}</span>
                 )}
               </h3>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 className="text-slate-400 hover:text-slate-200 text-xs"
               >
                 ✕
               </button>
             </div>
+            {/* Progress bar - visible while running and on completion. */}
+            {(isRunning || isDone) && total > 0 && (
+              <div className="mb-3">
+                <div className="flex items-baseline justify-between text-[11px] text-slate-500 mb-1">
+                  <span>
+                    {isRunning ? (
+                      <Trans>
+                        Probing {done} of {total}…
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        Probed {total} hosts. Found {candidates.length} device(s).
+                      </Trans>
+                    )}
+                  </span>
+                  <span className="font-mono">{progressPct}%</span>
+                </div>
+                <div className="h-1 w-full bg-slate-800 rounded overflow-hidden">
+                  <div
+                    className={
+                      isRunning
+                        ? 'h-full bg-amber-400 transition-[width] duration-300'
+                        : 'h-full bg-emerald-500 transition-[width] duration-300'
+                    }
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
+            )}
             {scanError && (
               <div className="text-xs text-red-400 mb-2">{scanError}</div>
             )}
-            {!scanError && candidates.length === 0 && (
+            {!scanError && isDone && candidates.length === 0 && (
               <div className="text-xs text-slate-500 italic">
                 <Trans>No AxeOS devices found on the local subnet.</Trans>
               </div>
@@ -2278,7 +2353,7 @@ function ScanLocalNetworkButton() {
                     </tr>
                   </thead>
                   <tbody>
-                    {candidates.map((c, idx) => (
+                    {candidates.map((c) => (
                       <tr
                         key={c.ip}
                         className={
@@ -2290,13 +2365,17 @@ function ScanLocalNetworkButton() {
                         <td className="py-1 pr-2 text-center">
                           <input
                             type="checkbox"
-                            checked={c.pick}
+                            checked={edits[c.ip]?.pick ?? false}
                             disabled={c.already_added}
                             onChange={(e) => {
                               const v = e.target.checked;
-                              setCandidates((prev) =>
-                                prev.map((p, i) => (i === idx ? { ...p, pick: v } : p)),
-                              );
+                              setEdits((prev) => ({
+                                ...prev,
+                                [c.ip]: {
+                                  label: prev[c.ip]?.label ?? defaultLabelFor(c),
+                                  pick: v,
+                                },
+                              }));
                             }}
                             className="accent-amber-400 h-3.5 w-3.5"
                           />
@@ -2320,13 +2399,17 @@ function ScanLocalNetworkButton() {
                         <td className="py-1 pr-2">
                           <input
                             type="text"
-                            value={c.label}
+                            value={edits[c.ip]?.label ?? defaultLabelFor(c)}
                             disabled={c.already_added}
                             onChange={(e) => {
                               const v = e.target.value;
-                              setCandidates((prev) =>
-                                prev.map((p, i) => (i === idx ? { ...p, label: v } : p)),
-                              );
+                              setEdits((prev) => ({
+                                ...prev,
+                                [c.ip]: {
+                                  label: v,
+                                  pick: prev[c.ip]?.pick ?? !c.already_added,
+                                },
+                              }));
                             }}
                             className="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-xs disabled:opacity-50"
                           />
@@ -2338,7 +2421,7 @@ function ScanLocalNetworkButton() {
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setOpen(false)}
+                    onClick={onClose}
                     className="px-3 py-1 text-xs text-slate-400 border border-slate-700 rounded hover:bg-slate-800"
                   >
                     <Trans>Cancel</Trans>
@@ -2347,8 +2430,7 @@ function ScanLocalNetworkButton() {
                     type="button"
                     onClick={() => confirmMutation.mutate()}
                     disabled={
-                      confirmMutation.isPending ||
-                      candidates.every((c) => !c.pick || c.already_added)
+                      confirmMutation.isPending || isRunning || pickedCount === 0
                     }
                     className="px-3 py-1 text-xs bg-amber-500/20 border border-amber-500 text-amber-200 rounded hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -2356,7 +2438,7 @@ function ScanLocalNetworkButton() {
                       <Trans>adding…</Trans>
                     ) : (
                       <Trans>
-                        Add {candidates.filter((c) => c.pick && !c.already_added).length} selected
+                        Add {pickedCount} selected
                       </Trans>
                     )}
                   </button>

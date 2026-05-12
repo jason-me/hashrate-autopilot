@@ -15,6 +15,27 @@
  * - Otherwise scanner deduces the /24 from the daemon's first
  *   non-loopback IPv4 interface via `os.networkInterfaces()`. Works
  *   on bare-metal where daemon shares the LAN with the miners.
+ *
+ * Progress streaming (#156 follow-up):
+ * v1 fired all 254 probes in one `Promise.all` with a 200ms per-IP
+ * timeout. From a Docker container the path is
+ *   container -> docker bridge -> host NAT -> switch -> AP -> ESP32
+ * which cold-ARP can blow past 200ms easily; ESP32-S3's small HTTP
+ * stack under a 254-way SYN burst also drops packets. Operators saw
+ * intermittent "No AxeOS devices found" even when the device was
+ * obviously reachable, with success appearing once the per-tick
+ * poller had kept ARP warm.
+ *
+ * Redesign:
+ * - Scanner becomes a singleton-stateful background sweeper. POST
+ *   /scan kicks off a run that stays in memory; the route returns
+ *   immediately, the UI polls GET /scan/status to render a progress
+ *   bar + live candidate list as discoveries happen.
+ * - Probe loop runs at concurrency 8 (chunked rather than all-at-once)
+ *   with a 1500ms per-IP timeout. Worst-case full-sweep ~48s; in
+ *   practice much faster because most non-existent IPs RST quickly.
+ * - One scan at a time. A POST while a scan is running returns 409
+ *   so duplicate clicks don't fork the worker.
  */
 
 import { networkInterfaces } from 'node:os';
@@ -35,92 +56,219 @@ export interface ScanCandidate {
   readonly already_added: boolean;
 }
 
-export interface ScanResult {
-  /** The CIDR that was actually scanned, e.g. "192.168.1.0/24". */
+export type ScanState = 'idle' | 'running' | 'done' | 'error';
+
+export interface ScanStatus {
+  readonly state: ScanState;
+  /** The CIDR being / that was scanned, or '' before the first run. */
   readonly cidr: string;
-  /** Discovered AxeOS hosts. */
+  /** Probes completed so far. */
+  readonly done: number;
+  /** Total probes for the active / most recent scan. 0 before the first run. */
+  readonly total: number;
+  /** Discovered AxeOS hosts so far (or the final list for state='done'). */
   readonly candidates: ReadonlyArray<ScanCandidate>;
-  /** Empty -> daemon couldn't infer a local /24 (e.g. no non-loopback IPv4 interface). */
+  /** Set when state='error', otherwise null. */
   readonly error: string | null;
+  /** Unix-ms when the active / most recent scan started. 0 if idle on first call. */
+  readonly started_at: number;
+  /** Unix-ms when the scan finished. null while running, set on done/error. */
+  readonly finished_at: number | null;
+}
+
+export interface ScanStartResult {
+  readonly ok: boolean;
+  /** Set when ok=false; e.g. 'scan in progress' or 'invalid cidr'. */
+  readonly error: string | null;
+  /** Current status snapshot (initial state of the new scan when ok=true). */
+  readonly status: ScanStatus;
 }
 
 export interface AxeOSScannerOptions {
   readonly repo: SoloMinersRepo;
   readonly client?: AxeOSClient;
   readonly interfaces?: typeof networkInterfaces;
-  /** Per-IP timeout for the scan probe. Default 200ms - keeps the whole /24 around 200-300ms total. */
+  /**
+   * Per-IP timeout for the scan probe. Default 1500ms - enough headroom
+   * for cold-ARP + Docker NAT + ESP32's small HTTP stack on a busy LAN.
+   */
   readonly probeTimeoutMs?: number;
+  /** Number of probes in flight at once. Default 8. */
+  readonly concurrency?: number;
 }
 
 export class AxeOSScanner {
   private readonly repo: SoloMinersRepo;
   private readonly client: AxeOSClient;
   private readonly interfaces: typeof networkInterfaces;
+  private readonly concurrency: number;
+
+  private status: ScanStatus = {
+    state: 'idle',
+    cidr: '',
+    done: 0,
+    total: 0,
+    candidates: [],
+    error: null,
+    started_at: 0,
+    finished_at: null,
+  };
 
   constructor(options: AxeOSScannerOptions) {
     this.repo = options.repo;
     this.client =
-      options.client ?? new AxeOSClient({ timeoutMs: options.probeTimeoutMs ?? 200 });
+      options.client ?? new AxeOSClient({ timeoutMs: options.probeTimeoutMs ?? 1_500 });
     this.interfaces = options.interfaces ?? networkInterfaces;
+    this.concurrency = Math.max(1, options.concurrency ?? 8);
   }
 
-  async scan(requestedCidr?: string | null): Promise<ScanResult> {
+  getStatus(): ScanStatus {
+    return this.status;
+  }
+
+  /**
+   * Kick off a background scan. Returns immediately. Poll getStatus()
+   * to follow progress.
+   */
+  start(requestedCidr?: string | null): ScanStartResult {
+    if (this.status.state === 'running') {
+      return {
+        ok: false,
+        error: 'scan already in progress',
+        status: this.status,
+      };
+    }
+
     let cidr: string | null;
     if (requestedCidr && requestedCidr.trim().length > 0) {
       const normalized = normalizeSlash24(requestedCidr.trim());
       if (!normalized) {
-        return {
+        const status: ScanStatus = {
+          state: 'error',
           cidr: requestedCidr,
+          done: 0,
+          total: 0,
           candidates: [],
           error: `Invalid CIDR: ${requestedCidr}. Expected a /24 like 192.168.1.0/24.`,
+          started_at: Date.now(),
+          finished_at: Date.now(),
         };
+        this.status = status;
+        return { ok: false, error: status.error, status };
       }
       cidr = normalized;
     } else {
       cidr = deduceLocalSlash24(this.interfaces);
     }
     if (!cidr) {
-      return {
+      const status: ScanStatus = {
+        state: 'error',
         cidr: '',
+        done: 0,
+        total: 0,
         candidates: [],
         error: 'No non-loopback IPv4 interface found - cannot infer local /24',
+        started_at: Date.now(),
+        finished_at: Date.now(),
       };
+      this.status = status;
+      return { ok: false, error: status.error, status };
     }
 
-    const existing = new Set((await this.repo.list()).map((r) => r.ip));
     const ips = expandSlash24(cidr);
-    const probes = ips.map(async (ip): Promise<ScanCandidate | null> => {
-      const r = await this.client.getSystemInfo(ip);
-      if (!r.reachable || !r.info) return null;
-      // Filter on a structurally-Bitaxe-looking response: AxeOS always
-      // includes either an ASICModel string OR a hashRate number. A
-      // random JSON-emitting service (printer status, NAS REST) would
-      // not have both shapes.
-      const info = r.info;
-      const looksLikeBitaxe =
-        typeof info.ASICModel === 'string' ||
-        typeof info.hashRate === 'number' ||
-        typeof info.hashRate_1m === 'number';
-      if (!looksLikeBitaxe) return null;
-      return {
-        ip,
-        asic_model: typeof info.ASICModel === 'string' ? info.ASICModel : null,
-        version: typeof info.version === 'string' ? info.version : null,
-        hashrate_ghs:
-          typeof info.hashRate_10m === 'number'
-            ? info.hashRate_10m
-            : typeof info.hashRate === 'number'
-              ? info.hashRate
-              : null,
-        already_added: existing.has(ip),
+    this.status = {
+      state: 'running',
+      cidr,
+      done: 0,
+      total: ips.length,
+      candidates: [],
+      error: null,
+      started_at: Date.now(),
+      finished_at: null,
+    };
+
+    // Fire-and-forget. Status updates land on this.status as it runs.
+    void this.run(cidr, ips).catch((e) => {
+      this.status = {
+        ...this.status,
+        state: 'error',
+        error: e instanceof Error ? e.message : String(e),
+        finished_at: Date.now(),
       };
     });
 
-    const results = await Promise.all(probes);
-    const candidates: ScanCandidate[] = [];
-    for (const r of results) if (r !== null) candidates.push(r);
-    candidates.sort((a, b) => compareIpv4(a.ip, b.ip));
-    return { cidr, candidates, error: null };
+    return { ok: true, error: null, status: this.status };
+  }
+
+  private async run(cidr: string, ips: ReadonlyArray<string>): Promise<void> {
+    const existing = new Set((await this.repo.list()).map((r) => r.ip));
+    const found: ScanCandidate[] = [];
+    let cursor = 0;
+    let completed = 0;
+
+    const probe = async (ip: string): Promise<void> => {
+      try {
+        const r = await this.client.getSystemInfo(ip);
+        if (r.reachable && r.info) {
+          const info = r.info;
+          const looksLikeBitaxe =
+            typeof info.ASICModel === 'string' ||
+            typeof info.hashRate === 'number' ||
+            typeof info.hashRate_1m === 'number';
+          if (looksLikeBitaxe) {
+            found.push({
+              ip,
+              asic_model: typeof info.ASICModel === 'string' ? info.ASICModel : null,
+              version: typeof info.version === 'string' ? info.version : null,
+              hashrate_ghs:
+                typeof info.hashRate_10m === 'number'
+                  ? info.hashRate_10m
+                  : typeof info.hashRate === 'number'
+                    ? info.hashRate
+                    : null,
+              already_added: existing.has(ip),
+            });
+            found.sort((a, b) => compareIpv4(a.ip, b.ip));
+          }
+        }
+      } catch {
+        // Per-IP probe failure is expected for the vast majority of
+        // IPs on a normal /24 (no host there). Swallow and keep going.
+      }
+      completed += 1;
+      // Snapshot the latest state into a fresh object so the route
+      // hand-out is immutable from the consumer's perspective.
+      this.status = {
+        ...this.status,
+        done: completed,
+        candidates: [...found],
+      };
+    };
+
+    const workers: Array<Promise<void>> = [];
+    for (let w = 0; w < this.concurrency; w++) {
+      workers.push(
+        (async () => {
+          while (cursor < ips.length) {
+            const i = cursor++;
+            const ip = ips[i];
+            if (ip === undefined) break;
+            await probe(ip);
+          }
+        })(),
+      );
+    }
+    await Promise.all(workers);
+
+    this.status = {
+      ...this.status,
+      state: 'done',
+      done: ips.length,
+      candidates: [...found],
+      finished_at: Date.now(),
+    };
+    // Silence unused-variable lint in callers that destructured cidr.
+    void cidr;
   }
 }
 
