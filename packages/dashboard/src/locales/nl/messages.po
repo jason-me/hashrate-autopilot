@@ -1348,8 +1348,12 @@ msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the das
 msgstr "Elke herstart reset naar DRY_RUN. Je schakelt expliciet over naar LIVE vanuit het dashboard."
 
 #: src/pages/Config.tsx
-msgid "Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay - so a cheap best ask reliably translates into a cheap bid."
-msgstr "Voorbeeld: 95 = activeer goedkoop-modus wanneer de beste vraagprijs in het orderbook onder 95% van de break-even hashprice van Ocean ligt. Braiins matcht pay-your-bid (de bid IS de prijs die we betalen), en de autopilot volgt de fillable ask plus een kleine overpay - dus een goedkope beste vraagprijs vertaalt zich betrouwbaar in een goedkoop bod."
+msgid "Example: 95 = activate cheap mode when our bid (fillable ask + overpay - the price we actually post under pay-your-bid) is below 95% of the break-even hashprice from Ocean. Compares our bid, not the order book's cheapest level - a cheap best-ask isn't useful if our overpay puts the bid above hashprice anyway."
+msgstr "Voorbeeld: 95 = activeer cheap mode wanneer ons bod (fillable + overpay - de prijs die we daadwerkelijk posten onder pay-your-bid) lager is dan 95% van de break-even hashprice van Ocean. Vergelijkt ons eigen bod, niet het laagste niveau in het orderboek - een goedkope best-ask helpt niet als onze overpay het bod alsnog boven de hashprice tilt."
+
+#: src/pages/Config.tsx
+#~ msgid "Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay - so a cheap best ask reliably translates into a cheap bid."
+#~ msgstr "Voorbeeld: 95 = activeer goedkoop-modus wanneer de beste vraagprijs in het orderbook onder 95% van de break-even hashprice van Ocean ligt. Braiins matcht pay-your-bid (de bid IS de prijs die we betalen), en de autopilot volgt de fillable ask plus een kleine overpay - dus een goedkope beste vraagprijs vertaalt zich betrouwbaar in een goedkoop bod."
 
 #: src/pages/Setup.tsx
 msgid "Existing config detected - fields are pre-filled. Update what changed and click through."
@@ -2174,8 +2178,12 @@ msgid "On-chain payouts"
 msgstr "On-chain uitbetalingen"
 
 #: src/pages/Config.tsx
-msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
-msgstr "Activeer goedkoop-modus alleen wanneer het rollende gemiddelde van beste-vraagprijs t.o.v. hashprice over dit aantal minuten onder de drempel ligt. Voorkomt geflapper op enkelvoudige-tick marktpieken. 0 = per tick evalueren (legacy). Vereist ≥5 metingen in het venster voordat het gehonoreerd wordt; daaronder valt het terug op de spot-controle."
+msgid "Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy)."
+msgstr "Activeer cheap mode alleen wanneer elke tick in de laatste N minuten ons bod onder de drempel had, met minimaal N ticks aan volledige data (één per minuut bij de 60 s tick-cadence). Letterlijk aanhoudend-onder: één uitschieter triggert niet, één gemiste tick houdt het uit. 0 = controle per tick (legacy)."
+
+#: src/pages/Config.tsx
+#~ msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
+#~ msgstr "Activeer goedkoop-modus alleen wanneer het rollende gemiddelde van beste-vraagprijs t.o.v. hashprice over dit aantal minuten onder de drempel ligt. Voorkomt geflapper op enkelvoudige-tick marktpieken. 0 = per tick evalueren (legacy). Vereist ≥5 metingen in het venster voordat het gehonoreerd wordt; daaronder valt het terug op de spot-controle."
 
 #. placeholder {0}: formatAge(firing.created_at)
 #: src/pages/Alerts.tsx
@@ -3314,12 +3322,20 @@ msgid "When more than this many markers would render on the price chart, the das
 msgstr "Wanneer er meer dan dit aantal markers op de prijsgrafiek zou worden getekend, verbergt het dashboard eerst EDIT_PRICE-markers (CREATE / EDIT_SPEED / CANCEL blijven staan omdat die zeldzaam en diagnostisch zijn). Als het aantal ook na het weglaten van EDIT_PRICE nog boven de limiet ligt, worden alle markers verborgen. 0 = geen aantals-gebaseerde filter (alle markers renderen, onder de bestaande per-bereik-regel). Nuttig bij lage overpay-instellingen waar EDIT_PRICE elke paar minuten afgaat en de grafiek vol zet."
 
 #: src/pages/Config.tsx
-msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one."
-msgstr "Wanneer de markt goedkoop is (onder de hashprice-drempel), schaal op naar dit doel in plaats van het normale doel."
+msgid "When our bid drops below the break-even hashprice from Ocean, scale up to a higher target so we capture more hashrate while it's cheap. Tick \"Enable cheap mode\" to edit the fields below."
+msgstr "Wanneer ons bod onder de break-even hashprice van Ocean zakt, schalen we op naar een hoger doel om meer hashrate binnen te halen terwijl het goedkoop is. Vink \"Cheap mode aanzetten\" aan om de velden hieronder te bewerken."
 
 #: src/pages/Config.tsx
-msgid "When the spot market drops below the break-even hashprice from Ocean, scale the bid up to a higher target so we capture more hashrate while it's cheap. Tick \"Enable cheap mode\" to edit the fields below."
-msgstr "Wanneer de spotmarkt onder de break-even hashprice van Ocean zakt, verhoog dan het bod naar een hoger doel zodat we meer hashrate vastleggen zolang het goedkoop is. Vink \"Goedkoop-modus inschakelen\" aan om de velden hieronder te bewerken."
+msgid "When the bid is cheap (below the hashprice threshold), scale up to this target instead of the normal one."
+msgstr "Wanneer het bod goedkoop is (onder de hashprice-drempel), schaal op naar dit doel in plaats van het normale doel."
+
+#: src/pages/Config.tsx
+#~ msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one."
+#~ msgstr "Wanneer de markt goedkoop is (onder de hashprice-drempel), schaal op naar dit doel in plaats van het normale doel."
+
+#: src/pages/Config.tsx
+#~ msgid "When the spot market drops below the break-even hashprice from Ocean, scale the bid up to a higher target so we capture more hashrate while it's cheap. Tick \"Enable cheap mode\" to edit the fields below."
+#~ msgstr "Wanneer de spotmarkt onder de break-even hashprice van Ocean zakt, verhoog dan het bod naar een hoger doel zodat we meer hashrate vastleggen zolang het goedkoop is. Vink \"Goedkoop-modus inschakelen\" aan om de velden hieronder te bewerken."
 
 #: src/pages/Config.tsx
 msgid "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too - the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."

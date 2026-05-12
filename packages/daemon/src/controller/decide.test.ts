@@ -258,20 +258,24 @@ describe('decide - EDIT_SPEED', () => {
   });
 });
 
-describe('decide - cheap-mode engagement (#50 sustained window)', () => {
+describe('decide - cheap-mode engagement (#50 sustained window, #160 our-bid semantics)', () => {
+  // Threshold 90 % of hashprice. Hashprice 50M sat/EH/day. Overpay 1M.
+  // Cheap engages when our bid (fillable + 1M) < 45M.
+  // I.e. fillable must be < 44M for engagement.
   const CHEAP_CONFIG = {
     ...BASE_CONFIG,
     target_hashrate_ph: 1,
     cheap_target_hashrate_ph: 3,
     cheap_threshold_pct: 90,
   };
-  const HASHPRICE_PH = 50_000; // sat/PH/day → 50M sat/EH/day; threshold 45M
+  const HASHPRICE_PH = 50_000; // 50,000 sat/PH/day → 50M sat/EH/day
 
-  it('window null, spot best_ask below threshold → cheap-mode on (legacy spot path)', () => {
+  it('spot path (window=0): our bid below threshold → cheap-mode on', () => {
     const s = state({
-      config: CHEAP_CONFIG,
-      market: market(44_000_000),
+      config: { ...CHEAP_CONFIG, cheap_sustained_window_minutes: 0 },
+      market: market(44_000_000), // best_ask irrelevant under new semantics
       hashprice_sat_per_ph_day: HASHPRICE_PH,
+      fillable_ask_sat_per_eh_day: 43_000_000, // our_bid = 44M < 45M threshold
       cheap_mode_window: null,
       owned_bids: [owned({ speed_limit_ph: 1 })],
     });
@@ -282,39 +286,67 @@ describe('decide - cheap-mode engagement (#50 sustained window)', () => {
     });
   });
 
-  it('window rolling-avg below threshold → cheap-mode on regardless of spot', () => {
+  it('spot path: our bid at threshold → cheap-mode off (strict <)', () => {
     const s = state({
-      config: CHEAP_CONFIG,
+      config: { ...CHEAP_CONFIG, cheap_sustained_window_minutes: 0 },
+      market: market(40_000_000), // misleading: best_ask cheap but we still pay 45M
+      hashprice_sat_per_ph_day: HASHPRICE_PH,
+      fillable_ask_sat_per_eh_day: 44_000_000, // our_bid = 45M = threshold
+      cheap_mode_window: null,
+      owned_bids: [owned({ speed_limit_ph: 1 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
+  });
+
+  it('sustained path: engage=true → cheap-mode on', () => {
+    const s = state({
+      config: { ...CHEAP_CONFIG, cheap_sustained_window_minutes: 5 },
       market: market(46_000_000),
       hashprice_sat_per_ph_day: HASHPRICE_PH,
+      fillable_ask_sat_per_eh_day: 45_000_000, // current tick irrelevant
       cheap_mode_window: {
-        avg_best_ask_sat_per_eh_day: 44_000_000,
-        avg_hashprice_sat_per_eh_day: 50_000_000,
-        sample_count: 10,
+        engage: true,
+        ticks_below: 5,
+        ticks_total: 5,
+        ticks_required: 5,
+        threshold_pct: 90,
       },
       owned_bids: [owned({ speed_limit_ph: 1 })],
     });
-    const proposals = decide(s);
-    expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toMatchObject({
+    expect(decide(s).find((p) => p.kind === 'EDIT_SPEED')).toMatchObject({
       kind: 'EDIT_SPEED',
       new_speed_limit_ph: 3,
     });
   });
 
-  it('window rolling-avg above threshold → cheap-mode off despite spot dip', () => {
+  it('sustained path: engage=false → cheap-mode off (no spot fallback)', () => {
     const s = state({
-      config: CHEAP_CONFIG,
-      market: market(44_000_000),
+      config: { ...CHEAP_CONFIG, cheap_sustained_window_minutes: 5 },
+      market: market(40_000_000), // spot would say cheap, but operator opted into sustained
       hashprice_sat_per_ph_day: HASHPRICE_PH,
+      fillable_ask_sat_per_eh_day: 40_000_000, // current tick would pass, but sustained != current
       cheap_mode_window: {
-        avg_best_ask_sat_per_eh_day: 47_000_000,
-        avg_hashprice_sat_per_eh_day: 50_000_000,
-        sample_count: 10,
+        engage: false, // observe() said no - either short on samples or not all-below
+        ticks_below: 4,
+        ticks_total: 4, // 4 of 5 required → not engaged
+        ticks_required: 5,
+        threshold_pct: 90,
       },
       owned_bids: [owned({ speed_limit_ph: 1 })],
     });
-    const proposals = decide(s);
-    expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
+    expect(decide(s).find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
+  });
+
+  it('sustained path: cheap_mode_window null (e.g. observe error) → cheap-mode off', () => {
+    const s = state({
+      config: { ...CHEAP_CONFIG, cheap_sustained_window_minutes: 5 },
+      market: market(40_000_000),
+      hashprice_sat_per_ph_day: HASHPRICE_PH,
+      fillable_ask_sat_per_eh_day: 40_000_000,
+      cheap_mode_window: null,
+      owned_bids: [owned({ speed_limit_ph: 1 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
   });
 });
 

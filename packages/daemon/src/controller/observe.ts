@@ -383,44 +383,44 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     total_ph: actual_owned_ph + actual_unknown_ph,
   };
 
-  // Cheap-mode sustained-window aggregates (#50). Only compute when the
-  // operator has opted in - keeps the default tick cheap for users who
-  // don't care about the feature. Requires at least 5 samples in each
-  // relevant series, matching the `/api/finance/range` "insufficient
-  // history" pattern; below that we return null so decide() falls back
-  // to the spot check.
+  // Cheap-mode sustained-window check (#50 / #160).
+  //
+  // Engagement semantics: every tick in the last `cheap_sustained_window_minutes`
+  // minutes must have `(fillable_ask + overpay) < (threshold_pct / 100) × hashprice`.
+  // I.e. the price we'd actually pay must be sustainedly below the threshold,
+  // not the order book's cheapest level (best_ask is one tick's noise) and
+  // not the windowed average (one outlier could pull the average below).
+  //
+  // The window also requires at least `cheap_sustained_window_minutes` ticks
+  // of complete data - one tick per minute at the 60 s cadence. A 120 s gap
+  // drops the count below that and engagement stays off; we'd rather miss
+  // a genuine cheap-mode opportunity than fire on an incomplete window.
   const cheapWinMin = config.cheap_sustained_window_minutes;
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
     config.cheap_target_hashrate_ph > config.target_hashrate_ph;
-  const MIN_SAMPLES = 5;
   let cheap_mode_window: State['cheap_mode_window'] = null;
   if (cheapEnabled && cheapWinMin > 0) {
     const sinceMs = tickAt - cheapWinMin * 60_000;
     const agg = await deps.tickMetricsRepo
-      .cheapModeWindowAggregates(sinceMs)
+      .cheapModeWindowAggregates(
+        sinceMs,
+        config.overpay_sat_per_eh_day,
+        config.cheap_threshold_pct,
+      )
       .catch((err): Awaited<ReturnType<TickMetricsRepo['cheapModeWindowAggregates']>> => {
         logAndReturnNull('cheap_mode_window', err);
-        return {
-          avg_best_ask_sat_per_eh_day: null,
-          avg_hashprice_sat_per_eh_day: null,
-          best_ask_sample_count: 0,
-          hashprice_sample_count: 0,
-        };
+        return { ticks_total: 0, ticks_below: 0 };
       });
-    if (
-      agg.avg_best_ask_sat_per_eh_day !== null &&
-      agg.avg_hashprice_sat_per_eh_day !== null &&
-      agg.avg_hashprice_sat_per_eh_day > 0 &&
-      agg.best_ask_sample_count >= MIN_SAMPLES &&
-      agg.hashprice_sample_count >= MIN_SAMPLES
-    ) {
-      cheap_mode_window = {
-        avg_best_ask_sat_per_eh_day: agg.avg_best_ask_sat_per_eh_day,
-        avg_hashprice_sat_per_eh_day: agg.avg_hashprice_sat_per_eh_day,
-        sample_count: Math.min(agg.best_ask_sample_count, agg.hashprice_sample_count),
-      };
-    }
+    const required = cheapWinMin;
+    const engage = agg.ticks_total >= required && agg.ticks_below === agg.ticks_total;
+    cheap_mode_window = {
+      engage,
+      ticks_below: agg.ticks_below,
+      ticks_total: agg.ticks_total,
+      ticks_required: required,
+      threshold_pct: config.cheap_threshold_pct,
+    };
   }
 
   // Depth-aware fillable anchor for decide() (#53). Cheapest price at

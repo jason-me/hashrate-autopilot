@@ -90,34 +90,44 @@ export function decide(state: State): readonly Proposal[] {
   const targetPrice = Math.min(desiredBid, effectiveCap);
   const cappedByCeiling = desiredBid > effectiveCap;
 
-  // Cheap-mode check (#13 / #50): opportunistic scale-up when the
-  // market is cheap relative to hashprice. Rolling-average window when
-  // configured (`cheap_sustained_window_minutes > 0`), spot fallback
-  // otherwise. Controls target_hashrate_ph only - pricing stays on
-  // the fillable-tracking path.
+  // Cheap-mode check (#13 / #50 / #160): opportunistic scale-up when our
+  // bid is sustainedly below `cheap_threshold_pct`% of hashprice. Controls
+  // target_hashrate_ph only - pricing stays on the fillable-tracking path.
+  //
+  // Two paths:
+  // - `cheap_sustained_window_minutes > 0` (sustained): observe() has done
+  //   the full per-tick check for us; we just read `engage`. Every tick in
+  //   the window had (fillable + overpay) < threshold% × hashprice AND
+  //   the window has enough samples.
+  // - `cheap_sustained_window_minutes == 0` (legacy spot): single-tick
+  //   check against the CURRENT tick's fillable + overpay vs hashprice.
+  //   Same quantity as the sustained path - operator's bid, not best_ask.
+  //   The spot path is documented as best-effort and the operator-facing
+  //   UI nudges sustained.
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
     config.cheap_target_hashrate_ph > config.target_hashrate_ph;
   let effectiveTargetPh = config.target_hashrate_ph;
   let cheapModeActive = false;
   if (cheapEnabled) {
-    const win = state.cheap_mode_window;
-    if (win !== null) {
-      const threshold =
-        win.avg_hashprice_sat_per_eh_day * (config.cheap_threshold_pct / 100);
-      if (win.avg_best_ask_sat_per_eh_day < threshold) {
-        effectiveTargetPh = config.cheap_target_hashrate_ph;
+    if (config.cheap_sustained_window_minutes > 0) {
+      // Sustained path. observe() has done the work; trust `engage`.
+      cheapModeActive = state.cheap_mode_window?.engage === true;
+    } else if (
+      hashpriceSatEh !== null &&
+      hashpriceSatEh > 0 &&
+      fillable !== null
+    ) {
+      // Legacy spot path. Check the price we'd actually post under the
+      // current pay-your-bid controller: fillable + overpay.
+      const ourBid = fillable + config.overpay_sat_per_eh_day;
+      const threshold = hashpriceSatEh * (config.cheap_threshold_pct / 100);
+      if (ourBid < threshold) {
         cheapModeActive = true;
       }
-    } else if (hashpriceSatEh !== null && hashpriceSatEh > 0) {
-      const bestAskSatEh = market.best_ask_sat;
-      if (bestAskSatEh !== null) {
-        const threshold = hashpriceSatEh * (config.cheap_threshold_pct / 100);
-        if (bestAskSatEh < threshold) {
-          effectiveTargetPh = config.cheap_target_hashrate_ph;
-          cheapModeActive = true;
-        }
-      }
+    }
+    if (cheapModeActive) {
+      effectiveTargetPh = config.cheap_target_hashrate_ph;
     }
   }
 

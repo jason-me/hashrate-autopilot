@@ -2,6 +2,20 @@
 
 ## 2026-05-12
 
+### `[Fix]` Cheap-mode: sustained-below semantics, our-bid (not best_ask), no spot fallback (#160)
+
+Operator caught the autopilot scaling target_hashrate from 3 to 10 PH/s at 14:28:37 UTC when their config explicitly required the cheap signal to be sustained for 5 minutes. DB analysis exposed three independent bugs in the cheap-mode engagement check:
+
+1. **Wrong quantity.** The check compared the order book's `best_ask` (cheapest posted level) to hashprice. The operator's intent is that the price WE are paying — `fillable + overpay`, the bid we actually post under pay-your-bid — must be below 98 % of hashprice. At 14:28:37 best_ask sat at 97.996 % of hashprice (barely under) but our bid sat at 101.07 % (clearly above). The check fired on a quantity that doesn't reflect what we're paying.
+
+2. **Wrong aggregation.** When the rolling-average path engaged, it compared `avg(best_ask)` to `0.98 × avg(hashprice)`. Averages can hide outliers — one dip pulls the mean below the threshold even if 4 of 5 ticks were above. "Sustained for 5 minutes" should mean every tick passes, not the windowed average.
+
+3. **Hidden spot fallback.** When the window aggregate came back null (under `MIN_SAMPLES = 5`, which happened ~40 % of ticks in the operator's DB because the 5-minute window at 60 s cadence is right at the boundary and any 120 s gap drops the count to 4), `decide()` silently fell through to a per-tick spot check against `best_ask`. The whole point of opting into the sustained window is to avoid single-tick noise — the fallback defeats it.
+
+Rewrite end to end. `observe.ts` now queries `tick_metrics` over the window and computes per-tick `(fillable + overpay) < threshold% × hashprice`. The result handed to `decide()` is a boolean `engage`, set only when `ticks_total >= window_minutes` (one tick per minute is the steady-state expectation) AND every tick passed. No averaging, no fallback. `decide()` reads `engage` directly. For operators who haven't opted into a window (`cheap_sustained_window_minutes == 0`), the spot path is preserved but also fixed to compare our bid rather than best_ask. Tests rewritten. Config help text + spec.md rewritten to reflect the corrected semantics. NL + ES translations included.
+
+Replayed against the operator's DB at the moment of the bug: under the new rules the cheap-mode trigger would have been off (ticks_total=4, ticks_below=0). No EDIT_SPEED would have fired.
+
 ### `[Fix]` Solo-miner overheating: align thresholds with AxeOS firmware (no more false-alarm at 68 °C on BM1370)
 
 Operator on a fresh v1.7.4 install: BitAxe2 (BM1370) firing a sustained IMPORTANT alert at 68.1 °C despite AxeOS's own dashboard showing the ASIC happily green at 68.4 °C. The per-model table I'd put together for the previous fix (BM1370 = 68, BM1368/66 = 70, BM1397 = 75) was guessed from community spec sheets rather than the firmware. Looked at the AxeOS source (`main/tasks/power_management_task.c`):

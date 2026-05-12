@@ -157,13 +157,13 @@ export const AppConfigSchema = z.object({
   // Both values must be non-zero to activate.
   cheap_target_hashrate_ph: z.number().nonnegative().default(0),
   cheap_threshold_pct: z.number().int().nonnegative().max(100).default(0),
-  // Rolling-average window for the cheap-mode engagement check (#50).
-  // 0 (default) = per-tick spot check on best_ask (legacy behaviour).
-  // > 0 = cheap-mode engages only when avg(best_ask) over this many
-  // minutes is below cheap_threshold_pct * avg(hashprice) over the
-  // same window. Avoids flapping on single-tick market spikes. The
-  // window pattern gives implicit hysteresis - cheap-mode only flips
-  // when the window as a whole crosses the threshold.
+  // Sustained-window check for cheap-mode engagement (#50 / #160).
+  // 0 (default) = per-tick spot check (our bid vs hashprice, current tick only).
+  // > 0 = cheap-mode engages only when EVERY tick in the last N minutes had
+  //   `(fillable + overpay) < (cheap_threshold_pct / 100) * hashprice`
+  //   AND there are at least N ticks of complete data (one per minute at the
+  //   60 s tick cadence). Literal sustained-below semantics - one outlier
+  //   doesn't trigger; one missing tick keeps engagement off.
   cheap_sustained_window_minutes: z.number().int().nonnegative().default(0),
 
   // Bitcoin Core RPC credentials (issue #14).

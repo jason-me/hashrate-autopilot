@@ -130,28 +130,28 @@ function useSections(): Section[] {
         // that confusing.
         id: 'cheap-mode',
         title: t`Cheap mode`,
-        description: t`When the spot market drops below the break-even hashprice from Ocean, scale the bid up to a higher target so we capture more hashrate while it's cheap. Tick "Enable cheap mode" to edit the fields below.`,
+        description: t`When our bid drops below the break-even hashprice from Ocean, scale up to a higher target so we capture more hashrate while it's cheap. Tick "Enable cheap mode" to edit the fields below.`,
         fields: [
           {
             key: 'cheap_target_hashrate_ph',
             label: t`Cheap-mode target`,
             kind: 'decimal',
             unit: 'PH/s',
-            help: t`When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one.`,
+            help: t`When the bid is cheap (below the hashprice threshold), scale up to this target instead of the normal one.`,
           },
           {
             key: 'cheap_threshold_pct',
             label: t`Cheap threshold`,
             kind: 'integer',
             unit: '%',
-            help: t`Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay - so a cheap best ask reliably translates into a cheap bid.`,
+            help: t`Example: 95 = activate cheap mode when our bid (fillable ask + overpay - the price we actually post under pay-your-bid) is below 95% of the break-even hashprice from Ocean. Compares our bid, not the order book's cheapest level - a cheap best-ask isn't useful if our overpay puts the bid above hashprice anyway.`,
           },
           {
             key: 'cheap_sustained_window_minutes',
             label: t`Cheap-mode sustained window`,
             kind: 'integer',
             unit: 'min',
-            help: t`Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check.`,
+            help: t`Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy).`,
           },
         ],
       },

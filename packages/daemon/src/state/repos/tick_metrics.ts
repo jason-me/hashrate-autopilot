@@ -388,31 +388,34 @@ export class TickMetricsRepo {
    * where hashprice may be cached-null while best_ask is present (or
    * vice versa).
    */
-  async cheapModeWindowAggregates(sinceMs: number): Promise<{
-    avg_best_ask_sat_per_eh_day: number | null;
-    avg_hashprice_sat_per_eh_day: number | null;
-    best_ask_sample_count: number;
-    hashprice_sample_count: number;
+  async cheapModeWindowAggregates(
+    sinceMs: number,
+    overpaySatPerEhDay: number,
+    thresholdPct: number,
+  ): Promise<{
+    ticks_total: number;
+    ticks_below: number;
   }> {
+    // Per-tick check: our bid (fillable + overpay) under threshold% of
+    // hashprice. "Sustained" means every tick in the window passes; the
+    // caller compares ticks_below === ticks_total to decide engagement
+    // (#160).
+    const thresholdFrac = thresholdPct / 100;
     const row = await this.db
       .selectFrom('tick_metrics')
       .select([
-        sql<number | null>`AVG(best_ask_sat_per_eh_day)`.as('avg_best_ask'),
-        sql<number | null>`AVG(hashprice_sat_per_eh_day)`.as('avg_hashprice'),
-        sql<number>`SUM(CASE WHEN best_ask_sat_per_eh_day IS NOT NULL THEN 1 ELSE 0 END)`.as(
-          'best_ask_count',
+        sql<number>`SUM(CASE WHEN fillable_ask_sat_per_eh_day IS NOT NULL AND hashprice_sat_per_eh_day IS NOT NULL AND hashprice_sat_per_eh_day > 0 THEN 1 ELSE 0 END)`.as(
+          'ticks_total',
         ),
-        sql<number>`SUM(CASE WHEN hashprice_sat_per_eh_day IS NOT NULL THEN 1 ELSE 0 END)`.as(
-          'hashprice_count',
+        sql<number>`SUM(CASE WHEN fillable_ask_sat_per_eh_day IS NOT NULL AND hashprice_sat_per_eh_day IS NOT NULL AND hashprice_sat_per_eh_day > 0 AND (fillable_ask_sat_per_eh_day + ${sql.lit(overpaySatPerEhDay)}) < (${sql.lit(thresholdFrac)} * hashprice_sat_per_eh_day) THEN 1 ELSE 0 END)`.as(
+          'ticks_below',
         ),
       ])
       .where('tick_at', '>=', sinceMs)
       .executeTakeFirst();
     return {
-      avg_best_ask_sat_per_eh_day: row?.avg_best_ask ?? null,
-      avg_hashprice_sat_per_eh_day: row?.avg_hashprice ?? null,
-      best_ask_sample_count: Number(row?.best_ask_count ?? 0),
-      hashprice_sample_count: Number(row?.hashprice_count ?? 0),
+      ticks_total: Number(row?.ticks_total ?? 0),
+      ticks_below: Number(row?.ticks_below ?? 0),
     };
   }
 

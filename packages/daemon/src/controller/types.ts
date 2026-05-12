@@ -214,17 +214,37 @@ export interface State {
   readonly fillable_ask_sat_per_eh_day: number | null;
 
   /**
-   * Rolling-average inputs to the cheap-mode engagement check (#50).
-   * Populated by observe() when `config.cheap_sustained_window_minutes > 0`;
-   * null when the window is disabled (legacy spot-only behaviour) or
-   * when there aren't enough samples in the window to trust the
-   * averages. `decide()` uses this when present and falls back to the
-   * spot `market.best_ask_sat` when it's null.
+   * Result of the cheap-mode sustained-window check (#160).
+   *
+   * Populated by observe() when `config.cheap_sustained_window_minutes > 0`.
+   * `null` when the window feature is disabled (operator hasn't opted in
+   * to sustained semantics).
+   *
+   * Semantics (corrected in #160):
+   * - For each tick in the last `cheap_sustained_window_minutes` minutes
+   *   we compute `our_bid = fillable_ask + overpay` and check whether
+   *   `our_bid < cheap_threshold_pct% × hashprice`. The operator's intent
+   *   is "the price WE are paying must be sustainedly below 98 % of
+   *   hashprice", not "the order book's cheapest level happens to be".
+   * - `engage = (ticks_total >= ticks_required) AND (ticks_below == ticks_total)`.
+   *   I.e. every single tick in the window must pass AND we must have at
+   *   least `cheap_sustained_window_minutes` ticks of data (one per minute
+   *   at the 60 s tick cadence). One missed tick → we don't have enough
+   *   confirmed evidence → cheap mode stays off. No averaging, no
+   *   single-tick fallback.
+   * - `decide()` reads `engage` directly; it does NOT do its own check
+   *   against best_ask or rolling averages.
    */
   readonly cheap_mode_window: {
-    readonly avg_best_ask_sat_per_eh_day: number;
-    readonly avg_hashprice_sat_per_eh_day: number;
-    readonly sample_count: number;
+    readonly engage: boolean;
+    /** Number of ticks in the window where our_bid was below threshold. */
+    readonly ticks_below: number;
+    /** Total ticks with complete data in the window. */
+    readonly ticks_total: number;
+    /** How many ticks we need to call the window "filled" (= window_minutes). */
+    readonly ticks_required: number;
+    /** Echoed threshold the operator configured, e.g. 98. */
+    readonly threshold_pct: number;
   } | null;
 
   /**
