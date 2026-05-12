@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-12
+
+### `[Feature]` Temperature unit selector: Celsius or Fahrenheit (#157)
+
+Config → Display & Logging gets a third dropdown alongside Number format and Date layout: Temperature unit, with `system default` / `Celsius (°C)` / `Fahrenheit (°F)` presets. Honoured by the Status-page Solo miners card (ASIC + VR temp columns + mobile card), the Hashrate chart's right-axis temperature plot, and the Overheating ceiling threshold input on Config (bidirectional - operator types in their chosen unit, daemon stores °C). `system default` resolves to °F when the UI language is English (US-convention split), °C otherwise. Out of scope: Telegram alert bodies stay in °C - they don't know per-recipient preferences. Persisted per-browser under `braiins.temperatureUnit`. NL + ES translations included.
+
 ## 2026-05-11 · v1.7.2
 
 ### `[Release]` v1.7.2 - solo-miner scan reliability

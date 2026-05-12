@@ -366,6 +366,10 @@ msgstr "API inaccesible ({0})"
 msgid "ASIC"
 msgstr "ASIC"
 
+#: src/pages/Config.tsx
+msgid "ASIC and VR temperatures on the Status page, the right-axis temperature plot, and the overheating-ceiling threshold. Stored internally in °C; conversion happens at display only."
+msgstr "Temperaturas del ASIC y el VR en la página Estado, la gráfica de temperatura del eje derecho y el umbral de sobrecalentamiento. Almacenado internamente en °C; la conversión ocurre solo en la pantalla."
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
@@ -770,6 +774,10 @@ msgstr "Cancelando…"
 msgid "Cartoon cowbell"
 msgstr "Cencerro de dibujos"
 
+#: src/pages/Config.tsx
+msgid "Celsius (°C)"
+msgstr "Celsius (°C)"
+
 #: src/components/HashrateChart.tsx
 msgid "change"
 msgstr ""
@@ -1066,6 +1074,10 @@ msgid "decrease"
 msgstr "disminuir"
 
 #: src/pages/Config.tsx
+msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them."
+msgstr "Por defecto 0 usa la búsqueda por modelo de ASIC (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí sobrescribe todos los anteriores."
+
+#: src/pages/Config.tsx
 msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
 msgstr "El valor 0 por defecto usa la tabla por modelo de ASIC (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, por defecto 70 °C). Cualquier valor distinto de cero anula todos los modelos."
 
@@ -1330,6 +1342,10 @@ msgstr "Expandir al doble de altura"
 #: src/pages/Status.tsx
 msgid "expected"
 msgstr "esperado"
+
+#: src/pages/Config.tsx
+msgid "Fahrenheit (°F)"
+msgstr "Fahrenheit (°F)"
 
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
@@ -2209,6 +2225,11 @@ msgstr "atrasado {overdueFormatted}"
 msgid "Overheating ceiling (°C, 0 = auto per model)"
 msgstr "Limite de sobrecalentamiento (°C, 0 = automatico por modelo)"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Overheating ceiling (°F, 0 = auto per model)"
+msgstr "Techo de sobrecalentamiento (°F, 0 = automático por modelo)"
+
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "sobrepago"
@@ -2949,6 +2970,7 @@ msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de /v1/spo
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "system default"
 msgstr "predeterminado del sistema"
 
@@ -2987,6 +3009,11 @@ msgstr "Notificaciones de Telegram"
 #: src/components/SoloMinersCard.tsx
 msgid "Temp"
 msgstr "Temp"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Temperature unit"
+msgstr "Unidad de temperatura"
 
 #: src/pages/Config.tsx
 msgid "Test"

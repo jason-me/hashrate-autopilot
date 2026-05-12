@@ -156,6 +156,37 @@ export function formatSats(
   return `${formatNumber(n, {}, locale)} sat`;
 }
 
+/**
+ * Format a temperature stored as °C into the operator's preferred
+ * unit. Internal storage always °C; conversion happens at display
+ * boundary only (#157).
+ *
+ * Returns `'-'` on null/undefined (matches the rest of this file's
+ * placeholder convention). `digits` defaults to 1, matching the
+ * existing `.toFixed(1) °C` pattern; pass 0 for whole-degree
+ * thresholds where decimals would be noise.
+ */
+export function formatTemperature(
+  c: number | null | undefined,
+  unit: 'C' | 'F',
+  digits: number = 1,
+): string {
+  if (c === null || c === undefined) return '-';
+  if (unit === 'F') {
+    const f = c * 9 / 5 + 32;
+    return `${f.toFixed(digits)} °F`;
+  }
+  return `${c.toFixed(digits)} °C`;
+}
+
+/** Round-trip conversion utilities for inputs that store °C but display °F. */
+export function celsiusToFahrenheit(c: number): number {
+  return c * 9 / 5 + 32;
+}
+export function fahrenheitToCelsius(f: number): number {
+  return (f - 32) * 5 / 9;
+}
+
 export function formatHashratePH(
   n: number | null | undefined,
   locale: Locale = defaultLocale(),

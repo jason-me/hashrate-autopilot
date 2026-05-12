@@ -35,9 +35,23 @@ import {
 
 const NUMBER_LOCALE_KEY = 'braiins.numberLocale';
 const DATE_LAYOUT_KEY = 'braiins.dateLayout';
+const TEMP_UNIT_KEY = 'braiins.temperatureUnit';
 const LEGACY_DISPLAY_LOCALE_KEY = 'braiins.displayLocale';
 
 export type { DateLayout } from './format';
+
+/**
+ * Temperature unit preference (#157). `system` means "pick by
+ * UI-language locale": en-US -> F (the conventional split), everyone
+ * else -> C. Internal storage in the DB stays °C; conversion happens
+ * at display sites only.
+ */
+export type TemperatureUnit = 'system' | 'C' | 'F';
+const TEMP_UNITS: ReadonlyArray<TemperatureUnit> = ['system', 'C', 'F'];
+function isTemperatureUnit(v: string | null | undefined): v is TemperatureUnit {
+  if (!v) return false;
+  return (TEMP_UNITS as readonly string[]).includes(v);
+}
 
 /**
  * Number-format presets. The dropdown shows only the separators it
@@ -138,6 +152,29 @@ export function getStoredDateLayout(): DateLayout {
   return isDateLayout(v) ? v : 'system';
 }
 
+export function getStoredTemperatureUnit(): TemperatureUnit {
+  if (typeof window === 'undefined') return 'system';
+  const v = window.localStorage.getItem(TEMP_UNIT_KEY);
+  return isTemperatureUnit(v) ? v : 'system';
+}
+
+/**
+ * Resolve 'system' to a concrete unit based on the operator's UI
+ * language - en (default to US convention) -> F, everyone else -> C.
+ * We deliberately use the Lingui UI language rather than
+ * `navigator.language` so the picker's "system default" matches the
+ * dashboard language picker rather than the host OS (avoids surprise
+ * when an operator on a Dutch OS picked English UI).
+ */
+export function resolveTemperatureUnit(
+  selected: TemperatureUnit,
+  uiLocale: string,
+): 'C' | 'F' {
+  if (selected === 'C' || selected === 'F') return selected;
+  // 'system'
+  return uiLocale === 'en' ? 'F' : 'C';
+}
+
 /**
  * Resolves the chosen numberLocale to an Intl-locale string (or
  * undefined for "browser default"). `no-grouping` is a sentinel:
@@ -156,21 +193,26 @@ export interface LocaleContextValue {
   numberLocale: string;
   /** Date-layout enum value. */
   dateLayout: DateLayout;
+  /** Temperature-unit preset as stored. Resolve via `resolveTemperatureUnit`. */
+  temperatureUnit: TemperatureUnit;
   /** Resolved Intl-locale string for number formatting (undefined = browser default). */
   intlLocale: string | undefined;
   /** True when the operator picked the "no thousands grouping" preset. */
   numberGrouping: boolean;
   setNumberLocale: (code: string) => void;
   setDateLayout: (layout: DateLayout) => void;
+  setTemperatureUnit: (unit: TemperatureUnit) => void;
 }
 
 export const LocaleContext = createContext<LocaleContextValue>({
   numberLocale: 'system',
   dateLayout: 'system',
+  temperatureUnit: 'system',
   intlLocale: undefined,
   numberGrouping: true,
   setNumberLocale: () => undefined,
   setDateLayout: () => undefined,
+  setTemperatureUnit: () => undefined,
 });
 
 export function useLocale(): LocaleContextValue {
@@ -185,6 +227,9 @@ export function useLocaleState(): LocaleContextValue {
     return getStoredNumberLocale();
   });
   const [dateLayout, setDateLayoutState] = useState<DateLayout>(() => getStoredDateLayout());
+  const [temperatureUnit, setTemperatureUnitState] = useState<TemperatureUnit>(() =>
+    getStoredTemperatureUnit(),
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -196,13 +241,20 @@ export function useLocaleState(): LocaleContextValue {
     window.localStorage.setItem(DATE_LAYOUT_KEY, dateLayout);
   }, [dateLayout]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(TEMP_UNIT_KEY, temperatureUnit);
+  }, [temperatureUnit]);
+
   return {
     numberLocale,
     dateLayout,
+    temperatureUnit,
     intlLocale: resolveNumberLocale(numberLocale),
     numberGrouping: numberLocale !== 'no-grouping',
     setNumberLocale: setNumberLocaleState,
     setDateLayout: setDateLayoutState,
+    setTemperatureUnit: setTemperatureUnitState,
   };
 }
 
@@ -234,6 +286,17 @@ export function useDateTimeLocale(): string {
     default:
       return 'en-US';
   }
+}
+
+/**
+ * Resolved temperature-unit ('C' | 'F') for the current operator,
+ * already taking 'system' into account. Use this in any component
+ * rendering a temperature.
+ */
+export function useTemperatureUnit(): 'C' | 'F' {
+  const { temperatureUnit } = useLocale();
+  const { i18n } = useLingui();
+  return resolveTemperatureUnit(temperatureUnit, i18n.locale);
 }
 
 /**

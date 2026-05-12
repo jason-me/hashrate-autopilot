@@ -366,6 +366,10 @@ msgstr "API onbereikbaar ({0})"
 msgid "ASIC"
 msgstr "ASIC"
 
+#: src/pages/Config.tsx
+msgid "ASIC and VR temperatures on the Status page, the right-axis temperature plot, and the overheating-ceiling threshold. Stored internally in °C; conversion happens at display only."
+msgstr ""
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
@@ -770,6 +774,10 @@ msgstr "Annuleren…"
 msgid "Cartoon cowbell"
 msgstr "Cartoon-koebel"
 
+#: src/pages/Config.tsx
+msgid "Celsius (°C)"
+msgstr "Celsius (°C)"
+
 #: src/components/HashrateChart.tsx
 msgid "change"
 msgstr ""
@@ -1066,6 +1074,10 @@ msgid "decrease"
 msgstr "verlagen"
 
 #: src/pages/Config.tsx
+msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them."
+msgstr "Standaard 0 gebruikt per-ASIC-model-lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Elke niet-nul-waarde hier overschrijft die allemaal."
+
+#: src/pages/Config.tsx
 msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
 msgstr "Standaard 0 gebruikt opzoektabel per ASIC-model (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Een waarde anders dan 0 overschrijft alle modellen."
 
@@ -1330,6 +1342,10 @@ msgstr "Uitklappen naar dubbele hoogte"
 #: src/pages/Status.tsx
 msgid "expected"
 msgstr "verwacht"
+
+#: src/pages/Config.tsx
+msgid "Fahrenheit (°F)"
+msgstr "Fahrenheit (°F)"
 
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
@@ -2209,6 +2225,11 @@ msgstr "{overdueFormatted} te laat"
 msgid "Overheating ceiling (°C, 0 = auto per model)"
 msgstr "Oververhittingsgrens (°C, 0 = automatisch per model)"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Overheating ceiling (°F, 0 = auto per model)"
+msgstr "Oververhittingsgrens (°F, 0 = automatisch per model)"
+
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "toeslag"
@@ -2949,6 +2970,7 @@ msgstr "Som van counters_committed.amount_consumed_sat over elk bod op /v1/spot/
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "system default"
 msgstr "systeemstandaard"
 
@@ -2987,6 +3009,11 @@ msgstr "Telegram-meldingen"
 #: src/components/SoloMinersCard.tsx
 msgid "Temp"
 msgstr "Temp"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Temperature unit"
+msgstr "Temperatuureenheid"
 
 #: src/pages/Config.tsx
 msgid "Test"

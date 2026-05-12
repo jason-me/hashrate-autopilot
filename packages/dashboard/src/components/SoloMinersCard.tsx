@@ -19,8 +19,8 @@ import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 
 import { api, type SoloMinerSnapshotEntry } from '../lib/api';
-import { formatAge } from '../lib/format';
-import { useFormatters } from '../lib/locale';
+import { formatAge, formatTemperature } from '../lib/format';
+import { useFormatters, useTemperatureUnit } from '../lib/locale';
 
 const REFRESH_INTERVAL_MS = 5_000;
 
@@ -28,6 +28,7 @@ export function SoloMinersCard() {
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const tempUnit = useTemperatureUnit();
 
   const query = useQuery({
     queryKey: ['solo-miners'],
@@ -83,7 +84,7 @@ export function SoloMinersCard() {
           widths. */}
       <div className="sm:hidden space-y-2">
         {entries.map((e) => (
-          <DeviceMobileCard key={e.device.id} entry={e} fmt={fmt} />
+          <DeviceMobileCard key={e.device.id} entry={e} fmt={fmt} tempUnit={tempUnit} />
         ))}
         <FleetMobileSummary fleet={fleet} entries={entries} />
       </div>
@@ -105,7 +106,7 @@ export function SoloMinersCard() {
           </thead>
           <tbody className="text-slate-200">
             {entries.map((e) => (
-              <DeviceRow key={e.device.id} entry={e} fmt={fmt} />
+              <DeviceRow key={e.device.id} entry={e} fmt={fmt} tempUnit={tempUnit} />
             ))}
             <tr className="border-t border-slate-700 bg-slate-950/40 font-semibold">
               <td className="py-1.5 px-3 text-slate-300">
@@ -236,9 +237,11 @@ function parseMagnitudeSuffixed(s: string): number | null {
 function DeviceRow({
   entry,
   fmt,
+  tempUnit,
 }: {
   entry: SoloMinerSnapshotEntry;
   fmt: ReturnType<typeof useFormatters>;
+  tempUnit: 'C' | 'F';
 }) {
   if (!entry.reachable) {
     return (
@@ -287,7 +290,7 @@ function DeviceRow({
         {entry.best_diff_text ?? '-'}
       </td>
       <td className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.temp_c)}`}>
-        {entry.temp_c !== null ? `${entry.temp_c.toFixed(1)} °C` : '-'}
+        {formatTemperature(entry.temp_c, tempUnit)}
       </td>
       <td
         className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.vr_temp_c)}`}
@@ -303,7 +306,7 @@ function DeviceRow({
             flag. Avoids the visually-alarming "your VR is freezing"
             misread. */}
         {entry.vr_temp_c !== null && entry.vr_temp_c !== 0
-          ? `${entry.vr_temp_c.toFixed(1)} °C`
+          ? formatTemperature(entry.vr_temp_c, tempUnit)
           : '-'}
       </td>
       <td className="py-1.5 px-3 text-right font-mono">
@@ -396,9 +399,11 @@ function computeRejectionPct(
 function DeviceMobileCard({
   entry,
   fmt,
+  tempUnit,
 }: {
   entry: SoloMinerSnapshotEntry;
   fmt: ReturnType<typeof useFormatters>;
+  tempUnit: 'C' | 'F';
 }) {
   const rejectionPct = computeRejectionPct(entry.shares_accepted, entry.shares_rejected);
   const liveGhs = liveHashrateGhs(entry);
@@ -432,14 +437,14 @@ function DeviceMobileCard({
           />
           <MobileStat
             label={t`Temp`}
-            value={entry.temp_c !== null ? `${entry.temp_c.toFixed(1)} °C` : '-'}
+            value={formatTemperature(entry.temp_c, tempUnit)}
             valueClass={tempClass(entry.temp_c)}
           />
           <MobileStat
             label={t`VR temp`}
             value={
               entry.vr_temp_c !== null && entry.vr_temp_c !== 0
-                ? `${entry.vr_temp_c.toFixed(1)} °C`
+                ? formatTemperature(entry.vr_temp_c, tempUnit)
                 : '-'
             }
             valueClass={tempClass(entry.vr_temp_c)}

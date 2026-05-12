@@ -32,7 +32,7 @@ import {
   formatTimestampUtc,
 } from '../lib/format';
 import { useDenomination } from '../lib/denomination';
-import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
+import { useDateTimeLocale, useFormatters, useLocale, useTemperatureUnit } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { localizedRangeLabel } from '../lib/range-label';
 
@@ -289,6 +289,7 @@ export const HashrateChart = memo(function HashrateChart({
   const { intlLocale } = useLocale();
   const dateTimeLocale = useDateTimeLocale();
   const denomination = useDenomination();
+  const tempUnit = useTemperatureUnit();
   const [blockTip, setBlockTip] = useState<PoolBlockTooltipState | null>(null);
   // Difficulty-retarget markers (#22 follow-up): when the right-axis
   // series is `network_difficulty`, place a dot on the line at every
@@ -576,10 +577,16 @@ export const HashrateChart = memo(function HashrateChart({
         }
         case 'solo_max_temp': {
           const xs = points.map((p) => p.tick_at);
+          // DB stores °C; convert on the way out to honour the
+          // operator's temperature-unit preference (#157). Values
+          // mapper converts each point too so the right-axis scale
+          // itself is in the chosen unit.
+          const convert = (v: number | null): number | null =>
+            v === null ? null : (tempUnit === 'F' ? v * 9 / 5 + 32 : v);
           return {
-            values: projectSoloSeries(xs, soloSeries, (r) => r.max_temp_c),
-            formatTick: (v) => `${v.toFixed(1)} °C`,
-            axisLabel: 'solo max temp',
+            values: projectSoloSeries(xs, soloSeries, (r) => convert(r.max_temp_c)),
+            formatTick: (v) => `${v.toFixed(1)} °${tempUnit}`,
+            axisLabel: tempUnit === 'F' ? 'solo max temp (°F)' : 'solo max temp (°C)',
             stroke: '#c084fc',
           };
         }

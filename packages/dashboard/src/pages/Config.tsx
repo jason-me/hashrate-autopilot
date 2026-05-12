@@ -19,13 +19,20 @@ import {
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
-import { formatAge, formatTimestampSample } from '../lib/format';
+import {
+  celsiusToFahrenheit,
+  fahrenheitToCelsius,
+  formatAge,
+  formatTimestampSample,
+} from '../lib/format';
 import {
   DATE_LAYOUT_PRESETS,
   NUMBER_LOCALE_PRESETS,
   useDateTimeLocale,
   useLocale,
+  useTemperatureUnit,
   type DateLayout,
+  type TemperatureUnit,
 } from '../lib/locale';
 
 // #98 - auto-save defaults on; toggle persists per-browser.
@@ -789,7 +796,16 @@ function ConfigTabsAndContent({
     },
     'display-settings': {
       title: t`Display`,
-      labels: [t`Number format`, t`Date layout`],
+      labels: [
+        t`Number format`,
+        t`Date layout`,
+        t`Temperature unit`,
+        // Aliases - operators search by unit name, not by control label.
+        'Celsius',
+        'Fahrenheit',
+        '°C',
+        '°F',
+      ],
     },
     // #154 follow-up: block-found-sound's title is indexed via
     // useSections() fallback (the section is declared there with
@@ -822,6 +838,7 @@ function ConfigTabsAndContent({
         t`Scan local network`,
         t`Alert thresholds`,
         t`Overheating ceiling (°C, 0 = auto per model)`,
+        t`Overheating ceiling (°F, 0 = auto per model)`,
         t`Zero-hashrate alert after (minutes)`,
         t`Share-rejection threshold (%)`,
         t`Share-rejection window (minutes)`,
@@ -1698,7 +1715,14 @@ function pickBucketForKey(
  * `apr` / `mei`.
  */
 function DisplaySettingsSection() {
-  const { numberLocale, dateLayout, setNumberLocale, setDateLayout } = useLocale();
+  const {
+    numberLocale,
+    dateLayout,
+    temperatureUnit,
+    setNumberLocale,
+    setDateLayout,
+    setTemperatureUnit,
+  } = useLocale();
   const dateTimeLocale = useDateTimeLocale();
   // Fixed sample timestamp for the date-layout preview labels: 2026-04-16, 17:00.
   // Picked to match the spec's worked example so the picker reads
@@ -1755,6 +1779,23 @@ function DisplaySettingsSection() {
           </select>
           <span className="block text-xs text-slate-500 mt-1">
             <Trans>Order, separators, 12h vs 24h. Month names always follow your UI language.</Trans>
+          </span>
+        </label>
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Temperature unit</Trans>
+          </span>
+          <select
+            value={temperatureUnit}
+            onChange={(e) => setTemperatureUnit(e.target.value as TemperatureUnit)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          >
+            <option value="system">{t`system default`}</option>
+            <option value="C">{t`Celsius (°C)`}</option>
+            <option value="F">{t`Fahrenheit (°F)`}</option>
+          </select>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>ASIC and VR temperatures on the Status page, the right-axis temperature plot, and the overheating-ceiling threshold. Stored internally in °C; conversion happens at display only.</Trans>
           </span>
         </label>
       </div>
@@ -2059,6 +2100,31 @@ function SoloThresholdInputs({
   draft: AppConfig;
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
+  const tempUnit = useTemperatureUnit();
+  // #157: bidirectional °C ↔ °F at the display boundary. The
+  // sentinel 0 ("auto per model") stays as 0 regardless of unit.
+  const displayCeiling =
+    draft.solo_overheating_threshold_celsius === 0
+      ? 0
+      : tempUnit === 'F'
+        ? Math.round(celsiusToFahrenheit(draft.solo_overheating_threshold_celsius))
+        : draft.solo_overheating_threshold_celsius;
+  const onCeilingChange = (displayValue: number): void => {
+    if (displayValue === 0) {
+      onChange('solo_overheating_threshold_celsius', 0);
+      return;
+    }
+    const c = tempUnit === 'F' ? Math.round(fahrenheitToCelsius(displayValue)) : displayValue;
+    onChange('solo_overheating_threshold_celsius', c);
+  };
+  const ceilingLabel =
+    tempUnit === 'F'
+      ? t`Overheating ceiling (°F, 0 = auto per model)`
+      : t`Overheating ceiling (°C, 0 = auto per model)`;
+  const ceilingHelp =
+    tempUnit === 'F'
+      ? t`Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them.`
+      : t`Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them.`;
   return (
     <div className="border-t border-slate-800 pt-3 space-y-2">
       <h4 className="text-xs uppercase tracking-wider text-slate-400">
@@ -2072,15 +2138,12 @@ function SoloThresholdInputs({
         </Trans>
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SoloThresholdField
-          label={t`Overheating ceiling (°C, 0 = auto per model)`}
-          help={t`Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them.`}
-        >
+        <SoloThresholdField label={ceilingLabel} help={ceilingHelp}>
           <NumberField
-            value={draft.solo_overheating_threshold_celsius}
-            onChange={(v) => onChange('solo_overheating_threshold_celsius', v)}
+            value={displayCeiling}
+            onChange={onCeilingChange}
             min={0}
-            max={150}
+            max={tempUnit === 'F' ? 302 : 150}
             step="integer"
           />
         </SoloThresholdField>
