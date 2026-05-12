@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-11 · v1.7.0
+
+### `[Release]` v1.7.0 - solo-mining monitoring + several real-user bug fixes
+
+Major addition: solo-mining monitoring for Bitaxe / AxeOS device fleets (#149). Device-list + live readings on Status; four new IMPORTANT Telegram event classes (overheating, zero hashrate, share-rejection, stratum URL drift); device management in Config -> Display & Logging with a "Scan local network" subnet probe; master toggle defaults off. Three new migrations (0085-0087) run on first boot. Also bundled: number-format + date-layout split on Config (#147), Alerts-page merger of ACKNOWLEDGED + RESOLVED into one chronological bucket (#153). Notable fixes: DDNS DuckDNS auto-update finally works on clean setups (#150), TelegramReceiver now respects the master mute switch so a secondary install can't race-consume ack callbacks (#152), Config search indexes Solo + Display + block-found sound (#151), Status page "Just lowered/raised bid" recap stops shifting the layout (#154), tooltip flip-below now actually flips (#157), Solo-miners IP column actually honoured on mobile via table-fixed (#158), Config page header no longer occludes the global nav (#145). Doc sweep (README + spec + architecture) brings docs current with the v1.7.0 codebase.
+
 ## 2026-05-11 · v1.6.0
 
 ### `[Fix]` Solo-miners IP/host column on mobile: stop the browser from shrinking it below w-52 (#158)

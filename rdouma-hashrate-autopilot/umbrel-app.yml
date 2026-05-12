@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.6.0"
+version: "1.7.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,25 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.7.0 - solo-mining monitoring + several real-user bug fixes.
+
+  NEW
+  - Solo-mining monitoring (Bitaxe / AxeOS): optional fleet monitor for home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. When enabled (Config → Display & Logging → Solo miners), the daemon polls each registered device's /api/system/info every tick (2 s timeout per device, parallel poll so one unreachable unit doesn't block the rest) and surfaces per-device hashrate, ASIC + VR temperature, power draw, share-rejection rate, best-ever-difficulty, uptime on a Status-page card with a fleet-summary footer (total hashrate, total watts, J/TH efficiency, active-device count). Four IMPORTANT Telegram event classes: overheating (per-ASIC-model thermal ceiling with global override), zero-hashrate (device unreachable or hashrate = 0 for configurable minutes), share-rejection (rolling-window threshold), and stratum URL drift (firmware silently re-pointed at a different pool). A "Scan local network" button on the device-list UI probes the daemon's /24 subnet for AxeOS-shaped responders so adding a fleet doesn't require typing every IP. Master toggle defaults off.
+  - Number-format + date-layout split: the Config → Display & Logging picker used to bundle thousands/decimal separators, date layout order, and month-name language into a single Intl-locale dropdown - so an English-UI operator picking "1.234,56" European separators got Dutch month abbreviations leaking into the Status page's last-tick timestamp. Now two independent dropdowns. Month names always follow the UI language picker (top-right) regardless of the date layout choice.
+  - Alerts page: ACKNOWLEDGED + RESOLVED merged into one chronological bucket headed "Acknowledged and resolved", sorted strictly newest-first by firing time. The two-section layout (separate ACKNOWLEDGED and RESOLVED) created a visual break that wasn't chronological - a 2-min-ago recovery on an old IMPORTANT firing landed visually below a 1-day-old INFO ack. Per-card right-side pill keeps the state distinction visible: emerald RESOLVED vs slate ACKNOWLEDGED · {age}. OPEN stays its own group at the top.
+
+  FIXES
+  - DDNS DuckDNS auto-update never fired: the updater's tick guard required `username` to be non-empty, but DuckDNS doesn't use that field. Every DuckDNS user was silently broken. Now the username check is per-provider, matching the dashboard's hasUsernameField rule.
+  - Telegram receiver respects the "Send messages to Telegram" master switch: when credentials were configured but the master toggle off, the inbound getUpdates long-poll kept running. Telegram's getUpdates is single-consumer per bot - a muted secondary install would race-consume ack callbacks meant for the primary, then update its own DB and edit the Telegram message, making the primary's dashboard show "still unacked" forever. Mute now disables polling end-to-end (in + out).
+  - Config cross-tab search now indexes Solo miners + Display + block-found sound picker. "BitAxe", "AxeOS", "cowbell", "sound", "upload" all hit now.
+  - Status page "Just lowered/raised bid" recap row no longer shifts the dashboard down by one line on every appearance / disappearance.
+  - Config page header no longer overlaps the global nav at the top of the page.
+  - Tooltip flip-below now actually flips - previously the placement logic updated `top` but not the `transform`, so tooltips on hero cards near the viewport top were clipping against the top edge.
+  - Solo-miners device row re-laid-out + trash icon: On checkbox leftmost, widest Label column, IP/host, trash icon right-aligned. Both checkbox and trash carry tooltips spelling out the pause-vs-delete distinction.
+  - Solo-miners IP/host field truncation on iPhone: table now wraps in overflow-x-auto with table-fixed colgroup so the column widths are actually honoured rather than proportionally squeezed by the browser when the row exceeds viewport width.
+
+  Three new migrations (0085-0087) run on first boot to create the solo-mining tables. Solo-mining stays off by default - toggle it on at Config → Display & Logging → Solo miners when ready.
+
   v1.6.0 - alerts pipeline maturity pass.
 
   NEW
