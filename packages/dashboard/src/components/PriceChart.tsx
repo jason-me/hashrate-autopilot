@@ -424,11 +424,29 @@ export const PriceChart = memo(function PriceChart({
     //      ~60 individual settlements; a 1-d bucket many more), so
     //      drop the floor to 1 once medianDtMs is large.
     const MIN_NONZERO_PAIRS = medianDtMs > 5 * 60_000 ? 1 : 3;
+    // #164 follow-up: settled-overpay accumulators, parallel to the
+    // effective-rate accumulators but using the same delta-weighted
+    // form the stats card uses. The chart's `rate = deltaSum/phDaySum`
+    // is BIASED LOW during periods where delivered_ph is still on its
+    // 5-min lag (Braiins reports an elevated delivered_ph for minutes
+    // after delivery actually drops), because phDaySum overestimates
+    // work done. The card's delta-weighted form
+    // `SUM(delta) / SUM(delta/bid)` is bid-normalised and doesn't
+    // touch delivered_ph, so it stays consistent. Same form per-tick
+    // here: settled_overpay = SUM(delta × (bid - fillable) / bid)
+    //                       / SUM(delta / bid)
+    // The two accumulators below build numerator and denominator;
+    // they share the same per-pair filters as the effective-rate
+    // accumulation above.
+    const settledPoints: PricePoint[] = [];
     for (let i = 1; i < points.length; i += 1) {
       let deltaSum = 0;
       let phDaySum = 0;
       let nonZeroPairs = 0;
       let earliestCoveredT: number | null = null;
+      let settledNumSum = 0;
+      let settledDenSum = 0;
+      let settledPairs = 0;
       for (let j = i; j >= 1; j -= 1) {
         const anchorT = points[i]!.tick_at;
         const curT = points[j]!.tick_at;
@@ -470,6 +488,17 @@ export const PriceChart = memo(function PriceChart({
         phDaySum += (cur.delivered_ph * dt) / 86_400_000;
         earliestCoveredT = prev.tick_at;
         nonZeroPairs += 1;
+        // Settled-overpay accumulators (#164): only count pairs where
+        // both bid and fillable are present and bid > 0.
+        const fillable = cur.fillable_ask_sat_per_ph_day;
+        if (
+          bid !== null && Number.isFinite(bid) && bid > 0 &&
+          fillable !== null && Number.isFinite(fillable)
+        ) {
+          settledNumSum += (delta * (bid - fillable)) / bid;
+          settledDenSum += delta / bid;
+          settledPairs += 1;
+        }
       }
       if (earliestCoveredT === null || phDaySum <= 0) continue;
       if (nonZeroPairs < MIN_NONZERO_PAIRS) continue;
@@ -493,6 +522,20 @@ export const PriceChart = memo(function PriceChart({
         continue;
       }
       effectivePoints.push({ t: points[i]!.tick_at, v: clamped });
+      // Emit settled-overpay at the same anchor tick when the
+      // accumulators have enough valid pairs and a non-zero
+      // denominator. Same MIN_NONZERO_PAIRS + MIN_SPAN_MS gates the
+      // rate uses, except evaluated against the settled-pair counter.
+      if (
+        settledPairs >= MIN_NONZERO_PAIRS &&
+        settledDenSum > 0 &&
+        span >= MIN_SPAN_MS
+      ) {
+        const settled = settledNumSum / settledDenSum;
+        if (Number.isFinite(settled)) {
+          settledPoints.push({ t: points[i]!.tick_at, v: settled });
+        }
+      }
     }
 
     // The line the operator actually cares about: the effective cap
@@ -591,47 +634,13 @@ export const PriceChart = memo(function PriceChart({
       smoothedIntentPoints.map((p) => [p.t, p.v]),
     );
 
-    // #164: per-tick (effective_rate - fillable_ask) for the settled
-    // right-axis line. Inherits effectiveByTick's null-gap behaviour
-    // during zero-delivery windows - the line breaks rather than reads
-    // a misleading continuity through Braiins idle/Paused stretches.
-    // Fillable lookup is via a separate map to avoid an O(n) scan per
-    // settled-tick.
-    //
-    // Smoothing (#164 follow-up): the underlying primary_bid_consumed_sat
-    // counter settles in lumps - in a steady-state 3-min effectiveByTick
-    // window the rate can sit ~3-10% below the bid for a few ticks then
-    // catch up. The per-tick (rate - fillable) therefore swings between
-    // small positive (rate ≈ bid, settled ≈ bid-fillable ≈ overpay) and
-    // deeply negative (rate ≈ bid×0.9, settled ≈ -bid×0.1). The chart's
-    // right-axis y-min clamp at 0 (rightYTicks logic below) hid those
-    // negative excursions below the visible area, making the line look
-    // like a clean positive series with mystery spikes. Apply the same
-    // rolling-mean smoothing as the intent line so the per-tick lumpiness
-    // averages out into a stable signal close to the card's delta-
-    // weighted aggregate.
-    const fillableByTick = new Map<number, number>();
-    for (const p of points) {
-      if (Number.isFinite(p.fillable_ask_sat_per_ph_day)) {
-        fillableByTick.set(p.tick_at, p.fillable_ask_sat_per_ph_day as number);
-      }
-    }
-    const settledPoints: PricePoint[] = [];
-    for (const [t, eff] of effectiveByTick) {
-      const fillable = fillableByTick.get(t);
-      if (fillable !== undefined) {
-        settledPoints.push({ t, v: eff - fillable });
-      }
-    }
-    // rollingMeanPoints assumes its input is sorted ascending by t;
-    // effectiveByTick is a Map and iteration order is insertion order,
-    // which is already ascending tick_at (effectivePoints is built in
-    // chronological order). Sort defensively in case that invariant
-    // ever changes.
-    settledPoints.sort((a, b) => a.t - b.t);
-    const smoothedSettledPoints = rollingMeanPoints(settledPoints, priceSmoothingMinutes);
+    // settledPoints is built in the loop above using the card's
+    // delta-weighted SUM(delta × (bid - fillable) / bid) / SUM(delta / bid)
+    // form (#164 follow-up). That's a sliding-window aggregation
+    // already, so additional rolling-mean smoothing here would just
+    // smear the signal without improving fidelity.
     const settledByTick = new Map<number, number>(
-      smoothedSettledPoints.map((p) => [p.t, p.v]),
+      settledPoints.map((p) => [p.t, p.v]),
     );
 
     // #93: right-axis spec, derived from rightAxisSeries. Each branch

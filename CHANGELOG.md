@@ -2,6 +2,16 @@
 
 ## 2026-05-12
 
+### `[Fix]` Avg overpay (settled) chart: use card's delta-weighted formula, drop biased rate-minus-fillable (#164 follow-up #2)
+
+Smoothing the per-tick `(effective_rate - fillable)` line wasn't enough - the line still sat consistently at -2000 to -5000 sat/PH/day on recent data while the matching stat card read +70. Real bug in the formula:
+
+The chart's `effective_rate = SUM(delta) / SUM(phDay)` where `phDay = delivered_ph × dt / 86_400_000`. But `delivered_ph` is Braiins' 5-min lagged rolling reading - it stays elevated for minutes after delivery actually drops. So `phDay` overestimates work done during those lag windows, which makes `rate` underestimate by ~5-10% of the bid. Subtract `fillable` and you get a structurally negative settled line.
+
+The card doesn't have this problem because its formula is bid-normalised - `SUM(delta × (bid - fillable) / bid) / SUM(delta / bid)` weights ticks by their share of *spend*, not by their (lagged) delivered hashrate. The card's formula equals the bid exactly when bid is constant across the window, and stays bias-free during delivery-signal lags.
+
+Fix: compute settled directly with the card's delta-weighted formula in the per-tick rolling window, parallel to (but independent from) the existing rate calculation. The rate line on the chart keeps its current behaviour. Spot-replayed against the operator's DB: 3h settled overpay reads 53.5 sat/PH/day under the new formula vs. -3000-ish under the old broken one.
+
 ### `[Fix]` Avg overpay (settled) chart line: smooth out per-tick counter-lump noise, allow negative y-axis (#164 follow-up)
 
 Operator caught the settled line on the price chart showing values 0-5000 sat/PH/day while the matching stat card read ~70 sat/PH/day. Two compounding issues found by replaying against the operator's DB:
