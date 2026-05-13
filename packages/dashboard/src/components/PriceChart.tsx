@@ -597,19 +597,42 @@ export const PriceChart = memo(function PriceChart({
     // a misleading continuity through Braiins idle/Paused stretches.
     // Fillable lookup is via a separate map to avoid an O(n) scan per
     // settled-tick.
+    //
+    // Smoothing (#164 follow-up): the underlying primary_bid_consumed_sat
+    // counter settles in lumps - in a steady-state 3-min effectiveByTick
+    // window the rate can sit ~3-10% below the bid for a few ticks then
+    // catch up. The per-tick (rate - fillable) therefore swings between
+    // small positive (rate ≈ bid, settled ≈ bid-fillable ≈ overpay) and
+    // deeply negative (rate ≈ bid×0.9, settled ≈ -bid×0.1). The chart's
+    // right-axis y-min clamp at 0 (rightYTicks logic below) hid those
+    // negative excursions below the visible area, making the line look
+    // like a clean positive series with mystery spikes. Apply the same
+    // rolling-mean smoothing as the intent line so the per-tick lumpiness
+    // averages out into a stable signal close to the card's delta-
+    // weighted aggregate.
     const fillableByTick = new Map<number, number>();
     for (const p of points) {
       if (Number.isFinite(p.fillable_ask_sat_per_ph_day)) {
         fillableByTick.set(p.tick_at, p.fillable_ask_sat_per_ph_day as number);
       }
     }
-    const settledByTick = new Map<number, number>();
+    const settledPoints: PricePoint[] = [];
     for (const [t, eff] of effectiveByTick) {
       const fillable = fillableByTick.get(t);
       if (fillable !== undefined) {
-        settledByTick.set(t, eff - fillable);
+        settledPoints.push({ t, v: eff - fillable });
       }
     }
+    // rollingMeanPoints assumes its input is sorted ascending by t;
+    // effectiveByTick is a Map and iteration order is insertion order,
+    // which is already ascending tick_at (effectivePoints is built in
+    // chronological order). Sort defensively in case that invariant
+    // ever changes.
+    settledPoints.sort((a, b) => a.t - b.t);
+    const smoothedSettledPoints = rollingMeanPoints(settledPoints, priceSmoothingMinutes);
+    const settledByTick = new Map<number, number>(
+      smoothedSettledPoints.map((p) => [p.t, p.v]),
+    );
 
     // #93: right-axis spec, derived from rightAxisSeries. Each branch
     // pulls per-point values off MetricPoint and returns a tick
@@ -746,8 +769,20 @@ export const PriceChart = memo(function PriceChart({
       const rmin = Math.min(...valid);
       const rmax = Math.max(...valid);
       const rspan = Math.max(rmax - rmin, Math.abs(rmax) * 0.1, 1e-6);
+      // #164: the avg-overpay series can go negative (effective_rate
+      // below fillable when the counter is undersettled in the window,
+      // or genuinely paying below fillable during fast-moving markets).
+      // Other right-axis series (earnings, hashrates, watts) are
+      // non-negative by construction and benefit from a y-axis that
+      // anchors at 0 for visual stability. Pick the floor per-series.
+      const allowNegativeAxis =
+        rightAxisSeries === 'avg_overpay_intent' ||
+        rightAxisSeries === 'avg_overpay_settled';
+      const yFloor = allowNegativeAxis
+        ? rmin - rspan * 0.1
+        : Math.max(0, rmin - rspan * 0.1);
       rightYTicks = niceYTicks(
-        Math.max(0, rmin - rspan * 0.1),
+        yFloor,
         rmax + rspan * 0.1,
         5,
       );

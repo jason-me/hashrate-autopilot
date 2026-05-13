@@ -2,6 +2,16 @@
 
 ## 2026-05-12
 
+### `[Fix]` Avg overpay (settled) chart line: smooth out per-tick counter-lump noise, allow negative y-axis (#164 follow-up)
+
+Operator caught the settled line on the price chart showing values 0-5000 sat/PH/day while the matching stat card read ~70 sat/PH/day. Two compounding issues found by replaying against the operator's DB:
+
+1. **Per-tick settled line was unsmoothed.** The underlying `primary_bid_consumed_sat` counter settles in lumps - over the existing `effectiveByTick` 3-min window, the rate can sit 3-10% below the bid for a few ticks then catch up. Per-tick `(effective_rate - fillable_ask)` therefore swings between small positive (rate ≈ bid → settled ≈ overpay ~70) and deeply negative (rate ≈ bid×0.9 → settled ≈ -bid×0.1 → -5000 sat/PH/day). The intent line was already smoothed with `braiins_price_smoothing_minutes`; the settled line wasn't. Now is, using the same setting and the same `rollingMeanPoints` helper.
+
+2. **Right-axis y-min was clamped to 0.** The original `niceYTicks(Math.max(0, rmin - rspan * 0.1), ...)` made sense for earnings / watts / hashrates (all non-negative) but hid the negative excursions of the avg-overpay series below the visible chart area. Made the per-tick lumpiness look like a clean positive line with mystery spikes. Added a per-series flag: avg-overpay-intent and avg-overpay-settled allow a negative floor; everything else keeps the 0-anchor.
+
+Apr 22-26's "spike to 3000+" is NOT a bug - that's a real period where our bid was pinned at max_bid (50000) while fillable sat at 46-47k, genuine 3000+ sat/PH/day overpay.
+
 ### `[Feature]` Avg overpay (intent / settled) plottable on the Price chart's right axis (#164, phase 2)
 
 Two new entries in the Price chart's right-axis dropdown: `avg overpay (intent)` and `avg overpay (settled)`. Operator picks one at a time; the right axis shows the chosen series as a time-series line over the chart's full range, retroactively from the earliest `tick_metrics` row available.
