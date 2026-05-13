@@ -38,6 +38,7 @@ import { useDenomination } from '../lib/denomination';
 import {
   formatAgeMinutes,
   formatCompactNumber,
+  formatDuration,
   formatNumber,
   formatTimestampHuman,
   formatTimestampUtc,
@@ -1548,7 +1549,7 @@ export const PriceChart = memo(function PriceChart({
               fill="url(#mktEmptyHatchPx)"
             >
               <title>
-                {`Marketplace empty (${Math.round((iv.x1 - iv.x0) / 60_000)} min)`}
+                {`Marketplace empty (${formatDuration(iv.x1 - iv.x0)})`}
               </title>
             </rect>
           );

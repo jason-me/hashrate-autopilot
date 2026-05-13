@@ -28,6 +28,7 @@ import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import {
   formatAgeMinutes,
   formatCompactNumber,
+  formatDuration,
   formatNumber,
   formatTimestampUtc,
 } from '../lib/format';
@@ -122,16 +123,6 @@ function rollingMean(
   }
   return out;
 }
-
-function formatDuration(ms: number): string {
-  const totalMinutes = Math.max(0, Math.round(ms / 60_000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
-
 
 interface RetargetEvent {
   /** Tick timestamp of the first sample at the new difficulty. */
@@ -1103,7 +1094,7 @@ export const HashrateChart = memo(function HashrateChart({
               fill="url(#mktEmptyHatchHr)"
             >
               <title>
-                {`Marketplace empty (${Math.round((iv.x1 - iv.x0) / 60_000)} min)`}
+                {`Marketplace empty (${formatDuration(iv.x1 - iv.x0)})`}
               </title>
             </rect>
           );

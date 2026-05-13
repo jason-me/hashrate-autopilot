@@ -2,6 +2,10 @@
 
 ## 2026-05-13
 
+### `[UI]` Marketplace-empty tooltip: use h/m duration format instead of raw minutes (#167 follow-up #2)
+
+Tooltip on the marketplace-empty chart bands said "(82 min)". Switched to `formatDuration` from `lib/format.ts` so the same band now reads "(1h 22m)" - matches the rest of the dashboard's duration rendering convention. Removed a dead local `formatDuration` in `HashrateChart.tsx` that was shadowing the imported one.
+
 ### `[UI]` Marketplace-empty chart band: diagonal-hatch pattern instead of flat tint (#167 follow-up)
 
 Operator feedback on the original 12%-opacity slate fill - the band was visible but easy to miss until you hovered for the tooltip. Replaced with a diagonal-hatch pattern (45° lines at 8 px spacing) layered over the same faint tint. Each chart has its own `<pattern>` id in its `<defs>` block (`mktEmptyHatchHr` / `mktEmptyHatchPx`) so the two SVGs don't collide on the page. Tooltip behaviour unchanged.
