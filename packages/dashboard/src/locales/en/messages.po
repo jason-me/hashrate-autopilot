@@ -194,6 +194,10 @@ msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 
 #: src/pages/Config.tsx
+msgid "⚠ Dynamic IP? Use a DDNS hostname, not a raw IP."
+msgstr "⚠ Dynamic IP? Use a DDNS hostname, not a raw IP."
+
+#: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 
@@ -1910,6 +1914,10 @@ msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the 
 msgstr "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. The daemon polls each device's /api/system/info every tick; hashrate, temperature, power draw, and share rates surface on the Status page."
 
 #: src/pages/Config.tsx
+msgid "More about dynamic IPs and DDNS"
+msgstr "More about dynamic IPs and DDNS"
+
+#: src/pages/Config.tsx
 msgid "More about the /umbrel-api naming"
 msgstr "More about the /umbrel-api naming"
 
@@ -2665,6 +2673,10 @@ msgstr "Remove device"
 #: src/pages/Config.tsx
 msgid "Replace file…"
 msgstr "Replace file…"
+
+#: src/pages/Config.tsx
+msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
+msgstr "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
 
 #: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx

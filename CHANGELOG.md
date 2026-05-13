@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-13
+
+### `[UI]` Pool URL: yellow note + info popover explaining the dynamic-IP / DDNS implication (#165)
+
+The Pool URL helper read `Must be reachable from the public internet - Braiins probes it.` Literally true but missed the operational consequence: residential dynamic IPs make a raw-IP entry break the day the ISP rotates. Added an inline yellow `⚠ Dynamic IP? Use a DDNS hostname, not a raw IP.` with a click-to-open ⓘ popover explaining the situation and pointing at the Dynamic DNS panel right below. Same pattern as the #162 popover on the Datum field.
+
+Refactored the per-site popover from #162 into a small reusable `InlineInfoPopover` primitive so both call sites share the click-to-open / outside-click-dismiss / Escape-dismiss machinery. NL + ES translations for the three new strings.
+
 ## 2026-05-12
 
 ### `[Fix]` Avg overpay (settled) chart: use card's delta-weighted formula, drop biased rate-minus-fillable (#164 follow-up #2)

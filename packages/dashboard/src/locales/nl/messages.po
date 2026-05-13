@@ -194,6 +194,10 @@ msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/dag · ~ {totalStr} bij {daysStr} dagen"
 
 #: src/pages/Config.tsx
+msgid "⚠ Dynamic IP? Use a DDNS hostname, not a raw IP."
+msgstr "⚠ Dynamisch IP? Gebruik een DDNS-hostnaam, geen rauw IP."
+
+#: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ Geen punt gevonden. Ocean TIDES vereist \"<BTC-adres>.<label>\". Zonder het adres-voorvoegsel worden shares niet bijgeschreven."
 
@@ -1910,6 +1914,10 @@ msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the 
 msgstr "Monitor een vloot van Bitaxe / Nerdaxe / ESP-Miner apparaten naast de gehuurde Braiins-hashrate van de autopilot. De daemon polt elk apparaat via /api/system/info elke tick; hashrate, temperatuur, vermogen en share-percentages verschijnen op de Status-pagina."
 
 #: src/pages/Config.tsx
+msgid "More about dynamic IPs and DDNS"
+msgstr "Meer over dynamische IP's en DDNS"
+
+#: src/pages/Config.tsx
 msgid "More about the /umbrel-api naming"
 msgstr "Meer over de naam /umbrel-api"
 
@@ -2665,6 +2673,10 @@ msgstr "Apparaat verwijderen"
 #: src/pages/Config.tsx
 msgid "Replace file…"
 msgstr "Bestand vervangen…"
+
+#: src/pages/Config.tsx
+msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
+msgstr "Consumenten-ISP's wijzigen je publieke IP periodiek. Een rauw IP hier werkt vandaag en gaat stilletjes stuk zodra je ISP het IP roteert. Gebruik in plaats daarvan een DDNS-hostnaam - gratis opties zijn DuckDNS (geen verloopdatum, geen maandelijkse herbevestiging) en No-IP. Configureer DDNS in het <0>Dynamic DNS</0>-paneel hieronder; eenmaal opgezet, laat je Pool URL naar de hostnaam wijzen (bv. <1>stratum+tcp://jouwnaam.duckdns.org:23334</1>) en de daemon houdt de hostnaam automatisch gekoppeld aan je huidige IP. Vaste IP's / VPS / zakelijke verbindingen kunnen een rauw IP blijven gebruiken en deze opmerking negeren."
 
 #: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx

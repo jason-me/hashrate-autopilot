@@ -194,6 +194,10 @@ msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/día · ~ {totalStr} a {daysStr} días"
 
 #: src/pages/Config.tsx
+msgid "⚠ Dynamic IP? Use a DDNS hostname, not a raw IP."
+msgstr "⚠ ¿IP dinámica? Usa un nombre DDNS, no una IP directa."
+
+#: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ No se encontró ningún punto. Ocean TIDES requiere \"<dirección BTC>.<etiqueta>\". Sin el prefijo de la dirección, las shares no se acreditan."
 
@@ -1910,6 +1914,10 @@ msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the 
 msgstr "Monitoriza una flota de unidades Bitaxe / Nerdaxe / ESP-Miner junto al hashrate alquilado de Braiins del autopiloto. El daemon consulta /api/system/info de cada dispositivo en cada tick; hashrate, temperatura, consumo y porcentajes de shares aparecen en la pagina Estado."
 
 #: src/pages/Config.tsx
+msgid "More about dynamic IPs and DDNS"
+msgstr "Más sobre IPs dinámicas y DDNS"
+
+#: src/pages/Config.tsx
 msgid "More about the /umbrel-api naming"
 msgstr "Más sobre el nombre /umbrel-api"
 
@@ -2665,6 +2673,10 @@ msgstr "Eliminar dispositivo"
 #: src/pages/Config.tsx
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
+
+#: src/pages/Config.tsx
+msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
+msgstr "Los ISPs residenciales reasignan tu IP pública periódicamente. Si pones una IP directa aquí, funcionará hoy y se romperá silenciosamente el día que tu ISP la rote. Usa un nombre DDNS en su lugar - opciones gratuitas incluyen DuckDNS (sin caducidad, sin reconfirmación mensual) y No-IP. Configura DDNS en el panel <0>Dynamic DNS</0> abajo; una vez configurado, apunta Pool URL al nombre (p. ej. <1>stratum+tcp://tunombre.duckdns.org:23334</1>) y el daemon mantiene el nombre mapeado a tu IP actual automáticamente. IPs fijas / VPS / conexiones de negocio pueden seguir usando una IP directa e ignorar esta nota."
 
 #: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx

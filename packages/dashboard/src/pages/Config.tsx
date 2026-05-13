@@ -3836,7 +3836,44 @@ function Field({
         {spec.key === 'datum_api_url' && (
           <span className="flex items-center gap-1.5 text-xs text-amber-400 mt-1">
             <Trans>⚠ This is not Umbrel-specific.</Trans>
-            <NotUmbrelSpecificPopover />
+            <InlineInfoPopover ariaLabel={t`More about the /umbrel-api naming`}>
+              <Trans>
+                Even though the endpoint is named <code className="text-slate-200">/umbrel-api</code>,
+                it lives inside Datum Gateway itself - compiled in via{' '}
+                <code className="text-slate-200">#ifdef DATUM_API_FOR_UMBREL</code> and works on any
+                Datum build with that flag set, regardless of host platform.
+              </Trans>{' '}
+              <a
+                href="https://github.com/rdouma/hashrate-autopilot/blob/main/docs/setup-datum-api.md#background"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-300 hover:text-amber-200 underline"
+              >
+                <Trans>Learn more →</Trans>
+              </a>
+            </InlineInfoPopover>
+          </span>
+        )}
+        {/* #165: Pool URL must resolve to the daemon's public IP from
+            the public internet. Residential ISPs reassign that IP
+            periodically, so a raw-IP entry silently breaks the day the
+            ISP rotates. Surface the DDNS implication inline so the
+            operator connects it to the Dynamic DNS panel right below. */}
+        {spec.key === 'destination_pool_url' && (
+          <span className="flex items-center gap-1.5 text-xs text-amber-400 mt-1">
+            <Trans>⚠ Dynamic IP? Use a DDNS hostname, not a raw IP.</Trans>
+            <InlineInfoPopover ariaLabel={t`More about dynamic IPs and DDNS`}>
+              <Trans>
+                Residential ISPs reassign your public IP periodically. If you put a raw IP here it
+                will work today and silently break the day your ISP rotates it. Use a DDNS hostname
+                instead - free options include DuckDNS (no expiration, no monthly re-confirm) and
+                No-IP. Configure DDNS in the <strong>Dynamic DNS</strong> panel below; once set up,
+                point Pool URL at the hostname (e.g.{' '}
+                <code className="text-slate-200">stratum+tcp://yourname.duckdns.org:23334</code>)
+                and the daemon keeps the hostname mapped to your current IP automatically. Static IPs
+                / VPS / business connections can keep using a raw IP and ignore this note.
+              </Trans>
+            </InlineInfoPopover>
           </span>
         )}
       </label>
@@ -4064,17 +4101,25 @@ function Field({
  */
 
 /**
- * #162: click-to-open info popover next to the "not Umbrel-specific"
- * warning under the Datum stats API field. Hover would be too eager
- * for a paragraph-length clarification; only the curious operator
- * who actually wonders about the naming clicks through.
+ * Click-to-open info popover next to a yellow inline warning.
+ * Used for both the "not Umbrel-specific" warning under Datum API
+ * (#162) and the "dynamic IP needs DDNS" warning under Pool URL
+ * (#165). Hover would be too eager for a paragraph-length
+ * clarification; only the curious operator who actually wonders
+ * clicks through.
  *
  * Dismisses on click outside or Escape. The shared `Tooltip`
  * primitive (`components/Tooltip.tsx`) is hover-only and string-only
- * - not extending it for one site avoids ripple risk to its other
+ * - not extending it for these sites avoids ripple risk to its other
  * call sites.
  */
-function NotUmbrelSpecificPopover() {
+function InlineInfoPopover({
+  ariaLabel,
+  children,
+}: {
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -4102,7 +4147,7 @@ function NotUmbrelSpecificPopover() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label={t`More about the /umbrel-api naming`}
+        aria-label={ariaLabel}
         className="text-amber-400 hover:text-amber-300 leading-none focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-full w-4 h-4 inline-flex items-center justify-center text-[12px]"
       >
         ⓘ
@@ -4112,20 +4157,7 @@ function NotUmbrelSpecificPopover() {
           role="dialog"
           className="absolute left-0 top-5 z-50 bg-slate-950 border border-slate-700 rounded-lg shadow-lg p-3 text-xs text-slate-300 leading-relaxed w-80 whitespace-normal"
         >
-          <Trans>
-            Even though the endpoint is named <code className="text-slate-200">/umbrel-api</code>,
-            it lives inside Datum Gateway itself - compiled in via{' '}
-            <code className="text-slate-200">#ifdef DATUM_API_FOR_UMBREL</code> and works on any
-            Datum build with that flag set, regardless of host platform.
-          </Trans>{' '}
-          <a
-            href="https://github.com/rdouma/hashrate-autopilot/blob/main/docs/setup-datum-api.md#background"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-300 hover:text-amber-200 underline"
-          >
-            <Trans>Learn more →</Trans>
-          </a>
+          {children}
         </span>
       )}
     </span>
