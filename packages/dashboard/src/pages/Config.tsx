@@ -185,7 +185,7 @@ function useSections(): Section[] {
             key: 'datum_api_url',
             label: t`Datum stats API (optional)`,
             kind: 'text',
-            help: t`Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.`,
+            help: t`Optional. The HTTP API exposed by Datum Gateway - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured".`,
             fullWidth: true,
           },
         ],
@@ -3828,6 +3828,17 @@ function Field({
           </span>
         )}
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+        {/* #162: the field name "Datum stats API" + the /umbrel-api
+            endpoint path lead a lot of non-Umbrel operators to assume
+            this integration doesn't apply to them. Inline warning +
+            click-to-open popover with the deeper explanation and a
+            deep link to the docs background section. */}
+        {spec.key === 'datum_api_url' && (
+          <span className="flex items-center gap-1.5 text-xs text-amber-400 mt-1">
+            <Trans>⚠ This is not Umbrel-specific.</Trans>
+            <NotUmbrelSpecificPopover />
+          </span>
+        )}
       </label>
     );
   }
@@ -4051,6 +4062,75 @@ function Field({
  * already 5-min granularity; 30 s is just so the dashboard reflects
  * a config edit's effect within a tick.
  */
+
+/**
+ * #162: click-to-open info popover next to the "not Umbrel-specific"
+ * warning under the Datum stats API field. Hover would be too eager
+ * for a paragraph-length clarification; only the curious operator
+ * who actually wonders about the naming clicks through.
+ *
+ * Dismisses on click outside or Escape. The shared `Tooltip`
+ * primitive (`components/Tooltip.tsx`) is hover-only and string-only
+ * - not extending it for one site avoids ripple risk to its other
+ * call sites.
+ */
+function NotUmbrelSpecificPopover() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent): void => {
+      if (!ref.current) return;
+      if (ref.current.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={t`More about the /umbrel-api naming`}
+        className="text-amber-400 hover:text-amber-300 leading-none focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-full w-4 h-4 inline-flex items-center justify-center text-[12px]"
+      >
+        ⓘ
+      </button>
+      {open && (
+        <span
+          role="dialog"
+          className="absolute left-0 top-5 z-50 bg-slate-950 border border-slate-700 rounded-lg shadow-lg p-3 text-xs text-slate-300 leading-relaxed w-80 whitespace-normal"
+        >
+          <Trans>
+            Even though the endpoint is named <code className="text-slate-200">/umbrel-api</code>,
+            it lives inside Datum Gateway itself - compiled in via{' '}
+            <code className="text-slate-200">#ifdef DATUM_API_FOR_UMBREL</code> and works on any
+            Datum build with that flag set, regardless of host platform.
+          </Trans>{' '}
+          <a
+            href="https://github.com/rdouma/hashrate-autopilot/blob/main/docs/setup-datum-api.md#background"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber-300 hover:text-amber-200 underline"
+          >
+            <Trans>Learn more →</Trans>
+          </a>
+        </span>
+      )}
+    </span>
+  );
+}
 
 /**
  * #112: input + yellow Test connection button on the same row.

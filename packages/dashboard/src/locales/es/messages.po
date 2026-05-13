@@ -198,6 +198,10 @@ msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". With
 msgstr "⚠ No se encontró ningún punto. Ocean TIDES requiere \"<dirección BTC>.<etiqueta>\". Sin el prefijo de la dirección, las shares no se acreditan."
 
 #: src/pages/Config.tsx
+msgid "⚠ This is not Umbrel-specific."
+msgstr "⚠ Esto no es específico de Umbrel."
+
+#: src/pages/Config.tsx
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = usar todo el saldo disponible del wallet en cada CREATE (limitado a 1 BTC - el tope duro por oferta de Braiins). Cualquier valor positivo fija cada nueva oferta a esa cantidad exacta sin importar el saldo."
 
@@ -1344,6 +1348,10 @@ msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes exclu
 msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin índices). Los logs crecen ~ {dailyStr}/día. El archivo de la base de datos pesa actualmente {dbStr}."
 
 #: src/pages/Config.tsx
+msgid "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside Datum Gateway itself - compiled in via <1>#ifdef DATUM_API_FOR_UMBREL</1> and works on any Datum build with that flag set, regardless of host platform."
+msgstr "Aunque el endpoint se llama <0>/umbrel-api</0>, vive dentro de Datum Gateway - compilado mediante <1>#ifdef DATUM_API_FOR_UMBREL</1> y funciona en cualquier build de Datum con ese flag, sin importar la plataforma anfitriona."
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Cada reinicio vuelve a DRY_RUN. Pasas explícitamente a LIVE desde el panel."
 
@@ -1734,6 +1742,10 @@ msgid "last tick:"
 msgstr "último tick:"
 
 #: src/pages/Config.tsx
+msgid "Learn more →"
+msgstr "Más información →"
+
+#: src/pages/Config.tsx
 msgid "Leave Disabled if you maintain DDNS elsewhere (router, VPS, static IP). When set, the daemon pushes an update every 5 minutes (and at minimum hourly to keep free hostnames active)."
 msgstr "Déjalo en Deshabilitado si gestionas DDNS en otro lugar (router, VPS, IP fija). Cuando está configurado, el daemon envía una actualización cada 5 minutos (y al menos cada hora para mantener activas las hostnames gratuitas)."
 
@@ -1882,6 +1894,10 @@ msgstr "No coinciden. Si tu daemon y Datum Gateway están en la misma red domés
 #: src/pages/Config.tsx
 msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. The daemon polls each device's /api/system/info every tick; hashrate, temperature, power draw, and share rates surface on the Status page."
 msgstr "Monitoriza una flota de unidades Bitaxe / Nerdaxe / ESP-Miner junto al hashrate alquilado de Braiins del autopiloto. El daemon consulta /api/system/info de cada dispositivo en cada tick; hashrate, temperatura, consumo y porcentajes de shares aparecen en la pagina Estado."
+
+#: src/pages/Config.tsx
+msgid "More about the /umbrel-api naming"
+msgstr "Más sobre el nombre /umbrel-api"
 
 #: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
@@ -2213,8 +2229,12 @@ msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, h
 msgstr "Tope dinámico opcional. En cada tick el tope efectivo = min(Máximo, hashprice + este valor). Evita que el autopilot pague descontroladamente cuando el hashprice cae bruscamente y el Máximo fijo aún lo permitiría. Pon 0 para desactivar."
 
 #: src/pages/Config.tsx
-msgid "Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
-msgstr "Opcional. Endpoint /umbrel-api de Datum Gateway - p.ej. http://192.168.1.121:7152. Déjalo vacío para desactivar; el panel Datum mostrará \"no configurado\". Ver docs/setup-datum-api.md para la receta de exposición de puerto del lado Umbrel."
+#~ msgid "Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
+#~ msgstr "Opcional. Endpoint /umbrel-api de Datum Gateway - p.ej. http://192.168.1.121:7152. Déjalo vacío para desactivar; el panel Datum mostrará \"no configurado\". Ver docs/setup-datum-api.md para la receta de exposición de puerto del lado Umbrel."
+
+#: src/pages/Config.tsx
+msgid "Optional. The HTTP API exposed by Datum Gateway - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\"."
+msgstr "Opcional. La API HTTP expuesta por Datum Gateway - p. ej. http://192.168.1.121:7152. Déjalo vacío para desactivar; el panel Datum mostrará \"no configurado\"."
 
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."

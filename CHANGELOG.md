@@ -2,6 +2,10 @@
 
 ## 2026-05-12
 
+### `[UI]` Datum stats API helper text: clarify "/umbrel-api is a Datum endpoint, not Umbrel" (#162)
+
+Non-Umbrel operators were skipping the **Datum stats API** field on Config → Pool & Payout because the helper text mentioned `Datum Gateway's /umbrel-api endpoint` and the project's Umbrel-app framing made it sound Umbrel-exclusive. Tightened the primary line, added an inline yellow `⚠ This is not Umbrel-specific.` note, and parked a click-to-open ⓘ popover next to it. The popover explains in 1-2 sentences that `/umbrel-api` lives inside the Datum Gateway binary (compiled in under `#ifdef DATUM_API_FOR_UMBREL`) and works on any Datum build with that flag set, regardless of host. Includes a "Learn more" link to the Background section of `docs/setup-datum-api.md`. Click-to-open (not hover) so the inline note is enough for "ok, this applies to me" and only the curious operator clicks through. EN + NL + ES translations.
+
 ### `[Fix]` Pool-luck step-marker tooltip now reports the actual step values (#161)
 
 Operator caught a "Block landed - the rolling-24h numerator went from 0.47× to 0.47×" tooltip on a block where the line visibly stepped up to ~0.90×. Root cause: the `luckEvents` useMemo picked `afterIdx` as the first tick at or after the on-chain block timestamp - but the daemon's `pool_blocks_24h_count` column only updates with the Ocean API refresher's cadence (~3 minutes after the block time in practice). So the tick the code labelled "after" still had the pre-block count, and so did the tick before it.
