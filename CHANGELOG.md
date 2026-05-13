@@ -2,6 +2,12 @@
 
 ## 2026-05-12
 
+### `[Fix]` Price chart: pool-block markers on unpaid-earnings line sit at the post-step value (#163)
+
+Operator caught the blue pool-block dot on the Price chart anchored to the **lower** (pre-step) segment of the unpaid (sat) step line at a Tue 18:00 block, while the visible line clearly stepped up to the higher segment immediately after. Same structural shape as #161 on the Hashrate chart: `visiblePoolBlockMarkers` was placing the marker at "first tick at-or-after the block timestamp", but Ocean's unpaid_sat column only refreshes on its own ~5 min cadence - so that tick still carries the pre-block value.
+
+Fix mirrors #161: scan forward up to 15 ticks (~15 min at 60 s cadence) for the first tick where `rightAxis.values[i]` actually moves off the pre-event baseline, and use that stepped value for the marker's y-position. `cx` stays at the block's on-chain timestamp so the dot remains visually anchored to the same x as the block icon on the Hashrate chart above. If no step is found within the bound (the daemon hasn't caught up to Ocean yet), falls back to the cursor's current value rather than dropping the marker - the next render after the refresh resolves it correctly.
+
 ### `[UI]` Datum stats API helper text: clarify "/umbrel-api is a Datum endpoint, not Umbrel" (#162)
 
 Non-Umbrel operators were skipping the **Datum stats API** field on Config → Pool & Payout because the helper text mentioned `Datum Gateway's /umbrel-api endpoint` and the project's Umbrel-app framing made it sound Umbrel-exclusive. Tightened the primary line, added an inline yellow `⚠ This is not Umbrel-specific.` note, and parked a click-to-open ⓘ popover next to it. The popover explains in 1-2 sentences that `/umbrel-api` lives inside the Datum Gateway binary (compiled in under `#ifdef DATUM_API_FOR_UMBREL`) and works on any Datum build with that flag set, regardless of host. Includes a "Learn more" link to the Background section of `docs/setup-datum-api.md`. Click-to-open (not hover) so the inline note is enough for "ok, this applies to me" and only the curious operator clicks through. EN + NL + ES translations.

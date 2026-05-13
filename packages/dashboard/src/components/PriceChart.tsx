@@ -1140,6 +1140,15 @@ export const PriceChart = memo(function PriceChart({
     // ourBlocks comes from /api/ocean newest-first, so sort ASC so the
     // two-pointer cursor walk lines up with `points` (also ASC).
     const sortedBlocks = [...ourBlocks].sort((a, b) => a.timestamp_ms - b.timestamp_ms);
+    // #163: Ocean's unpaid-sat column refreshes on its own ~5 min cadence,
+    // not on the on-chain block timestamp. The tick at-or-after the block
+    // still carries the pre-block value, so anchoring the marker there
+    // sits it on the pre-step segment of the visible step line. Scan
+    // forward for the first tick where the right-axis value actually
+    // moves off the pre-event baseline (bounded to 15 ticks ≈ 15 min)
+    // and place the marker at that post-step value. Same structural fix
+    // as #161 in HashrateChart's pool-luck step markers.
+    const MAX_LAG_TICKS = 15;
     let cursor = 0;
     for (const b of sortedBlocks) {
       if (b.timestamp_ms < minX || b.timestamp_ms > maxX) continue;
@@ -1148,8 +1157,27 @@ export const PriceChart = memo(function PriceChart({
       }
       let v: number | null = null;
       if (cursor < points.length) {
-        const c = rightAxis.values[cursor];
-        if (typeof c === 'number' && Number.isFinite(c)) v = c;
+        const baseline = cursor > 0 ? rightAxis.values[cursor - 1] : null;
+        const baselineIsNum =
+          typeof baseline === 'number' && Number.isFinite(baseline);
+        const scanEnd = Math.min(points.length, cursor + MAX_LAG_TICKS);
+        let stepped: number | null = null;
+        if (baselineIsNum) {
+          for (let i = cursor; i < scanEnd; i += 1) {
+            const c = rightAxis.values[i];
+            if (typeof c !== 'number' || !Number.isFinite(c)) continue;
+            if (c !== baseline) {
+              stepped = c;
+              break;
+            }
+          }
+        }
+        if (stepped !== null) {
+          v = stepped;
+        } else {
+          const c = rightAxis.values[cursor];
+          if (typeof c === 'number' && Number.isFinite(c)) v = c;
+        }
       } else {
         v = lastNonNull;
       }
