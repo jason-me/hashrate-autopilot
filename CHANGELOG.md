@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-14
+
+### `[Fix]` Pool-block-credited Telegram: defer notification until Ocean's unpaid endpoint catches up (#168)
+
+Operator screenshot showed a Telegram pool-block-credited message reporting `Unpaid total: 775,295 sat` while the dashboard chart's unpaid (sat) line at the same block (#949,312) clearly stepped up to ~820,000 sat. Root cause: `evaluatePoolBlockCredited` read `state.ocean_unpaid_sat` at the tick when the block first showed up in `pool_blocks` and put that value in the message body. Empirically Ocean's `pool_blocks` endpoint updates within ~1 minute of a block landing, but the `user_hashrate` endpoint that drives `ocean_unpaid_sat` lags by ~4 minutes - so the body reported the pre-credit value. Verified against the operator's DB: ocean_unpaid_sat stayed at 775,295 for 4 ticks after the 03:47:01 UTC block, then jumped to 815,996 at 03:51:23.
+
+Fix: new in-memory deferral queue `pendingPoolBlockCredits`. When a new block shows up in `pool_blocks`, queue it with the noticing-time unpaid + tick. On every subsequent evaluator tick, fire the notification when `state.ocean_unpaid_sat > noticed_unpaid_sat` (Ocean has caught up; the value now includes this block's credit) OR when 10 minutes have elapsed (failsafe for Ocean unreachable / unmoving). `lastNotifiedBlockHeight` advances only when an entry actually fires, so a daemon restart mid-defer re-discovers the un-notified block on the next scan and re-queues it.
+
 ## 2026-05-13
 
 ### `[UI]` Marketplace-empty tooltip: use h/m duration format instead of raw minutes (#167 follow-up #2)

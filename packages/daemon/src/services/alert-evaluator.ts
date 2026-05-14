@@ -39,6 +39,7 @@ import type { AxeOSPoller, SoloMinerSnapshotEntry } from './axeos-poller.js';
 import { overheatingCeilingForAsic } from './axeos.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
+import type { PoolBlocksTable } from '../state/types.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { State } from '../controller/types.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';
@@ -157,6 +158,26 @@ export class AlertEvaluator {
    * messages for past credits. Updated as we walk new rows.
    */
   private lastNotifiedBlockHeight: number | null = null;
+  /**
+   * #168: per-block deferral queue for `pool_block_credited` Telegram
+   * notifications. Ocean's `pool_blocks` endpoint updates ~1 min
+   * after a block lands, but the `user_hashrate` endpoint that
+   * drives `state.ocean_unpaid_sat` lags by ~4 min. Firing
+   * immediately on noticing the block reports a stale unpaid total
+   * that doesn't include the credit. Each entry holds the
+   * noticing-time unpaid + tick so subsequent ticks can detect when
+   * Ocean has caught up (unpaid > noticed_unpaid) and fire the
+   * notification with the updated value.
+   *
+   * In-memory only - on daemon restart, the next evaluator tick
+   * scans pool_blocks since `lastNotifiedBlockHeight` and re-queues
+   * everything; no persistence needed.
+   */
+  private pendingPoolBlockCredits: Array<{
+    block: PoolBlocksTable;
+    noticed_unpaid_sat: number | null;
+    noticed_at_ms: number;
+  }> = [];
   /**
    * #143: baseline for `state.braiins_total_deposited_sat`. Fires
    * `braiins_deposit_detected` whenever the live value exceeds the
@@ -628,13 +649,59 @@ export class AlertEvaluator {
       }
       return;
     }
+    // (#168) Defer the notification until Ocean's user_hashrate
+    // endpoint catches up. The `pool_blocks` endpoint Ocean exposes
+    // updates within a minute of a block landing, but the
+    // user_hashrate endpoint that drives state.ocean_unpaid_sat lags
+    // by ~4 minutes empirically. Without deferring, the Telegram
+    // body reports an unpaid total that doesn't include the very
+    // block the message is celebrating.
+    //
+    // Watermark queue:
+    // - Walk repo.sinceHeight(highestNoticedHeight) and enqueue any
+    //   new entries with their noticing-time unpaid + tick. The
+    //   highest-seen height is the max of lastNotifiedBlockHeight
+    //   AND the highest height already queued (so we don't re-enqueue
+    //   while waiting for unpaid to rise).
+    // - On every subsequent tick, fire any queued entry where Ocean
+    //   has caught up (unpaid > noticed_unpaid) OR a 10-min failsafe
+    //   has elapsed (Ocean unreachable / unmoving). lastNotifiedBlockHeight
+    //   advances only when an entry actually fires.
+    const highestQueuedHeight = this.pendingPoolBlockCredits.reduce<number>(
+      (m, e) => (e.block.height > m ? e.block.height : m),
+      this.lastNotifiedBlockHeight,
+    );
     const newBlocks = await repo
-      .sinceHeight(this.lastNotifiedBlockHeight)
+      .sinceHeight(highestQueuedHeight)
       .catch(() => [] as Awaited<ReturnType<typeof repo.sinceHeight>>);
-    if (newBlocks.length === 0) return;
-
-    const unpaidSat = state.ocean_unpaid_sat;
     for (const blk of newBlocks) {
+      this.pendingPoolBlockCredits.push({
+        block: blk,
+        noticed_unpaid_sat: state.ocean_unpaid_sat,
+        noticed_at_ms: state.tick_at,
+      });
+    }
+    if (this.pendingPoolBlockCredits.length === 0) return;
+
+    // Fire any entries whose deferral condition is satisfied.
+    const fireFailsafeMs = 10 * 60 * 1000;
+    const stillPending: typeof this.pendingPoolBlockCredits = [];
+    for (const entry of this.pendingPoolBlockCredits) {
+      const oceanCaughtUp =
+        state.ocean_unpaid_sat !== null &&
+        entry.noticed_unpaid_sat !== null &&
+        state.ocean_unpaid_sat > entry.noticed_unpaid_sat;
+      const ageMs = state.tick_at - entry.noticed_at_ms;
+      const failsafeReached = ageMs >= fireFailsafeMs;
+      // If unpaid was unknown at noticing-time, wait for it to
+      // become non-null before firing (still gated by failsafe).
+      const unpaidNowAvailable =
+        entry.noticed_unpaid_sat === null && state.ocean_unpaid_sat !== null;
+      if (!oceanCaughtUp && !failsafeReached && !unpaidNowAvailable) {
+        stillPending.push(entry);
+        continue;
+      }
+      const blk = entry.block;
       const sharePct = this.tickMetricsRepo
         ? await this.tickMetricsRepo
             .nearestShareLogPct(blk.timestamp_ms, SHARE_LOG_AT_BLOCK_TOLERANCE_MS)
@@ -649,6 +716,7 @@ export class AlertEvaluator {
       const sharePctStr = sharePct !== null ? `${sharePct.toFixed(4)}%` : 'unknown';
       const creditStr =
         ourCreditSat !== null ? `~${ourCreditSat.toLocaleString('en-US')} sat` : 'unknown (no nearby tick captured share_log)';
+      const unpaidSat = state.ocean_unpaid_sat;
       const unpaidStr =
         unpaidSat !== null
           ? `${unpaidSat.toLocaleString('en-US')} sat (${((unpaidSat / OCEAN_PAYOUT_THRESHOLD_SAT) * 100).toFixed(1)}% of ${OCEAN_PAYOUT_THRESHOLD_SAT.toLocaleString('en-US')}-sat payout)`
@@ -665,8 +733,11 @@ export class AlertEvaluator {
         }),
         event_class: 'pool_block_credited',
       });
-      this.lastNotifiedBlockHeight = blk.height;
+      if (blk.height > this.lastNotifiedBlockHeight) {
+        this.lastNotifiedBlockHeight = blk.height;
+      }
     }
+    this.pendingPoolBlockCredits = stillPending;
   }
 
   /**
