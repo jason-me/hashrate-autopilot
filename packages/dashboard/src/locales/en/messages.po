@@ -1914,8 +1914,16 @@ msgid "More about dynamic IPs and DDNS"
 msgstr "More about dynamic IPs and DDNS"
 
 #: src/pages/Config.tsx
+msgid "More about historical payouts backfill"
+msgstr "More about historical payouts backfill"
+
+#: src/pages/Config.tsx
 msgid "More about the /umbrel-api naming"
 msgstr "More about the /umbrel-api naming"
+
+#: src/pages/Config.tsx
+msgid "More about the pre-installation earnings offset"
+msgstr "More about the pre-installation earnings offset"
 
 #: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
@@ -2509,8 +2517,8 @@ msgstr "pre-installation (manual)"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
-msgid "Pre-installation earnings (sat)"
-msgstr "Pre-installation earnings (sat)"
+msgid "Pre-installation earnings"
+msgstr "Pre-installation earnings"
 
 #: src/components/HashrateChart.tsx
 msgid "previous"
@@ -3135,6 +3143,10 @@ msgid "Testing…"
 msgstr "Testing…"
 
 #: src/pages/Config.tsx
+msgid "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
+msgstr "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
+
+#: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
 msgstr "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
 
@@ -3342,10 +3354,6 @@ msgstr "VR temp"
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
-
-#: src/pages/Config.tsx
-msgid "Walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
-msgstr "Walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx

@@ -87,7 +87,8 @@ Non-goals: SaaS / multi-user, cloud deployment, hands-free wallet funding, gaple
   historical Ocean payouts you've already swept to another wallet - so the P&L stays coherent even if you reuse a
   payout address across before-and-after-installation periods. A `Backfill now` button under Config -> Pool &
   Payout pulls historical receipts on demand. Operators with fresh-address discipline can disable the backfill via
-  the same panel.
+  the same panel. There's also a `Pre-installation earnings` field for off-chain income the on-chain observer
+  can't see (Lightning payouts, swept Ocean history) that gets folded into the lifetime chart and the net P&L.
 
 Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/architecture.md) ·
 [`docs/research.md`](docs/research.md).
@@ -276,9 +277,13 @@ live).
 **Pool destination** (pool URL, BTC payout address, worker identity auto-derived from the address, Datum
 stats API URL), **Dynamic DNS** (No-IP / DuckDNS / generic dyndns2 - daemon-managed alternative to your
 router's DDNS client; pushes the current public IP every 5 min and immediately on any config save),
-**On-chain payouts** (payout-source backend: bitcoind RPC or Electrs), **Profit & Loss** spend scope
-(autopilot-tagged bids only vs the whole Braiins account), and **BTC price oracle** (feeds the sat ↔ USD
-header toggle; CoinGecko / Coinbase / Bitstamp / Kraken).
+**On-chain payouts** (payout-source backend: bitcoind RPC or Electrs, plus an *Include historical Ocean
+payouts* toggle with a **Backfill now** button that walks the address history and folds historical
+coinbase payouts into the lifetime-earnings line, and a *Pre-installation earnings* field for off-chain
+or pre-autopilot income the on-chain observer can't see - Lightning payouts, swept Ocean history -
+which becomes the starting value of the lifetime chart and folds into the net P&L), **Profit & Loss**
+spend scope (autopilot-tagged bids only vs the whole Braiins account), and **BTC price oracle** (feeds
+the sat ↔ USD header toggle; CoinGecko / Coinbase / Bitstamp / Kraken).
 
 ### Notifications
 

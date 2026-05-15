@@ -2,6 +2,14 @@
 
 ## 2026-05-14
 
+### `[UI]` Polish On-chain payouts panel: Backfill button inline, monospace numeric input, info popovers (#170 polish)
+
+Operator feedback on the freshly-shipped controls. Three small but visible fixes:
+
+- The `Pre-installation earnings` input now uses the project's standard `NumberField` (monospace digits, locale-aware thousand separators, `sats` suffix to the right). Matches the styling of every other numeric field on the page.
+- The `Backfill now` button moves up to the right of the *Include historical Ocean payouts* checkbox row and adopts the amber-filled style of the `Test connection` buttons elsewhere on the page. The long explanatory paragraph that lived under it collapses into an inline info popover next to the checkbox label.
+- Field label drops the redundant "(sat)" suffix since the field itself now shows `sats`.
+
 ### `[Feature]` Manual pre-installation earnings offset (#170 follow-up)
 
 The on-chain coinbase backfill that landed earlier today only covers Ocean payouts that arrived on-chain - it can't see Lightning payouts or pre-autopilot Ocean history that's been swept off-address before the daemon ever scanned. The Twitter user who motivated #170 specifically mentioned having had some payouts via Lightning, so the P&L would still be incomplete even after a successful backfill.

@@ -785,7 +785,7 @@ function ConfigTabsAndContent({
         t`Disabled (no payout tracking)`,
         t`Include historical Ocean payouts in lifetime earnings`,
         t`Backfill now`,
-        t`Pre-installation earnings (sat)`,
+        t`Pre-installation earnings`,
       ],
     },
     ddns: {
@@ -3401,7 +3401,7 @@ function PayoutSourceSection({
             meaningful on electrs (the only path with a cheap full-
             address history call). Hidden on the other two sources. */}
         {source === 'electrs' && (
-          <HistoricalPayoutsControls draft={draft} onChange={onChange} />
+          <HistoricalPayoutsControls draft={draft} locale={locale} onChange={onChange} />
         )}
 
         {/* Bitcoin Core RPC fields - always shown, not gated on the
@@ -3434,9 +3434,11 @@ function PayoutSourceSection({
  */
 function HistoricalPayoutsControls({
   draft,
+  locale,
   onChange,
 }: {
   draft: AppConfig;
+  locale: string | undefined;
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
   const enabled = draft.include_historical_payouts;
@@ -3474,44 +3476,42 @@ function HistoricalPayoutsControls({
 
   return (
     <div className="bg-slate-900/40 border border-slate-800 rounded p-3 space-y-3">
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => onChange('include_historical_payouts', e.target.checked as never)}
-          className="mt-1 accent-amber-400"
-        />
-        <span>
-          <span className="text-sm text-slate-200">
+      <div className="flex items-start gap-3 flex-wrap">
+        <label className="flex items-start gap-2 cursor-pointer flex-1 min-w-0">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onChange('include_historical_payouts', e.target.checked as never)}
+            className="mt-1 accent-amber-400"
+          />
+          <span className="text-sm text-slate-200 inline-flex items-center gap-1.5">
             <Trans>Include historical Ocean payouts in lifetime earnings</Trans>
+            <InlineInfoPopover ariaLabel={t`More about historical payouts backfill`}>
+              <Trans>
+                When on, lifetime earnings count every coinbase tx ever credited to this
+                payout address - including payouts you have already swept to another
+                wallet. When off, only outputs still sitting at the address are counted
+                (the pre-1.7.5 behaviour). Most users want this on; turn it off if you
+                rotate to a fresh payout address per accounting period.
+              </Trans>
+              <span className="block mt-2">
+                <Trans>
+                  The "Backfill now" button walks the full address history via Electrs
+                  and adds any historical Ocean coinbase payouts that aren't already
+                  recorded. Safe to run repeatedly.
+                </Trans>
+              </span>
+            </InlineInfoPopover>
           </span>
-          <span className="block text-xs text-slate-500 mt-0.5">
-            <Trans>
-              When on, lifetime earnings count every coinbase tx ever credited to this
-              payout address - including payouts you have already swept to another
-              wallet. When off, only outputs still sitting at the address are counted
-              (the pre-1.7.5 behaviour). Most users want this on; turn it off if you
-              rotate to a fresh payout address per accounting period.
-            </Trans>
-          </span>
-        </span>
-      </label>
-
-      <div className="flex items-center gap-3 flex-wrap">
+        </label>
         <button
           type="button"
           onClick={() => void runBackfill()}
           disabled={pending}
-          className="px-3 py-1.5 text-xs rounded border border-amber-600 text-amber-300 hover:bg-amber-950/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
         >
           {pending ? <Trans>Scanning…</Trans> : <Trans>Backfill now</Trans>}
         </button>
-        <span className="text-xs text-slate-500">
-          <Trans>
-            Walks the full address history via Electrs and adds any historical Ocean
-            coinbase payouts that aren't already recorded. Safe to run repeatedly.
-          </Trans>
-        </span>
       </div>
 
       {result && (
@@ -3532,32 +3532,30 @@ function HistoricalPayoutsControls({
           value of the lifetime-earnings line AND folds into the
           Status finance panel's net P&L. */}
       <div className="pt-3 border-t border-slate-800/60">
-        <label className="block text-sm text-slate-200">
-          <Trans>Pre-installation earnings (sat)</Trans>
+        <label className="block text-sm text-slate-200 inline-flex items-center gap-1.5">
+          <Trans>Pre-installation earnings</Trans>
+          <InlineInfoPopover ariaLabel={t`More about the pre-installation earnings offset`}>
+            <Trans>
+              One-shot offset for earnings the on-chain payout observer can't see -
+              Lightning payouts, Ocean payouts that landed and were swept before you
+              installed the autopilot, etc. Shifts the lifetime-earnings chart's
+              starting value up by this amount and folds into the net P&L. Leave 0 if
+              everything is already covered by the on-chain backfill above.
+            </Trans>
+          </InlineInfoPopover>
         </label>
-        <p className="text-xs text-slate-500 mt-0.5 mb-2">
-          <Trans>
-            One-shot offset for earnings the on-chain payout observer can't see -
-            Lightning payouts, Ocean payouts that landed and were swept before you
-            installed the autopilot, etc. Shifts the lifetime-earnings chart's
-            starting value up by this amount and folds into the net P&L. Leave 0 if
-            everything is already covered by the on-chain backfill above.
-          </Trans>
-        </p>
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={draft.historical_payouts_offset_sat}
-          onChange={(e) => {
-            const raw = e.target.value;
-            const next = raw === '' ? 0 : Math.max(0, Math.floor(Number(raw)));
-            if (Number.isFinite(next)) {
-              onChange('historical_payouts_offset_sat', next as never);
+        <div className="max-w-xs mt-2">
+          <NumberField
+            value={draft.historical_payouts_offset_sat}
+            onChange={(n) =>
+              onChange('historical_payouts_offset_sat', Math.max(0, Math.round(n)) as never)
             }
-          }}
-          className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-amber-500 focus:outline-none"
-        />
+            step="integer"
+            locale={locale}
+            min={0}
+            suffix="sats"
+          />
+        </div>
       </div>
     </div>
   );
