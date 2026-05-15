@@ -2,6 +2,10 @@
 
 ## 2026-05-15
 
+### `[UI]` Pickaxe icon at top of hashrate chart for difficulty retargets (#175)
+
+Difficulty retargets now show a mining-pickaxe icon at the top of the hashrate chart with a dashed vertical line - the same treatment as block cubes/crowns. Always visible regardless of right-axis selection (retargets affect hashrate economics, luck, and hashprice). Hover/click opens the existing retarget tooltip. Combined with #174, retargets are now fully visible on every chart view.
+
 ### `[UI]` Show difficulty-retarget markers on the pool luck chart overlay (#174)
 
 When the hashrate chart's right axis is set to pool luck (24h or 7d), a Bitcoin difficulty retarget causes the luck value to jump discontinuously (e.g. +3% at a retarget) with no visual explanation. Retarget markers already existed on the network_difficulty view but were gated behind that specific right-axis selection. They now also appear on the pool luck views, positioned on the luck line at the post-retarget value. The tooltip shows the difficulty change and additionally the before/after luck values so the operator can see exactly how the retarget shifted the reading.

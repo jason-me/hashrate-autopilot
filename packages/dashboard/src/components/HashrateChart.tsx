@@ -431,8 +431,6 @@ export const HashrateChart = memo(function HashrateChart({
   // the next non-null difficulty value at or after each index, so
   // the forward pass doesn't have to re-scan to find it.
   const difficultyRetargets = useMemo<RetargetEvent[]>(() => {
-    const isLuck = rightAxisSeries === 'pool_luck_24h' || rightAxisSeries === 'pool_luck_7d';
-    if (rightAxisSeries !== 'network_difficulty' && !isLuck) return [];
     const n = points.length;
     if (n === 0) return [];
     const nextNonNull: Array<number | null> = new Array(n);
@@ -1359,6 +1357,54 @@ export const HashrateChart = memo(function HashrateChart({
                 </g>
               );
             })}
+
+        {difficultyRetargets
+          .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
+          .map((r) => {
+            const x = xScale(r.tick_at);
+            return (
+              <g
+                key={`retarget-icon-${r.tick_at}`}
+                onMouseEnter={onRetargetEnter(r)}
+                onMouseLeave={onRetargetLeave}
+                onClick={onRetargetClick(r)}
+                style={{ cursor: 'pointer' }}
+              >
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={PADDING.top + 8}
+                  y2={chartHeight - PADDING.bottom}
+                  stroke="#c084fc"
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.4"
+                  pointerEvents="none"
+                />
+                <rect
+                  x={x - 8}
+                  y={PADDING.top - 12}
+                  width={16}
+                  height={16}
+                  fill="transparent"
+                />
+                <g
+                  transform={`translate(${x - 5}, ${PADDING.top - 9})`}
+                  fill="none"
+                  stroke="#c084fc"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {/* Handle */}
+                  <line x1="2" y1="10" x2="6" y2="3" opacity="0.6" />
+                  {/* Pick head */}
+                  <path d="M3 3.5 Q5 0 10 1.5" fill="none" />
+                  <path d="M3 3.5 Q4 4.5 6 3" fill="#c084fc" fillOpacity="0.3" />
+                </g>
+              </g>
+            );
+          })}
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
