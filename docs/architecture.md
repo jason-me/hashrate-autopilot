@@ -355,6 +355,7 @@ CREATE TABLE tick_metrics (
   pool_hashrate_ph_avg_7d REAL,           -- trailing 7d mean
   pool_luck_24h REAL,                     -- gap-based per-tick luck = (600 / pool_share) / elapsed
   pool_luck_7d REAL,
+  braiins_reachable INTEGER,              -- 1 = API reachable this tick, 0 = unreachable; NULL pre-0091
   run_mode TEXT NOT NULL,
   action_mode TEXT NOT NULL
 );
@@ -504,6 +505,14 @@ concern (not by order; the file names are authoritative):
   0083 drops `runtime_state.operator_available` (#148 - dead since
   spec v1.1's action-mode-state-machine retirement), 0084 drops
   `alerts.snoozed_until_ms` (#148 - snooze ripped in cc62951).
+
+- **Marketplace-empty + payout features (0088-0091):** 0088 adds
+  `marketplace_empty_alert_after_minutes` to config (#167); 0089-0090
+  add `include_historical_payouts` toggle and `historical_payouts_offset_sat`
+  for the manual pre-installation earnings offset (#170); 0091 adds
+  `braiins_reachable` boolean to `tick_metrics` (#173 - distinguishes
+  "marketplace empty" from "Braiins API unreachable" on charts and alerts;
+  1 = reachable, 0 = unreachable, NULL for pre-migration rows).
 
 - **Solo-mining monitoring (0085-0087, #149):** 0085 adds the
   `solo_miners` device registry (label, IP/host, enabled flag,

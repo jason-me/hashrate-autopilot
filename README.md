@@ -179,8 +179,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
   threshold, and the Braiins-side compliance-returned deposit. **WARNING** (amber): Braiins beta-exit
-  fees detected. **INFO** (slate, opt-in good news): pool block credited via TIDES, Braiins deposit
-  detected (mempool / first-confirmation), Braiins deposit available (compliance-cleared and spendable).
+  fees detected. **INFO** (slate, opt-in good news): pool block credited via TIDES (with a "+ ON-CHAIN PAYOUT" title suffix and payout amount when the block triggers a payout), Braiins deposit detected (mempool / first-confirmation), Braiins deposit available (compliance-cleared and spendable), marketplace empty (reachable but no supply; won't double-fire with the API-unreachable alert during outages).
   Each event class has its own opt-out toggle; timer-driven events carry an inline minute threshold so
   the operator can tune "how long bad before I get paged" per-event. Messages localise to the operator's
   chosen language (English / Dutch / Spanish, independent of the dashboard's display language). Setup
@@ -311,9 +310,7 @@ drop, two metallic clanks, an "Ocean mining found a block" voice clip - or uploa
 explorer** (separate URL templates for blocks and transactions; preset buttons for mempool.space /
 blockstream.info / blockchair / btcscan / btc.com set both at once, custom self-hosted explorers can fill
 in either independently), **Chart smoothing** (rolling-mean window per-source on the hashrate chart plus
-the price-chart `our bid` / `effective` smoothing), **Chart markers** (cap on the max number of bid-event
-markers rendered on the Price chart - over the cap, EDIT_PRICE markers drop out first since they're the
-high-frequency, low-information class), and **Log retention** for the four append-only logs
+the price-chart `our bid` / `effective` smoothing), **Chart markers** (cap on all chart markers across both charts - counts bid events + pool blocks + reward events together; when over budget, drops EDIT_PRICE bid events first, then non-own pool blocks, then reward events, then everything; both charts show a "markers hidden" banner when the cap is active), and **Log retention** for the four append-only logs
 (`tick_metrics`, `alerts`, eventful + uneventful `decisions`) with a live storage-estimate hint so you
 can see how big the DB will grow before you commit.
 
