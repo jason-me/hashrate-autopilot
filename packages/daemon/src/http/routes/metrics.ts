@@ -111,35 +111,38 @@ export async function registerMetricsRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
 ): Promise<void> {
-  app.get<{ Querystring: { range?: string; since?: string; limit?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string; limit?: string } }>(
     '/api/metrics',
     async (req): Promise<{ points: MetricPoint[]; range: ChartRange | null }> => {
       const nowMs = Date.now();
+      const limit = clamp(Number.parseInt(req.query.limit ?? '', 10) || 5000, 10, 10_000);
 
-      // Legacy path: since=<ms> → raw rows from that timestamp.
-      const legacySince = Number.parseInt(req.query.since ?? '', 10);
-      if (!req.query.range && Number.isFinite(legacySince) && legacySince > 0) {
-        const limit = clamp(
-          Number.parseInt(req.query.limit ?? '', 10) || 2000,
-          10,
-          10_000,
+      // #169: arbitrary viewport path: since=<ms>&until=<ms>
+      const parsedSince = Number.parseInt(req.query.since ?? '', 10);
+      const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
+      if (
+        !req.query.range &&
+        Number.isFinite(parsedSince) && parsedSince > 0 &&
+        Number.isFinite(parsedUntil) && parsedUntil > parsedSince
+      ) {
+        const spanMs = parsedUntil - parsedSince;
+        const bucketMs = pickBucketForSpan(spanMs);
+        const rows = await deps.tickMetricsRepo.listAggregated(
+          parsedSince, bucketMs, limit, parsedUntil,
         );
-        const rows = await deps.tickMetricsRepo.listSince(legacySince, limit);
+        return { points: rows.map(toMetricPoint), range: null };
+      }
+
+      // Legacy path: since=<ms> alone -> raw rows from that timestamp.
+      if (!req.query.range && Number.isFinite(parsedSince) && parsedSince > 0) {
+        const rows = await deps.tickMetricsRepo.listSince(parsedSince, limit);
         return { points: rows.map(toMetricPoint), range: null };
       }
 
       const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
       const spec = CHART_RANGE_SPECS[range];
       const sinceMs = spec.windowMs === null ? 0 : nowMs - spec.windowMs;
-      const limit = clamp(Number.parseInt(req.query.limit ?? '', 10) || 5000, 10, 10_000);
 
-      // Bucket sizing applies to every bounded preset, not just `all`
-      // (#82). The preset spec.bucketMs is calibrated for a *full* window
-      // worth of data; picking 1m or 1y on a database with only a few
-      // days of history would otherwise over-collapse the chart (1y on
-      // 6 days = ~6 daily points; 1m on 6 days = ~144 hourly points).
-      // Resize to whichever is shorter: the preset window or the actual
-      // recorded span.
       let bucketMs = spec.bucketMs;
       const firstTick = await deps.tickMetricsRepo.firstTickAt();
       if (firstTick !== null) {

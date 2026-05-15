@@ -164,15 +164,33 @@ export async function registerFinanceRoute(
   app: FastifyInstance,
   deps: FinanceDeps,
 ): Promise<void> {
-  app.get<{ Querystring: { range?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string } }>(
     '/api/finance/range',
     async (req): Promise<FinanceRangeResponse> => {
-      const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
-      const spec = CHART_RANGE_SPECS[range];
-      const nowMs = Date.now();
-      const sinceMs = spec.windowMs === null ? null : nowMs - spec.windowMs;
+      // #169: arbitrary viewport path
+      const parsedSince = Number.parseInt(req.query.since ?? '', 10);
+      const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
+      let range: ChartRange;
+      let sinceMs: number | null;
+      let untilMs: number | undefined;
+      let windowMs: number | null;
+      if (
+        !req.query.range &&
+        Number.isFinite(parsedSince) && parsedSince > 0 &&
+        Number.isFinite(parsedUntil) && parsedUntil > parsedSince
+      ) {
+        range = '24h';
+        sinceMs = parsedSince;
+        untilMs = parsedUntil;
+        windowMs = parsedUntil - parsedSince;
+      } else {
+        range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
+        const spec = CHART_RANGE_SPECS[range];
+        windowMs = spec.windowMs;
+        sinceMs = spec.windowMs === null ? null : Date.now() - spec.windowMs;
+      }
 
-      const agg = await deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs);
+      const agg = await deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs, untilMs);
       const insufficient = agg.tick_count < MIN_TICKS_FOR_AVG;
 
       const avgHashpricePh =
@@ -203,7 +221,7 @@ export async function registerFinanceRoute(
 
       return {
         range,
-        window_ms: spec.windowMs,
+        window_ms: windowMs,
         tick_count: agg.tick_count,
         first_tick_at: agg.first_tick_at,
         last_tick_at: agg.last_tick_at,

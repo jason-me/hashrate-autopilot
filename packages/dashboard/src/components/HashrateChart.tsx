@@ -249,6 +249,9 @@ export const HashrateChart = memo(function HashrateChart({
   rightAxisSeries = 'none',
   soloSeries = [],
   markersHiddenCount = 0,
+  viewportHandlers,
+  dragOffsetPx = 0,
+  isDragging = false,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -282,6 +285,15 @@ export const HashrateChart = memo(function HashrateChart({
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
+  viewportHandlers?: {
+    onWheel: React.WheelEventHandler<SVGSVGElement>;
+    onPointerDown: React.PointerEventHandler<SVGSVGElement>;
+    onPointerMove: React.PointerEventHandler<SVGSVGElement>;
+    onPointerUp: React.PointerEventHandler<SVGSVGElement>;
+    onDoubleClick: () => void;
+  };
+  dragOffsetPx?: number;
+  isDragging?: boolean;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -998,6 +1010,10 @@ export const HashrateChart = memo(function HashrateChart({
 
   const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis, marketplaceEmptyIntervals, braiinsUnreachableIntervals } = chartData;
 
+  const svgRef = useRef<SVGSVGElement>(null);
+  const svgScale = svgRef.current ? WIDTH / svgRef.current.getBoundingClientRect().width : 1;
+  const svgDragOffset = isDragging ? dragOffsetPx * svgScale : 0;
+
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
@@ -1050,10 +1066,18 @@ export const HashrateChart = memo(function HashrateChart({
         </div>
       </div>
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
+        style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
+        {...viewportHandlers}
       >
+        <defs>
+          <clipPath id="hr-data-clip">
+            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
+          </clipPath>
+        </defs>
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
             <line
@@ -1103,6 +1127,7 @@ export const HashrateChart = memo(function HashrateChart({
             </g>
           ))}
 
+        <g clipPath="url(#hr-data-clip)" transform={svgDragOffset ? `translate(${svgDragOffset}, 0)` : undefined}>
         {/* #167: marketplace-empty bands. Drawn behind data lines so
             they sit behind the traces without obscuring them. Each
             interval represents a contiguous run of ticks where the
@@ -1403,6 +1428,7 @@ export const HashrateChart = memo(function HashrateChart({
               </g>
             );
           })}
+        </g>
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">

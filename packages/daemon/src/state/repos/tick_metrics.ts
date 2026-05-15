@@ -119,11 +119,13 @@ export class TickMetricsRepo {
     await this.db.insertInto('tick_metrics').values(args).execute();
   }
 
-  async listSince(sinceMs: number, limit = 10_000): Promise<TickMetricRow[]> {
-    return this.db
+  async listSince(sinceMs: number, limit = 10_000, untilMs?: number): Promise<TickMetricRow[]> {
+    let q = this.db
       .selectFrom('tick_metrics')
       .selectAll()
-      .where('tick_at', '>=', sinceMs)
+      .where('tick_at', '>=', sinceMs);
+    if (untilMs !== undefined) q = q.where('tick_at', '<=', untilMs);
+    return q
       .orderBy('tick_at', 'asc')
       .limit(limit)
       .execute();
@@ -147,9 +149,10 @@ export class TickMetricsRepo {
     sinceMs: number,
     bucketMs: number,
     limit = 10_000,
+    untilMs?: number,
   ): Promise<AggregatedTickMetricRow[]> {
     if (bucketMs <= 0) {
-      const raws = await this.listSince(sinceMs, limit);
+      const raws = await this.listSince(sinceMs, limit, untilMs);
       return raws.map((r) => ({
         tick_at: r.tick_at,
         delivered_ph: r.delivered_ph,
@@ -264,6 +267,7 @@ export class TickMetricsRepo {
         sql<number | null>`MIN(braiins_reachable)`.as('braiins_reachable'),
       ])
       .where('tick_at', '>=', sinceMs)
+      .$if(untilMs !== undefined, (qb) => qb.where('tick_at', '<=', untilMs!))
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)
       .orderBy(sql`tick_at / ${sql.lit(bucketMs)}`, 'asc')
       .limit(limit)
@@ -344,7 +348,7 @@ export class TickMetricsRepo {
    * when it doesn't. Unbounded (null `sinceMs`) is supported for the
    * `all` chart range.
    */
-  async rangeFinanceAggregates(sinceMs: number | null): Promise<{
+  async rangeFinanceAggregates(sinceMs: number | null, untilMs?: number): Promise<{
     tick_count: number;
     first_tick_at: number | null;
     last_tick_at: number | null;
@@ -361,6 +365,7 @@ export class TickMetricsRepo {
   }> {
     let q = this.db.selectFrom('tick_metrics');
     if (sinceMs !== null) q = q.where('tick_at', '>=', sinceMs);
+    if (untilMs !== undefined) q = q.where('tick_at', '<=', untilMs);
     const row = await q
       .select([
         sql<number>`COUNT(*)`.as('tick_count'),
@@ -372,7 +377,7 @@ export class TickMetricsRepo {
         sql<number | null>`AVG(delivered_ph)`.as('avg_delivered_ph'),
       ])
       .executeTakeFirstOrThrow();
-    const actualSpendSat = await this.actualSpendSatSince(sinceMs);
+    const actualSpendSat = await this.actualSpendSatSince(sinceMs, untilMs);
     return {
       tick_count: row.tick_count,
       first_tick_at: row.first_tick_at ?? null,
@@ -439,8 +444,11 @@ export class TickMetricsRepo {
    *
    * Unbounded when `sinceMs` is null (used by the P&L `all` range).
    */
-  async actualSpendSatSince(sinceMs: number | null): Promise<number | null> {
-    const where = sinceMs !== null ? `WHERE tick_at >= ${sinceMs}` : '';
+  async actualSpendSatSince(sinceMs: number | null, untilMs?: number): Promise<number | null> {
+    const clauses: string[] = [];
+    if (sinceMs !== null) clauses.push(`tick_at >= ${sinceMs}`);
+    if (untilMs !== undefined) clauses.push(`tick_at <= ${untilMs}`);
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
     const queryText = `
       SELECT SUM(delta) AS total_sat
       FROM (

@@ -43,13 +43,14 @@ export class BidEventsRepo {
     await this.db.insertInto('bid_events').values(event).execute();
   }
 
-  async listSince(sinceMs: number): Promise<BidEventRow[]> {
-    const rows = await this.db
+  async listSince(sinceMs: number, untilMs?: number): Promise<BidEventRow[]> {
+    let q = this.db
       .selectFrom('bid_events')
       .selectAll()
-      .where('occurred_at', '>=', sinceMs)
+      .where('occurred_at', '>=', sinceMs);
+    if (untilMs !== undefined) q = q.where('occurred_at', '<=', untilMs);
+    return q
       .orderBy('occurred_at', 'asc')
       .execute();
-    return rows;
   }
 }

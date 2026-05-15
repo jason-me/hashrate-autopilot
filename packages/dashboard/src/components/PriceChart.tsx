@@ -12,6 +12,7 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
+import type React from 'react';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -225,6 +226,9 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenKind = null,
   markersHiddenCount = 0,
   soloSeries = [],
+  viewportHandlers,
+  dragOffsetPx = 0,
+  isDragging = false,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -318,6 +322,15 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenCount?: number;
   /** #149: per-tick aggregated solo-mining fleet series; used when rightAxisSeries == 'solo_power_watts'. */
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
+  viewportHandlers?: {
+    onWheel: React.WheelEventHandler<SVGSVGElement>;
+    onPointerDown: React.PointerEventHandler<SVGSVGElement>;
+    onPointerMove: React.PointerEventHandler<SVGSVGElement>;
+    onPointerUp: React.PointerEventHandler<SVGSVGElement>;
+    onDoubleClick: () => void;
+  };
+  dragOffsetPx?: number;
+  isDragging?: boolean;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1443,6 +1456,10 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals } = chartData;
 
+  const svgRef = useRef<SVGSVGElement>(null);
+  const svgScale = svgRef.current ? WIDTH / svgRef.current.getBoundingClientRect().width : 1;
+  const svgDragOffset = isDragging ? dragOffsetPx * svgScale : 0;
+
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
   // formatter returns "{value} {unit}"; strip the unit (it's drawn
@@ -1527,10 +1544,18 @@ export const PriceChart = memo(function PriceChart({
         </div>
       </div>
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
+        style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
+        {...viewportHandlers}
       >
+        <defs>
+          <clipPath id="px-data-clip">
+            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
+          </clipPath>
+        </defs>
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
             <line
@@ -1573,6 +1598,7 @@ export const PriceChart = memo(function PriceChart({
             </g>
           ))}
 
+        <g clipPath="url(#px-data-clip)" transform={svgDragOffset ? `translate(${svgDragOffset}, 0)` : undefined}>
         {/* Fillable ask - the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
             the amber bid line so the vertical gap between them is the
@@ -1788,6 +1814,7 @@ export const PriceChart = memo(function PriceChart({
           }
           return null;
         })}
+        </g>
 
         <line
           x1={PADDING.left}
@@ -1838,30 +1865,16 @@ export const PriceChart = memo(function PriceChart({
           </text>
         )}
 
-        {/* #93: right-axis line + rotated label. Drawn last so it
-            sits on top of the left-axis grid + data series. */}
+        <g clipPath="url(#px-data-clip)" transform={svgDragOffset ? `translate(${svgDragOffset}, 0)` : undefined}>
         {hasRightAxis && rightAxis && (
-          <>
-            <path
-              d={rightAxisPath}
-              stroke={rightAxis.stroke}
-              strokeWidth="1.6"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <text
-              x={WIDTH - 14}
-              y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
-              textAnchor="middle"
-              fontSize="10"
-              fill={rightAxis.stroke}
-              fontFamily="monospace"
-              transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
-            >
-              {rightAxis.axisLabel}
-            </text>
-          </>
+          <path
+            d={rightAxisPath}
+            stroke={rightAxis.stroke}
+            strokeWidth="1.6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         )}
 
         {/* Reward-event dots on the right-axis line. Operator click
@@ -1996,6 +2009,21 @@ export const PriceChart = memo(function PriceChart({
               </g>
             );
           })}
+        </g>
+
+        {hasRightAxis && rightAxis && (
+          <text
+            x={WIDTH - 14}
+            y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
+            textAnchor="middle"
+            fontSize="10"
+            fill={rightAxis.stroke}
+            fontFamily="monospace"
+            transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
+          >
+            {rightAxis.axisLabel}
+          </text>
+        )}
       </svg>
 
       {poolBlockTip && (

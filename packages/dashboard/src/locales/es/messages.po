@@ -33,7 +33,7 @@ msgstr "\"Solo autopilot\" suma lo consumido en las ofertas que el daemon ha eti
 
 #: src/pages/Status.tsx
 msgid "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
-msgstr ""
+msgstr "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
 
 #: src/components/StaleUrlBanner.tsx
 msgid "(Braiins may deduct an exit fee)"
@@ -301,7 +301,7 @@ msgstr "Anadir"
 
 #: src/pages/Config.tsx
 msgid "Add {pickedCount} selected"
-msgstr ""
+msgstr "Agregar {pickedCount} seleccionados"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -346,7 +346,7 @@ msgstr "Siempre live (para despliegues de confianza)"
 
 #: src/components/PriceChart.tsx
 msgid "amount"
-msgstr ""
+msgstr "monto"
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -400,11 +400,11 @@ msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el tec
 
 #: src/pages/Config.tsx
 msgid "At least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
-msgstr ""
+msgstr "At least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
 
 #: src/pages/Config.tsx
 msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
-msgstr ""
+msgstr "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
 
 #: src/pages/Alerts.tsx
 msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, or given-up. Configure the Telegram destination on Config → Notifications."
@@ -449,7 +449,7 @@ msgstr "Hashrate entregado promedio en el rango del gráfico seleccionado. Multi
 
 #: src/pages/Status.tsx
 msgid "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
-msgstr ""
+msgstr "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -621,7 +621,7 @@ msgstr "bloque"
 #. placeholder {0}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
-msgstr ""
+msgstr "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
@@ -635,7 +635,7 @@ msgstr "bloque encontrado:"
 #. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
 msgid "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
-msgstr ""
+msgstr "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
 
 #: src/pages/Status.tsx
 msgid "block reward"
@@ -830,7 +830,7 @@ msgstr "Celsius (°C)"
 
 #: src/components/HashrateChart.tsx
 msgid "change"
-msgstr ""
+msgstr "cambio"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -1026,7 +1026,7 @@ msgstr "Config actual:"
 
 #: src/pages/Status.tsx
 msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
-msgstr ""
+msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
 
 #: src/pages/Config.tsx
 msgid "Currently: <0>{filename}</0> ({blobKb} KB)"
@@ -1101,7 +1101,7 @@ msgstr "Stratum de Datum no accesible durante"
 
 #: src/pages/Config.tsx
 msgid "days"
-msgstr ""
+msgstr "días"
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long. Default 0 = keep forever."
@@ -1769,6 +1769,10 @@ msgstr "ganancias totales (pagado + no pagado)"
 #: src/pages/Status.tsx
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
 msgstr "Suma de toda la vida de (amount_sat - amount_remaining_sat) en cada oferta etiquetada por el autopilot. Excluye cualquier oferta colocada antes de activar el autopilot. Cambia a \"cuenta completa\" en Config → panel Money."
+
+#: src/pages/Status.tsx
+msgid "live"
+msgstr "en vivo"
 
 #: src/components/ModeBadge.tsx
 msgid "Live"
@@ -2680,7 +2684,7 @@ msgstr "Recordarme en este dispositivo"
 #. placeholder {0}: device.label
 #: src/pages/Config.tsx
 msgid "Remove {0}?"
-msgstr ""
+msgstr "¿Eliminar {0}?"
 
 #: src/pages/Config.tsx
 msgid "Remove device"
@@ -3332,7 +3336,7 @@ msgstr "Usado por la comprobación de saldo de pagos on-chain (cuando \"Bitcoin 
 
 #: src/pages/Config.tsx
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
-msgstr ""
+msgstr "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -3353,7 +3357,7 @@ msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (prefer
 
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-msgstr ""
+msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/components/Bip110ScanCard.tsx
 msgid "version"

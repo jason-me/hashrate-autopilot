@@ -111,11 +111,41 @@ export async function registerStatsRoute(
 ): Promise<void> {
   const cache = new Map<string, CachedStats>();
 
-  app.get<{ Querystring: { range?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string } }>(
     '/api/stats',
     async (req): Promise<StatsResponse> => {
-      const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
       const now = Date.now();
+
+      // #169: arbitrary viewport path
+      const parsedSince = Number.parseInt(req.query.since ?? '', 10);
+      const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
+      if (
+        !req.query.range &&
+        Number.isFinite(parsedSince) && parsedSince > 0 &&
+        Number.isFinite(parsedUntil) && parsedUntil > parsedSince
+      ) {
+        const cacheKey = `${parsedSince}-${parsedUntil}`;
+        const cached = cache.get(cacheKey);
+        if (cached && now - cached.fetched_at < CACHE_TTL_MS) return cached.data;
+        const metrics = await computeMetrics(deps.db, parsedSince, parsedUntil);
+        const avgFillMs = await computeAvgTimeToFill(deps.db, deps.bidEventsDb, parsedSince, parsedUntil);
+        const mutationCount = await computeMutationCount(deps.bidEventsDb, parsedSince, parsedUntil);
+        const data: StatsResponse = {
+          ...metrics,
+          avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
+          avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
+          avg_intent_overpay_sat_per_ph_day: metrics.avg_intent_overpay_sat_per_ph_day,
+          avg_settled_overpay_sat_per_ph_day: metrics.avg_settled_overpay_sat_per_ph_day,
+          avg_time_to_fill_ms: avgFillMs,
+          mutation_count: mutationCount,
+          range: '24h',
+          tick_count: metrics.tick_count,
+        };
+        cache.set(cacheKey, { data, fetched_at: now });
+        return data;
+      }
+
+      const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
 
       const cached = cache.get(range);
       if (cached && now - cached.fetched_at < CACHE_TTL_MS) {
@@ -152,6 +182,7 @@ export async function registerStatsRoute(
 async function computeMetrics(
   db: Kysely<Database>,
   sinceMs: number,
+  untilMs?: number,
 ): Promise<{
   uptime_pct: number | null;
   avg_hashrate_ph: number | null;
@@ -366,7 +397,7 @@ async function computeMetrics(
             60000
           ) AS dur
         FROM tick_metrics
-        WHERE tick_at >= ${sinceMs}
+        WHERE tick_at >= ${sinceMs}${untilMs !== undefined ? ` AND tick_at <= ${untilMs}` : ''}
       )
     )
   `;
@@ -415,12 +446,14 @@ async function computeMetrics(
 async function computeMutationCount(
   db: Kysely<Database>,
   sinceMs: number,
+  untilMs?: number,
 ): Promise<number> {
-  const row = await db
+  let q = db
     .selectFrom('bid_events')
     .select(sql<number>`COUNT(*)`.as('count'))
-    .where('occurred_at', '>=', sinceMs)
-    .executeTakeFirst();
+    .where('occurred_at', '>=', sinceMs);
+  if (untilMs !== undefined) q = q.where('occurred_at', '<=', untilMs);
+  const row = await q.executeTakeFirst();
   return Number(row?.count ?? 0);
 }
 
@@ -433,12 +466,14 @@ async function computeAvgTimeToFill(
   db: Kysely<Database>,
   _bidEventsDb: Kysely<Database>,
   sinceMs: number,
+  untilMs?: number,
 ): Promise<number | null> {
-  // Get CREATE/EDIT events in the range
-  const events = await db
+  let q = db
     .selectFrom('bid_events')
     .select(['occurred_at'])
-    .where('occurred_at', '>=', sinceMs)
+    .where('occurred_at', '>=', sinceMs);
+  if (untilMs !== undefined) q = q.where('occurred_at', '<=', untilMs);
+  const events = await q
     .where('kind', 'in', ['CREATE_BID', 'EDIT_PRICE'])
     .orderBy('occurred_at', 'asc')
     .execute();

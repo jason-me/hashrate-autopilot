@@ -1770,6 +1770,10 @@ msgstr "lifetime earnings (paid + unpaid)"
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
 msgstr "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
 
+#: src/pages/Status.tsx
+msgid "live"
+msgstr "live"
+
 #: src/components/ModeBadge.tsx
 msgid "Live"
 msgstr "Live"
