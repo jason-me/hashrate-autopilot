@@ -721,14 +721,34 @@ export class AlertEvaluator {
         unpaidSat !== null
           ? `${unpaidSat.toLocaleString('en-US')} sat (${((unpaidSat / OCEAN_PAYOUT_THRESHOLD_SAT) * 100).toFixed(1)}% of ${OCEAN_PAYOUT_THRESHOLD_SAT.toLocaleString('en-US')}-sat payout)`
           : 'unknown';
+      // #171: detect if this block triggered an on-chain payout.
+      // payout_amount = what was unpaid before + our share - what's unpaid now.
+      // For non-payout blocks this is ~0; for payout blocks it's ~1M+ sat.
+      // The deferral gate (oceanCaughtUp || failsafe) for payout blocks
+      // fires via the 10-min failsafe since unpaid goes DOWN, not up.
+      let payoutSatStr: string | null = null;
+      let payoutBtcStr: string | null = null;
+      if (
+        entry.noticed_unpaid_sat !== null &&
+        ourCreditSat !== null &&
+        unpaidSat !== null
+      ) {
+        const payoutAmountSat = entry.noticed_unpaid_sat + ourCreditSat - unpaidSat;
+        if (payoutAmountSat >= 65_536) {
+          payoutSatStr = payoutAmountSat.toLocaleString('en-US');
+          payoutBtcStr = (payoutAmountSat / 1e8).toFixed(8);
+        }
+      }
       await this.alertManager.recordAlert({
         severity: 'INFO',
-        title: copyFor(state).pool_block_credited_title({ height: heightStr }),
+        title: copyFor(state).pool_block_credited_title({ height: heightStr, payout_btc: payoutBtcStr }),
         body: copyFor(state).pool_block_credited_body({
           height: heightStr,
           reward_btc: rewardBtc,
           share_pct: sharePctStr,
           credit: creditStr,
+          payout_sat: payoutSatStr,
+          payout_btc: payoutBtcStr,
           unpaid: unpaidStr,
         }),
         event_class: 'pool_block_credited',

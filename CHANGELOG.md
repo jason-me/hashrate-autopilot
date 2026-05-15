@@ -2,6 +2,10 @@
 
 ## 2026-05-15
 
+### `[Feature]` Highlight payout-triggering pool block in Telegram notification (#171)
+
+When a pool block's coinbase contains the operator's TIDES payout (unpaid earnings crossed the 1,048,576-sat threshold), the `pool_block_credited` Telegram message now shows it: the title gains a `+ ON-CHAIN PAYOUT` suffix, and a new line reports the payout amount in sat and BTC. Detection uses the unpaid-delta heuristic (noticed_unpaid + our_share - current_unpaid >= 65,536 sat) so the message fires at normal speed without waiting for the on-chain reward-events scan. Non-payout blocks keep the existing format. All three locales (EN/NL/ES) updated.
+
 ### `[UI]` Chart right-axis: clean ticks when the series is flat at zero
 
 Operator caught the bug right after a payout: the Price chart's `unpaid (sat)` right axis on a short zoom (3h) showed scientific-notation ticks `1.00e-7`, `8.00e-8`, `6.00e-8`, ... because every visible sample was 0 and the auto-range collapsed onto the previous `Math.max(span, 1e-6)` safety floor. The 24h view looked fine because that window straddled the payout cliff and had a non-degenerate range.

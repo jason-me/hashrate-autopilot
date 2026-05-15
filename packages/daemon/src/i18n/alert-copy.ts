@@ -97,12 +97,14 @@ export interface AlertCopy {
   }): string;
   wallet_runway_body_recovery(args: { runway_days: string; threshold_days: number }): string;
 
-  pool_block_credited_title(args: { height: string }): string;
+  pool_block_credited_title(args: { height: string; payout_btc: string | null }): string;
   pool_block_credited_body(args: {
     height: string;
     reward_btc: string;
     share_pct: string;
     credit: string;
+    payout_sat: string | null;
+    payout_btc: string | null;
     unpaid: string;
   }): string;
 
@@ -216,9 +218,12 @@ const EN: AlertCopy = {
   wallet_runway_body_recovery: ({ runway_days, threshold_days }) =>
     `Wallet runway back above threshold: ${runway_days} days (threshold ${threshold_days}). Likely a top-up landed or the burn rate dropped.`,
 
-  pool_block_credited_title: ({ height }) => `Pool block credited - #${height}`,
-  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, unpaid }) =>
-    `Ocean found pool block #${height} (reward ${reward_btc} BTC). Your share: ${share_pct} → ${credit}. Unpaid total: ${unpaid}.`,
+  pool_block_credited_title: ({ height, payout_btc }) =>
+    payout_btc
+      ? `Pool block credited + ON-CHAIN PAYOUT - #${height}`
+      : `Pool block credited - #${height}`,
+  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, payout_sat, payout_btc, unpaid }) =>
+    `Ocean found pool block #${height} (reward ${reward_btc} BTC). Your share: ${share_pct} → ${credit}.${payout_sat && payout_btc ? ` Paid out: ${payout_sat} sat / ${payout_btc} BTC to your payout address.` : ''} Unpaid total: ${unpaid}.`,
 
   braiins_deposit_detected_title: () => 'Braiins deposit detected',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
@@ -327,9 +332,12 @@ const NL: AlertCopy = {
   wallet_runway_body_recovery: ({ runway_days, threshold_days }) =>
     `Wallet runway weer boven de drempel: ${runway_days} dagen (drempel ${threshold_days}). Waarschijnlijk is er bijgevuld of is de burn rate gedaald.`,
 
-  pool_block_credited_title: ({ height }) => `Pool block bijgeschreven - #${height}`,
-  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, unpaid }) =>
-    `Ocean vond pool block #${height} (reward ${reward_btc} BTC). Jouw aandeel: ${share_pct} → ${credit}. Unpaid totaal: ${unpaid}.`,
+  pool_block_credited_title: ({ height, payout_btc }) =>
+    payout_btc
+      ? `Pool block bijgeschreven + ON-CHAIN UITBETALING - #${height}`
+      : `Pool block bijgeschreven - #${height}`,
+  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, payout_sat, payout_btc, unpaid }) =>
+    `Ocean vond pool block #${height} (reward ${reward_btc} BTC). Jouw aandeel: ${share_pct} → ${credit}.${payout_sat && payout_btc ? ` Uitbetaald: ${payout_sat} sat / ${payout_btc} BTC naar je payout-adres.` : ''} Unpaid totaal: ${unpaid}.`,
 
   braiins_deposit_detected_title: () => 'Braiins deposit gedetecteerd',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
@@ -439,9 +447,12 @@ const ES: AlertCopy = {
   wallet_runway_body_recovery: ({ runway_days, threshold_days }) =>
     `Autonomía de wallet de nuevo por encima del umbral: ${runway_days} días (umbral ${threshold_days}). Probablemente entró una recarga o bajó el consumo.`,
 
-  pool_block_credited_title: ({ height }) => `Bloque de pool acreditado - #${height}`,
-  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, unpaid }) =>
-    `Ocean encontró el bloque de pool #${height} (recompensa ${reward_btc} BTC). Tu parte: ${share_pct} → ${credit}. Total no pagado: ${unpaid}.`,
+  pool_block_credited_title: ({ height, payout_btc }) =>
+    payout_btc
+      ? `Bloque de pool acreditado + PAGO ON-CHAIN - #${height}`
+      : `Bloque de pool acreditado - #${height}`,
+  pool_block_credited_body: ({ height, reward_btc, share_pct, credit, payout_sat, payout_btc, unpaid }) =>
+    `Ocean encontró el bloque de pool #${height} (recompensa ${reward_btc} BTC). Tu parte: ${share_pct} → ${credit}.${payout_sat && payout_btc ? ` Pagado: ${payout_sat} sat / ${payout_btc} BTC a tu dirección de pago.` : ''} Total no pagado: ${unpaid}.`,
 
   braiins_deposit_detected_title: () => 'Depósito en Braiins detectado',
   braiins_deposit_detected_body: ({ amount, address_short }) =>

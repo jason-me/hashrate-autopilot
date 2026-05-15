@@ -193,12 +193,14 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
     const c = getAlertCopy(locale);
     return {
       severity: 'INFO',
-      title: c.pool_block_credited_title({ height: '948,512' }),
+      title: c.pool_block_credited_title({ height: '948,512', payout_btc: null }),
       body: c.pool_block_credited_body({
         height: '948,512',
         reward_btc: '3.12575382',
         share_pct: '0.0130%',
         credit: '~40,635 sat',
+        payout_sat: null,
+        payout_btc: null,
         unpaid: '250,000 sat (23.8% of 1,048,576-sat payout)',
       }),
       is_recovery: false,
