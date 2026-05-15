@@ -2,6 +2,10 @@
 
 ## 2026-05-15
 
+### `[Release]` v1.7.5
+
+Lifetime earnings backfill, marketplace-empty visibility across charts/alerts/Telegram, payout-triggering pool block highlight, avg-overpay settled chart series, difficulty retarget pickaxe markers, chart-marker cap extended to all marker types, and a round of chart/UI polish fixes. Four new migrations (0088-0091).
+
 ### `[UI]` Mirror pool-block and retarget markers onto the price chart (#176)
 
 Both charts now show the same top-of-chart block icons (blue cubes, gold crowns, yellow BIP-110 cubes) and difficulty retarget pickaxes with dashed vertical lines. Previously these only appeared on the hashrate chart, leaving unexplained steps on the price chart. Tooltips work identically on both charts.
