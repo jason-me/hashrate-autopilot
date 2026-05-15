@@ -10,21 +10,25 @@ import {
 } from '@braiins-hashrate/shared';
 
 const STORAGE_KEY = 'hashrate-chart-range';
-const MIN_DURATION_MS = 10 * 60_000; // 10 min
-const MAX_DURATION_MS = 5 * 365 * 24 * 60 * 60_000; // 5 years
+const MIN_DURATION_MS = 10 * 60_000;
+const MAX_DURATION_MS = 5 * 365 * 24 * 60 * 60_000;
 const SETTLE_DELAY_MS = 200;
 const ZOOM_FACTOR = 1.15;
+const DRAG_THRESHOLD_PX = 5;
+const LIVE_EDGE_TOLERANCE_MS = 120_000;
 
 export interface ViewportState {
   since_ms: number;
   until_ms: number;
   activePreset: ChartRange | null;
+  liveEdge: boolean;
 }
 
 export interface UseChartViewportReturn {
   viewport: ViewportState;
   settledViewport: ViewportState;
   setPreset: (range: ChartRange) => void;
+  goLive: () => void;
   reset: () => void;
   handlers: {
     onWheel: (e: React.WheelEvent<SVGSVGElement>) => void;
@@ -34,42 +38,24 @@ export interface UseChartViewportReturn {
     onDoubleClick: () => void;
   };
   isDragging: boolean;
-  dragOffsetPx: number;
+  isLiveEdge: boolean;
 }
 
 function readStored(): ViewportState {
   if (typeof window === 'undefined') {
-    return { ...presetToViewport(DEFAULT_CHART_RANGE), activePreset: DEFAULT_CHART_RANGE };
+    return { ...presetToViewport(DEFAULT_CHART_RANGE), activePreset: DEFAULT_CHART_RANGE, liveEdge: true };
   }
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw && (raw.startsWith('{') || raw === 'all')) {
-    // Try JSON viewport first (new format)
-    if (raw.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed.since_ms != null && parsed.until_ms != null) {
-          const preset = viewportToNearestPreset(parsed);
-          return { since_ms: parsed.since_ms, until_ms: parsed.until_ms, activePreset: preset };
-        }
-      } catch { /* fall through */ }
-    }
-  }
-  // Legacy: stored as a preset string like "24h"
   const preset = (['3h', '6h', '12h', '24h', '1w', '1m', '1y', 'all'] as ChartRange[]).includes(raw as ChartRange)
     ? (raw as ChartRange)
     : DEFAULT_CHART_RANGE;
-  return { ...presetToViewport(preset), activePreset: preset };
+  return { ...presetToViewport(preset), activePreset: preset, liveEdge: true };
 }
 
 function persist(state: ViewportState): void {
   if (typeof window === 'undefined') return;
   if (state.activePreset) {
     window.localStorage.setItem(STORAGE_KEY, state.activePreset);
-  } else {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      since_ms: state.since_ms,
-      until_ms: state.until_ms,
-    }));
   }
 }
 
@@ -91,14 +77,24 @@ function quantize(ms: number, step: number): number {
   return Math.round(ms / step) * step;
 }
 
+function isAtLiveEdge(vp: ChartViewport): boolean {
+  return Math.abs(vp.until_ms - Date.now()) < LIVE_EDGE_TOLERANCE_MS;
+}
+
+interface DragState {
+  clientX: number;
+  viewport: ViewportState;
+  pointerId: number;
+  captured: boolean;
+}
+
 export function useChartViewport(): UseChartViewportReturn {
   const [viewport, setViewport] = useState<ViewportState>(readStored);
   const [settledViewport, setSettledViewport] = useState<ViewportState>(viewport);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffsetPx, setDragOffsetPx] = useState(0);
 
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dragStart = useRef<{ clientX: number; viewport: ViewportState } | null>(null);
+  const dragStart = useRef<DragState | null>(null);
 
   const scheduleSettle = useCallback((vp: ViewportState) => {
     if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -107,6 +103,7 @@ export function useChartViewport(): UseChartViewportReturn {
         since_ms: quantize(vp.since_ms, 5000),
         until_ms: quantize(vp.until_ms, 5000),
         activePreset: vp.activePreset,
+        liveEdge: vp.liveEdge,
       };
       setSettledViewport(q);
     }, SETTLE_DELAY_MS);
@@ -119,12 +116,17 @@ export function useChartViewport(): UseChartViewportReturn {
   }, [scheduleSettle]);
 
   const setPreset = useCallback((range: ChartRange) => {
-    const vp: ViewportState = { ...presetToViewport(range), activePreset: range };
+    const vp: ViewportState = { ...presetToViewport(range), activePreset: range, liveEdge: true };
     setViewport(vp);
     setSettledViewport(vp);
     persist(vp);
     if (settleTimer.current) clearTimeout(settleTimer.current);
   }, []);
+
+  const goLive = useCallback(() => {
+    const preset = viewport.activePreset ?? DEFAULT_CHART_RANGE;
+    setPreset(preset);
+  }, [viewport.activePreset, setPreset]);
 
   const reset = useCallback(() => {
     setPreset(DEFAULT_CHART_RANGE);
@@ -132,7 +134,7 @@ export function useChartViewport(): UseChartViewportReturn {
 
   // Auto-advance live-edge viewports
   useEffect(() => {
-    if (viewport.activePreset === null) return;
+    if (!viewport.liveEdge || viewport.activePreset === null) return;
     const spec = CHART_RANGE_SPECS[viewport.activePreset];
     if (spec.windowMs === null) return;
     const id = setInterval(() => {
@@ -141,12 +143,13 @@ export function useChartViewport(): UseChartViewportReturn {
         since_ms: now - spec.windowMs!,
         until_ms: now,
         activePreset: viewport.activePreset,
+        liveEdge: true,
       };
       setViewport(vp);
       setSettledViewport(vp);
     }, 60_000);
     return () => clearInterval(id);
-  }, [viewport.activePreset]);
+  }, [viewport.activePreset, viewport.liveEdge]);
 
   const getSvgDataFraction = useCallback((e: React.MouseEvent<SVGSVGElement>): number => {
     const svg = e.currentTarget;
@@ -175,61 +178,66 @@ export function useChartViewport(): UseChartViewportReturn {
     };
     const clamped = clampViewport(raw);
     const preset = viewportToNearestPreset(clamped);
-    updateViewport({ ...clamped, activePreset: preset });
+    const live = isAtLiveEdge(clamped);
+    updateViewport({ ...clamped, activePreset: preset, liveEdge: live });
   }, [viewport, getSvgDataFraction, updateViewport]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragStart.current = { clientX: e.clientX, viewport };
-    setIsDragging(true);
-    setDragOffsetPx(0);
+    dragStart.current = { clientX: e.clientX, viewport, pointerId: e.pointerId, captured: false };
   }, [viewport]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!dragStart.current) return;
-    const deltaPx = e.clientX - dragStart.current.clientX;
-    setDragOffsetPx(deltaPx);
+    const delta = Math.abs(e.clientX - dragStart.current.clientX);
+    if (!dragStart.current.captured && delta > DRAG_THRESHOLD_PX) {
+      e.currentTarget.setPointerCapture(dragStart.current.pointerId);
+      dragStart.current.captured = true;
+      setIsDragging(true);
+    }
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!dragStart.current) return;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    const deltaPx = e.clientX - dragStart.current.clientX;
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const svgWidth = rect.width;
-    const paddingLeft = 80;
-    const paddingRight = 80;
-    const leftFrac = paddingLeft / 880;
-    const rightFrac = (880 - paddingRight) / 880;
-    const dataWidthPx = svgWidth * (rightFrac - leftFrac);
-    const startVp = dragStart.current.viewport;
-    const duration = startVp.until_ms - startVp.since_ms;
-    const deltaMs = -(deltaPx / dataWidthPx) * duration;
-    const raw: ChartViewport = {
-      since_ms: startVp.since_ms + deltaMs,
-      until_ms: startVp.until_ms + deltaMs,
-    };
-    const clamped = clampViewport(raw);
-    const preset = viewportToNearestPreset(clamped);
+    const wasDrag = dragStart.current.captured;
+    if (wasDrag) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      const deltaPx = e.clientX - dragStart.current.clientX;
+      const svg = e.currentTarget;
+      const rect = svg.getBoundingClientRect();
+      const svgWidth = rect.width;
+      const paddingLeft = 80;
+      const paddingRight = 80;
+      const leftFrac = paddingLeft / 880;
+      const rightFrac = (880 - paddingRight) / 880;
+      const dataWidthPx = svgWidth * (rightFrac - leftFrac);
+      const startVp = dragStart.current.viewport;
+      const duration = startVp.until_ms - startVp.since_ms;
+      const deltaMs = -(deltaPx / dataWidthPx) * duration;
+      const raw: ChartViewport = {
+        since_ms: startVp.since_ms + deltaMs,
+        until_ms: startVp.until_ms + deltaMs,
+      };
+      const clamped = clampViewport(raw);
+      const live = isAtLiveEdge(clamped);
+      updateViewport({ ...clamped, activePreset: startVp.activePreset, liveEdge: live });
+    }
     dragStart.current = null;
     setIsDragging(false);
-    setDragOffsetPx(0);
-    updateViewport({ ...clamped, activePreset: preset });
   }, [updateViewport]);
 
   const onDoubleClick = useCallback(() => {
-    reset();
-  }, [reset]);
+    goLive();
+  }, [goLive]);
 
   return {
     viewport,
     settledViewport,
     setPreset,
+    goLive,
     reset,
     handlers: { onWheel, onPointerDown, onPointerMove, onPointerUp, onDoubleClick },
     isDragging,
-    dragOffsetPx,
+    isLiveEdge: viewport.liveEdge,
   };
 }

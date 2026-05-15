@@ -227,7 +227,6 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenCount = 0,
   soloSeries = [],
   viewportHandlers,
-  dragOffsetPx = 0,
   isDragging = false,
 }: {
   points: readonly MetricPoint[];
@@ -329,7 +328,6 @@ export const PriceChart = memo(function PriceChart({
     onPointerUp: React.PointerEventHandler<SVGSVGElement>;
     onDoubleClick: () => void;
   };
-  dragOffsetPx?: number;
   isDragging?: boolean;
 }) {
   const { i18n } = useLingui();
@@ -340,7 +338,6 @@ export const PriceChart = memo(function PriceChart({
   // markers reuse the rich HashrateChart tooltip; reward-event
   // markers use a smaller bespoke tooltip with payout date + amount
   // + explorer link.
-  const svgRef = useRef<SVGSVGElement>(null);
   const [poolBlockTip, setPoolBlockTip] = useState<PoolBlockTooltipState | null>(null);
   const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
@@ -1457,9 +1454,6 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals } = chartData;
 
-  const svgScale = svgRef.current ? WIDTH / svgRef.current.getBoundingClientRect().width : 1;
-  const svgDragOffset = isDragging ? dragOffsetPx * svgScale : 0;
-
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
   // formatter returns "{value} {unit}"; strip the unit (it's drawn
@@ -1544,18 +1538,12 @@ export const PriceChart = memo(function PriceChart({
         </div>
       </div>
       <svg
-        ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
         style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
         {...viewportHandlers}
       >
-        <defs>
-          <clipPath id="px-data-clip">
-            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
-          </clipPath>
-        </defs>
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
             <line
@@ -1598,7 +1586,6 @@ export const PriceChart = memo(function PriceChart({
             </g>
           ))}
 
-        <g clipPath="url(#px-data-clip)" transform={svgDragOffset ? `translate(${svgDragOffset}, 0)` : undefined}>
         {/* Fillable ask - the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
             the amber bid line so the vertical gap between them is the
@@ -1814,7 +1801,6 @@ export const PriceChart = memo(function PriceChart({
           }
           return null;
         })}
-        </g>
 
         <line
           x1={PADDING.left}
@@ -1865,7 +1851,6 @@ export const PriceChart = memo(function PriceChart({
           </text>
         )}
 
-        <g clipPath="url(#px-data-clip)" transform={svgDragOffset ? `translate(${svgDragOffset}, 0)` : undefined}>
         {hasRightAxis && rightAxis && (
           <path
             d={rightAxisPath}
@@ -2009,7 +1994,6 @@ export const PriceChart = memo(function PriceChart({
               </g>
             );
           })}
-        </g>
 
         {hasRightAxis && rightAxis && (
           <text

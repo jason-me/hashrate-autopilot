@@ -185,34 +185,33 @@ export function Status() {
   });
 
   const metricsQuery = useQuery({
-    queryKey: vp.activePreset
+    queryKey: vp.liveEdge && vp.activePreset
       ? ['metrics', vp.activePreset]
       : ['metrics', vp.since_ms, vp.until_ms],
-    queryFn: () => vp.activePreset
+    queryFn: () => vp.liveEdge && vp.activePreset
       ? api.metrics(vp.activePreset)
       : api.metricsViewport(vp.since_ms, vp.until_ms),
-    refetchInterval: vp.activePreset ? 60_000 : false,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const bidEventsQuery = useQuery({
-    queryKey: vp.activePreset
+    queryKey: vp.liveEdge && vp.activePreset
       ? ['bid-events', vp.activePreset]
       : ['bid-events', vp.since_ms, vp.until_ms],
-    queryFn: () => vp.activePreset
+    queryFn: () => vp.liveEdge && vp.activePreset
       ? api.bidEvents(vp.activePreset)
       : api.bidEventsViewport(vp.since_ms, vp.until_ms),
-    refetchInterval: vp.activePreset ? 60_000 : false,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
-
   const statsQuery = useQuery({
-    queryKey: vp.activePreset
+    queryKey: vp.liveEdge && vp.activePreset
       ? ['stats', vp.activePreset]
       : ['stats', vp.since_ms, vp.until_ms],
-    queryFn: () => vp.activePreset
+    queryFn: () => vp.liveEdge && vp.activePreset
       ? api.stats(vp.activePreset)
       : api.statsViewport(vp.since_ms, vp.until_ms),
-    refetchInterval: vp.activePreset ? 60_000 : false,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   // Shared query instance for the Ocean panel AND the hashrate chart
@@ -253,13 +252,13 @@ export function Status() {
   // the ~1-min tick cadence. Keyed on `chartRange` so switching the
   // chart range picker above refetches with the new window.
   const financeRangeQuery = useQuery({
-    queryKey: vp.activePreset
+    queryKey: vp.liveEdge && vp.activePreset
       ? ['finance-range', vp.activePreset]
       : ['finance-range', vp.since_ms, vp.until_ms],
-    queryFn: () => vp.activePreset
+    queryFn: () => vp.liveEdge && vp.activePreset
       ? api.financeRange(vp.activePreset)
       : api.financeRangeViewport(vp.since_ms, vp.until_ms),
-    refetchInterval: vp.activePreset ? 60_000 : false,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const configQuery = useQuery({
@@ -431,8 +430,8 @@ export function Status() {
         range={chartRange}
         activePreset={chartViewport.viewport.activePreset}
         onRangeChange={setChartRange}
-        isLiveEdge={chartViewport.viewport.activePreset !== null}
-        onResetToLive={chartViewport.reset}
+        isLiveEdge={chartViewport.isLiveEdge}
+        onResetToLive={chartViewport.goLive}
       />
 
       <StatsBar statsData={statsQuery.data} />
@@ -476,7 +475,6 @@ export function Status() {
           soloSeries={soloSeries}
           markersHiddenCount={markersHiddenCount}
           viewportHandlers={chartViewport.handlers}
-          dragOffsetPx={chartViewport.dragOffsetPx}
           isDragging={chartViewport.isDragging}
         />
       </div>
@@ -533,7 +531,6 @@ export function Status() {
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           viewportHandlers={chartViewport.handlers}
-          dragOffsetPx={chartViewport.dragOffsetPx}
           isDragging={chartViewport.isDragging}
         />
       </div>
