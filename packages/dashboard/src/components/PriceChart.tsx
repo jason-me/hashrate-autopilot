@@ -795,7 +795,7 @@ export const PriceChart = memo(function PriceChart({
       );
       const rmin = Math.min(...valid);
       const rmax = Math.max(...valid);
-      const rspan = Math.max(rmax - rmin, Math.abs(rmax) * 0.1, 1e-6);
+      const rawSpan = rmax - rmin;
       // #164: the avg-overpay series can go negative (effective_rate
       // below fillable when the counter is undersettled in the window,
       // or genuinely paying below fillable during fast-moving markets).
@@ -805,14 +805,30 @@ export const PriceChart = memo(function PriceChart({
       const allowNegativeAxis =
         rightAxisSeries === 'avg_overpay_intent' ||
         rightAxisSeries === 'avg_overpay_settled';
-      const yFloor = allowNegativeAxis
-        ? rmin - rspan * 0.1
-        : Math.max(0, rmin - rspan * 0.1);
-      rightYTicks = niceYTicks(
-        yFloor,
-        rmax + rspan * 0.1,
-        5,
-      );
+      let yFloor: number;
+      let yCeiling: number;
+      if (rawSpan === 0) {
+        // Series is flat across the window. The previous code's
+        // `Math.max(span, 1e-6)` safety floor produced scientific-
+        // notation ticks like `2.00e-8` when the series sat at zero
+        // (typical right after a payout, when unpaid (sat) drops to 0
+        // for the rest of the chart range). Pick a clean visible band
+        // so the labels stay human-readable.
+        if (rmax === 0 && !allowNegativeAxis) {
+          yFloor = 0;
+          yCeiling = 1;
+        } else {
+          const pad = Math.max(Math.abs(rmax) * 0.1, 1);
+          yFloor = allowNegativeAxis ? rmax - pad : Math.max(0, rmax - pad);
+          yCeiling = rmax + pad;
+        }
+      } else {
+        yFloor = allowNegativeAxis
+          ? rmin - rawSpan * 0.1
+          : Math.max(0, rmin - rawSpan * 0.1);
+        yCeiling = rmax + rawSpan * 0.1;
+      }
+      rightYTicks = niceYTicks(yFloor, yCeiling, 5);
       rightYMin = rightYTicks[0] ?? 0;
       rightYMax = rightYTicks[rightYTicks.length - 1] ?? 1;
     }

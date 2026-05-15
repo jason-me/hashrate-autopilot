@@ -2,6 +2,12 @@
 
 ## 2026-05-15
 
+### `[UI]` Chart right-axis: clean ticks when the series is flat at zero
+
+Operator caught the bug right after a payout: the Price chart's `unpaid (sat)` right axis on a short zoom (3h) showed scientific-notation ticks `1.00e-7`, `8.00e-8`, `6.00e-8`, ... because every visible sample was 0 and the auto-range collapsed onto the previous `Math.max(span, 1e-6)` safety floor. The 24h view looked fine because that window straddled the payout cliff and had a non-degenerate range.
+
+Both `PriceChart` and `HashrateChart` had the same pattern. When `rmax === rmin` the y-axis range now substitutes a sensible visible band: `[0, 1]` when the flat value is zero (gives ticks `0, 0.2, ..., 1` instead of e-notation), or `[value - pad, value + pad]` with a 1-unit minimum padding when the flat value is non-zero. Non-flat data takes the existing 10% breathing-room path.
+
 ### `[UI]` BRAIINS panel: preserve available/blocked/total/runway row labels during an API outage
 
 When the Braiins API is down, `s.balances` arrives empty and the panel's balance block collapsed to a single em-dash, which read as "the section is gone" instead of "values temporarily unavailable". Surfaced during a real Braiins-side outage today (hashpower.braiins.com itself was stuck on "Loading current bids…"). Keep the four labeled rows (available / blocked / total / runway) visible with em-dash values when the API is unreachable. The existing "API DOWN" pill at the top of the panel already names the cause.

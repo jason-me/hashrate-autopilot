@@ -683,12 +683,28 @@ export const HashrateChart = memo(function HashrateChart({
         // 5% breathing room above + below so the line never sits on the
         // top/bottom rule. Falls back to a [0, slMax] band when slMin
         // approaches zero so the axis still makes sense.
-        const span = Math.max(slMax - slMin, slMax * 0.1, 1e-6);
-        shareLogYTicks = niceYTicks(
-          Math.max(0, slMin - span * 0.1),
-          slMax + span * 0.1,
-          5,
-        );
+        const rawSpan = slMax - slMin;
+        let yFloor: number;
+        let yCeiling: number;
+        if (rawSpan === 0) {
+          // Flat-series guard (mirrors PriceChart's right-axis
+          // handling): avoid scientific-notation ticks like `2.00e-8`
+          // when the entire visible window is constant zero (e.g. a
+          // pool-blocks-count or share-log series sitting at 0 across
+          // the current zoom).
+          if (slMax === 0) {
+            yFloor = 0;
+            yCeiling = 1;
+          } else {
+            const pad = Math.max(Math.abs(slMax) * 0.1, 1);
+            yFloor = Math.max(0, slMax - pad);
+            yCeiling = slMax + pad;
+          }
+        } else {
+          yFloor = Math.max(0, slMin - rawSpan * 0.1);
+          yCeiling = slMax + rawSpan * 0.1;
+        }
+        shareLogYTicks = niceYTicks(yFloor, yCeiling, 5);
       }
       shareLogYMin = shareLogYTicks[0] ?? 0;
       shareLogYMax = shareLogYTicks[shareLogYTicks.length - 1] ?? 1;
