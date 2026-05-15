@@ -2702,14 +2702,15 @@ function NotificationsSection({
             <Trans>Retry interval</Trans>
           </span>
           <div className="flex items-center gap-2">
-            <NumberField
-              value={draft.notification_retry_interval_minutes}
-              onChange={(n) => onChange('notification_retry_interval_minutes', (n || 30) as never)}
-              step="integer"
-              locale={locale}
-              noGrouping
-              className="w-32"
-            />
+            <div className="w-20 flex-none">
+              <NumberField
+                value={draft.notification_retry_interval_minutes}
+                onChange={(n) => onChange('notification_retry_interval_minutes', (n || 30) as never)}
+                step="integer"
+                locale={locale}
+                noGrouping
+              />
+            </div>
             <span className="text-xs text-slate-500">
               <Trans>minutes</Trans>
             </span>
