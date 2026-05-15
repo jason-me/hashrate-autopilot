@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-15
+
+### `[UI]` BRAIINS panel: preserve available/blocked/total/runway row labels during an API outage
+
+When the Braiins API is down, `s.balances` arrives empty and the panel's balance block collapsed to a single em-dash, which read as "the section is gone" instead of "values temporarily unavailable". Surfaced during a real Braiins-side outage today (hashpower.braiins.com itself was stuck on "Loading current bids…"). Keep the four labeled rows (available / blocked / total / runway) visible with em-dash values when the API is unreachable. The existing "API DOWN" pill at the top of the panel already names the cause.
+
 ## 2026-05-14
 
 ### `[UI]` Polish On-chain payouts panel: Backfill button inline, monospace numeric input, info popovers (#170 polish)

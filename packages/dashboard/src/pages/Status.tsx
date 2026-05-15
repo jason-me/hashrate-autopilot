@@ -1862,7 +1862,19 @@ function BraiinsBalances({
   // month abbreviations to Dutch when the UI is in English.
   const dateLocale = useDateTimeLocale();
   if (balances.length === 0) {
-    return <div className="text-slate-500 text-sm">{'\u2014'}</div>;
+    // Braiins API down (or no creds configured): keep the four-row
+    // structure visible with em-dash values so the operator
+    // recognises the section instead of seeing a single bare dash
+    // and assuming the feature was removed. The "API DOWN" pill at
+    // the top of the card already names the cause.
+    return (
+      <div>
+        <Row k={t`available`} v={'\u2014'} />
+        <Row k={t`blocked`} v={'\u2014'} />
+        <Row k={t`total`} v={'\u2014'} />
+        <Row k={t`runway`} v={'\u2014'} />
+      </div>
+    );
   }
   return (
     <>
