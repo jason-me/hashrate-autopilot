@@ -301,6 +301,7 @@ export const HashrateChart = memo(function HashrateChart({
   const dateTimeLocale = useDateTimeLocale();
   const denomination = useDenomination();
   const tempUnit = useTemperatureUnit();
+  const svgRef = useRef<SVGSVGElement>(null);
   const [blockTip, setBlockTip] = useState<PoolBlockTooltipState | null>(null);
   // Difficulty-retarget markers (#22 follow-up): when the right-axis
   // series is `network_difficulty`, place a dot on the line at every
@@ -1010,7 +1011,6 @@ export const HashrateChart = memo(function HashrateChart({
 
   const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis, marketplaceEmptyIntervals, braiinsUnreachableIntervals } = chartData;
 
-  const svgRef = useRef<SVGSVGElement>(null);
   const svgScale = svgRef.current ? WIDTH / svgRef.current.getBoundingClientRect().width : 1;
   const svgDragOffset = isDragging ? dragOffsetPx * svgScale : 0;
 

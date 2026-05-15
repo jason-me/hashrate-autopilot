@@ -340,6 +340,7 @@ export const PriceChart = memo(function PriceChart({
   // markers reuse the rich HashrateChart tooltip; reward-event
   // markers use a smaller bespoke tooltip with payout date + amount
   // + explorer link.
+  const svgRef = useRef<SVGSVGElement>(null);
   const [poolBlockTip, setPoolBlockTip] = useState<PoolBlockTooltipState | null>(null);
   const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
@@ -1456,7 +1457,6 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals } = chartData;
 
-  const svgRef = useRef<SVGSVGElement>(null);
   const svgScale = svgRef.current ? WIDTH / svgRef.current.getBoundingClientRect().width : 1;
   const svgDragOffset = isDragging ? dragOffsetPx * svgScale : 0;
 
