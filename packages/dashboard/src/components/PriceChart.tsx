@@ -230,7 +230,6 @@ export const PriceChart = memo(function PriceChart({
   isDragging = false,
   viewportSince,
   viewportUntil,
-  dragOffsetSvg = 0,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -334,7 +333,6 @@ export const PriceChart = memo(function PriceChart({
   isDragging?: boolean;
   viewportSince?: number;
   viewportUntil?: number;
-  dragOffsetSvg?: number;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1594,13 +1592,6 @@ export const PriceChart = memo(function PriceChart({
             </g>
           ))}
 
-        <defs>
-          <clipPath id="price-data-clip">
-            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
-          </clipPath>
-        </defs>
-        <g clipPath="url(#price-data-clip)" transform={`translate(${dragOffsetSvg},0)`}>
-
         {/* Fillable ask - the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
             the amber bid line so the vertical gap between them is the
@@ -1817,8 +1808,6 @@ export const PriceChart = memo(function PriceChart({
           return null;
         })}
 
-        </g>
-
         <line
           x1={PADDING.left}
           x2={WIDTH - PADDING.right}
@@ -1868,7 +1857,6 @@ export const PriceChart = memo(function PriceChart({
           </text>
         )}
 
-        <g clipPath="url(#price-data-clip)" transform={`translate(${dragOffsetSvg},0)`}>
         {hasRightAxis && rightAxis && (
           <path
             d={rightAxisPath}
@@ -2012,8 +2000,6 @@ export const PriceChart = memo(function PriceChart({
               </g>
             );
           })}
-
-        </g>
 
         {hasRightAxis && rightAxis && (
           <text

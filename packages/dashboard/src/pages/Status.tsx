@@ -475,7 +475,6 @@ export function Status() {
           isDragging={chartViewport.isDragging}
           viewportSince={chartViewport.viewport.since_ms}
           viewportUntil={chartViewport.viewport.until_ms}
-          dragOffsetSvg={chartViewport.dragOffsetSvg}
         />
       </div>
       <div className="space-y-1">
@@ -534,7 +533,6 @@ export function Status() {
           isDragging={chartViewport.isDragging}
           viewportSince={chartViewport.viewport.since_ms}
           viewportUntil={chartViewport.viewport.until_ms}
-          dragOffsetSvg={chartViewport.dragOffsetSvg}
         />
       </div>
 
