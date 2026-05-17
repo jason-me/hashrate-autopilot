@@ -170,6 +170,11 @@ not exist on GHCR, every Umbrel install hangs on "Updating" forever
    confirmed on GHCR. Umbrel reads docker-compose.yml from main,
    so pushing main before the image exists causes installs to hang
    on "Updating" (404 image pull).
+6. `gh release create vX.Y.Z --title "..." --notes-file <path>` -
+   create the GitHub Release. Write release notes to a temp file
+   first (bodies contain backticks). This is what shows up on the
+   Releases page and triggers "new version available" notifications
+   for watchers.
 
 **Never use `git push --atomic origin main vX.Y.Z`.** That pushes
 main and the tag simultaneously, creating an ~8-minute window where
