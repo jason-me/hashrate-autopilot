@@ -161,3 +161,42 @@ export function pickBucketForSpan(spanMs: number): number {
   if (spanMs <= 365 * DAY) return HOUR;
   return DAY;
 }
+
+// ---------------------------------------------------------------------------
+// Viewport types for drag-to-pan / wheel-to-zoom (#169)
+// ---------------------------------------------------------------------------
+
+export interface ChartViewport {
+  since_ms: number;
+  until_ms: number;
+}
+
+export function presetToViewport(range: ChartRange): ChartViewport {
+  const spec = CHART_RANGE_SPECS[range];
+  const now = Date.now();
+  if (spec.windowMs === null) {
+    return { since_ms: 0, until_ms: now };
+  }
+  return { since_ms: now - spec.windowMs, until_ms: now };
+}
+
+export function viewportToNearestPreset(vp: ChartViewport): ChartRange | null {
+  const duration = vp.until_ms - vp.since_ms;
+  const now = Date.now();
+  const isLive = Math.abs(vp.until_ms - now) < 120_000;
+  if (!isLive) return null;
+  for (const key of CHART_RANGES) {
+    const spec = CHART_RANGE_SPECS[key];
+    if (spec.windowMs !== null && Math.abs(duration - spec.windowMs) < 60_000) {
+      return key;
+    }
+  }
+  if (vp.since_ms === 0) return 'all';
+  return null;
+}
+
+export function showEventKindsForSpan(spanMs: number): readonly BidEventKind[] {
+  if (spanMs <= 24 * HOUR) return ALL_BID_EVENT_KINDS;
+  if (spanMs <= 7 * DAY) return RARE_KINDS;
+  return [];
+}

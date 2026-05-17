@@ -1,6 +1,6 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,7 +8,7 @@ import {
   CHART_RANGES,
   CHART_RANGE_SPECS,
   DEFAULT_CHART_RANGE,
-  parseChartRange,
+  showEventKindsForSpan,
   type ChartRange,
 } from '@braiins-hashrate/shared';
 
@@ -51,9 +51,9 @@ import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { localizedRangeLabel } from '../lib/range-label';
+import { useChartViewport } from '../lib/useChartViewport';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
-const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
 const STATUS_QUERY_KEY = ['status'] as const;
 
 // Frozen empties for chart props. Inline `?? []` allocates a fresh
@@ -66,11 +66,6 @@ const EMPTY_METRIC_POINTS: readonly never[] = Object.freeze([]) as readonly neve
 const EMPTY_BID_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_REWARD_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_OUR_BLOCKS: readonly never[] = Object.freeze([]) as readonly never[];
-
-function readStoredChartRange(): ChartRange {
-  if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
-  return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
-}
 
 // #93: per-chart secondary Y-axis selection, persisted per-browser.
 const HASHRATE_RIGHT_AXIS_KEY = 'braiins.hashrateRightAxis';
@@ -133,11 +128,19 @@ export function Status() {
   const { i18n } = useLingui();
   void i18n;
 
-  const [chartRange, setChartRangeState] = useState<ChartRange>(() => readStoredChartRange());
-  useEffect(() => {
-    window.localStorage.setItem(CHART_RANGE_STORAGE_KEY, chartRange);
-  }, [chartRange]);
-  const setChartRange = (r: ChartRange) => setChartRangeState(r);
+  const chartViewport = useChartViewport();
+  const chartRange = chartViewport.viewport.activePreset ?? DEFAULT_CHART_RANGE;
+  const setChartRange = chartViewport.setPreset;
+  const vp = chartViewport.settledViewport;
+
+  const visibleSpan = vp.until_ms - vp.since_ms;
+  const fetchBounds = useMemo(() => {
+    const buffer = visibleSpan * 1.0;
+    return {
+      since_ms: Math.max(0, vp.since_ms - buffer),
+      until_ms: Math.min(Date.now(), vp.until_ms + buffer),
+    };
+  }, [vp.since_ms, vp.until_ms, visibleSpan]);
 
   // #93: secondary Y-axis selection per chart. Default for the
   // hashrate chart picks up the legacy show_share_log_on_hashrate_chart
@@ -191,24 +194,24 @@ export function Status() {
   });
 
   const metricsQuery = useQuery({
-    queryKey: ['metrics', chartRange],
-    queryFn: () => api.metrics(chartRange),
-    // Charts span hours-to-months - a 60s refresh is plenty.
-    refetchInterval: 60_000,
+    queryKey: ['metrics', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.metricsViewport(fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const bidEventsQuery = useQuery({
-    queryKey: ['bid-events', chartRange],
-    queryFn: () => api.bidEvents(chartRange),
-    refetchInterval: 60_000,
+    queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
-
   const statsQuery = useQuery({
-    queryKey: ['stats', chartRange],
-    queryFn: () => api.stats(chartRange),
-    // Cached 60s server-side; poll every 60s client-side to match.
-    refetchInterval: 60_000,
+    queryKey: ['stats', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.statsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   // Shared query instance for the Ocean panel AND the hashrate chart
@@ -249,9 +252,14 @@ export function Status() {
   // the ~1-min tick cadence. Keyed on `chartRange` so switching the
   // chart range picker above refetches with the new window.
   const financeRangeQuery = useQuery({
-    queryKey: ['finance-range', chartRange],
-    queryFn: () => api.financeRange(chartRange),
-    refetchInterval: 60_000,
+    queryKey: vp.liveEdge && vp.activePreset
+      ? ['finance-range', vp.activePreset]
+      : ['finance-range', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => vp.liveEdge && vp.activePreset
+      ? api.financeRange(vp.activePreset)
+      : api.financeRangeViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const configQuery = useQuery({
@@ -268,13 +276,17 @@ export function Status() {
   // don't pull a week of samples to fill a 3h window.
   const soloMiningEnabled = configQuery.data?.config?.solo_mining_enabled ?? false;
   const soloSeriesQuery = useQuery({
-    queryKey: ['solo-fleet-series', chartRange],
+    queryKey: vp.activePreset
+      ? ['solo-fleet-series', vp.activePreset]
+      : ['solo-fleet-series', vp.since_ms, vp.until_ms],
     queryFn: () => {
-      const windowMs = CHART_RANGE_SPECS[chartRange].windowMs ?? 24 * 60 * 60_000;
+      const windowMs = vp.activePreset
+        ? (CHART_RANGE_SPECS[vp.activePreset].windowMs ?? 24 * 60 * 60_000)
+        : (vp.until_ms - vp.since_ms);
       return api.soloFleetSeries(Date.now() - windowMs);
     },
     enabled: soloMiningEnabled,
-    refetchInterval: 60_000,
+    refetchInterval: vp.activePreset ? 60_000 : false,
   });
   const soloSeries = soloMiningEnabled ? (soloSeriesQuery.data?.rows ?? []) : [];
 
@@ -417,7 +429,10 @@ export function Status() {
 
       <FilterBar
         range={chartRange}
+        activePreset={chartViewport.viewport.activePreset}
         onRangeChange={setChartRange}
+        isLiveEdge={chartViewport.isLiveEdge}
+        onResetToLive={chartViewport.goLive}
       />
 
       <StatsBar statsData={statsQuery.data} />
@@ -460,6 +475,10 @@ export function Status() {
           rightAxisSeries={hashrateRightAxis}
           soloSeries={soloSeries}
           markersHiddenCount={markersHiddenCount}
+          viewportHandlers={chartViewport.handlers}
+          isDragging={chartViewport.isDragging}
+          viewportSince={chartViewport.viewport.since_ms}
+          viewportUntil={chartViewport.viewport.until_ms}
         />
       </div>
       <div className="space-y-1">
@@ -494,7 +513,9 @@ export function Status() {
           events={visibleBidEvents}
           markersHiddenKind={markersHiddenKind}
           markersHiddenCount={markersHiddenCount}
-          showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
+          showEventKinds={vp.activePreset
+            ? CHART_RANGE_SPECS[vp.activePreset].showEventKinds
+            : showEventKindsForSpan(vp.until_ms - vp.since_ms)}
           maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
           overpaySatPerPhDay={
             configQuery.data?.config?.overpay_sat_per_eh_day != null
@@ -512,6 +533,10 @@ export function Status() {
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
+          viewportHandlers={chartViewport.handlers}
+          isDragging={chartViewport.isDragging}
+          viewportSince={chartViewport.viewport.since_ms}
+          viewportUntil={chartViewport.viewport.until_ms}
         />
       </div>
 
@@ -1460,22 +1485,36 @@ const EH_PER_PH = 1000;
 
 function FilterBar({
   range,
+  activePreset,
   onRangeChange,
+  isLiveEdge,
+  onResetToLive,
 }: {
   range: ChartRange;
+  activePreset: ChartRange | null;
   onRangeChange: (r: ChartRange) => void;
+  isLiveEdge: boolean;
+  onResetToLive: () => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
   return (
     <section className="flex items-center justify-end flex-wrap gap-2">
+      {!isLiveEdge && (
+        <button
+          onClick={onResetToLive}
+          className="text-xs px-2 py-1 rounded bg-amber-700/60 text-amber-200 hover:bg-amber-700"
+        >
+          {t`live`} &rarr;
+        </button>
+      )}
       <div className="flex gap-1">
         {CHART_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => onRangeChange(r)}
             className={`text-xs px-2 py-1 rounded ${
-              r === range
+              r === activePreset
                 ? 'bg-emerald-700 text-emerald-100'
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}

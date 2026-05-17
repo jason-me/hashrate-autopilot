@@ -618,9 +618,17 @@ export const api = {
     request<{ points: MetricPoint[]; range: ChartRange | null }>(
       `/api/metrics?range=${encodeURIComponent(range)}`,
     ),
+  metricsViewport: (since: number, until: number, visibleSpan?: number) =>
+    request<{ points: MetricPoint[]; range: ChartRange | null }>(
+      `/api/metrics?since=${since}&until=${until}${visibleSpan != null ? `&span=${visibleSpan}` : ''}`,
+    ),
   bidEvents: (range: ChartRange) =>
     request<{ events: BidEventView[] }>(
       `/api/bid-events?range=${encodeURIComponent(range)}`,
+    ),
+  bidEventsViewport: (since: number, until: number) =>
+    request<{ events: BidEventView[] }>(
+      `/api/bid-events?since=${since}&until=${until}`,
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
@@ -787,12 +795,18 @@ export const api = {
     request<FinanceRangeResponse>(
       `/api/finance/range?range=${encodeURIComponent(range)}`,
     ),
+  financeRangeViewport: (since: number, until: number) =>
+    request<FinanceRangeResponse>(
+      `/api/finance/range?since=${since}&until=${until}`,
+    ),
   rebuildSpendCache: () =>
     request<{ ok: boolean; error?: string }>('/api/finance/spend/rebuild', {
       method: 'POST',
     }),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
+  statsViewport: (since: number, until: number) =>
+    request<StatsResponse>(`/api/stats?since=${since}&until=${until}`),
   storageEstimate: () => request<StorageEstimateResponse>('/api/storage-estimate'),
   ocean: () => request<OceanResponse>('/api/ocean'),
   // Test-auth call: hits /api/status to validate credentials.

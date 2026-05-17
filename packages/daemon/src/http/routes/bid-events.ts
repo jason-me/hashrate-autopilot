@@ -22,6 +22,7 @@ import {
   CHART_RANGE_SPECS,
   DEFAULT_CHART_RANGE,
   parseChartRange,
+  showEventKindsForSpan,
 } from '@braiins-hashrate/shared';
 
 import type { HttpServerDeps } from '../server.js';
@@ -50,14 +51,28 @@ export async function registerBidEventsRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
 ): Promise<void> {
-  app.get<{ Querystring: { range?: string; since?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string } }>(
     '/api/bid-events',
     async (req) => {
-      // Legacy: ?since=<ms> forces the classic raw lookup. Useful for
-      // any ad-hoc caller outside the dashboard.
-      const legacySince = Number.parseInt(req.query.since ?? '', 10);
-      if (!req.query.range && Number.isFinite(legacySince) && legacySince > 0) {
-        const rows = await deps.bidEventsRepo.listSince(legacySince);
+      const parsedSince = Number.parseInt(req.query.since ?? '', 10);
+      const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
+
+      // #169: arbitrary viewport path: since=<ms>&until=<ms>
+      if (
+        !req.query.range &&
+        Number.isFinite(parsedSince) && parsedSince > 0 &&
+        Number.isFinite(parsedUntil) && parsedUntil > parsedSince
+      ) {
+        const kinds = showEventKindsForSpan(parsedUntil - parsedSince);
+        if (kinds.length === 0) return { events: [] };
+        const allowedKinds = new Set(kinds);
+        const rows = await deps.bidEventsRepo.listSince(parsedSince, parsedUntil);
+        return { events: rows.filter((r) => allowedKinds.has(r.kind)).map(toView) };
+      }
+
+      // Legacy: ?since=<ms> alone forces the classic raw lookup.
+      if (!req.query.range && Number.isFinite(parsedSince) && parsedSince > 0) {
+        const rows = await deps.bidEventsRepo.listSince(parsedSince);
         return { events: rows.map(toView) };
       }
 
@@ -81,7 +96,7 @@ export async function registerBidEventsRoute(
 
       // Legacy default window (24 h) if someone calls /api/bid-events
       // with no params at all - unchanged behaviour.
-      if (!req.query.range && !Number.isFinite(legacySince)) {
+      if (!req.query.range && !Number.isFinite(parsedSince)) {
         const defaultSince = Date.now() - DEFAULT_WINDOW_MS;
         const filtered = rows.filter((r) => r.occurred_at >= defaultSince);
         return { events: filtered.map(toView) };
