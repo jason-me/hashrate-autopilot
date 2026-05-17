@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type ChartRange,
+  CHART_RANGES,
   type ChartViewport,
   DEFAULT_CHART_RANGE,
   CHART_RANGE_SPECS,
@@ -171,14 +172,24 @@ export function useChartViewport(): UseChartViewportReturn {
     const fraction = getSvgDataFraction(e);
     const duration = viewport.until_ms - viewport.since_ms;
     const factor = e.deltaY > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-    const newDuration = Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, duration * factor));
+    let newDuration = Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, duration * factor));
+    const halfStep = Math.sqrt(ZOOM_FACTOR);
+    let snappedPreset: ChartRange | null = null;
+    for (const key of CHART_RANGES) {
+      const w = CHART_RANGE_SPECS[key].windowMs;
+      if (w !== null && newDuration > w / halfStep && newDuration < w * halfStep) {
+        newDuration = w;
+        snappedPreset = key;
+        break;
+      }
+    }
     const cursorTime = viewport.since_ms + fraction * duration;
     const raw: ChartViewport = {
       since_ms: cursorTime - fraction * newDuration,
       until_ms: cursorTime + (1 - fraction) * newDuration,
     };
     const clamped = clampViewport(raw);
-    const preset = viewportToNearestPreset(clamped);
+    const preset = snappedPreset ?? viewportToNearestPreset(clamped);
     const live = isAtLiveEdge(clamped);
     updateViewport({ ...clamped, activePreset: preset, liveEdge: live });
   }, [viewport, getSvgDataFraction, updateViewport]);
