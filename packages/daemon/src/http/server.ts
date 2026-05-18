@@ -69,6 +69,8 @@ import type { DdnsUpdaterService } from '../services/ddns-updater.js';
 import type { AxeOSPoller } from '../services/axeos-poller.js';
 import type { SoloMinersRepo } from '../state/repos/solo_miners.js';
 import { registerSoloMinersRoute } from './routes/solo-miners.js';
+import type { RewardEventsRepo } from '../state/repos/reward_events.js';
+import { registerDebugDumpRoute } from './routes/debug-dump.js';
 
 export interface HttpServerDeps {
   readonly controller: Controller;
@@ -95,6 +97,8 @@ export interface HttpServerDeps {
   readonly ddnsUpdater: DdnsUpdaterService;
   /** #149: solo-mining devices repository. */
   readonly soloMinersRepo: SoloMinersRepo;
+  /** #179: reward_events repo for the debug dump endpoint. */
+  readonly rewardEventsRepo: RewardEventsRepo;
   /** #149: AxeOS poller - exposes the in-memory live snapshot used by the Solo miners card. */
   readonly axeOSPoller: AxeOSPoller;
   /**
@@ -228,6 +232,15 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerSoloMinersRoute(app, {
     soloMinersRepo: deps.soloMinersRepo,
     axeOSPoller: deps.axeOSPoller,
+  });
+  await registerDebugDumpRoute(app, {
+    configRepo: deps.configRepo,
+    tickMetricsRepo: deps.tickMetricsRepo,
+    poolBlocksRepo: deps.poolBlocksRepo,
+    alertsRepo: deps.alertsRepo,
+    bidEventsRepo: deps.bidEventsRepo,
+    rewardEventsRepo: deps.rewardEventsRepo,
+    runtimeRepo: deps.runtimeRepo,
   });
 
   // Serve built dashboard if present.

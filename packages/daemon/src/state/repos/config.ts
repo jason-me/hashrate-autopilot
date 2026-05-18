@@ -61,6 +61,8 @@ export class ConfigRepo {
       solo_mining_enabled: rest.solo_mining_enabled === 1,
       // #170: backfill toggle stored as 0/1, surfaced as boolean.
       include_historical_payouts: rest.include_historical_payouts === 1,
+      // #179: debug API toggle stored as 0/1, surfaced as boolean.
+      debug_api_enabled: rest.debug_api_enabled === 1,
     };
   }
 
@@ -89,6 +91,8 @@ export class ConfigRepo {
       solo_mining_enabled: (validated.solo_mining_enabled ? 1 : 0) as 0 | 1,
       // #170: backfill toggle stored as 0/1.
       include_historical_payouts: (validated.include_historical_payouts ? 1 : 0) as 0 | 1,
+      // #179: debug API toggle stored as 0/1.
+      debug_api_enabled: (validated.debug_api_enabled ? 1 : 0) as 0 | 1,
       // Legacy NOT NULL columns still in the DB - provide harmless defaults
       // so INSERT succeeds.
       emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,

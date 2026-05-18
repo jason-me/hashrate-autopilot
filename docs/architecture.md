@@ -514,6 +514,12 @@ concern (not by order; the file names are authoritative):
   "marketplace empty" from "Braiins API unreachable" on charts and alerts;
   1 = reachable, 0 = unreachable, NULL for pre-migration rows).
 
+- **Debug API (0092, #179):** 0092 adds `debug_api_enabled` boolean to
+  config (default OFF). Gates `GET /api/debug/dump`, a single-curl
+  diagnostics endpoint that bundles tick_metrics, pool_blocks, alerts,
+  bid_events, reward_events, whitelisted config, and daemon info into
+  one JSON response. Returns 404 when disabled.
+
 - **Solo-mining monitoring (0085-0087, #149):** 0085 adds the
   `solo_miners` device registry (label, IP/host, enabled flag,
   per-ASIC overheating-ceiling override) and the `solo_miner_samples`

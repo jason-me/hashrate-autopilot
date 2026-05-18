@@ -65,7 +65,7 @@ function readBuildInfo(): BuildInfo {
   };
 }
 
-const BUILD: BuildInfo = readBuildInfo();
+export const BUILD: BuildInfo = readBuildInfo();
 
 export async function registerBuildRoute(app: FastifyInstance): Promise<void> {
   app.get('/api/build', async (): Promise<BuildInfo> => BUILD);

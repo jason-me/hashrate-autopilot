@@ -783,6 +783,7 @@ async function bootOperational(
     bidEventsRepo,
     alertsRepo,
     poolBlocksRepo,
+    rewardEventsRepo,
     payoutObserver,
     oceanClient,
     accountSpend,

@@ -74,6 +74,15 @@ export class PoolBlocksRepo {
     return row ? row.timestamp_ms : null;
   }
 
+  async listSince(sinceMs: number): Promise<PoolBlocksTable[]> {
+    return this.db
+      .selectFrom('pool_blocks')
+      .selectAll()
+      .where('timestamp_ms', '>=', sinceMs)
+      .orderBy('timestamp_ms', 'asc')
+      .execute() as Promise<PoolBlocksTable[]>;
+  }
+
   /** Most recent N blocks, newest first. Used by the dashboard's "last pool block" panel. */
   async recent(limit: number): Promise<PoolBlocksTable[]> {
     return this.db

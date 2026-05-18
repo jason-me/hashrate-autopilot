@@ -119,6 +119,8 @@ export interface ConfigTable {
   include_historical_payouts: 0 | 1;
   /** #170 follow-up: operator-entered offset for pre-installation / off-chain earnings; added to lifetime-earnings chart and net P&L. Always >= 0. */
   historical_payouts_offset_sat: number;
+  /** #179: opt-in diagnostics endpoint toggle. */
+  debug_api_enabled: 0 | 1;
   updated_at: number;
 }
 

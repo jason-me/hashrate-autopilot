@@ -443,6 +443,13 @@ export const AppConfigSchema = z.object({
   // to the Status finance panel's net P&L so the picture stays
   // coherent without rotating the payout address. Always positive.
   historical_payouts_offset_sat: z.number().int().nonnegative().default(0),
+
+  // #179: opt-in diagnostics endpoint. When ON, GET /api/debug/dump
+  // returns a bundled JSON snapshot of tick_metrics, pool_blocks,
+  // alerts, bid_events, reward_events, whitelisted config, and daemon
+  // info. Off by default so the endpoint returns 404 and doesn't
+  // expand the attack surface for operators who never need it.
+  debug_api_enabled: z.boolean().default(false),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -561,4 +568,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   marketplace_empty_alert_after_minutes: 5,
   include_historical_payouts: true,
   historical_payouts_offset_sat: 0,
+  debug_api_enabled: false,
 };

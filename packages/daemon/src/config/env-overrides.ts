@@ -242,6 +242,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_HISTORICAL_PAYOUTS_OFFSET_SAT',
     coerce: asInt,
   },
+  debug_api_enabled: {
+    varName: 'BHA_DEBUG_API_ENABLED',
+    coerce: asBoolean,
+  },
 };
 
 // ---------------------------------------------------------------------------

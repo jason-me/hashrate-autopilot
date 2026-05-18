@@ -6,6 +6,10 @@
 
 TradingView-style chart interaction: drag-to-pan and scroll-wheel zoom on both hashrate and price charts, with soft-snap to preset durations. No new migrations.
 
+### `[Feature]` Single-curl diagnostics endpoint (#179)
+
+New `GET /api/debug/dump` endpoint bundles tick_metrics, pool_blocks, alerts, bid_events, reward_events, whitelisted config, and daemon info into one JSON response for quick triage. Gated behind a `debug_api_enabled` config toggle (off by default) so the endpoint returns 404 and doesn't expand the attack surface for operators who never need it. Supports `?hours=N` (default 24, max 168) and `?tables=tick_metrics,bid_events` filters. Config uses a whitelist approach - only explicitly safe fields are included; everything else (tokens, passwords, credentials) is omitted entirely. New migration 0092.
+
 ### `[Feature]` Daemon-offline gap bands and retarget backfill (#178)
 
 Both charts now show hatched bands over periods where the daemon was offline, so data gaps are visually explained instead of silently interpolated. Gap detection uses an adaptive median-based threshold that works across all aggregation levels. Additionally, the daemon now backfills a synthetic tick_metrics row at the estimated difficulty-retarget timestamp after an outage, so retarget markers land at the correct time rather than being attributed to the first tick after restart. Retarget height is deterministic (height % 2016 === 0) and the timestamp is estimated from the nearest pool block.

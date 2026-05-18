@@ -15,6 +15,24 @@ import type { Database } from '../types.js';
 export class RewardEventsRepo {
   constructor(private readonly db: Kysely<Database>) {}
 
+  async listSince(sinceMs: number): Promise<{
+    id: number;
+    txid: string;
+    vout: number;
+    block_height: number;
+    confirmations: number;
+    value_sat: number;
+    detected_at: number;
+    reorged: number;
+  }[]> {
+    return this.db
+      .selectFrom('reward_events')
+      .selectAll()
+      .where('detected_at', '>=', sinceMs)
+      .orderBy('detected_at', 'asc')
+      .execute();
+  }
+
   /**
    * Cumulative sum of `value_sat` for non-reorged reward events with
    * `detected_at <= sinceMs`. Used as `paid_total_sat` per tick - the
