@@ -183,22 +183,20 @@ See also the "Pricing strategy" section further down - these three knobs feed th
 - `bid_budget_sat` - size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel** meaning "use the full available wallet balance on each CREATE" - resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config. When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently until a balance is observed.
 - `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not IMPORTANT-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeNumber` (fractional days allowed, e.g. 0.5; `dc86586`).
 
-**Outage tolerance - profile selector + individual overrides:**
+**Outage tolerance:**
 
-Dashboard surfaces a single profile dropdown: **Aggressive / Regular / Relaxed / Custom**. Selecting a profile sets
-the thresholds to a preset bundle. Editing any individual threshold switches the profile to Custom.
+Thresholds are individually tunable on Config -> Alerts & Notifications. Defaults are tight so a fresh install catches problems fast; operators loosen as needed.
 
-| Threshold                                | Aggressive | Regular | Relaxed (default) |
-|------------------------------------------|------------|---------|-------------------|
-| `below_floor_alert_after_minutes`        | 10         | 30      | 60                |
-| `zero_hashrate_loud_alert_after_minutes` | 30         | 120     | 360               |
+| Threshold                                | Default |
+|------------------------------------------|---------|
+| `below_floor_alert_after_minutes`        | 10      |
+| `zero_hashrate_loud_alert_after_minutes` | 15      |
+| `pool_outage_blip_tolerance_seconds`     | 120     |
+| `api_outage_alert_after_minutes`         | 10      |
+| `datum_unreachable_alert_after_minutes`  | 10      |
+| `sustained_paused_alert_after_minutes`   | 10      |
 
-Plus (not profile-driven; set once, rarely tuned):
-
-- `pool_outage_blip_tolerance_seconds` (default 120) - dashboard-pill blip tolerance only; no longer drives any alert threshold since #135.
-- `api_outage_alert_after_minutes` (default 15; lives in `APP_CONFIG_DEFAULTS`, not the Zod schema's `.default()`).
-- `datum_unreachable_alert_after_minutes` (default 10; #135 - was `pool_outage_blip_tolerance_seconds x 5`).
-- `sustained_paused_alert_after_minutes` (default 10; #135 - same shape).
+`pool_outage_blip_tolerance_seconds` drives the dashboard-pill blip tolerance only; no longer drives any alert threshold since #135.
 
 **Pricing strategy (v2.1 - pay-your-bid fillable-tracking):**
 
@@ -296,12 +294,12 @@ all three series on the same cadence.
 **Solo-mining monitoring (optional, #149):**
 
 - `solo_mining_enabled` - master toggle. Default `false`. When off, the AxeOS poller doesn't run, the Status card is hidden, and the four solo-mining alert classes never fire. The device list in the `solo_miners` table is preserved across toggles so re-enabling later doesn't require re-entering IPs.
-- `solo_overheating_global_ceiling_c` - global thermal ceiling override for the **ASIC silicon-junction sensor only** (°C). Default 0 = 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP` (`main/tasks/power_management_task.c`). Firing at the AxeOS throttle threshold means the alert lines up with the moment the miner itself reduces frequency. There is no per-chip-model differentiation in the firmware so the autopilot doesn't differentiate either - earlier versions had a guessed per-model table (BM1370 = 68 °C, BM1368/66 = 70 °C, BM1397 = 75 °C) that fired well before AxeOS itself would have acted. Operator-set non-zero values override the 75 °C default. The VR (voltage regulator) sensor uses a separate hardcoded ceiling of 100 °C; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C and we fire 5 °C earlier to give the operator reaction time before AxeOS itself throttles or trips overheat-mode.
-- `solo_overheating_alert_after_seconds` - how long temperature must exceed the relevant ceiling before the alert fires. Default 90.
+- `solo_overheating_threshold_celsius` - global thermal ceiling override for the **ASIC silicon-junction sensor only** (°C). Default 0 = 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP` (`main/tasks/power_management_task.c`). Firing at the AxeOS throttle threshold means the alert lines up with the moment the miner itself reduces frequency. There is no per-chip-model differentiation in the firmware so the autopilot doesn't differentiate either - earlier versions had a guessed per-model table (BM1370 = 68 °C, BM1368/66 = 70 °C, BM1397 = 75 °C) that fired well before AxeOS itself would have acted. Operator-set non-zero values override the 75 °C default. The VR (voltage regulator) sensor uses a separate hardcoded ceiling of 100 °C; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C and we fire 5 °C earlier to give the operator reaction time before AxeOS itself throttles or trips overheat-mode.
+- Overheating sustain window: 90 seconds (hardcoded; ~3 ticks at 30s cadence). Not operator-tunable - the value matches AxeOS firmware behavior and rarely needs changing.
 - `solo_zero_hashrate_alert_after_minutes` - how many consecutive zero-hashrate (or unreachable) minutes trigger the alert. Default 5.
 - `solo_share_rejection_threshold_pct` - rolling-window rejection-rate threshold. Default 10.
 - `solo_share_rejection_window_minutes` - rolling-window length for the rejection-rate computation. Default 60.
-- `solo_stratum_drift_alert_enabled` - boolean; when true, fires when a device's `stratumURL` changes from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. Default `true`.
+- Stratum drift detection is always active (fires when a device's `stratumURL` changes from the previously-observed value). Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. Disable via the generic per-class mechanism (`notification_disabled_event_classes` includes `solo_stratum_drift`).
 
 Temperature display unit (°C / °F) is operator-selectable on Config -> Display & Logging alongside Number format and Date layout (#157). Database storage and Telegram alert bodies stay in °C; conversion happens at the dashboard display boundary only. The `solo_overheating_threshold_celsius` field round-trips through the conversion on the input (operator can type in their chosen unit; daemon always stores °C). `system` default uses Fahrenheit when the UI language is English (US-convention split) and Celsius otherwise.
 
@@ -432,7 +430,7 @@ IMPORTANT severity (9) - hard outages that need a phone alarm:
 
 IMPORTANT severity (solo-mining, active only when `solo_mining_enabled = true` and the device is `enabled`) (#149):
 
-9. **Solo overheating** - ASIC temp >= the ASIC ceiling (default 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP`; overridable via `solo_overheating_global_ceiling_c`) OR VR temp >= 100 °C (separate hardcoded ceiling; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C), sustained for `solo_overheating_alert_after_seconds`. The alert body names which sensor tripped. Paired recovery when both temps fall back below their respective ceilings.
+9. **Solo overheating** - ASIC temp >= the ASIC ceiling (default 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP`; overridable via `solo_overheating_threshold_celsius`) OR VR temp >= 100 °C (separate hardcoded ceiling; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C), sustained for 90 seconds (~3 ticks). The alert body names which sensor tripped. Paired recovery when both temps fall back below their respective ceilings.
 10. **Solo zero hashrate** - device unreachable OR hashrate = 0 for `solo_zero_hashrate_alert_after_minutes` consecutive minutes. Paired recovery.
 11. **Solo share-rejection** - rolling-window rejection rate >= `solo_share_rejection_threshold_pct` over `solo_share_rejection_window_minutes`. Re-arms once per window length; no recovery row.
 12. **Solo stratum URL drift** - device's reported `stratumURL` changed from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. No recovery row (new URL becomes the new baseline).

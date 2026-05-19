@@ -86,6 +86,9 @@ issue #60.
 | `BHA_ZERO_HASHRATE_LOUD_ALERT_AFTER_MINUTES` | `zero_hashrate_loud_alert_after_minutes` |
 | `BHA_POOL_OUTAGE_BLIP_TOLERANCE_SECONDS` | `pool_outage_blip_tolerance_seconds` |
 | `BHA_API_OUTAGE_ALERT_AFTER_MINUTES` | `api_outage_alert_after_minutes` |
+| `BHA_DATUM_UNREACHABLE_ALERT_AFTER_MINUTES` | `datum_unreachable_alert_after_minutes` |
+| `BHA_SUSTAINED_PAUSED_ALERT_AFTER_MINUTES` | `sustained_paused_alert_after_minutes` |
+| `BHA_MARKETPLACE_EMPTY_ALERT_AFTER_MINUTES` | `marketplace_empty_alert_after_minutes` |
 | `BHA_HANDOVER_WINDOW_MINUTES` | `handover_window_minutes` |
 
 ## Retention
@@ -95,6 +98,8 @@ issue #60.
 | `BHA_TICK_METRICS_RETENTION_DAYS` | `tick_metrics_retention_days` |
 | `BHA_DECISIONS_UNEVENTFUL_RETENTION_DAYS` | `decisions_uneventful_retention_days` |
 | `BHA_DECISIONS_EVENTFUL_RETENTION_DAYS` | `decisions_eventful_retention_days` |
+| `BHA_ALERTS_RETENTION_DAYS` | `alerts_retention_days` |
+| `BHA_CHART_MAX_MARKERS` | `chart_max_markers` |
 
 ## Optional integrations
 
@@ -107,16 +112,59 @@ issue #60.
 | `BHA_BITCOIND_RPC_USER` | `bitcoind_rpc_user` | |
 | `BHA_BITCOIND_RPC_PASSWORD` | `bitcoind_rpc_password` | |
 
+## Notifications
+
+| Env var | Schema field | Type |
+|---|---|---|
+| `BHA_TELEGRAM_CHAT_ID` | `telegram_chat_id` | string |
+| `BHA_TELEGRAM_INSTANCE_LABEL` | `telegram_instance_label` | string |
+| `BHA_NOTIFICATIONS_MUTED` | `notifications_muted` | boolean |
+| `BHA_NOTIFICATION_RETRY_INTERVAL_MINUTES` | `notification_retry_interval_minutes` | int |
+| `BHA_NOTIFICATION_DISABLED_EVENT_CLASSES` | `notification_disabled_event_classes` | comma-separated list |
+| `BHA_NOTIFY_ON_POOL_BLOCK_CREDIT` | `notify_on_pool_block_credit` | boolean |
+| `BHA_NOTIFY_ON_BRAIINS_DEPOSIT` | `notify_on_braiins_deposit` | boolean |
+| `BHA_NOTIFICATION_LOCALE` | `notification_locale` | `en`, `nl`, `es` |
+
+## DDNS
+
+| Env var | Schema field |
+|---|---|
+| `BHA_DDNS_PROVIDER` | `ddns_provider` |
+| `BHA_DDNS_HOSTNAME` | `ddns_hostname` |
+| `BHA_DDNS_USERNAME` | `ddns_username` |
+| `BHA_DDNS_CREDENTIAL` | `ddns_credential` |
+| `BHA_DDNS_UPDATE_URL` | `ddns_update_url` |
+
+## Solo-mining monitoring
+
+| Env var | Schema field | Type |
+|---|---|---|
+| `BHA_SOLO_MINING_ENABLED` | `solo_mining_enabled` | boolean |
+| `BHA_SOLO_OVERHEATING_THRESHOLD_CELSIUS` | `solo_overheating_threshold_celsius` | int (°C; 0 = auto per model) |
+| `BHA_SOLO_ZERO_HASHRATE_ALERT_AFTER_MINUTES` | `solo_zero_hashrate_alert_after_minutes` | int |
+| `BHA_SOLO_SHARE_REJECTION_THRESHOLD_PCT` | `solo_share_rejection_threshold_pct` | int (%) |
+| `BHA_SOLO_SHARE_REJECTION_WINDOW_MINUTES` | `solo_share_rejection_window_minutes` | int |
+
+## Payout history
+
+| Env var | Schema field | Type |
+|---|---|---|
+| `BHA_INCLUDE_HISTORICAL_PAYOUTS` | `include_historical_payouts` | boolean |
+| `BHA_HISTORICAL_PAYOUTS_OFFSET_SAT` | `historical_payouts_offset_sat` | int (sat) |
+
 ## UI / display
 
 | Env var | Schema field | Type |
 |---|---|---|
 | `BHA_BLOCK_EXPLORER_URL_TEMPLATE` | `block_explorer_url_template` | string with `{hash}` or `{height}` |
+| `BHA_BLOCK_EXPLORER_TX_URL_TEMPLATE` | `block_explorer_tx_url_template` | string with `{txid}` or `{hash}` |
 | `BHA_BRAIINS_HASHRATE_SMOOTHING_MINUTES` | `braiins_hashrate_smoothing_minutes` | int ≥ 1 |
 | `BHA_DATUM_HASHRATE_SMOOTHING_MINUTES` | `datum_hashrate_smoothing_minutes` | int ≥ 1 |
 | `BHA_BRAIINS_PRICE_SMOOTHING_MINUTES` | `braiins_price_smoothing_minutes` | int ≥ 1 |
-| `BHA_SHOW_EFFECTIVE_RATE_ON_PRICE_CHART` | `show_effective_rate_on_price_chart` | `true`/`false`/`yes`/`no`/`1`/`0`/`on`/`off` |
-| `BHA_DEBUG_API_ENABLED` | `debug_api_enabled` | `true`/`false`/`yes`/`no`/`1`/`0`/`on`/`off` |
+| `BHA_SHOW_EFFECTIVE_RATE_ON_PRICE_CHART` | `show_effective_rate_on_price_chart` | boolean |
+| `BHA_SHOW_SHARE_LOG_ON_HASHRATE_CHART` | `show_share_log_on_hashrate_chart` | boolean |
+| `BHA_BLOCK_FOUND_SOUND` | `block_found_sound` | `off`, `cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-block`, `custom` |
+| `BHA_DEBUG_API_ENABLED` | `debug_api_enabled` | boolean |
 
 ## Process-level env vars (not config overrides)
 
