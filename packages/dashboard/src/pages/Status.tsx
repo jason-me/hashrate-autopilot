@@ -493,6 +493,7 @@ export function Status() {
           markersHiddenCount={markersHiddenCount}
           viewportHandlers={chartViewport.handlers}
           isDragging={chartViewport.isDragging}
+          isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
         />
@@ -551,6 +552,7 @@ export function Status() {
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           viewportHandlers={chartViewport.handlers}
           isDragging={chartViewport.isDragging}
+          isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
         />

@@ -41,6 +41,7 @@ export interface UseChartViewportReturn {
   };
   isDragging: boolean;
   isLiveEdge: boolean;
+  isFocused: boolean;
 }
 
 function readStored(): ViewportState {
@@ -95,9 +96,12 @@ export function useChartViewport(): UseChartViewportReturn {
   const [viewport, setViewport] = useState<ViewportState>(readStored);
   const [settledViewport, setSettledViewport] = useState<ViewportState>(viewport);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStart = useRef<DragState | null>(null);
+  const focusedRef = useRef(false);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   const scheduleSettle = useCallback((vp: ViewportState) => {
     if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -168,6 +172,7 @@ export function useChartViewport(): UseChartViewportReturn {
   }, []);
 
   const onWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
+    if (!focusedRef.current) return;
     e.preventDefault();
     const fraction = getSvgDataFraction(e);
     const duration = viewport.until_ms - viewport.since_ms;
@@ -205,6 +210,11 @@ export function useChartViewport(): UseChartViewportReturn {
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    svgRef.current = e.currentTarget;
+    if (!focusedRef.current) {
+      focusedRef.current = true;
+      setIsFocused(true);
+    }
     if (e.button !== 0) return;
     dragStart.current = {
       clientX: e.clientX,
@@ -254,6 +264,25 @@ export function useChartViewport(): UseChartViewportReturn {
     goLive();
   }, [goLive]);
 
+  useEffect(() => {
+    const blur = () => {
+      focusedRef.current = false;
+      setIsFocused(false);
+    };
+    const handlePointerDown = (e: PointerEvent) => {
+      if (svgRef.current && !svgRef.current.contains(e.target as Node)) blur();
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') blur();
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return {
     viewport,
     settledViewport,
@@ -263,5 +292,6 @@ export function useChartViewport(): UseChartViewportReturn {
     handlers: { onWheel, onPointerDown, onPointerMove, onPointerUp, onDoubleClick },
     isDragging,
     isLiveEdge: viewport.liveEdge,
+    isFocused,
   };
 }

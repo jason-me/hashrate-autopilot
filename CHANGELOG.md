@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-05-19
+
+### `[UI]` Click-to-focus scroll-wheel zoom on charts
+
+Scroll wheel no longer hijacks page scrolling when the cursor passes over a chart. The user must click a chart first to activate scroll-to-zoom; clicking elsewhere or pressing Escape deactivates it. A subtle blue outline indicates which chart is focused. Both hashrate and price charts share focus state.
+
+### `[Fix]` Hashrate chart Y-axis scaled to viewport-visible data
+
+The Y-axis now only considers data points within the visible viewport when computing the scale, instead of all data in the query response. This prevents out-of-view spikes from inflating the axis and compressing the visible data. Also added an outlier guard on the counter-derived hashrate formula (consumed-sat deltas) to clamp unrealistic post-outage spikes.
+
 ## 2026-05-18
 
 ### `[Infra]` Major dependency upgrades

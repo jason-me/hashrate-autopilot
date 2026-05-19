@@ -252,6 +252,7 @@ export const HashrateChart = memo(function HashrateChart({
   markersHiddenCount = 0,
   viewportHandlers,
   isDragging = false,
+  isFocused = false,
   viewportSince,
   viewportUntil,
 }: {
@@ -295,6 +296,7 @@ export const HashrateChart = memo(function HashrateChart({
     onDoubleClick: () => void;
   };
   isDragging?: boolean;
+  isFocused?: boolean;
   viewportSince?: number;
   viewportUntil?: number;
 }) {
@@ -507,7 +509,10 @@ export const HashrateChart = memo(function HashrateChart({
         bid !== null && Number.isFinite(bid) && bid > 0 &&
         dt > 0 && dt <= 5 * 60_000
       ) {
-        return ((c1 - c0) * 86_400_000) / (bid * dt);
+        const derived = ((c1 - c0) * 86_400_000) / (bid * dt);
+        const ceiling = Math.max(p.delivered_ph, p.target_ph) * 5;
+        if (ceiling > 0 && derived > ceiling) return p.delivered_ph;
+        return derived;
       }
       return p.delivered_ph;
     });
@@ -671,7 +676,16 @@ export const HashrateChart = memo(function HashrateChart({
     const minX = viewportSince ?? dataMinX;
     const maxX = viewportUntil ?? dataMaxX;
 
-    const yMaxData = Math.max(...ys, ...targets, ...floors, datumMax, oceanMax);
+    let yMaxData = 0;
+    for (let i = 0; i < xs.length; i++) {
+      if (xs[i]! < minX || xs[i]! > maxX) continue;
+      const v = Math.max(ys[i]!, targets[i]!, floors[i]!);
+      if (v > yMaxData) yMaxData = v;
+      const d = datumYs[i] ?? null;
+      if (d !== null && d > yMaxData) yMaxData = d;
+      const o = oceanYs[i] ?? null;
+      if (o !== null && o > yMaxData) yMaxData = o;
+    }
 
     const yTicks = niceYTicks(0, yMaxData > 0 ? yMaxData * 1.1 : 1, 5);
     const yMin = yTicks[0] ?? 0;
@@ -1088,7 +1102,13 @@ export const HashrateChart = memo(function HashrateChart({
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
-        style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
+        style={{
+          cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined,
+          touchAction: 'none',
+          outline: isFocused ? '2px solid rgba(56, 189, 248, 0.3)' : 'none',
+          outlineOffset: '2px',
+          borderRadius: '8px',
+        }}
         {...viewportHandlers}
       >
         {yTicks.map((v, i) => (

@@ -229,6 +229,7 @@ export const PriceChart = memo(function PriceChart({
   soloSeries = [],
   viewportHandlers,
   isDragging = false,
+  isFocused = false,
   viewportSince,
   viewportUntil,
 }: {
@@ -332,6 +333,7 @@ export const PriceChart = memo(function PriceChart({
     onDoubleClick: () => void;
   };
   isDragging?: boolean;
+  isFocused?: boolean;
   viewportSince?: number;
   viewportUntil?: number;
 }) {
@@ -1562,7 +1564,13 @@ export const PriceChart = memo(function PriceChart({
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
-        style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
+        style={{
+          cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined,
+          touchAction: 'none',
+          outline: isFocused ? '2px solid rgba(56, 189, 248, 0.3)' : 'none',
+          outlineOffset: '2px',
+          borderRadius: '8px',
+        }}
         {...viewportHandlers}
       >
         <defs>

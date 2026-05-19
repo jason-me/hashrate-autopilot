@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/lib/i18n.test.ts
-msgid "this-is-not-a-real-id-9876"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/pages/Config.tsx
 msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
 msgstr "Wanneer uit, worden alerts nog wel op de /alerts-pagina vastgelegd met status \"muted\", maar niets wordt naar Telegram verstuurd. Herstelberichten blijven ook stil."
+
+#. js-lingui-explicit-id
+#: src/lib/i18n.test.ts
+msgid "this-is-not-a-real-id-9876"
+msgstr ""
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -147,11 +147,9 @@ msgid "{targetHr} target, full wallet balance (awaiting balance)."
 msgstr "{targetHr} doel, hele wallet (wacht op saldo)."
 
 #: src/lib/format.ts
-#: src/lib/format.ts
 msgid "{totalDay}d {h}h ago"
 msgstr "{totalDay}d {h}u geleden"
 
-#: src/lib/format.ts
 #: src/lib/format.ts
 msgid "{totalHr}h {m}m ago"
 msgstr "{totalHr}u {m}m geleden"
@@ -173,7 +171,6 @@ msgstr "{totalSec}s geleden"
 msgid "/PH/day"
 msgstr "/PH/dag"
 
-#: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "← Back"
 msgstr "← Terug"
@@ -266,11 +263,9 @@ msgid "Acknowledged and resolved ({0})"
 msgstr "Bevestigd en opgelost ({0})"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "actie-modus blokkeert dit"
 
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "active"
 msgstr "actief"
@@ -304,11 +299,9 @@ msgid "Add {pickedCount} selected"
 msgstr "{pickedCount} geselecteerde toevoegen"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Add device"
 msgstr "Apparaat toevoegen"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "adding…"
 msgstr "bezig met toevoegen…"
@@ -321,7 +314,6 @@ msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de cont
 msgid "aged out:"
 msgstr "uit venster:"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Alert thresholds"
 msgstr "Alarmdrempels"
@@ -353,12 +345,9 @@ msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "API DOWN"
 msgstr "API OFFLINE"
 
-#: src/pages/Status.tsx
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "API reachable"
 msgstr "API bereikbaar"
@@ -385,11 +374,9 @@ msgid "ASIC junction temperature only. Default 0 uses 75 °C across all BM13xx c
 msgstr "Alleen de ASIC-junctietemperatuur. Standaard 0 gebruikt 75 °C voor alle BM13xx-chips - komt overeen met THROTTLE_TEMP in de AxeOS-firmware, het punt waarop de miner zelf de frequentie verlaagt. Elke niet-nul-waarde hier overschrijft die. De VR-sensor (voltage regulator) gebruikt een aparte, ingebouwde grens van 100 °C; AxeOS throttlet de VR pas bij 105 °C, dus wij vuren 5 °C eerder zodat je tijd hebt om te reageren."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "ASIC overheating ceiling (°C, 0 = auto per model)"
 msgstr "ASIC-oververhittingsgrens (°C, 0 = automatisch per model)"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "ASIC-oververhittingsgrens (°F, 0 = automatisch per model)"
@@ -435,7 +422,6 @@ msgid "Autopilot only (autopilot-tagged bids)"
 msgstr "Alleen autopilot (door autopilot getagde biedingen)"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "available"
 msgstr "beschikbaar"
 
@@ -452,21 +438,17 @@ msgid "Average effective rate over the selected chart range - what Braiins actua
 msgstr "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "avg braiins"
 msgstr "gem. Braiins"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "avg cost / hashrate delivered"
 msgstr "gem kost / hashrate geleverd"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "avg cost vs hashprice"
 msgstr "gem. kost t.o.v. hashprice"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "avg datum"
 msgstr "gem. Datum"
@@ -480,16 +462,13 @@ msgid "avg hashprice ({rangeLabel})"
 msgstr "gem. hashprice ({rangeLabel})"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "avg ocean"
 msgstr "gem. Ocean"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "avg overpay (intent)"
 msgstr "gem. overpay (intent)"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "avg overpay (settled)"
 msgstr "gem. overpay (settled)"
@@ -502,7 +481,6 @@ msgstr "Backend"
 msgid "Backfill failed"
 msgstr "Backfill mislukt"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Backfill now"
 msgstr "Nu backfillen"
@@ -532,8 +510,6 @@ msgstr "beste vraagprijs"
 msgid "best bid"
 msgstr "beste bod"
 
-#: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Best diff"
 msgstr "Beste diff"
@@ -588,7 +564,6 @@ msgstr "bit"
 msgid "Bitcoin Core (bitcoind RPC)"
 msgstr "Bitcoin Core (bitcoind RPC)"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Bitcoin Core RPC"
 msgstr "Bitcoin Core RPC"
@@ -646,11 +621,9 @@ msgid "Block URL template"
 msgstr "Blok-URL-sjabloon"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Block-found notification"
 msgstr "Notificatie bij gevonden blok"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "blocked"
 msgstr "geblokkeerd"
@@ -698,7 +671,6 @@ msgstr "Braiins (geleverd)"
 msgid "Braiins (price, effective)"
 msgstr "Braiins (prijs, effectief)"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "Braiins 10-min cooldown"
 msgstr "Braiins 10-min cooldown"
@@ -777,10 +749,6 @@ msgid "Cadence between retries when an alert fails to deliver or the bad state p
 msgstr "Tijd tussen herhaalde pogingen wanneer een melding niet aankomt of de slechte toestand aanhoudt. De eerste poging gaat direct uit; tot 4 herhalingen volgen op dit interval; de 5e bevat een laatste \"opgeven\"-bericht en daarna blijft de notifier stil tot herstel."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
-#: src/pages/Status.tsx
-#: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "calculating…"
 msgstr "berekenen…"
 
@@ -820,7 +788,6 @@ msgid "Cancelling…"
 msgstr "Annuleren…"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Cartoon cowbell"
 msgstr "Cartoon-koebel"
 
@@ -844,7 +811,6 @@ msgstr "Grafiek-markers"
 msgid "Chart smoothing"
 msgstr "Grafiek-smoothing"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Chat ID"
 msgstr "Chat-ID"
@@ -875,9 +841,6 @@ msgid "click outside to close"
 msgstr "klik buiten om te sluiten"
 
 #: src/components/HashrateChart.tsx
-#: src/components/HashrateChart.tsx
-#: src/components/HashrateChart.tsx
-#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "close"
 msgstr "sluiten"
@@ -949,31 +912,25 @@ msgid "Cooldown clears in"
 msgstr "Cooldown loopt af over"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "copied bid ID"
 msgstr "bod-ID gekopieerd"
 
-#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "copied JSON"
 msgstr "JSON gekopieerd"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "copied URL"
 msgstr "URL gekopieerd"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "copy bid ID"
 msgstr "bod-ID kopiëren"
 
 #: src/components/PriceChart.tsx
-#: src/components/PriceChart.tsx
 msgid "copy JSON"
 msgstr "JSON kopiëren"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "URL kopiëren"
@@ -994,7 +951,6 @@ msgstr "Bod aanmaken"
 msgid "created"
 msgstr "aangemaakt"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Credential (DDNS Key password / token)"
 msgstr "Credential (DDNS Key wachtwoord / token)"
@@ -1041,7 +997,6 @@ msgid "custom"
 msgstr "aangepast"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Custom (uploaded)"
 msgstr "Eigen (geüpload)"
 
@@ -1058,7 +1013,6 @@ msgid "Daemon's public IP:"
 msgstr "Publiek IP van de daemon:"
 
 #: src/pages/Setup.tsx
-#: src/pages/Setup.tsx
 msgid "Dashboard password"
 msgstr "Dashboard-wachtwoord"
 
@@ -1066,7 +1020,6 @@ msgstr "Dashboard-wachtwoord"
 msgid "dashboard sign-in"
 msgstr "dashboard aanmelden"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Date layout"
 msgstr "Datumindeling"
@@ -1140,7 +1093,6 @@ msgid "Delete this device permanently. To pause without deleting, uncheck the bo
 msgstr "Apparaat permanent verwijderen. Om te pauzeren zonder te verwijderen, vink het vakje links in de rij uit."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "delivered"
 msgstr "geleverd"
 
@@ -1177,7 +1129,6 @@ msgid "Device"
 msgstr "Apparaat"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Devices"
 msgstr "Apparaten"
 
@@ -1201,7 +1152,6 @@ msgstr "Uitgeschakeld (alleen sats)"
 msgid "Dismiss"
 msgstr "Sluiten"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Display"
 msgstr "Weergave"
@@ -1242,7 +1192,6 @@ msgstr "Duur-gewogen gemiddelde van de hashrate die Datum bij de gateway meet. E
 msgid "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
 msgstr "Duur-gewogen gemiddelde van de hashrate die Ocean toeschrijft aan ons uitbetaaladres. Elke tick (elke 60 s) roept de daemon Oceans /v1/user_hashrate-endpoint aan en leest het `hashrate_300s`-veld - Oceans eigen 5-minuten schuivend-venster schatting voor deze wallet. Dus: elke minuut bemonsterd, elke meting is een 5-minuten gladde waarde. Een aanhoudend tekort onder Gem. Braiins / Gem. Datum betekent dat de pool geen werk credit geeft waarvan wij denken dat het geleverd is."
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Dynamic DNS"
 msgstr "Dynamic DNS"
@@ -1351,7 +1300,6 @@ msgid "Enable debug API endpoint"
 msgstr "Debug-API-endpoint inschakelen"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Enable solo-mining monitoring"
 msgstr "Solo-mining monitoring inschakelen"
 
@@ -1423,7 +1371,6 @@ msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats
 msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt een sats/USD eenheid-wisselaar in de dashboard-header in. Geen API-sleutel nodig - gebruikt niet-geauthenticeerde publieke endpoints."
 
 #: src/components/PriceChart.tsx
-#: src/components/PriceChart.tsx
 msgid "fillable"
 msgstr "vulbaar"
 
@@ -1455,7 +1402,6 @@ msgstr "Vuurt wanneer de Braiins-orderbook geen hashrate beschikbaar heeft voor 
 msgid "First-run setup"
 msgstr "Eerste-keer setup"
 
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Fleet"
 msgstr "Vloot"
@@ -1528,7 +1474,6 @@ msgid "genesis version"
 msgstr "genesis-versie"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Glass drop & roll"
 msgstr "Glas valt & rolt"
 
@@ -1536,8 +1481,6 @@ msgstr "Glas valt & rolt"
 msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
 msgstr "Harde bovengrens. Als vulbaar + toeslag dit zou overschrijden, wordt het bod naar deze waarde teruggebracht (en mogelijk niet gevuld)."
 
-#: src/components/PriceChart.tsx
-#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "hashprice"
 msgstr "hashprice"
@@ -1555,9 +1498,6 @@ msgid "hashprice + max overpay"
 msgstr "hashprice + max toeslag"
 
 #: src/components/HashrateChart.tsx
-#: src/components/HashrateChart.tsx
-#: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 #: src/pages/Config.tsx
 msgid "Hashrate"
@@ -1604,7 +1544,6 @@ msgstr "host"
 msgid "Host"
 msgstr "Host"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Hostname"
 msgstr "Hostnaam"
@@ -1656,7 +1595,6 @@ msgid "IMPORTANT"
 msgstr "BELANGRIJK"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Include historical Ocean payouts in lifetime earnings"
 msgstr "Tel historische Ocean-uitbetalingen mee in totale inkomsten"
 
@@ -1685,7 +1623,6 @@ msgid "Informational. Off by default. When on, every block Ocean credits to your
 msgstr "Informatief. Standaard uit. Wanneer aan, stuurt elk blok dat Ocean op je uitbetalingsadres bijschrijft een klein INFO-bericht: blokhoogte, jouw aandeel %, jouw bijschrijving en voortgang naar de volgende on-chain uitbetaling van 1.048.576 sat."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Instance label (optional)"
 msgstr "Instantielabel (optioneel)"
 
@@ -1697,7 +1634,6 @@ msgstr "onvoldoende geschiedenis"
 msgid "IP"
 msgstr "IP"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "IP / host"
 msgstr "IP / host"
@@ -1719,8 +1655,6 @@ msgid "Keep whatever run mode was active before the restart. PAUSED is demoted t
 msgstr "Behoud de run-modus die actief was vóór de herstart. PAUSED wordt teruggezet naar DRY_RUN."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Label"
 msgstr "Label"
 
@@ -1741,7 +1675,6 @@ msgstr "Taal voor de titels, body en severity-prefix van Telegram-berichten. Ona
 msgid "Last error:"
 msgstr "Laatste fout:"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "last pool block"
 msgstr "laatste pool-blok"
@@ -1807,10 +1740,7 @@ msgid "Loading or daemon restart required."
 msgstr "Laden of daemon-herstart vereist."
 
 #: src/pages/Alerts.tsx
-#: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "loading…"
 msgstr "laden…"
@@ -1868,7 +1798,6 @@ msgid "Match - hostname is pointing at this box."
 msgstr "Komt overeen - hostnaam wijst naar deze machine."
 
 #: src/components/PriceChart.tsx
-#: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "max bid"
 msgstr "max bod"
@@ -1906,11 +1835,9 @@ msgid "menu"
 msgstr "menu"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Metallic clank 1"
 msgstr "Metalen klap 1"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Metalen klap 2"
@@ -1923,7 +1850,6 @@ msgstr "Minimum-ondergrens"
 msgid "Mining"
 msgstr "Mining"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "minutes"
 msgstr "minuten"
@@ -2003,7 +1929,6 @@ msgid "New version available (build {__BUILD_NUMBER__} → {0})."
 msgstr "Nieuwe versie beschikbaar (build {__BUILD_NUMBER__} → {0})."
 
 #: src/pages/Setup.tsx
-#: src/pages/Setup.tsx
 msgid "Next →"
 msgstr "Volgende →"
 
@@ -2072,7 +1997,6 @@ msgid "No signaling blocks in this window."
 msgstr "Geen signalerende blokken in dit venster."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "none"
 msgstr "geen"
 
@@ -2106,7 +2030,6 @@ msgid "Not enough data in this range yet."
 msgstr "Nog niet genoeg data in dit bereik."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "niet in LIVE-modus"
 
@@ -2115,7 +2038,6 @@ msgid "not reported"
 msgstr "niet gerapporteerd"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Notifications"
 msgstr "Meldingen"
 
@@ -2123,7 +2045,6 @@ msgstr "Meldingen"
 msgid "now"
 msgstr "nu"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Number format"
 msgstr "Getalindeling"
@@ -2158,11 +2079,9 @@ msgid "ocean lifetime"
 msgstr "Ocean levenslang"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining heeft een blok gevonden (stem)"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"
 msgstr "Ocean pool-blok bijgeschreven"
@@ -2196,8 +2115,6 @@ msgstr "Uit"
 msgid "Off by default. When on, sends an INFO message when Braiins detects a deposit and another when it's cleared compliance and is spendable. Sends an IMPORTANT message if Braiins's compliance returns the deposit (real money on the line)."
 msgstr "Standaard uit. Wanneer aan, stuurt een INFO-bericht zodra Braiins een deposit detecteert en nog een wanneer compliance is doorlopen en de funds beschikbaar zijn. Stuurt een IMPORTANT-bericht als Braiins compliance de deposit terugstuurt (echt geld op het spel)."
 
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "OK"
 msgstr "OK"
@@ -2358,7 +2275,6 @@ msgid "owner"
 msgstr "eigenaar"
 
 #: src/pages/Setup.tsx
-#: src/pages/Setup.tsx
 msgid "Owner token"
 msgstr "Eigenaars-token"
 
@@ -2386,7 +2302,6 @@ msgstr "Geduld loopt af over"
 msgid "Pause"
 msgstr "Pauzeren"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "paused"
 msgstr "gepauzeerd"
@@ -2505,12 +2420,10 @@ msgid "POOL LUCK +"
 msgstr "POOL LUCK +"
 
 #: src/components/HashrateChart.tsx
-#: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "pool-beloning"
 
 #: src/pages/Config.tsx
-#: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Pool URL"
 msgstr "Pool-URL"
@@ -2537,8 +2450,6 @@ msgid "Port"
 msgstr "Poort"
 
 #: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 msgid "Power"
 msgstr "Vermogen"
 
@@ -2546,7 +2457,6 @@ msgstr "Vermogen"
 msgid "pre-installation (manual)"
 msgstr "pre-installatie (handmatig)"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Pre-installation earnings"
 msgstr "Pre-installatie inkomsten"
@@ -2556,13 +2466,10 @@ msgid "previous"
 msgstr "vorige"
 
 #: src/components/PriceChart.tsx
-#: src/components/PriceChart.tsx
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "price"
 msgstr "prijs"
 
-#: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "Price"
 msgstr "Prijs"
@@ -2629,7 +2536,6 @@ msgid "protocol"
 msgstr "protocol"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Provider"
 msgstr "Provider"
 
@@ -2649,7 +2555,6 @@ msgstr "bereik"
 msgid "Re-setup"
 msgstr "Opnieuw instellen"
 
-#: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Read-only token"
 msgstr "Alleen-lezen token"
@@ -2680,7 +2585,6 @@ msgid "refreshes in {0}"
 msgstr "vernieuwt over {0}"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "refreshing…"
 msgstr "vernieuwen…"
 
@@ -2688,7 +2592,6 @@ msgstr "vernieuwen…"
 msgid "Refundable on cancel:"
 msgstr "Terug bij annuleren:"
 
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Rejected"
 msgstr "Geweigerd"
@@ -2716,8 +2619,6 @@ msgstr "Consumenten-ISP's wijzigen je publieke IP periodiek. Een rauw IP hier we
 
 #: src/components/AlertToast.tsx
 #: src/pages/Alerts.tsx
-#: src/pages/Alerts.tsx
-#: src/pages/Alerts.tsx
 msgid "resolved"
 msgstr "opgelost"
 
@@ -2738,7 +2639,6 @@ msgid "retarget window:"
 msgstr "herrekenvenster:"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Retry interval"
 msgstr "Herhaalinterval"
 
@@ -2747,11 +2647,9 @@ msgid "revert"
 msgstr "terugzetten"
 
 #: src/pages/Setup.tsx
-#: src/pages/Setup.tsx
 msgid "Review"
 msgstr "Controleren"
 
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "rechter as"
@@ -2802,7 +2700,6 @@ msgid "Run the pending decision immediately - clears the post-edit lock and bypa
 msgstr "Voer de wachtende beslissing onmiddellijk uit - heft de post-edit-lock op en omzeilt de patience/escalation-timers zodat een wachtende EDIT_PRICE op deze tick afgaat in plaats van na het volledige venster."
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "runway"
 msgstr "runway"
 
@@ -2814,7 +2711,6 @@ msgstr "sats"
 msgid "Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default)."
 msgstr "Sats opgebouwd in onze wallet op Ocean sinds de laatste on-chain uitbetaling. Stijgt continu tussen uitbetalingen; valt naar nul wanneer er een uitbetaling wordt verzonden (Ocean betaalt uit wanneer dit de drempel passeert, standaard ~0,01 BTC)."
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "save"
 msgstr "opslaan"
@@ -2833,7 +2729,6 @@ msgid "saved."
 msgstr "opgeslagen."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "saving…"
 msgstr "opslaan…"
 
@@ -2845,7 +2740,6 @@ msgstr "Scannen"
 msgid "Scan failed:"
 msgstr "Scan mislukt:"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Scan local network"
 msgstr "Lokaal netwerk scannen"
@@ -2900,7 +2794,6 @@ msgid "send failed"
 msgstr "verzenden mislukt"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Send messages to Telegram"
 msgstr "Stuur berichten naar Telegram"
 
@@ -2926,11 +2819,9 @@ msgid "share_log %"
 msgstr "share_log %"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
 msgstr "Share-verwerpingsdrempel (%)"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Share-rejection window (minutes)"
 msgstr "Share-verwerpingsvenster (minuten)"
@@ -2952,7 +2843,6 @@ msgstr "toont {0} van {totalCount}"
 msgid "sign in"
 msgstr "aanmelden"
 
-#: src/components/Layout.tsx
 #: src/components/Layout.tsx
 msgid "sign out"
 msgstr "afmelden"
@@ -3002,12 +2892,9 @@ msgid "Solo miner stratum URL drift"
 msgstr "Solo-miner stratum-URL afwijking"
 
 #: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 msgid "Solo miners"
 msgstr "Solo-miners"
 
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Solo miners (Bitaxe / AxeOS)"
 msgstr "Solo-miners (Bitaxe / AxeOS)"
@@ -3020,7 +2907,6 @@ msgstr "solo vermogen (W)"
 msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."
 msgstr "Solo-mining monitoring is ingeschakeld maar er zijn nog geen apparaten toegevoegd. Voeg een Bitaxe-IP toe via Config → Weergave & logboek → Solo-miners."
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Sound"
 msgstr "Geluid"
@@ -3103,8 +2989,6 @@ msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spo
 msgstr "Som van counters_committed.amount_consumed_sat over elk bod op /v1/spot/bid - omvat actieve + historische biedingen, inclusief eventuele die bestonden voordat de autopilot werd aangezet. Kan achterlopen op het laatste uur van actief-bod verbruik (Braiins werkt committed counters alleen bij op elke uurlijkse settlement-tick). Schakel via Config → P&L-paneel."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "system default"
 msgstr "systeemstandaard"
 
@@ -3127,7 +3011,6 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP-probe van de stratum-poort van de Datum-gateway."
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Telegram bot token"
 msgstr "Telegram bot-token"
 
@@ -3140,11 +3023,9 @@ msgid "Telegram notifications"
 msgstr "Telegram-meldingen"
 
 #: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 msgid "Temp"
 msgstr "Temp"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Temperature unit"
 msgstr "Temperatuureenheid"
@@ -3154,22 +3035,13 @@ msgid "Test"
 msgstr "Test"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Test connection"
 msgstr "Verbinding testen"
 
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 msgid "Test sound"
 msgstr "Geluid testen"
 
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Testing…"
 msgstr "Bezig met testen…"
@@ -3236,7 +3108,6 @@ msgid "tip"
 msgstr "tip"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "total"
 msgstr "totaal"
 
@@ -3293,12 +3164,10 @@ msgid "unpaid earnings (Ocean)"
 msgstr "openstaande verdiensten (Ocean)"
 
 #: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 msgid "unreachable"
 msgstr "onbereikbaar"
 
 #. placeholder {0}: entry.error
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "unreachable: {0}"
 msgstr "onbereikbaar: {0}"
@@ -3337,11 +3206,9 @@ msgid "Uploading…"
 msgstr "Bezig met uploaden…"
 
 #: src/pages/Status.tsx
-#: src/pages/Status.tsx
 msgid "uptime"
 msgstr "uptime"
 
-#: src/components/SoloMinersCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "Uptime"
 msgstr "Uptime"
@@ -3354,7 +3221,6 @@ msgstr "Gebruikt voor de on-chain uitbetaling-saldocontrole (wanneer hierboven \
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 msgstr "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Username (DDNS Key user)"
 msgstr "Gebruikersnaam (DDNS Key gebruiker)"
@@ -3380,7 +3246,6 @@ msgid "version"
 msgstr "versie"
 
 #: src/components/SoloMinersCard.tsx
-#: src/components/SoloMinersCard.tsx
 msgid "VR temp"
 msgstr "VR-temp"
 
@@ -3388,7 +3253,6 @@ msgstr "VR-temp"
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-referentie beschikbaar is."
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Wallet runway below"
 msgstr "Wallet-runway onder"
@@ -3486,7 +3350,6 @@ msgstr "Wis de lokale cache van afgesloten biedingen en pagineer bij de volgende
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
-#: src/pages/Setup.tsx
 msgid "Worker identity"
 msgstr "Worker-identiteit"
 
@@ -3510,7 +3373,6 @@ msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hi
 msgid "Zero hashrate for"
 msgstr "Geen hashrate gedurende"
 
-#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Zero-hashrate alert after (minutes)"
 msgstr "Nul-hashrate-alarm na (minuten)"
