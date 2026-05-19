@@ -464,7 +464,7 @@ function useSections(): Section[] {
             key: 'debug_api_enabled',
             label: t`Enable debug API endpoint`,
             kind: 'boolean' as const,
-            help: t`Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info to filter the response.`,
+            help: t`Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics, pool_blocks, alert_events, bid_events, reward_events, app_config, daemon_info to filter the response.`,
           },
         ],
       },
@@ -660,7 +660,7 @@ export function Config() {
           a tab-strip-only sticky inside Layout's sticky cluster so
           stacking is single-source. */}
       <header className="-mx-4 px-4 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800 flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-0">
+        <div className="w-full sm:w-auto sm:flex-1 sm:min-w-0">
           <h2 className="text-2xl text-slate-100">
             <Trans>Configuration</Trans>
           </h2>

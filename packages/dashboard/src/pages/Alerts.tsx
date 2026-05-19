@@ -174,7 +174,7 @@ export function Alerts() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t`Search titles + bodies...`}
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 w-48"
+          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 w-full sm:w-48"
         />
         {alerts.length > 0 && (
           <span className="ml-auto text-xs text-slate-500">

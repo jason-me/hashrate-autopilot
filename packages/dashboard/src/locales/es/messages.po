@@ -1461,8 +1461,8 @@ msgid "Fleet"
 msgstr "Flota"
 
 #: src/pages/Config.tsx
-msgid "Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info to filter the response."
-msgstr "Activa esto, haz curl al endpoint, desactivalo. Soporta ?hours=N (por defecto 24, max 168) y ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info para filtrar la respuesta."
+msgid "Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics, pool_blocks, alert_events, bid_events, reward_events, app_config, daemon_info to filter the response."
+msgstr "Activa esto, haz curl al endpoint, desactivalo. Soporta ?hours=N (por defecto 24, max 168) y ?tables=tick_metrics, pool_blocks, alert_events, bid_events, reward_events, app_config, daemon_info para filtrar la respuesta."
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx

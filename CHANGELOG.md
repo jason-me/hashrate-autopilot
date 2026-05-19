@@ -2,6 +2,10 @@
 
 ## 2026-05-18
 
+### `[UI]` Mobile layout fixes for Config and Alerts pages
+
+Debug API help text with comma-separated table names (`tick_metrics,pool_blocks,...`) could not soft-wrap, overflowing on narrow screens. Added spaces after commas in all three locales. Config page header now takes full width on mobile so the auto-save text wraps naturally instead of being crushed one-word-per-line. Alerts search input is responsive (full width on mobile, 12rem on desktop).
+
 ### `[Fix]` Chart presets wider than data span no longer show empty space (#181)
 
 Any preset whose time window exceeds the actual data span (e.g. "1y" or "All" with only ~26 days of data) was stretching the X-axis far before the first tick, squishing data into a thin sliver on the right. The rendering viewport now clamps to the first metric point's tick_at (with 2% padding) whenever the viewport starts before the data. Applies to all presets, not just "All".
