@@ -57,7 +57,7 @@ export async function runPoolBlocksBackfill(deps: PoolBlocksBackfillDeps): Promi
   const nowMs = now();
 
   // Dynamic lookback: pull at least enough blocks for the historical
-  // pool-luck recompute to have a 7-day window for the earliest
+  // pool-luck recompute to have a 30-day window for the earliest
   // tick_metrics row. Floor at 30 days so a fresh install still
   // captures something useful; ceiling at 180 days so a long-running
   // installation doesn't trigger a 360-page Ocean scrape on every
@@ -71,7 +71,7 @@ export async function runPoolBlocksBackfill(deps: PoolBlocksBackfillDeps): Promi
         .executeTakeFirst();
       if (earliestTick?.t) {
         const tickAgeDays = Math.ceil((nowMs - earliestTick.t) / DAY_MS);
-        const desired = tickAgeDays + 7;
+        const desired = tickAgeDays + 30;
         lookbackDays = Math.min(
           LOOKBACK_CEILING_DAYS,
           Math.max(LOOKBACK_FLOOR_DAYS, desired),

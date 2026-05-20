@@ -67,19 +67,11 @@ export interface OceanResponse {
   } | null;
   blocks_24h: number;
   blocks_7d: number;
-  /**
-   * Pool luck multipliers (24h / 7d) computed from the same formula
-   * the chart's right-axis pool-luck series uses, so the OCEAN
-   * panel and chart agree at the moment of each pool block. Reads
-   * count_in_window divided by an expected denominator that grows
-   * with elapsed-since-last-block, which:
-   *   - At the moment of a find: equals count / expected_for_window
-   *     (matches the operator's mental model exactly).
-   *   - Between finds: decays continuously as the gap grows.
-   * Null when any input is unavailable. See `services/pool-luck.ts`.
-   */
+  blocks_30d: number;
+  blocks_all_time: number;
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  pool_luck_30d: number | null;
   recent_blocks: readonly OceanBlock[];
   /**
    * Pool blocks to overlay as markers on the Hashrate chart. Under
@@ -132,8 +124,11 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        blocks_30d: 0,
+        blocks_all_time: 0,
         pool_luck_24h: null,
         pool_luck_7d: null,
+        pool_luck_30d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -150,8 +145,11 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        blocks_30d: 0,
+        blocks_all_time: 0,
         pool_luck_24h: null,
         pool_luck_7d: null,
+        pool_luck_30d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -167,8 +165,11 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        blocks_30d: 0,
+        blocks_all_time: 0,
         pool_luck_24h: null,
         pool_luck_7d: null,
+        pool_luck_30d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -213,15 +214,15 @@ export async function registerOceanRoute(
     const blocks_7d = recentBlocksForUi.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
-    // Pool luck readings - same formula the chart's right axis uses,
-    // so panel and chart agree at the moment of every find. Pulls
-    // pool_hashrate from the trailing daemon-side averages stored in
-    // tick_metrics; without those we can fall back to the live pool
-    // hashrate snapshot but it'll wobble a few percent (#92).
+    const blocks_30d = recentBlocksForUi.filter(
+      (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 30 * DAY_MS,
+    ).length;
+    const blocks_all_time = await deps.poolBlocksRepo.countAll().catch(() => 0);
     const blockTimestamps = recentBlocksForUi.map((b) => b.timestamp_ms);
-    const [poolHashrate24h, poolHashrate7d] = await Promise.all([
+    const [poolHashrate24h, poolHashrate7d, poolHashrate30d] = await Promise.all([
       deps.tickMetricsRepo.avgPoolHashratePhSince(now - DAY_MS).catch(() => null),
       deps.tickMetricsRepo.avgPoolHashratePhSince(now - 7 * DAY_MS).catch(() => null),
+      deps.tickMetricsRepo.avgPoolHashratePhSince(now - 30 * DAY_MS).catch(() => null),
     ]);
     const pool_luck_24h = computePoolLuck({
       tickAt: now,
@@ -237,6 +238,14 @@ export async function registerOceanRoute(
       poolHashrateAvgPh: poolHashrate7d ?? stats.pool.pool_hashrate_ph,
       networkDifficulty: stats.pool.network_difficulty,
       windowMs: 7 * DAY_MS,
+      recentBlockTimestampsMs: blockTimestamps,
+    });
+    const pool_luck_30d = computePoolLuck({
+      tickAt: now,
+      countInWindow: blocks_30d,
+      poolHashrateAvgPh: poolHashrate30d ?? stats.pool.pool_hashrate_ph,
+      networkDifficulty: stats.pool.network_difficulty,
+      windowMs: 30 * DAY_MS,
       recentBlockTimestampsMs: blockTimestamps,
     });
     const shareLogAtBlock = await Promise.all(
@@ -288,8 +297,11 @@ export async function registerOceanRoute(
         : null,
       blocks_24h,
       blocks_7d,
+      blocks_30d,
+      blocks_all_time,
       pool_luck_24h,
       pool_luck_7d,
+      pool_luck_30d,
       recent_blocks: recentBlocksForUi,
       our_recent_blocks,
       pool: stats.pool,

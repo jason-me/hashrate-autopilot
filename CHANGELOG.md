@@ -2,6 +2,10 @@
 
 ## 2026-05-19
 
+### `[Feature]` Pool luck 30d chart overlay + pool blocks 30d/all-time in Ocean panel (#201)
+
+New "pool luck (30d)" option in the hashrate chart's right-axis dropdown, with retarget markers. The Ocean panel gains two new rows: "pool blocks 30d" (with luck multiplier) and "pool blocks all time" (total count since the daemon started tracking). The boot-time backfill and pool-luck recompute service now cover the 30d window so historical data is available from day one. New migration 0093 adds `pool_luck_30d`, `pool_blocks_30d_count`, and `pool_hashrate_ph_avg_30d` columns to tick_metrics.
+
 ### `[Feature]` Auto-cancel bids when Datum stratum is down (#199)
 
 When Datum stratum is unreachable for 3+ consecutive ticks, the controller cancels all active bids to stop spending on hashrate that cannot reach the pool. Also blocks new bid creation while stratum is down. Bidding resumes automatically on the next tick after stratum recovers. The `datum_unreachable` alert message now reflects this auto-cancel behavior across all locales (en/nl/es).

@@ -68,6 +68,9 @@ export interface InsertTickMetricArgs {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
+  readonly pool_luck_30d: number | null;
+  readonly pool_blocks_30d_count: number | null;
+  readonly pool_hashrate_ph_avg_30d: number | null;
   readonly braiins_reachable: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
@@ -109,6 +112,9 @@ export interface AggregatedTickMetricRow {
   pool_hashrate_ph_avg_7d: number | null;
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  pool_luck_30d: number | null;
+  pool_blocks_30d_count: number | null;
+  pool_hashrate_ph_avg_30d: number | null;
   braiins_reachable: number | null;
 }
 
@@ -181,6 +187,9 @@ export class TickMetricsRepo {
         pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
         pool_luck_24h: r.pool_luck_24h,
         pool_luck_7d: r.pool_luck_7d,
+        pool_luck_30d: r.pool_luck_30d,
+        pool_blocks_30d_count: r.pool_blocks_30d_count,
+        pool_hashrate_ph_avg_30d: r.pool_hashrate_ph_avg_30d,
         braiins_reachable: r.braiins_reachable,
       }));
     }
@@ -264,6 +273,9 @@ export class TickMetricsRepo {
         // a bucket's mean luck reads cleanly.
         sql<number | null>`AVG(pool_luck_24h)`.as('pool_luck_24h'),
         sql<number | null>`AVG(pool_luck_7d)`.as('pool_luck_7d'),
+        sql<number | null>`AVG(pool_luck_30d)`.as('pool_luck_30d'),
+        sql<number | null>`AVG(pool_blocks_30d_count)`.as('pool_blocks_30d_count'),
+        sql<number | null>`AVG(pool_hashrate_ph_avg_30d)`.as('pool_hashrate_ph_avg_30d'),
         sql<number | null>`MIN(braiins_reachable)`.as('braiins_reachable'),
       ])
       .where('tick_at', '>=', sinceMs)

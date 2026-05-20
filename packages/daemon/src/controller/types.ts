@@ -192,6 +192,9 @@ export interface State {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
+  readonly pool_luck_30d: number | null;
+  readonly pool_blocks_30d_count: number | null;
+  readonly pool_hashrate_ph_avg_30d: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

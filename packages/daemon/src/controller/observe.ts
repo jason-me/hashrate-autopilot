@@ -240,6 +240,12 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         return null;
       })
     : null;
+  const pool_blocks_30d_count = oceanStats
+    ? await deps.poolBlocksRepo.countSince(tickAt - 30 * DAY_MS).catch((err) => {
+        logAndReturnNull('pool_blocks_30d_count', err);
+        return null;
+      })
+    : null;
   // Trailing pool-hashrate averages over the same windows as the
   // block counts above. Stored on the tick row so the chart's luck
   // calc has a denominator with matching window semantics; without
@@ -249,7 +255,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   // queries hit the same `tick_metrics` rows being written to, so
   // they're cheap (indexed on tick_at) and degrade to null on a
   // brand-new install before any history exists.
-  const [pool_hashrate_ph_avg_24h, pool_hashrate_ph_avg_7d] = await Promise.all([
+  const [pool_hashrate_ph_avg_24h, pool_hashrate_ph_avg_7d, pool_hashrate_ph_avg_30d] = await Promise.all([
     deps.tickMetricsRepo
       .avgPoolHashratePhSince(tickAt - DAY_MS)
       .catch((err) => {
@@ -262,6 +268,12 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         logAndReturnNull('pool_hashrate_ph_avg_7d', err);
         return null;
       }),
+    deps.tickMetricsRepo
+      .avgPoolHashratePhSince(tickAt - 30 * DAY_MS)
+      .catch((err) => {
+        logAndReturnNull('pool_hashrate_ph_avg_30d', err);
+        return null;
+      }),
   ]);
   // Pool luck (24h / 7d). Reads count_in_window / expected, but the
   // expected denominator extends with elapsed-since-last-block so
@@ -269,14 +281,14 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   // OCEAN panel's count-vs-expected reading at the moment of each
   // find. See `services/pool-luck.ts` for the full derivation.
   // Block timestamps for pool-luck's elapsed-since-last-block math.
-  // Pull from the persistent table over the 7d window (the broader
-  // of the two pool-luck windows), so the per-window slicing inside
-  // computePoolLuck has the same data both 24h and 7d luck can rely
+  // Pull from the persistent table over the 30d window (the broadest
+  // of the three pool-luck windows), so the per-window slicing inside
+  // computePoolLuck has the same data all three luck variants can rely
   // on. Falls back to the per-tick recent list if the repo query
   // fails for any reason.
   const blockTimestamps = oceanStats
     ? await deps.poolBlocksRepo
-        .timestampsSince(tickAt - 7 * DAY_MS)
+        .timestampsSince(tickAt - 30 * DAY_MS)
         .catch(() => recent.map((b) => b.timestamp_ms))
     : recent.map((b) => b.timestamp_ms);
   const pool_luck_24h = oceanStats
@@ -296,6 +308,16 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         poolHashrateAvgPh: pool_hashrate_ph_avg_7d,
         networkDifficulty: network_difficulty,
         windowMs: 7 * DAY_MS,
+        recentBlockTimestampsMs: blockTimestamps,
+      })
+    : null;
+  const pool_luck_30d = oceanStats
+    ? computePoolLuck({
+        tickAt,
+        countInWindow: pool_blocks_30d_count,
+        poolHashrateAvgPh: pool_hashrate_ph_avg_30d,
+        networkDifficulty: network_difficulty,
+        windowMs: 30 * DAY_MS,
         recentBlockTimestampsMs: blockTimestamps,
       })
     : null;
@@ -473,10 +495,13 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     btc_usd_price_source,
     pool_blocks_24h_count,
     pool_blocks_7d_count,
+    pool_blocks_30d_count,
     pool_hashrate_ph_avg_24h,
     pool_hashrate_ph_avg_7d,
+    pool_hashrate_ph_avg_30d,
     pool_luck_24h,
     pool_luck_7d,
+    pool_luck_30d,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

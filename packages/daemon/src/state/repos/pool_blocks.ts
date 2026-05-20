@@ -63,6 +63,15 @@ export class PoolBlocksRepo {
     return Number(row.n);
   }
 
+  /** Total count of all blocks in the table (all time since daemon started tracking). */
+  async countAll(): Promise<number> {
+    const row = await this.db
+      .selectFrom('pool_blocks')
+      .select((eb) => eb.fn.countAll<number>().as('n'))
+      .executeTakeFirstOrThrow();
+    return Number(row.n);
+  }
+
   /** ms-epoch of the oldest row, or null if the table is empty. */
   async earliestTimestampMs(): Promise<number | null> {
     const row = await this.db

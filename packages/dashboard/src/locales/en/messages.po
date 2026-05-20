@@ -654,6 +654,15 @@ msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier c
 msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is {shareStr}, so the expectation over 24h (~144 blocks on the network) is ~{0} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
 msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is {shareStr}, so the expectation over 24h (~144 blocks on the network) is ~{0} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
 
+#. placeholder {0}: fmt(expected30d, 0)
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 30d. At Ocean's current share of {shareStr}, the 30d expectation is ~{0} blocks. 30d smooths almost all Poisson variance - a sustained deviation here points to a real share change."
+msgstr "Blocks Ocean found in the last 30d. At Ocean's current share of {shareStr}, the 30d expectation is ~{0} blocks. 30d smooths almost all Poisson variance - a sustained deviation here points to a real share change."
+
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 30d. Pool hashrate / network difficulty unavailable right now."
+msgstr "Blocks Ocean found in the last 30d. Pool hashrate / network difficulty unavailable right now."
+
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
 msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
@@ -2400,8 +2409,16 @@ msgid "pool blocks 24h"
 msgstr "pool blocks 24h"
 
 #: src/pages/Status.tsx
+msgid "pool blocks 30d"
+msgstr "pool blocks 30d"
+
+#: src/pages/Status.tsx
 msgid "pool blocks 7d"
 msgstr "pool blocks 7d"
+
+#: src/pages/Status.tsx
+msgid "pool blocks all time"
+msgstr "pool blocks all time"
 
 #: src/pages/Config.tsx
 msgid "Pool destination"
@@ -2422,6 +2439,10 @@ msgstr "POOL LUCK -"
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "pool luck (24h)"
+
+#: src/pages/Status.tsx
+msgid "pool luck (30d)"
+msgstr "pool luck (30d)"
 
 #: src/pages/Status.tsx
 msgid "pool luck (7d)"
@@ -3122,6 +3143,10 @@ msgstr "tip"
 #: src/pages/Status.tsx
 msgid "total"
 msgstr "total"
+
+#: src/pages/Status.tsx
+msgid "Total blocks Ocean has found since the daemon started tracking. No luck multiplier - the Poisson expectation over an unbounded window is not practically useful."
+msgstr "Total blocks Ocean has found since the daemon started tracking. No luck multiplier - the Poisson expectation over an unbounded window is not practically useful."
 
 #: src/pages/Config.tsx
 msgid "Total Braiins balance ÷ trailing-3h burn rate has dropped below the configured threshold. Off by default; tick the box and pick a day count to enable."

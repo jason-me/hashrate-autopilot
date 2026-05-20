@@ -84,6 +84,7 @@ function readStoredHashrateRightAxis(
     raw === 'pool_hashrate' ||
     raw === 'pool_luck_24h' ||
     raw === 'pool_luck_7d' ||
+    raw === 'pool_luck_30d' ||
     // #149: solo-mining series options. Without these here, picking
     // one of them and refreshing fell back to 'none' instead of
     // restoring the operator's selection.
@@ -469,6 +470,7 @@ export function Status() {
             <option value="pool_hashrate">{t`pool hashrate`}</option>
             <option value="pool_luck_24h">{t`pool luck (24h)`}</option>
             <option value="pool_luck_7d">{t`pool luck (7d)`}</option>
+            <option value="pool_luck_30d">{t`pool luck (30d)`}</option>
             {/* #149: solo-mining series only listed when the master toggle is on. */}
             {soloMiningEnabled && (
               <>
@@ -2289,6 +2291,12 @@ function OceanPanel() {
             shareStr && expected7d !== null
               ? t`Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of ${shareStr}, the 7d expectation is ~${fmt(expected7d, 1)} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`
               : t`Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again.`;
+          const expected30d = sharePct !== null ? sharePct * 144 * 30 / 100 : null;
+          const tooltip30d =
+            shareStr && expected30d !== null
+              ? t`Blocks Ocean found in the last 30d. At Ocean's current share of ${shareStr}, the 30d expectation is ~${fmt(expected30d, 0)} blocks. 30d smooths almost all Poisson variance - a sustained deviation here points to a real share change.`
+              : t`Blocks Ocean found in the last 30d. Pool hashrate / network difficulty unavailable right now.`;
+          const tooltipAllTime = t`Total blocks Ocean has found since the daemon started tracking. No luck multiplier - the Poisson expectation over an unbounded window is not practically useful.`;
           return (
             <>
               <Row
@@ -2300,6 +2308,16 @@ function OceanPanel() {
                 k={t`pool blocks 7d`}
                 v={renderPoolBlocksRow(o.blocks_7d, o.pool_luck_7d, intlLocale)}
                 tooltip={tooltip7d}
+              />
+              <Row
+                k={t`pool blocks 30d`}
+                v={renderPoolBlocksRow(o.blocks_30d, o.pool_luck_30d, intlLocale)}
+                tooltip={tooltip30d}
+              />
+              <Row
+                k={t`pool blocks all time`}
+                v={String(o.blocks_all_time)}
+                tooltip={tooltipAllTime}
               />
             </>
           );

@@ -414,6 +414,9 @@ export interface TickMetricsTable {
    */
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  pool_luck_30d: number | null;
+  pool_blocks_30d_count: number | null;
+  pool_hashrate_ph_avg_30d: number | null;
   /** #173: 1 = Braiins API was reachable this tick, 0 = unreachable.
    * NULL for rows predating migration 0091. */
   braiins_reachable: number | null;

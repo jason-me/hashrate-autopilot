@@ -67,21 +67,22 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
     return;
   }
 
-  // Eligible window: ticks whose 7d window starts at or after the
+  // Eligible window: ticks whose 30d window starts at or after the
   // earliest pool_block we have. Below this, the count would be
   // partial-by-pool_blocks-coverage rather than real-pool-find
   // history, and we'd lower the count to a wrong value. Conservative.
-  const earliestEligibleTick = earliestBlock + 7 * DAY_MS;
+  const earliestEligibleTick = earliestBlock + 30 * DAY_MS;
 
   // Pre-load nearest-non-null lookup tables for the formula inputs
   // that older ticks predate. Both are slow-moving (difficulty
   // retargets every ~2 weeks; pool hashrate drifts a few % per day),
   // so a nearest-by-time backfill is a perfectly reasonable
   // reconstruction for the chart.
-  const [diffSeries, ph24Series, ph7Series] = await Promise.all([
+  const [diffSeries, ph24Series, ph7Series, ph30Series] = await Promise.all([
     loadSeries(deps.db, 'network_difficulty'),
     loadSeries(deps.db, 'pool_hashrate_ph_avg_24h'),
     loadSeries(deps.db, 'pool_hashrate_ph_avg_7d'),
+    loadSeries(deps.db, 'pool_hashrate_ph_avg_30d'),
   ]);
 
   if (diffSeries.length === 0 || ph24Series.length === 0 || ph7Series.length === 0) {
@@ -111,10 +112,13 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         'tick_at',
         'pool_blocks_24h_count',
         'pool_blocks_7d_count',
+        'pool_blocks_30d_count',
         'pool_luck_24h',
         'pool_luck_7d',
+        'pool_luck_30d',
         'pool_hashrate_ph_avg_24h',
         'pool_hashrate_ph_avg_7d',
+        'pool_hashrate_ph_avg_30d',
         'network_difficulty',
         'paid_total_sat',
         'ocean_unpaid_sat',
@@ -131,16 +135,19 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
       totalScanned += 1;
 
       const tickAt = row.tick_at;
-      const [count24, count7, ts24, ts7] = await Promise.all([
+      const [count24, count7, count30, ts24, ts7, ts30] = await Promise.all([
         deps.poolBlocksRepo.countInWindow(tickAt - DAY_MS, tickAt),
         deps.poolBlocksRepo.countInWindow(tickAt - 7 * DAY_MS, tickAt),
+        deps.poolBlocksRepo.countInWindow(tickAt - 30 * DAY_MS, tickAt),
         deps.poolBlocksRepo.timestampsInWindow(tickAt - DAY_MS, tickAt),
         deps.poolBlocksRepo.timestampsInWindow(tickAt - 7 * DAY_MS, tickAt),
+        deps.poolBlocksRepo.timestampsInWindow(tickAt - 30 * DAY_MS, tickAt),
       ]);
 
       const networkDifficulty = row.network_difficulty ?? nearest(diffSeries, tickAt);
       const ph24 = row.pool_hashrate_ph_avg_24h ?? nearest(ph24Series, tickAt);
       const ph7 = row.pool_hashrate_ph_avg_7d ?? nearest(ph7Series, tickAt);
+      const ph30 = row.pool_hashrate_ph_avg_30d ?? nearest(ph30Series, tickAt);
 
       const luck24 = computePoolLuck({
         tickAt,
@@ -157,6 +164,14 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         networkDifficulty,
         windowMs: 7 * DAY_MS,
         recentBlockTimestampsMs: ts7,
+      });
+      const luck30 = computePoolLuck({
+        tickAt,
+        countInWindow: count30,
+        poolHashrateAvgPh: ph30,
+        networkDifficulty,
+        windowMs: 30 * DAY_MS,
+        recentBlockTimestampsMs: ts30,
       });
 
       // Advance the payout cursor past anything that happened on or
@@ -175,8 +190,10 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
       if (
         row.pool_blocks_24h_count === count24 &&
         row.pool_blocks_7d_count === count7 &&
+        row.pool_blocks_30d_count === count30 &&
         approxEq(row.pool_luck_24h, luck24) &&
         approxEq(row.pool_luck_7d, luck7) &&
+        approxEq(row.pool_luck_30d, luck30) &&
         row.paid_total_sat === paidTotal
       ) {
         continue;
@@ -187,8 +204,10 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         .set({
           pool_blocks_24h_count: count24,
           pool_blocks_7d_count: count7,
+          pool_blocks_30d_count: count30,
           pool_luck_24h: luck24,
           pool_luck_7d: luck7,
+          pool_luck_30d: luck30,
           paid_total_sat: paidTotal,
         })
         .where('id', '=', row.id)
@@ -213,7 +232,8 @@ async function loadSeries(
   column:
     | 'network_difficulty'
     | 'pool_hashrate_ph_avg_24h'
-    | 'pool_hashrate_ph_avg_7d',
+    | 'pool_hashrate_ph_avg_7d'
+    | 'pool_hashrate_ph_avg_30d',
 ): Promise<readonly { readonly tick_at: number; readonly value: number }[]> {
   const rows = await db
     .selectFrom('tick_metrics')

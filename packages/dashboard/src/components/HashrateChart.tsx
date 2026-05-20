@@ -160,6 +160,7 @@ export type HashrateRightAxis =
   | 'pool_hashrate'
   | 'pool_luck_24h'
   | 'pool_luck_7d'
+  | 'pool_luck_30d'
   // #149: solo-mining fleet series. Fed from /api/solo-miners/series
   // (separate query, not from MetricPoint). All three render in the
   // shared right-axis purple.
@@ -459,6 +460,7 @@ export const HashrateChart = memo(function HashrateChart({
     }
     const luckKey = rightAxisSeries === 'pool_luck_24h' ? 'pool_luck_24h' as const
                   : rightAxisSeries === 'pool_luck_7d' ? 'pool_luck_7d' as const
+                  : rightAxisSeries === 'pool_luck_30d' ? 'pool_luck_30d' as const
                   : null;
     const out: RetargetEvent[] = [];
     let prev: number | null = null;
@@ -618,27 +620,20 @@ export const HashrateChart = memo(function HashrateChart({
           };
         }
         case 'pool_luck_24h':
-        case 'pool_luck_7d': {
-          // Gap-based pool luck, computed per tick on the daemon side
-          // (migration 0057). Read directly from the persisted column:
-          //   luck = (600 / pool_share) / time_since_last_pool_block
-          // Decays continuously between finds (1/t), jumps on each
-          // find. At elapsed = expected_gap, reads exactly 1.0×.
-          //
-          // Replaced the prior client-side "count_in_window /
-          // poisson_expected" formula, whose integer numerator made
-          // the line move only in discrete +/-1 steps regardless of
-          // elapsed time. Pre-0057 rows write null to the new columns
-          // and the chart shows a gap there.
-          const isDay = rightAxisSeries === 'pool_luck_24h';
+        case 'pool_luck_7d':
+        case 'pool_luck_30d': {
+          const key = rightAxisSeries as 'pool_luck_24h' | 'pool_luck_7d' | 'pool_luck_30d';
+          const label = key === 'pool_luck_24h' ? 'pool luck (24h)'
+                      : key === 'pool_luck_7d' ? 'pool luck (7d)'
+                      : 'pool luck (30d)';
           return {
-            values: points.map((p) => (isDay ? p.pool_luck_24h : p.pool_luck_7d)),
+            values: points.map((p) => p[key]),
             formatTick: (v) =>
               `${new Intl.NumberFormat(intlLocale, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               }).format(v)}×`,
-            axisLabel: isDay ? 'pool luck (24h)' : 'pool luck (7d)',
+            axisLabel: label,
             stroke: '#c084fc',
           };
         }
