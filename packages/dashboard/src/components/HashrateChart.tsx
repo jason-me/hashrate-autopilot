@@ -1992,7 +1992,7 @@ interface PoolLuckStepEvent {
   readonly luckBefore: number | null;
   /** Pool-luck value at the first tick at-or-after the step. */
   readonly luckAfter: number;
-  /** Window the active right-axis is using (24h or 7d), in ms. Surfaced for the tooltip's "rolling 24h" / "rolling 7d" descriptor. */
+  /** Window the active right-axis is using (24h, 7d, or 30d), in ms. */
   readonly windowMs: number;
 }
 
@@ -2042,8 +2042,8 @@ function PoolLuckStepTooltip({
 
   const url = applyExplorerTemplate(explorerTemplate, block);
   const rewardBtc = block.total_reward_sat / 1e8;
-  const isDay = windowMs <= 24 * 60 * 60 * 1000;
-  const windowLabel = isDay ? '24h' : '7d';
+  const DAY = 24 * 60 * 60 * 1000;
+  const windowLabel = windowMs <= DAY ? '24h' : windowMs <= 7 * DAY ? '7d' : '30d';
   const headerLabel =
     kind === 'in' ? t`POOL LUCK +` : t`POOL LUCK -`;
   const directionText =
