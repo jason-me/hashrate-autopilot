@@ -104,6 +104,9 @@ export interface MetricPoint {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
+  readonly pool_luck_30d: number | null;
+  readonly pool_blocks_30d_count: number | null;
+  readonly pool_hashrate_ph_avg_30d: number | null;
   readonly braiins_reachable: number | null;
 }
 
@@ -197,6 +200,9 @@ function toMetricPoint(r: {
   pool_hashrate_ph_avg_7d: number | null;
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  pool_luck_30d: number | null;
+  pool_blocks_30d_count: number | null;
+  pool_hashrate_ph_avg_30d: number | null;
   braiins_reachable: number | null;
 }): MetricPoint {
   return {
@@ -241,6 +247,9 @@ function toMetricPoint(r: {
     pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
     pool_luck_24h: r.pool_luck_24h,
     pool_luck_7d: r.pool_luck_7d,
+    pool_luck_30d: r.pool_luck_30d,
+    pool_blocks_30d_count: r.pool_blocks_30d_count,
+    pool_hashrate_ph_avg_30d: r.pool_hashrate_ph_avg_30d,
     braiins_reachable: r.braiins_reachable,
   };
 }
