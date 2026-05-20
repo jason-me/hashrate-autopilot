@@ -75,6 +75,11 @@ function clampViewport(vp: ChartViewport): ChartViewport {
     since = 0;
     until = Math.min(duration, now);
   }
+  const minUntil = now - MAX_DURATION_MS;
+  if (until < minUntil) {
+    until = minUntil;
+    since = until - duration;
+  }
   return { since_ms: since, until_ms: until };
 }
 
@@ -168,6 +173,7 @@ export function useChartViewport(): UseChartViewportReturn {
 
   if (!wheelHandlerRef.current) {
     const YEAR_MS = CHART_RANGE_SPECS['1y'].windowMs!;
+    const halfStep = Math.sqrt(ZOOM_FACTOR);
     wheelHandlerRef.current = (e: WheelEvent) => {
       if (!focusedRef.current) return;
       e.preventDefault();
@@ -176,6 +182,14 @@ export function useChartViewport(): UseChartViewportReturn {
       const vp = viewportRef.current;
       const zoomingOut = e.deltaY > 0;
       if (vp.activePreset === 'all' && zoomingOut) return;
+      if (vp.activePreset === 'all' && !zoomingOut) {
+        const now = Date.now();
+        updateViewportRef.current({
+          since_ms: now - YEAR_MS, until_ms: now,
+          activePreset: '1y', liveEdge: true,
+        });
+        return;
+      }
       const rect = svg.getBoundingClientRect();
       const clientX = e.clientX - rect.left;
       const svgWidth = rect.width;
@@ -187,13 +201,11 @@ export function useChartViewport(): UseChartViewportReturn {
       const duration = vp.until_ms - vp.since_ms;
       const factor = zoomingOut ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
       let newDuration = Math.max(MIN_DURATION_MS, duration * factor);
-      if (newDuration > YEAR_MS * Math.sqrt(ZOOM_FACTOR)) {
+      if (newDuration > YEAR_MS * halfStep) {
         const now = Date.now();
         updateViewportRef.current({ since_ms: 0, until_ms: now, activePreset: 'all', liveEdge: true });
         return;
       }
-      newDuration = Math.min(MAX_DURATION_MS, newDuration);
-      const halfStep = Math.sqrt(ZOOM_FACTOR);
       let snappedPreset: ChartRange | null = null;
       for (const key of CHART_RANGES) {
         const w = CHART_RANGE_SPECS[key].windowMs;

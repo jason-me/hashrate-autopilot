@@ -2,6 +2,10 @@
 
 ## 2026-05-20
 
+### `[Fix]` Chart zoom/drag edge cases: stuck at All, drag past data
+
+Zoom-in from "All" now snaps to the 1y preset instead of trying to shrink the 56-year viewport one step at a time (which took 17+ scroll steps to even start working). Dragging is clamped so `until_ms` never falls more than 5 years behind now, preventing the viewport from reaching empty time ranges that trigger "Not enough data in this range yet." The zoom transitions are now: ... 1m - 1y - All - (zoom in snaps back to 1y).
+
 ### `[Fix]` Chart viewport collapses when zooming or dragging from "All" mode
 
 The "All" preset creates a viewport spanning epoch-to-now (~56 years), but `clampViewport` capped duration at 5 years. Any zoom or drag operation from "All" mode passed through the clamp and collapsed the viewport from 56 years to 5 years, squishing data to the far left and often triggering "Not enough data in this range yet." Fixed by: (1) snapping to "All" when zoom-out exceeds the 1y preset, (2) blocking further zoom-out when already at "All", (3) blocking drag in "All" mode, and (4) making clampViewport return the full since=0,until=now range instead of truncating when duration exceeds the cap.
