@@ -2,6 +2,10 @@
 
 ## 2026-05-19
 
+### `[Fix]` Scroll-to-zoom no longer scrolls the page
+
+Chart scroll-to-zoom now uses a native non-passive wheel listener (`{ passive: false }`) so `preventDefault()` actually blocks page scrolling. The previous React synthetic handler was passive in most browsers, letting the page scroll simultaneously with the zoom. Both hashrate and price charts register independently via a Set-based ref callback, fixing a bug where only the last-mounted chart received the listener.
+
 ### `[Feature]` Pool luck 30d chart overlay + pool blocks 30d/all-time in Ocean panel (#201)
 
 New "pool luck (30d)" option in the hashrate chart's right-axis dropdown, with retarget markers. The Ocean panel gains two new rows: "pool blocks 30d" (with luck multiplier) and "pool blocks all time" (total count since the daemon started tracking). The boot-time backfill and pool-luck recompute service now cover the 30d window so historical data is available from day one. New migration 0093 adds `pool_luck_30d`, `pool_blocks_30d_count`, and `pool_hashrate_ph_avg_30d` columns to tick_metrics.

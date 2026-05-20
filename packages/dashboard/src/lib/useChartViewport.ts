@@ -32,8 +32,10 @@ export interface UseChartViewportReturn {
   setPreset: (range: ChartRange) => void;
   goLive: () => void;
   reset: () => void;
+  /** Ref callback - attach to each chart SVG so scroll-to-zoom
+   *  uses a non-passive native listener (prevents page scrolling). */
+  wheelRef: (node: SVGSVGElement | null) => void;
   handlers: {
-    onWheel: (e: React.WheelEvent<SVGSVGElement>) => void;
     onPointerDown: (e: React.PointerEvent<SVGSVGElement>) => void;
     onPointerMove: (e: React.PointerEvent<SVGSVGElement>) => void;
     onPointerUp: (e: React.PointerEvent<SVGSVGElement>) => void;
@@ -157,47 +159,82 @@ export function useChartViewport(): UseChartViewportReturn {
     return () => clearInterval(id);
   }, [viewport.activePreset, viewport.liveEdge]);
 
-  const getSvgDataFraction = useCallback((e: React.MouseEvent<SVGSVGElement>): number => {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const svgWidth = rect.width;
-    const paddingLeft = 80;
-    const paddingRight = 80;
-    const leftFrac = paddingLeft / SVG_VIEWBOX_WIDTH;
-    const rightFrac = (SVG_VIEWBOX_WIDTH - paddingRight) / SVG_VIEWBOX_WIDTH;
-    const pxLeft = svgWidth * leftFrac;
-    const pxRight = svgWidth * rightFrac;
-    return Math.max(0, Math.min(1, (clientX - pxLeft) / (pxRight - pxLeft)));
-  }, []);
+  const viewportRef = useRef(viewport);
+  viewportRef.current = viewport;
+  const updateViewportRef = useRef(updateViewport);
+  updateViewportRef.current = updateViewport;
+  const wheelSvgsRef = useRef(new Set<SVGSVGElement>());
+  const wheelHandlerRef = useRef<((e: WheelEvent) => void) | null>(null);
 
-  const onWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
-    if (!focusedRef.current) return;
-    e.preventDefault();
-    const fraction = getSvgDataFraction(e);
-    const duration = viewport.until_ms - viewport.since_ms;
-    const factor = e.deltaY > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-    let newDuration = Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, duration * factor));
-    const halfStep = Math.sqrt(ZOOM_FACTOR);
-    let snappedPreset: ChartRange | null = null;
-    for (const key of CHART_RANGES) {
-      const w = CHART_RANGE_SPECS[key].windowMs;
-      if (w !== null && newDuration > w / halfStep && newDuration < w * halfStep) {
-        newDuration = w;
-        snappedPreset = key;
-        break;
+  if (!wheelHandlerRef.current) {
+    wheelHandlerRef.current = (e: WheelEvent) => {
+      if (!focusedRef.current) return;
+      e.preventDefault();
+      const svg = e.currentTarget as SVGSVGElement;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const clientX = e.clientX - rect.left;
+      const svgWidth = rect.width;
+      const leftFrac = 80 / SVG_VIEWBOX_WIDTH;
+      const rightFrac = (SVG_VIEWBOX_WIDTH - 80) / SVG_VIEWBOX_WIDTH;
+      const pxLeft = svgWidth * leftFrac;
+      const pxRight = svgWidth * rightFrac;
+      const fraction = Math.max(0, Math.min(1, (clientX - pxLeft) / (pxRight - pxLeft)));
+      const vp = viewportRef.current;
+      const duration = vp.until_ms - vp.since_ms;
+      const factor = e.deltaY > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+      let newDuration = Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, duration * factor));
+      const halfStep = Math.sqrt(ZOOM_FACTOR);
+      let snappedPreset: ChartRange | null = null;
+      for (const key of CHART_RANGES) {
+        const w = CHART_RANGE_SPECS[key].windowMs;
+        if (w !== null && newDuration > w / halfStep && newDuration < w * halfStep) {
+          newDuration = w;
+          snappedPreset = key;
+          break;
+        }
+      }
+      const cursorTime = vp.since_ms + fraction * duration;
+      const raw: ChartViewport = {
+        since_ms: cursorTime - fraction * newDuration,
+        until_ms: cursorTime + (1 - fraction) * newDuration,
+      };
+      const clamped = clampViewport(raw);
+      const preset = snappedPreset ?? viewportToNearestPreset(clamped);
+      const live = isAtLiveEdge(clamped);
+      updateViewportRef.current({ ...clamped, activePreset: preset, liveEdge: live });
+    };
+  }
+
+  const wheelRef = useCallback((node: SVGSVGElement | null) => {
+    const handler = wheelHandlerRef.current;
+    if (!handler) return;
+    const svgs = wheelSvgsRef.current;
+    if (node) {
+      if (!svgs.has(node)) {
+        node.addEventListener('wheel', handler, { passive: false });
+        svgs.add(node);
+      }
+    } else {
+      for (const svg of svgs) {
+        if (!svg.isConnected) {
+          svg.removeEventListener('wheel', handler);
+          svgs.delete(svg);
+        }
       }
     }
-    const cursorTime = viewport.since_ms + fraction * duration;
-    const raw: ChartViewport = {
-      since_ms: cursorTime - fraction * newDuration,
-      until_ms: cursorTime + (1 - fraction) * newDuration,
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const handler = wheelHandlerRef.current;
+      if (!handler) return;
+      for (const svg of wheelSvgsRef.current) {
+        svg.removeEventListener('wheel', handler);
+      }
+      wheelSvgsRef.current.clear();
     };
-    const clamped = clampViewport(raw);
-    const preset = snappedPreset ?? viewportToNearestPreset(clamped);
-    const live = isAtLiveEdge(clamped);
-    updateViewport({ ...clamped, activePreset: preset, liveEdge: live });
-  }, [viewport, getSvgDataFraction, updateViewport]);
+  }, []);
 
   const computeDataWidthPx = useCallback((svg: SVGSVGElement): number => {
     const rect = svg.getBoundingClientRect();
@@ -289,7 +326,8 @@ export function useChartViewport(): UseChartViewportReturn {
     setPreset,
     goLive,
     reset,
-    handlers: { onWheel, onPointerDown, onPointerMove, onPointerUp, onDoubleClick },
+    wheelRef,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onDoubleClick },
     isDragging,
     isLiveEdge: viewport.liveEdge,
     isFocused,

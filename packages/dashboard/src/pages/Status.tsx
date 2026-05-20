@@ -494,6 +494,7 @@ export function Status() {
           soloSeries={soloSeries}
           markersHiddenCount={markersHiddenCount}
           viewportHandlers={chartViewport.handlers}
+          wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
           isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}
@@ -553,6 +554,7 @@ export function Status() {
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           viewportHandlers={chartViewport.handlers}
+          wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
           isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}

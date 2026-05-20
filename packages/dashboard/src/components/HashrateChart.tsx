@@ -252,6 +252,7 @@ export const HashrateChart = memo(function HashrateChart({
   soloSeries = [],
   markersHiddenCount = 0,
   viewportHandlers,
+  wheelRef,
   isDragging = false,
   isFocused = false,
   viewportSince,
@@ -290,12 +291,13 @@ export const HashrateChart = memo(function HashrateChart({
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
   viewportHandlers?: {
-    onWheel: React.WheelEventHandler<SVGSVGElement>;
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
     onPointerUp: React.PointerEventHandler<SVGSVGElement>;
     onDoubleClick: () => void;
   };
+  /** Ref callback that registers a non-passive wheel listener for scroll-to-zoom. */
+  wheelRef?: (node: SVGSVGElement | null) => void;
   isDragging?: boolean;
   isFocused?: boolean;
   viewportSince?: number;
@@ -1099,6 +1101,7 @@ export const HashrateChart = memo(function HashrateChart({
         </div>
       </div>
       <svg
+        ref={wheelRef}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"

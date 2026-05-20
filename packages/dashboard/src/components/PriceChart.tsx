@@ -228,6 +228,7 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenCount = 0,
   soloSeries = [],
   viewportHandlers,
+  wheelRef,
   isDragging = false,
   isFocused = false,
   viewportSince,
@@ -326,12 +327,12 @@ export const PriceChart = memo(function PriceChart({
   /** #149: per-tick aggregated solo-mining fleet series; used when rightAxisSeries == 'solo_power_watts'. */
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
   viewportHandlers?: {
-    onWheel: React.WheelEventHandler<SVGSVGElement>;
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
     onPointerUp: React.PointerEventHandler<SVGSVGElement>;
     onDoubleClick: () => void;
   };
+  wheelRef?: (node: SVGSVGElement | null) => void;
   isDragging?: boolean;
   isFocused?: boolean;
   viewportSince?: number;
@@ -1561,6 +1562,7 @@ export const PriceChart = memo(function PriceChart({
         </div>
       </div>
       <svg
+        ref={wheelRef}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
