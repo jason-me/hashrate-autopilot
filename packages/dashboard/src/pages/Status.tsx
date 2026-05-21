@@ -416,19 +416,6 @@ export function Status() {
       {/* #113: stale-URL banner. Renders only when there's a real
           mismatch between config and an active bid - silent otherwise. */}
       <StaleUrlBanner />
-      {marketplaceEmptyNow && (
-        <div className="bg-amber-950/40 border border-amber-700/60 rounded-lg p-3 text-sm text-amber-200">
-          <Trans>
-            <strong>Braiins marketplace empty.</strong> The orderbook has no asks that can fill
-            your target hashrate, and delivery has fallen to zero. The autopilot is still bidding -
-            this resolves automatically when supply returns. Nothing to do.
-          </Trans>
-        </div>
-      )}
-      {/* No "Status" h2 header - the top nav already announces the
-          page, and last-tick info is duplicated in the
-          NextActionCard's footer. Saved a chunk of vertical real
-          estate above the fold. */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-2 h-full">
           <OperationsCard
@@ -445,6 +432,7 @@ export function Status() {
             onTickNow={() => tickNowMutation.mutate()}
             tickPending={tickNowMutation.isPending}
             tickResult={tickNowMutation.data}
+            marketplaceEmpty={marketplaceEmptyNow}
           />
         </div>
       </section>
@@ -1034,11 +1022,13 @@ function NextActionCard({
   onTickNow,
   tickPending,
   tickResult,
+  marketplaceEmpty,
 }: {
   s: StatusResponse;
   onTickNow: () => void;
   tickPending: boolean;
   tickResult: TickNowResponse | undefined;
+  marketplaceEmpty: boolean;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1076,21 +1066,33 @@ function NextActionCard({
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div>
         <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1"><Trans>Next action</Trans></h3>
-        <JustExecutedBanner last={s.next_action.last_executed} />
-        <NextActionMessage next={s.next_action} />
-        <NextActionProgress next={s.next_action} />
+        {marketplaceEmpty ? (
+          <div className="bg-amber-950/40 border border-amber-700/60 rounded-lg p-3 text-sm text-amber-200 mt-2">
+            <Trans>
+              <strong>Braiins marketplace empty.</strong> The orderbook has no asks that can fill your target hashrate, and delivery has fallen to zero. The autopilot is still bidding - this resolves automatically when supply returns. Nothing to do.
+            </Trans>
+          </div>
+        ) : (
+          <>
+            <JustExecutedBanner last={s.next_action.last_executed} />
+            <NextActionMessage next={s.next_action} />
+            <NextActionProgress next={s.next_action} />
+          </>
+        )}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          onClick={onTickNow}
-          disabled={tickPending}
-          title={t`Run the pending decision immediately - clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window.`}
-          className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
-        >
-          {tickPending ? <Trans>ticking…</Trans> : <Trans>Run decision now</Trans>}
-        </button>
-      </div>
+      {!marketplaceEmpty && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={onTickNow}
+            disabled={tickPending}
+            title={t`Run the pending decision immediately - clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window.`}
+            className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+          >
+            {tickPending ? <Trans>ticking…</Trans> : <Trans>Run decision now</Trans>}
+          </button>
+        </div>
+      )}
 
       {showTickResult && tickResult && (
         <div className="mt-2 text-xs">
