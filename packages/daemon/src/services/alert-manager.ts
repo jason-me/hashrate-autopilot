@@ -84,6 +84,12 @@ export class AlertManager {
     const cfg = this.getConfig();
     const nowMs = this.now();
 
+    // Set next_retry_at_ms far enough in the future that the
+    // concurrent processDueRetries() on this same tick won't pick
+    // up the row before the initial attemptDelivery() finishes.
+    // If the initial attempt fails, attemptDelivery() overwrites
+    // next_retry_at_ms with the real retry schedule.
+    const firstRetryAt = this.computeNextRetry(1, nowMs, cfg) ?? nowMs + 60_000;
     const insert: AlertInsert = {
       created_at: nowMs,
       severity: args.severity,
@@ -93,7 +99,7 @@ export class AlertManager {
       event_class: args.event_class,
       delivery_status: 'pending',
       delivery_attempts: 0,
-      next_retry_at_ms: nowMs,
+      next_retry_at_ms: firstRetryAt,
       paired_alert_id: args.paired_alert_id ?? null,
     };
     const id = await this.alertsRepo.insert(insert);

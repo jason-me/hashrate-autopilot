@@ -119,6 +119,7 @@ describe('openDatabase - migrations', () => {
       '0091_tick_metrics_braiins_reachable.sql',
       '0092_debug_api_enabled.sql',
       '0093_tick_metrics_pool_luck_30d.sql',
+      '0094_solo_best_difficulty.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
