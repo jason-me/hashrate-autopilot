@@ -920,7 +920,7 @@ export const HashrateChart = memo(function HashrateChart({
   const visibleRetargetMarkers = useMemo(() => {
     const empty: Array<{ event: RetargetEvent; cx: number; cy: number }> = [];
     if (!chartData) return empty;
-    const isLuck = rightAxisSeries === 'pool_luck_24h' || rightAxisSeries === 'pool_luck_7d';
+    const isLuck = rightAxisSeries === 'pool_luck_24h' || rightAxisSeries === 'pool_luck_7d' || rightAxisSeries === 'pool_luck_30d';
     if (rightAxisSeries !== 'network_difficulty' && !isLuck) return empty;
     const { dataMinX, dataMaxX, xScale, shareLogYScale } = chartData;
     return difficultyRetargets

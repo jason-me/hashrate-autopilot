@@ -185,12 +185,9 @@ export async function registerOceanRoute(
     const now = Date.now();
     const DAY_MS = 24 * 60 * 60 * 1000;
 
-    // #108 follow-up: source the historical block list from the
-    // persistent pool_blocks table, not Ocean's per-call slice.
-    // pool_blocks is upserted on every tick + by the boot-time
-    // backfill, so it covers the full lookback window with no
-    // dependency on whatever default page size Ocean returns.
-    const RECENT_BLOCKS_LOOKBACK_DAYS = 30;
+    // 60d lookback: the 30d luck chart needs blocks from 30-60 days ago
+    // to render "out" step markers (block aging out of the 30d window).
+    const RECENT_BLOCKS_LOOKBACK_DAYS = 60;
     const blocksFromTable = await deps.poolBlocksRepo
       .recent(360)
       .catch(() => [] as Awaited<ReturnType<typeof deps.poolBlocksRepo.recent>>);
