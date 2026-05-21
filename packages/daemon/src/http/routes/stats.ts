@@ -22,7 +22,7 @@ import {
   parseChartRange,
   pickBucketForSpan,
   type ChartRange,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import type { Database } from '../../state/types.js';
 

@@ -11,18 +11,18 @@ importers:
 
   .:
     devDependencies:
-      '@braiins-hashrate/braiins-client':
-        specifier: workspace:*
-        version: link:packages/braiins-client
-      '@braiins-hashrate/daemon':
-        specifier: workspace:*
-        version: link:packages/daemon
-      '@braiins-hashrate/shared':
-        specifier: workspace:*
-        version: link:packages/shared
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
+      '@hashrate-autopilot/braiins-client':
+        specifier: workspace:*
+        version: link:packages/braiins-client
+      '@hashrate-autopilot/daemon':
+        specifier: workspace:*
+        version: link:packages/daemon
+      '@hashrate-autopilot/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@inquirer/prompts':
         specifier: ^8.4.3
         version: 8.4.3(@types/node@25.9.0)
@@ -55,7 +55,7 @@ importers:
 
   packages/braiins-client:
     dependencies:
-      '@braiins-hashrate/shared':
+      '@hashrate-autopilot/shared':
         specifier: workspace:*
         version: link:../shared
       openapi-fetch:
@@ -68,15 +68,6 @@ importers:
 
   packages/daemon:
     dependencies:
-      '@braiins-hashrate/bitcoind-client':
-        specifier: workspace:*
-        version: link:../bitcoind-client
-      '@braiins-hashrate/braiins-client':
-        specifier: workspace:*
-        version: link:../braiins-client
-      '@braiins-hashrate/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@fastify/basic-auth':
         specifier: ^6.2.0
         version: 6.2.0
@@ -86,6 +77,15 @@ importers:
       '@fastify/static':
         specifier: ^9.1.3
         version: 9.1.3
+      '@hashrate-autopilot/bitcoind-client':
+        specifier: workspace:*
+        version: link:../bitcoind-client
+      '@hashrate-autopilot/braiins-client':
+        specifier: workspace:*
+        version: link:../braiins-client
+      '@hashrate-autopilot/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@inquirer/prompts':
         specifier: ^8.4.3
         version: 8.4.3(@types/node@25.9.0)
@@ -114,7 +114,7 @@ importers:
 
   packages/dashboard:
     dependencies:
-      '@braiins-hashrate/shared':
+      '@hashrate-autopilot/shared':
         specifier: workspace:*
         version: link:../shared
       '@lingui/core':

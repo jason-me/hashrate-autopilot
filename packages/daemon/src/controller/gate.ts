@@ -2,13 +2,13 @@
  * gate() - applies the SPEC §7.3 mutation-gate to every proposal and also
  * enforces client-side pacing rules the market settings give us.
  *
- * The core `canMutate()` check lives in `@braiins-hashrate/shared`. This
+ * The core `canMutate()` check lives in `@hashrate-autopilot/shared`. This
  * wrapper adapts proposals (CREATE_BID / EDIT_PRICE / CANCEL_BID / PAUSE)
  * to the gate's (create / edit / cancel) vocabulary and layers on the
  * `min_bid_price_decrease_period_s` cooldown.
  */
 
-import { canMutate, type MutationAction } from '@braiins-hashrate/shared';
+import { canMutate, type MutationAction } from '@hashrate-autopilot/shared';
 
 import type { GateOutcome, Proposal, State } from './types.js';
 

@@ -21,7 +21,7 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { OwnedBidsRepo } from '../../state/repos/owned_bids.js';

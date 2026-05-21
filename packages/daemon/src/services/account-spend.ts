@@ -35,7 +35,7 @@
  * finance route so a button on the dashboard can trigger it.
  */
 
-import type { BidItem, BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BidItem, BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { ClosedBidsCacheRepo } from '../state/repos/closed_bids_cache.js';
 

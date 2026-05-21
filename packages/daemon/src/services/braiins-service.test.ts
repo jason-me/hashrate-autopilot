@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { BraiinsClient, MarketSettings } from '@braiins-hashrate/braiins-client';
+import type { BraiinsClient, MarketSettings } from '@hashrate-autopilot/braiins-client';
 
 import { BraiinsService } from './braiins-service.js';
 

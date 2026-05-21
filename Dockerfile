@@ -76,10 +76,10 @@ RUN pnpm build
 
 # NOTE: we intentionally do NOT run `pnpm prune --prod` here. In a
 # pnpm workspace, the daemon resolves sibling packages via symlinks
-# under `node_modules/@braiins-hashrate/*`; prune --prod deletes the
+# under `node_modules/@hashrate-autopilot/*`; prune --prod deletes the
 # modules directory and reinstalls without preserving those workspace
 # links, which leaves the daemon throwing
-# `ERR_MODULE_NOT_FOUND: Cannot find package '@braiins-hashrate/...'`
+# `ERR_MODULE_NOT_FOUND: Cannot find package '@hashrate-autopilot/...'`
 # at runtime. The size cost of keeping dev deps is ~100 MB, accepted
 # until we move to a pnpm-deploy-based pipeline.
 

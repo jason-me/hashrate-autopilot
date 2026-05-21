@@ -6,7 +6,7 @@
  * - `listSince(ms)` returns the raw series ascending by tick_at.
  * - `listAggregated(ms, bucketMs)` returns bucketed averages for longer
  *   time ranges (1 w → 5 min buckets, 1 m → 1 h buckets, 1 y / all →
- *   1 d buckets). See `@braiins-hashrate/shared` → CHART_RANGE_SPECS.
+ *   1 d buckets). See `@hashrate-autopilot/shared` → CHART_RANGE_SPECS.
  * - Optional retention: `pruneOlderThan(ms)` deletes rows older than
  *   the given wall-clock threshold.
  */

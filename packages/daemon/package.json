@@ -1,5 +1,5 @@
 {
-  "name": "@braiins-hashrate/daemon",
+  "name": "@hashrate-autopilot/daemon",
   "version": "0.1.0",
   "description": "Control loop, HTTP API, and state store for the Braiins hashrate autopilot",
   "private": true,
@@ -25,9 +25,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@braiins-hashrate/bitcoind-client": "workspace:*",
-    "@braiins-hashrate/braiins-client": "workspace:*",
-    "@braiins-hashrate/shared": "workspace:*",
+    "@hashrate-autopilot/bitcoind-client": "workspace:*",
+    "@hashrate-autopilot/braiins-client": "workspace:*",
+    "@hashrate-autopilot/shared": "workspace:*",
     "@fastify/basic-auth": "^6.2.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/static": "^9.1.3",

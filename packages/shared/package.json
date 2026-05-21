@@ -1,5 +1,5 @@
 {
-  "name": "@braiins-hashrate/shared",
+  "name": "@hashrate-autopilot/shared",
   "version": "0.1.0",
   "description": "Shared types and pure utilities for the Braiins hashrate autopilot",
   "private": true,

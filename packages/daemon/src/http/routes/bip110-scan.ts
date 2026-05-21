@@ -18,7 +18,7 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import { createBitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 
 import type { ConfigRepo } from '../../state/repos/config.js';
 

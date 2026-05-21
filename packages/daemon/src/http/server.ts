@@ -19,7 +19,7 @@ import { resolve } from 'node:path';
 
 import type { Kysely } from 'kysely';
 
-import type { BitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import type { BitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 
 import type { Controller } from '../controller/tick.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
@@ -63,7 +63,7 @@ import { registerDdnsTestRoute } from './routes/ddns-test.js';
 import { registerPoolUrlTestRoute } from './routes/pool-url-test.js';
 import { registerDatumTestRoute } from './routes/datum-test.js';
 import { registerStaleUrlsRoute } from './routes/stale-urls.js';
-import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
 import type { PublicIpService } from '../services/public-ip.js';
 import type { DdnsUpdaterService } from '../services/ddns-updater.js';
 import type { AxeOSPoller } from '../services/axeos-poller.js';

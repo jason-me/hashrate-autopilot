@@ -18,8 +18,8 @@
 //   y (year)  -> a (año)
 //   All       -> Todo
 
-import type { ChartRange } from '@braiins-hashrate/shared';
-import { CHART_RANGE_SPECS } from '@braiins-hashrate/shared';
+import type { ChartRange } from '@hashrate-autopilot/shared';
+import { CHART_RANGE_SPECS } from '@hashrate-autopilot/shared';
 
 const NL_UNIT_MAP: Record<string, string> = {
   h: 'u',

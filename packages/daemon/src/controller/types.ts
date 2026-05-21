@@ -10,8 +10,8 @@ import type {
   MarketSettings,
   MarketStats,
   OrderbookSnapshot,
-} from '@braiins-hashrate/braiins-client';
-import type { RunMode } from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/braiins-client';
+import type { RunMode } from '@hashrate-autopilot/shared';
 
 import type { AppConfig } from '../config/schema.js';
 

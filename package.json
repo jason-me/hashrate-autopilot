@@ -23,9 +23,9 @@
     "daemon": "tsx packages/daemon/src/main.ts"
   },
   "devDependencies": {
-    "@braiins-hashrate/braiins-client": "workspace:*",
-    "@braiins-hashrate/daemon": "workspace:*",
-    "@braiins-hashrate/shared": "workspace:*",
+    "@hashrate-autopilot/braiins-client": "workspace:*",
+    "@hashrate-autopilot/daemon": "workspace:*",
+    "@hashrate-autopilot/shared": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@inquirer/prompts": "^8.4.3",
     "@types/node": "^25.9.0",

@@ -11,7 +11,7 @@ import {
   DEFAULT_CHART_RANGE,
   showEventKindsForSpan,
   type ChartRange,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import { Bip110ScanCard } from '../components/Bip110ScanCard';
 import { SoloMinersCard } from '../components/SoloMinersCard';

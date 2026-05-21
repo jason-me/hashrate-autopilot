@@ -9,7 +9,7 @@
  *    `api_outage_alert_after_minutes`).
  *
  * The underlying client already handles auth headers and grpc-message
- * decoding. See `@braiins-hashrate/braiins-client`.
+ * decoding. See `@hashrate-autopilot/braiins-client`.
  */
 
 import type {
@@ -21,7 +21,7 @@ import type {
   MarketSettings,
   MarketStats,
   OrderbookSnapshot,
-} from '@braiins-hashrate/braiins-client';
+} from '@hashrate-autopilot/braiins-client';
 
 interface CachedValue<T> {
   value: T;

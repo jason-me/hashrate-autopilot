@@ -23,7 +23,7 @@ import {
   niceYTicks,
   pickTimeTickInterval,
   type ChartRange,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import {

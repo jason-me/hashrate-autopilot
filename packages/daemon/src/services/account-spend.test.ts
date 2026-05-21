@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BidItem, BidsResponse, BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BidItem, BidsResponse, BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import { AccountSpendService } from './account-spend.js';
 import type { ClosedBidsCacheRepo } from '../state/repos/closed_bids_cache.js';

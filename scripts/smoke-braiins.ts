@@ -6,7 +6,7 @@
  * Usage:  pnpm tsx scripts/smoke-braiins.ts
  */
 
-import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
+import { createBraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 async function main() {
   const client = createBraiinsClient();

@@ -13,9 +13,9 @@
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import { createBitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 import { BlockVersionService } from './services/block-version.js';
-import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
+import { createBraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import { applyEnvOverridesToConfig } from './config/env-overrides.js';
 import type { AppConfig, Secrets } from './config/schema.js';

@@ -15,6 +15,6 @@ echo "→ fetching $SPEC_URL"
 curl -sfL --max-time 30 -o "$SPEC_PATH" "$SPEC_URL"
 
 echo "→ regenerating types"
-pnpm --filter @braiins-hashrate/braiins-client run codegen
+pnpm --filter @hashrate-autopilot/braiins-client run codegen
 
 echo "→ done. git diff to review API shape changes."

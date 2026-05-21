@@ -44,7 +44,7 @@
 
 import { resolve } from 'node:path';
 
-import { openDatabase, closeDatabase } from '@braiins-hashrate/daemon';
+import { openDatabase, closeDatabase } from '@hashrate-autopilot/daemon';
 
 const EH_PER_PH = 1000;
 const MS_PER_MIN = 60_000;

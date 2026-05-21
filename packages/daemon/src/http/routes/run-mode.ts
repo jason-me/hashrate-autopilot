@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-import type { RunMode } from '@braiins-hashrate/shared';
+import type { RunMode } from '@hashrate-autopilot/shared';
 
 import type { HttpServerDeps } from '../server.js';
 import type { UpdateRunModeBody } from '../types.js';

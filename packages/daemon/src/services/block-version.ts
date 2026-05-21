@@ -22,7 +22,7 @@
  */
 
 import type { Kysely } from 'kysely';
-import type { BitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import type { BitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 
 import type { Database } from '../state/types.js';
 import type { ElectrsClient } from './electrs-client.js';

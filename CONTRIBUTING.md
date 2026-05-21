@@ -49,7 +49,7 @@ pnpm install
 pnpm daemon
 
 # Dashboard (Vite dev server, proxies API to localhost:3000)
-pnpm --filter @braiins-hashrate/dashboard dev
+pnpm --filter @hashrate-autopilot/dashboard dev
 ```
 
 Useful commands:
@@ -58,7 +58,7 @@ Useful commands:
 - `pnpm typecheck` - all packages
 - `pnpm build` - all packages (also runs `lingui:compile` for the
   dashboard)
-- `pnpm --filter @braiins-hashrate/dashboard run lingui:extract`
+- `pnpm --filter @hashrate-autopilot/dashboard run lingui:extract`
     - re-extract translation strings from source after edits
 
 `docs/spec.md` is the project's design document - read the relevant section before changing how the controller 

@@ -9,7 +9,7 @@
 
 import type { Kysely } from 'kysely';
 
-import type { RunMode } from '@braiins-hashrate/shared';
+import type { RunMode } from '@hashrate-autopilot/shared';
 
 import type { Database } from '../types.js';
 

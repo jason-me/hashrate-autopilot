@@ -23,7 +23,7 @@ import {
   DEFAULT_CHART_RANGE,
   parseChartRange,
   showEventKindsForSpan,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import type { HttpServerDeps } from '../server.js';
 

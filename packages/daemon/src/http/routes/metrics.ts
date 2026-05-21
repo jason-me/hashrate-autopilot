@@ -3,7 +3,7 @@
  *
  * Returns the time series of tick metrics for the hashrate chart. The
  * `range` query param is one of the presets exported from
- * `@braiins-hashrate/shared`:
+ * `@hashrate-autopilot/shared`:
  *
  *   6h | 12h | 24h | 1w | 1m | 1y | all
  *
@@ -24,7 +24,7 @@ import {
   parseChartRange,
   pickBucketForSpan,
   type ChartRange,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import type { HttpServerDeps } from '../server.js';
 

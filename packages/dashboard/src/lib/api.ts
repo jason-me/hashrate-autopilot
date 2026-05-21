@@ -1,4 +1,4 @@
-import type { ChartRange } from '@braiins-hashrate/shared';
+import type { ChartRange } from '@hashrate-autopilot/shared';
 
 import { basicAuthHeader, clearPassword, getPassword } from './auth';
 

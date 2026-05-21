@@ -36,7 +36,7 @@
  * the call site rather than fighting the generated types.
  */
 
-import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { AppConfig } from '../config/schema.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';

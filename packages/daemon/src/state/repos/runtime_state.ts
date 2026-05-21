@@ -7,7 +7,7 @@
 
 import type { Kysely } from 'kysely';
 
-import type { ActionMode, RunMode } from '@braiins-hashrate/shared';
+import type { ActionMode, RunMode } from '@hashrate-autopilot/shared';
 
 import type { Database, RuntimeStateTable } from '../types.js';
 

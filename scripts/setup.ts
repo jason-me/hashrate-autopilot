@@ -29,7 +29,7 @@ import {
   openDatabase,
   type AppConfig,
   type Secrets,
-} from '@braiins-hashrate/daemon';
+} from '@hashrate-autopilot/daemon';
 import { stringify as stringifyYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------

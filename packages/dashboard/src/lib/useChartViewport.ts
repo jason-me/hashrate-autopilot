@@ -8,7 +8,7 @@ import {
   CHART_RANGE_SPECS,
   presetToViewport,
   viewportToNearestPreset,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 const STORAGE_KEY = 'hashrate-chart-range';
 const MIN_DURATION_MS = 10 * 60_000;

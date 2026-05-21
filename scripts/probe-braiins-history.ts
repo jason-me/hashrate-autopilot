@@ -18,7 +18,7 @@
 
 import { resolve } from 'node:path';
 
-import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
+import { createBraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import { loadSecrets } from '../packages/daemon/src/config/secrets.js';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@braiins-hashrate/bitcoind-client",
+  "name": "@hashrate-autopilot/bitcoind-client",
   "version": "0.1.0",
   "description": "Minimal JSON-RPC client for bitcoind (payout observation)",
   "private": true,

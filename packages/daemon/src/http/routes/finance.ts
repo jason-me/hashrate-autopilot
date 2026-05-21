@@ -29,7 +29,7 @@ import {
   DEFAULT_CHART_RANGE,
   parseChartRange,
   type ChartRange,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import type { AccountSpendService } from '../../services/account-spend.js';
 import type { HashpriceCache } from '../../services/hashprice-cache.js';

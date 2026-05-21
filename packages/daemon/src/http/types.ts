@@ -7,7 +7,7 @@
  * naturally for the market scale the operator actually bids at.
  */
 
-import type { ActionMode, RunMode } from '@braiins-hashrate/shared';
+import type { ActionMode, RunMode } from '@hashrate-autopilot/shared';
 
 import type { AppConfig } from '../config/schema.js';
 

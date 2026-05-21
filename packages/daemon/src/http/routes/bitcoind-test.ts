@@ -24,7 +24,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   createBitcoindClient,
   BitcoindError,
-} from '@braiins-hashrate/bitcoind-client';
+} from '@hashrate-autopilot/bitcoind-client';
 
 export interface BitcoindTestRequest {
   url?: string;

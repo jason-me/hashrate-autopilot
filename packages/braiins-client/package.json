@@ -1,5 +1,5 @@
 {
-  "name": "@braiins-hashrate/braiins-client",
+  "name": "@hashrate-autopilot/braiins-client",
   "version": "0.1.0",
   "description": "Typed client for the Braiins Hashpower marketplace REST API",
   "private": true,
@@ -18,7 +18,7 @@
     "codegen": "openapi-typescript ./openapi.yml -o ./src/generated/types.ts"
   },
   "dependencies": {
-    "@braiins-hashrate/shared": "workspace:*",
+    "@hashrate-autopilot/shared": "workspace:*",
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {

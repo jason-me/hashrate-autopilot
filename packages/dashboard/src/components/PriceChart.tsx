@@ -22,7 +22,7 @@ import {
   niceYTicks,
   pickTimeTickInterval,
   type BidEventKind,
-} from '@braiins-hashrate/shared';
+} from '@hashrate-autopilot/shared';
 
 import {
   api,

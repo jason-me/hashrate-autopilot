@@ -18,7 +18,7 @@
  * to the `decisions` table. Dashboard reads those back.
  */
 
-import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
+import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { BidEventsRepo } from '../state/repos/bid_events.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';

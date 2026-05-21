@@ -13,7 +13,7 @@
  * documented in the dashboard card copy.
  */
 
-import type { BitcoindClient, ScanTxoutSetResult } from '@braiins-hashrate/bitcoind-client';
+import type { BitcoindClient, ScanTxoutSetResult } from '@hashrate-autopilot/bitcoind-client';
 import type { Kysely } from 'kysely';
 
 import type { Database } from '../state/types.js';
