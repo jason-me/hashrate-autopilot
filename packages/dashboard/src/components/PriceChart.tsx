@@ -170,6 +170,7 @@ export interface SoloSeriesRow {
   total_power_w: number | null;
   max_temp_c: number | null;
   device_count: number;
+  max_best_diff: number | null;
 }
 
 // Matches HashrateChart's PADDING_RIGHT_WITH_SHARE_LOG (80) so the

@@ -589,6 +589,7 @@ async function bootOperational(
   const axeOSPoller = new AxeOSPoller({
     cfgRef: cfgRefHolder,
     repo: soloMinersRepo,
+    runtimeRepo,
     log: (m) => log(m),
   });
   const alertEvaluator = new AlertEvaluator({

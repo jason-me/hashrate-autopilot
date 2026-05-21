@@ -3086,6 +3086,14 @@ function EventClassSubscriptions({
           setEnabled: (n) => toggleClass('solo_stratum_drift', n),
           severity: 'IMPORTANT',
         },
+        {
+          id: 'solo_best_difficulty',
+          label: t`Solo fleet best difficulty record`,
+          help: t`Fires whenever the fleet-wide best share difficulty exceeds the all-time high-water mark. One-shot (no recovery pairing). The message includes the new record, previous best, improvement factor, and the device that found it.`,
+          enabled: !disabled.has('solo_best_difficulty'),
+          setEnabled: (n) => toggleClass('solo_best_difficulty', n),
+          severity: 'INFO',
+        },
       ]
     : [];
 

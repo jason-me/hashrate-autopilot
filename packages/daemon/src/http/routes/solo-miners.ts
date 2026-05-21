@@ -157,6 +157,20 @@ export async function registerSoloMinersRoute(
     },
   );
 
+  // GET /api/solo-miners/best-diff-events?since=<ms> - record-breaking
+  // best difficulty events for chart trophy markers.
+  app.get<{ Querystring: { since?: string } }>(
+    '/api/solo-miners/best-diff-events',
+    async (req) => {
+      const sinceRaw = Number.parseInt(req.query.since ?? '', 10);
+      const since = Number.isFinite(sinceRaw) && sinceRaw > 0
+        ? sinceRaw
+        : Date.now() - 24 * 60 * 60 * 1000;
+      const events = await deps.soloMinersRepo.bestDiffEventsSince(since);
+      return { events };
+    },
+  );
+
   // /24 scan for AxeOS-shaped responders.
   //
   // POST /api/solo-miners/scan - kicks off a background sweep at

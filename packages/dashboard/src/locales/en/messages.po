@@ -228,32 +228,12 @@ msgid "A bid is currently running (≈ {remainingSatStr} <0/> left). The next CR
 msgstr "A bid is currently running (≈ {remainingSatStr} <0/> left). The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
 
 #: src/pages/Config.tsx
-#~ msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
-#~ msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
-
-#: src/pages/Config.tsx
-#~ msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
-#~ msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
-
-#: src/pages/Config.tsx
-#~ msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
-#~ msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
-
-#: src/pages/Config.tsx
 msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} <0/>, capped at 1 BTC) will be used."
 msgstr "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} <0/>, capped at 1 BTC) will be used."
 
 #: src/pages/Config.tsx
 msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} <0/>) will be used."
 msgstr "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} <0/>) will be used."
-
-#: src/pages/Config.tsx
-#~ msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
-#~ msgstr "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
-
-#: src/pages/Config.tsx
-#~ msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
-#~ msgstr "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
 
 #: src/pages/Config.tsx
 msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
@@ -533,6 +513,10 @@ msgstr "best bid"
 #: src/components/SoloMinersCard.tsx
 msgid "Best diff"
 msgstr "Best diff"
+
+#: src/pages/Status.tsx
+msgid "best difficulty"
+msgstr "best difficulty"
 
 #: src/pages/Config.tsx
 msgid "Beta-exit detected"
@@ -1427,6 +1411,10 @@ msgstr "Fires when the ASIC temp crosses 75 °C (configurable on Display & Loggi
 msgid "Fires when the Braiins orderbook has no hashrate available for your target AND delivery has fallen to zero, sustained for at least this many minutes. Two-condition gate filters micro-gaps in the orderbook. Recovery paired. Rare - normally only happens during low-supply stretches."
 msgstr "Fires when the Braiins orderbook has no hashrate available for your target AND delivery has fallen to zero, sustained for at least this many minutes. Two-condition gate filters micro-gaps in the orderbook. Recovery paired. Rare - normally only happens during low-supply stretches."
 
+#: src/pages/Config.tsx
+msgid "Fires whenever the fleet-wide best share difficulty exceeds the all-time high-water mark. One-shot (no recovery pairing). The message includes the new record, previous best, improvement factor, and the device that found it."
+msgstr "Fires whenever the fleet-wide best share difficulty exceeds the all-time high-water mark. One-shot (no recovery pairing). The message includes the new record, previous best, improvement factor, and the device that found it."
+
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "First-run setup"
@@ -1497,14 +1485,6 @@ msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} <0/> (capped
 #: src/pages/Config.tsx
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} <0/>."
 msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} <0/>."
-
-#: src/pages/Config.tsx
-#~ msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC)."
-#~ msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC)."
-
-#: src/pages/Config.tsx
-#~ msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
-#~ msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 
 #: src/pages/Config.tsx
 msgid "genesis version"
@@ -2916,6 +2896,10 @@ msgstr "signing in…"
 msgid "solo device count"
 msgstr "solo device count"
 
+#: src/pages/Config.tsx
+msgid "Solo fleet best difficulty record"
+msgstr "Solo fleet best difficulty record"
+
 #: src/pages/Status.tsx
 msgid "solo hashrate"
 msgstr "solo hashrate"
@@ -3102,10 +3086,6 @@ msgstr "The \"Backfill now\" button walks the full address history via Electrs a
 #: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in <0/>/PH/day."
 msgstr "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in <0/>/PH/day."
-
-#: src/pages/Config.tsx
-#~ msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
-#~ msgstr "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
 
 #: src/pages/Config.tsx
 msgid "The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below."

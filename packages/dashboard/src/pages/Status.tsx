@@ -90,7 +90,8 @@ function readStoredHashrateRightAxis(
     // restoring the operator's selection.
     raw === 'solo_hashrate' ||
     raw === 'solo_device_count' ||
-    raw === 'solo_max_temp'
+    raw === 'solo_max_temp' ||
+    raw === 'solo_best_diff'
   ) {
     return raw;
   }
@@ -312,6 +313,21 @@ export function Status() {
   });
   const soloSeries = soloMiningEnabled ? (soloSeriesQuery.data?.rows ?? []) : [];
 
+  const bestDiffEventsQuery = useQuery({
+    queryKey: vp.activePreset
+      ? ['solo-best-diff-events', vp.activePreset]
+      : ['solo-best-diff-events', vp.since_ms, vp.until_ms],
+    queryFn: () => {
+      const windowMs = vp.activePreset
+        ? (CHART_RANGE_SPECS[vp.activePreset].windowMs ?? 24 * 60 * 60_000)
+        : (vp.until_ms - vp.since_ms);
+      return api.soloBestDiffEvents(Date.now() - windowMs);
+    },
+    enabled: soloMiningEnabled,
+    refetchInterval: vp.activePreset ? 60_000 : false,
+  });
+  const bestDiffEvents = soloMiningEnabled ? (bestDiffEventsQuery.data?.events ?? []) : [];
+
   // Operator availability removed from the UI (API bids bypass 2FA;
   // see research.md §0.9). Backend field remains in case Braiins
   // changes policy. The endpoint still exists for future use.
@@ -470,6 +486,7 @@ export function Status() {
                 <option value="solo_hashrate">{t`solo hashrate`}</option>
                 <option value="solo_device_count">{t`solo device count`}</option>
                 <option value="solo_max_temp">{t`solo max temp`}</option>
+                <option value="solo_best_diff">{t`best difficulty`}</option>
               </>
             )}
           </select>
@@ -485,6 +502,7 @@ export function Status() {
           datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
           rightAxisSeries={hashrateRightAxis}
           soloSeries={soloSeries}
+          bestDiffEvents={bestDiffEvents}
           markersHiddenCount={markersHiddenCount}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}

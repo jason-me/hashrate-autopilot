@@ -2,6 +2,10 @@
 
 ## 2026-05-21
 
+### `[Feature]` Solo fleet best difficulty tracking and chart overlay (#204)
+
+Track fleet-wide best share difficulty across all solo miners. New right-axis "best difficulty" option on the hashrate chart renders a running-max staircase line with trophy markers at each record-breaking step-up. SI suffix formatting on the axis (4.2B, 128M, 1.3T). Telegram notification fires on every new all-time record with contextual detail: new best, previous best, improvement factor, and device name. Notification tile in Config (off by default, INFO severity). All-time high-water mark persisted in runtime_state; events logged in a dedicated table for chart markers across all time ranges.
+
 ### `[UI]` Use Satoshi symbol instead of "sat" text on the Config screen
 
 Replaced all plain "sat" / "sats" text with the Satoshi icon (Font Awesome kit) throughout the Config screen - budget field suffix, pricing field suffixes (sat/PH/day), pre-installation earnings suffix, budget description hints, and the Pricing section description. Matches the Status page's consistent use of the symbol. Updated en/nl/es catalogs.

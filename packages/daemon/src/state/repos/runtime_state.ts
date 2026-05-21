@@ -22,6 +22,7 @@ export interface RuntimeStateRow {
   lower_ready_since_ms: number | null;
   below_target_since_ms: number | null;
   above_floor_ticks: number;
+  solo_best_difficulty_all_time: number | null;
 }
 
 export class RuntimeStateRepo {
@@ -55,6 +56,7 @@ export class RuntimeStateRepo {
         lower_ready_since_ms: null,
         below_target_since_ms: null,
         above_floor_ticks: 0,
+        solo_best_difficulty_all_time: null,
       })
       .onConflict((oc) => oc.doNothing())
       .execute();
@@ -82,5 +84,6 @@ function toDomain(row: RuntimeStateTable): RuntimeStateRow {
     lower_ready_since_ms: row.lower_ready_since_ms,
     below_target_since_ms: row.below_target_since_ms,
     above_floor_ticks: row.above_floor_ticks,
+    solo_best_difficulty_all_time: row.solo_best_difficulty_all_time ?? null,
   };
 }

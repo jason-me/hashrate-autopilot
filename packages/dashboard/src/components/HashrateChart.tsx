@@ -166,7 +166,8 @@ export type HashrateRightAxis =
   // shared right-axis purple.
   | 'solo_hashrate'
   | 'solo_device_count'
-  | 'solo_max_temp';
+  | 'solo_max_temp'
+  | 'solo_best_diff';
 
 /** Per-tick aggregated fleet series row from /api/solo-miners/series. */
 export interface SoloSeriesRow {
@@ -175,6 +176,7 @@ export interface SoloSeriesRow {
   total_power_w: number | null;
   max_temp_c: number | null;
   device_count: number;
+  max_best_diff: number | null;
 }
 
 /**
@@ -250,6 +252,7 @@ export const HashrateChart = memo(function HashrateChart({
   datumSmoothingMinutes = 1,
   rightAxisSeries = 'none',
   soloSeries = [],
+  bestDiffEvents = [],
   markersHiddenCount = 0,
   viewportHandlers,
   wheelRef,
@@ -288,6 +291,8 @@ export const HashrateChart = memo(function HashrateChart({
   rightAxisSeries?: HashrateRightAxis;
   /** #149: per-tick aggregated solo-mining fleet series; only used when rightAxisSeries is one of the `solo_*` variants. */
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
+  /** #204: record-breaking best difficulty events for trophy markers on the chart. */
+  bestDiffEvents?: ReadonlyArray<{ recorded_at: number; difficulty: number }>;
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
   viewportHandlers?: {
@@ -608,16 +613,36 @@ export const HashrateChart = memo(function HashrateChart({
         }
         case 'solo_max_temp': {
           const xs = points.map((p) => p.tick_at);
-          // DB stores °C; convert on the way out to honour the
-          // operator's temperature-unit preference (#157). Values
-          // mapper converts each point too so the right-axis scale
-          // itself is in the chosen unit.
           const convert = (v: number | null): number | null =>
             v === null ? null : (tempUnit === 'F' ? v * 9 / 5 + 32 : v);
           return {
             values: projectSoloSeries(xs, soloSeries, (r) => convert(r.max_temp_c)),
             formatTick: (v) => `${v.toFixed(1)} °${tempUnit}`,
             axisLabel: tempUnit === 'F' ? 'solo max temp (°F)' : 'solo max temp (°C)',
+            stroke: '#c084fc',
+          };
+        }
+        case 'solo_best_diff': {
+          const xs = points.map((p) => p.tick_at);
+          const raw = projectSoloSeries(xs, soloSeries, (r) => r.max_best_diff);
+          // Compute running max so the line is a staircase that only goes up.
+          let runningMax: number | null = null;
+          const values = raw.map((v) => {
+            if (v !== null && (runningMax === null || v > runningMax)) runningMax = v;
+            return runningMax;
+          });
+          return {
+            values,
+            formatTick: (v) => {
+              if (v >= 1e18) return `${(v / 1e18).toFixed(1)}E`;
+              if (v >= 1e15) return `${(v / 1e15).toFixed(1)}P`;
+              if (v >= 1e12) return `${(v / 1e12).toFixed(1)}T`;
+              if (v >= 1e9) return `${(v / 1e9).toFixed(1)}G`;
+              if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+              if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
+              return v.toFixed(0);
+            },
+            axisLabel: 'best difficulty',
             stroke: '#c084fc',
           };
         }
@@ -1571,6 +1596,28 @@ export const HashrateChart = memo(function HashrateChart({
             {rightAxis.axisLabel}
           </text>
         )}
+
+        {rightAxisSeries === 'solo_best_diff' && bestDiffEvents
+          .filter((ev) => ev.recorded_at >= dataMinX && ev.recorded_at <= dataMaxX)
+          .map((ev) => {
+            const cx = xScale(ev.recorded_at);
+            const cy = shareLogYScale(ev.difficulty);
+            if (cy < PADDING.top || cy > chartHeight - PADDING.bottom) return null;
+            return (
+              <g key={ev.recorded_at} opacity="0.85">
+                <text
+                  x={cx}
+                  y={cy + 4}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#f59e0b"
+                  fontFamily="'Font Awesome 6 Pro'"
+                >
+                  {''}
+                </text>
+              </g>
+            );
+          })}
       </svg>
       {blockTip && (
         <PoolBlockTooltip

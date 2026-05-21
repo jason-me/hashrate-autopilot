@@ -142,6 +142,8 @@ export interface RuntimeStateTable {
   /** @deprecated Kept as nullable column; escalation logic removed. */
   below_target_since_ms: number | null;
   above_floor_ticks: number;
+  /** #204: fleet-wide all-time best difficulty high-water mark. */
+  solo_best_difficulty_all_time: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -551,6 +553,18 @@ export interface SoloMinerSamplesTable {
   best_diff_text: string | null;
   /** AxeOS `bestSessionDiff` - best share difficulty since current boot. */
   best_session_diff_text: string | null;
+  /** #204: parsed numeric value of best_diff_text for aggregation queries. */
+  best_diff_numeric: number | null;
+}
+
+/** #204: record-breaking best difficulty events for solo miners. */
+export interface SoloBestDifficultyEventsTable {
+  id: Generated<number>;
+  recorded_at: number;
+  difficulty: number;
+  previous_difficulty: number | null;
+  device_label: string;
+  device_ip: string;
 }
 
 export interface Database {
@@ -573,6 +587,7 @@ export interface Database {
   braiins_deposits: BraiinsDepositsTable;
   solo_miners: SoloMinersTable;
   solo_miner_samples: SoloMinerSamplesTable;
+  solo_best_difficulty_events: SoloBestDifficultyEventsTable;
   _migrations: MigrationsTable;
 }
 

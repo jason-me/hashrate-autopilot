@@ -61,6 +61,7 @@ export interface SoloMinerSampleRow {
   readonly stratum_user: string | null;
   readonly best_diff_text: string | null;
   readonly best_session_diff_text: string | null;
+  readonly best_diff_numeric: number | null;
 }
 
 export interface InsertSampleArgs {
@@ -87,6 +88,7 @@ export interface InsertSampleArgs {
   readonly stratum_user?: string | null;
   readonly best_diff_text?: string | null;
   readonly best_session_diff_text?: string | null;
+  readonly best_diff_numeric?: number | null;
 }
 
 export class SoloMinersRepo {
@@ -190,6 +192,7 @@ export class SoloMinersRepo {
       stratum_user: s.stratum_user ?? null,
       best_diff_text: s.best_diff_text ?? null,
       best_session_diff_text: s.best_session_diff_text ?? null,
+      best_diff_numeric: s.best_diff_numeric ?? null,
     }));
     await this.db.insertInto('solo_miner_samples').values(values).execute();
   }
@@ -256,6 +259,7 @@ export class SoloMinersRepo {
       total_power_w: number | null;
       max_temp_c: number | null;
       device_count: number;
+      max_best_diff: number | null;
     }>
   > {
     const rows = await this.db
@@ -270,6 +274,7 @@ export class SoloMinersRepo {
         eb.fn.sum<number | null>('power_w').as('power_sum'),
         eb.fn.max<number | null>('temp_c').as('temp_max'),
         eb.fn.max<number | null>('vr_temp_c').as('vr_temp_max'),
+        eb.fn.max<number | null>('best_diff_numeric').as('best_diff_max'),
         eb.fn
           .sum<number>(
             eb
@@ -302,8 +307,39 @@ export class SoloMinersRepo {
         total_power_w: coalesceNum(r.power_sum),
         max_temp_c: temp,
         device_count: Number(r.active_count ?? 0),
+        max_best_diff: coalesceNum(r.best_diff_max),
       };
     });
+  }
+
+  /** #204: insert a record-breaking best difficulty event. */
+  async insertBestDiffEvent(args: {
+    recorded_at: number;
+    difficulty: number;
+    previous_difficulty: number | null;
+    device_label: string;
+    device_ip: string;
+  }): Promise<void> {
+    await this.db
+      .insertInto('solo_best_difficulty_events')
+      .values(args)
+      .execute();
+  }
+
+  /** #204: best difficulty events for chart trophy markers. */
+  async bestDiffEventsSince(since_ms: number): Promise<
+    Array<{ recorded_at: number; difficulty: number }>
+  > {
+    const rows = await this.db
+      .selectFrom('solo_best_difficulty_events')
+      .select(['recorded_at', 'difficulty'])
+      .where('recorded_at', '>=', since_ms)
+      .orderBy('recorded_at', 'asc')
+      .execute();
+    return rows.map((r) => ({
+      recorded_at: Number(r.recorded_at),
+      difficulty: Number(r.difficulty),
+    }));
   }
 }
 
@@ -363,6 +399,7 @@ function toSampleRow(row: {
   stratum_user: string | null;
   best_diff_text: string | null;
   best_session_diff_text: string | null;
+  best_diff_numeric: number | null;
 }): SoloMinerSampleRow {
   return { ...row, reachable: row.reachable === 1 };
 }

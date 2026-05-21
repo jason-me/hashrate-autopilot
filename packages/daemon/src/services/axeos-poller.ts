@@ -15,6 +15,7 @@
  */
 
 import type { AppConfig } from '../config/schema.js';
+import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { SoloMinerRow, SoloMinersRepo } from '../state/repos/solo_miners.js';
 import { AxeOSClient, type AxeOSFetchResult } from './axeos.js';
 
@@ -53,12 +54,37 @@ export interface SoloMinerSnapshot {
   readonly entries: ReadonlyArray<SoloMinerSnapshotEntry>;
 }
 
+/** #204: result of the per-tick best difficulty check. */
+export interface BestDiffResult {
+  readonly isNewRecord: boolean;
+  readonly fleetMax: number | null;
+  readonly previousRecord: number | null;
+  readonly deviceLabel: string | null;
+  readonly deviceIp: string | null;
+}
+
 export interface AxeOSPollerOptions {
   readonly cfgRef: { value: AppConfig };
   readonly repo: SoloMinersRepo;
+  readonly runtimeRepo: RuntimeStateRepo;
   readonly client?: AxeOSClient;
   readonly now?: () => number;
   readonly log?: (msg: string) => void;
+}
+
+const MAGNITUDE_RE = /^([\d.]+)\s*([KMGTPE]?)$/i;
+const MAGNITUDE_MAP: Record<string, number> = {
+  '': 1, K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15, E: 1e18,
+};
+
+export function parseMagnitudeSuffixed(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const m = MAGNITUDE_RE.exec(s.trim());
+  if (!m) return null;
+  const base = Number(m[1]);
+  if (!Number.isFinite(base)) return null;
+  const multiplier = MAGNITUDE_MAP[m[2]!.toUpperCase()] ?? 1;
+  return base * multiplier;
 }
 
 export class AxeOSPoller {
@@ -66,6 +92,10 @@ export class AxeOSPoller {
   private readonly now: () => number;
   private readonly log: (msg: string) => void;
   private snapshot: SoloMinerSnapshot = { enabled: false, entries: [] };
+  private lastBestDiffResult: BestDiffResult = {
+    isNewRecord: false, fleetMax: null, previousRecord: null,
+    deviceLabel: null, deviceIp: null,
+  };
 
   constructor(private readonly options: AxeOSPollerOptions) {
     this.client = options.client ?? new AxeOSClient();
@@ -75,6 +105,10 @@ export class AxeOSPoller {
 
   getSnapshot(): SoloMinerSnapshot {
     return this.snapshot;
+  }
+
+  getLastBestDiffResult(): BestDiffResult {
+    return this.lastBestDiffResult;
   }
 
   /**
@@ -152,6 +186,7 @@ export class AxeOSPoller {
         best_session_diff_text: info?.bestSessionDiff ?? null,
         error: fetched.error,
       };
+      const bestDiffNumeric = parseMagnitudeSuffixed(entry.best_diff_text);
       entries.push(entry);
       sampleInserts.push({
         device_id: device.id,
@@ -177,6 +212,7 @@ export class AxeOSPoller {
         stratum_user: entry.stratum_user,
         best_diff_text: entry.best_diff_text,
         best_session_diff_text: entry.best_session_diff_text,
+        best_diff_numeric: bestDiffNumeric,
       });
     }
 
@@ -186,5 +222,62 @@ export class AxeOSPoller {
       this.log(`[axeos-poller] sample persist failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     this.snapshot = { enabled: true, entries };
+
+    // #204: detect fleet-wide best difficulty records.
+    await this.checkBestDifficulty(entries, tickAt);
+  }
+
+  private async checkBestDifficulty(
+    entries: SoloMinerSnapshotEntry[],
+    tickAt: number,
+  ): Promise<void> {
+    let fleetMax: number | null = null;
+    let bestLabel: string | null = null;
+    let bestIp: string | null = null;
+    for (const e of entries) {
+      if (!e.reachable) continue;
+      const val = parseMagnitudeSuffixed(e.best_diff_text);
+      if (val !== null && (fleetMax === null || val > fleetMax)) {
+        fleetMax = val;
+        bestLabel = e.device.label;
+        bestIp = e.device.ip;
+      }
+    }
+    if (fleetMax === null) {
+      this.lastBestDiffResult = {
+        isNewRecord: false, fleetMax: null, previousRecord: null,
+        deviceLabel: null, deviceIp: null,
+      };
+      return;
+    }
+
+    let stored: number | null = null;
+    try {
+      const rs = await this.options.runtimeRepo.get();
+      stored = rs?.solo_best_difficulty_all_time ?? null;
+    } catch {
+      // First boot or missing row - treat as no prior record.
+    }
+
+    const isNewRecord = stored === null || fleetMax > stored;
+    if (isNewRecord) {
+      try {
+        await this.options.runtimeRepo.patch({ solo_best_difficulty_all_time: fleetMax });
+        await this.options.repo.insertBestDiffEvent({
+          recorded_at: tickAt,
+          difficulty: fleetMax,
+          previous_difficulty: stored,
+          device_label: bestLabel!,
+          device_ip: bestIp!,
+        });
+        this.log(`[axeos-poller] new fleet best difficulty: ${fleetMax} (prev: ${stored})`);
+      } catch (e) {
+        this.log(`[axeos-poller] best-diff event persist failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    this.lastBestDiffResult = {
+      isNewRecord, fleetMax, previousRecord: stored,
+      deviceLabel: bestLabel, deviceIp: bestIp,
+    };
   }
 }

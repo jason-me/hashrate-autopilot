@@ -445,10 +445,20 @@ export interface SoloFleetSeriesRow {
   total_power_w: number | null;
   max_temp_c: number | null;
   device_count: number;
+  max_best_diff: number | null;
 }
 
 export interface SoloFleetSeriesResponse {
   rows: SoloFleetSeriesRow[];
+}
+
+export interface SoloBestDiffEvent {
+  recorded_at: number;
+  difficulty: number;
+}
+
+export interface SoloBestDiffEventsResponse {
+  events: SoloBestDiffEvent[];
 }
 
 export interface SoloMinersResponse {
@@ -717,6 +727,10 @@ export const api = {
   soloFleetSeries: (sinceMs?: number) => {
     const q = sinceMs !== undefined ? `?since=${sinceMs}` : '';
     return request<SoloFleetSeriesResponse>(`/api/solo-miners/series${q}`);
+  },
+  soloBestDiffEvents: (sinceMs?: number) => {
+    const q = sinceMs !== undefined ? `?since=${sinceMs}` : '';
+    return request<SoloBestDiffEventsResponse>(`/api/solo-miners/best-diff-events${q}`);
   },
   staleUrls: () => request<StaleUrlsResponse>('/api/stale-urls'),
   cancelStaleUrlBid: (bidId: string) =>

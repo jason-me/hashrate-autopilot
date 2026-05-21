@@ -953,6 +953,7 @@ export class AlertEvaluator {
       await this.evaluateSoloShareRejection(state, disabled, entry);
       await this.evaluateSoloStratumDrift(state, disabled, entry);
     }
+    await this.evaluateSoloBestDifficulty(state, disabled);
     for (const id of this.soloShareHistory.keys()) {
       if (!activeIds.has(id)) this.soloShareHistory.delete(id);
     }
@@ -1210,6 +1211,29 @@ export class AlertEvaluator {
     });
     this.soloStratumBaseline.set(entry.device.id, current);
   }
+
+  private async evaluateSoloBestDifficulty(
+    _state: State,
+    disabled: ReadonlySet<string>,
+  ): Promise<void> {
+    if (disabled.has('solo_best_difficulty')) return;
+    if (!this.axeOSPoller) return;
+    const result = this.axeOSPoller.getLastBestDiffResult();
+    if (!result.isNewRecord || result.fleetMax === null) return;
+    const prev = result.previousRecord;
+    const improvementStr = prev !== null && prev > 0
+      ? ` (${(result.fleetMax / prev).toFixed(1)}x improvement)`
+      : '';
+    const prevStr = prev !== null
+      ? `Previous record: ${formatDifficultyCompact(prev)}. `
+      : '';
+    await this.alertManager.recordAlert({
+      severity: 'INFO',
+      title: `New best difficulty: ${formatDifficultyCompact(result.fleetMax)}`,
+      body: `${result.deviceLabel ?? 'Unknown'} submitted a share at ${formatDifficultyCompact(result.fleetMax)} difficulty${improvementStr}. ${prevStr}`,
+      event_class: 'solo_best_difficulty',
+    });
+  }
 }
 
 function pickLiveHashrate(entry: SoloMinerSnapshotEntry): number | null {
@@ -1219,6 +1243,16 @@ function pickLiveHashrate(entry: SoloMinerSnapshotEntry): number | null {
   if (entry.hashrate_instant_ghs !== null && entry.hashrate_instant_ghs > 0)
     return entry.hashrate_instant_ghs;
   return null;
+}
+
+function formatDifficultyCompact(v: number): string {
+  if (v >= 1e18) return `${(v / 1e18).toFixed(2)}E`;
+  if (v >= 1e15) return `${(v / 1e15).toFixed(2)}P`;
+  if (v >= 1e12) return `${(v / 1e12).toFixed(2)}T`;
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}G`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(2)}K`;
+  return v.toFixed(0);
 }
 
 function formatDuration(ms: number): string {
