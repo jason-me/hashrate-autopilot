@@ -49,7 +49,7 @@ export function decide(state: State): readonly Proposal[] {
     return [
       {
         kind: 'PAUSE',
-        reason: `unknown_bids_present: ${state.unknown_bids.map((b) => b.braiins_order_id).join(', ')}`,
+        reason: `Unknown bids detected: ${state.unknown_bids.map((b) => b.braiins_order_id).join(', ')}`,
       },
     ];
   }
@@ -66,7 +66,7 @@ export function decide(state: State): readonly Proposal[] {
     return state.owned_bids.map((bid) => ({
       kind: 'CANCEL_BID' as const,
       braiins_order_id: bid.braiins_order_id,
-      reason: `datum_stratum_down: ${state.datum!.consecutive_failures} consecutive failures - cancelling to stop spend`,
+      reason: `Datum stratum down: ${state.datum!.consecutive_failures} consecutive failures - cancelling to stop spend`,
     }));
   }
 
@@ -207,7 +207,7 @@ export function decide(state: State): readonly Proposal[] {
     proposals.push({
       kind: 'CANCEL_BID',
       braiins_order_id: extra.braiins_order_id,
-      reason: 'multiple_owned_bids; keeping primary only',
+      reason: 'Multiple owned bids; keeping primary only',
     });
   }
 
