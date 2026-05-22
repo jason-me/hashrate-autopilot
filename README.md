@@ -167,23 +167,22 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   or Kraken; pick one) refreshed daemon-side every 4 minutes so it stays current even when the dashboard tab
   is closed.
 - **Pool-luck plot** - the Hashrate chart's right-axis dropdown can render a pool-luck multiplier
-  (`observed / Poisson-expected`) over a 24h or 7d trailing window. Decays continuously between finds, jumps
+  (`observed / Poisson-expected`) over a 24h, 7d, or 30d trailing window. Decays continuously between finds, jumps
   on each new pool block. The OCEAN panel shows the same number as a "X.XX× expected" annotation next to
-  `pool blocks 24h / 7d` so chart and panel always agree. Tooltips compute Ocean's live network-hashrate
+  `pool blocks 24h / 7d / 30d` plus an all-time pool block count, so chart and panel always agree. Tooltips compute Ocean's live network-hashrate
   share and the implied expected block count for the current window. Difficulty retargets cause a
   discontinuous luck jump (higher difficulty = smaller pool share = fewer expected blocks = higher luck);
   retarget markers appear on the luck line with before/after luck values in the tooltip so the operator
   can see exactly how the retarget shifted the reading.
-- **Pool-block marker shapes** - the cubes on the Hashrate chart's pool-block row carry a precedence-ordered
-  vocabulary so the rare events stand out. **Own block** (Ocean credited the coinbase to your payout
+- **Pool-block marker shapes** - the icons on the Hashrate chart carry a precedence-ordered
+  vocabulary so the rare events stand out. All markers use Lucide icons for visual consistency. **Own block** (Ocean credited the coinbase to your payout
   address - the lottery-win case) renders as a **gold crown**. **BIP 110-signalling pool block**
-  (header version bit 4 set; Reduced Data soft fork) renders as a **yellow cube**. **Default pool block**
-  renders as a **blue cube**. Tooltip header label and colour follow the same precedence (own > BIP 110 >
+  (header version bit 4 set; Reduced Data soft fork) renders as a **yellow box**. **Default pool block**
+  renders as a **blue box**. **Difficulty retargets** show a **violet pickaxe**. **Solo fleet best difficulty records** show a **gold trophy** with a dashed vertical line. Tooltip header label and colour follow the same precedence (own > BIP 110 >
   default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs
   (`blockchain.block.header`) - no third-party API. A separate **BIP 110 scan card** on the Status page
   lets you scan the last N blocks (configurable up to 2016) and see every signaling block with timestamp,
-  version bits, and explorer link. Both block markers and **difficulty-retarget pickaxe icons** (violet,
-  with dashed vertical lines) are mirrored onto the price chart, so the operator sees these events in
+  version bits, and explorer link. Block markers and retarget icons are mirrored onto the price chart, so the operator sees these events in
   context on both charts.
 - **Telegram notifications** - three severity tiers across eighteen event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
@@ -217,7 +216,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   voice clip) plus custom MP3 / OGG / WAV / WebM upload up to 200 KB. Plays once per new block; the
   dashboard tab needs to be open.
 - **Per-chart right-axis dropdown** - render BTC/USD price, network difficulty, pool hashrate, Ocean unpaid
-  balance, estimated block reward, pool-luck (24h/7d), or share_log against the chart's primary series.
+  balance, estimated block reward, pool-luck (24h/7d/30d), solo best difficulty, or share_log against the chart's primary series.
   Independent picker per chart, persists per browser.
 - **Multilingual UI** - every page (Status, Config, Setup wizard, Login, charts, tooltips, time-relative
   strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
@@ -382,14 +381,9 @@ nothing trades real money until you flip the switch from the dashboard's Status 
 > Tailscale, or Tor until you've finished the wizard. Appliance platforms like Umbrel handle this
 > automatically - the dashboard is exposed only over Tor / LAN there.
 
-### Path A - Umbrel app
+### Path A - Umbrel Community App Store
 
-The Umbrel packaging is tracked in [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) (Phase 2). Once it's submitted to the official Umbrel app
-store, install will be a single click. Until then, an interim Community App Store can be added by URL
-- watch the project releases for a pointer when it lands.
-
-The Docker image (Path B) is what the Umbrel packaging wraps, so any progress on the image is also
-progress on the appliance flow.
+Add the community app store URL to your Umbrel's **Settings - App stores** and search for "Hashrate Autopilot". The app declares Bitcoin Core, Electrs, and Datum Gateway as dependencies - Umbrel will prompt you to install any that are missing. Once installed, the daemon auto-discovers all three services across Umbrel's shared Docker network: Bitcoin RPC creds come from Umbrel's standard `APP_BITCOIN_*` env vars, the Electrs host/port and payout source are pre-set via `BHA_*` env overrides in docker-compose.yml, and Datum's API URL is injected the same way. The result is a turnkey setup where the wizard's Mining step has every field pre-filled - walk through it, confirm, and the dashboard is live.
 
 ### Path B - Docker on a Linux box
 

@@ -1,6 +1,64 @@
 # Changelog
 
+## 2026-05-22
+
+### `[Feature]` Turnkey Umbrel setup: Bitcoin Core + Electrs as dependencies
+
+Declares Bitcoin Core, Electrs, and Datum Gateway as Umbrel app dependencies. On a fresh install Umbrel prompts to install all three, and the docker-compose.yml injects BHA_ELECTRS_HOST, BHA_ELECTRS_PORT, and BHA_PAYOUT_SOURCE=electrs so on-chain payout tracking works on first boot with zero wizard configuration. Bitcoin RPC auto-detects from Umbrel's standard APP_BITCOIN_* env vars, enabling BIP110 signalling detection.
+
+### `[Fix]` Wizard ignores BHA_* env overrides for payout source and Electrs
+
+The /api/setup-info endpoint only applied BITCOIN_RPC_* appliance detection to its defaults, ignoring BHA_PAYOUT_SOURCE, BHA_ELECTRS_HOST, and BHA_ELECTRS_PORT. On Umbrel fresh installs the wizard defaulted to Bitcoin Core instead of Electrs and left the Electrs fields empty. Now runs applyEnvOverridesToConfig() on the defaults before returning them so all BHA_* env vars flow through to the wizard form.
+
+### `[UI]` Lucide icon consistency for chart markers
+
+Replaced the hand-drawn pool-block cube with the Lucide box icon (same 14x14 rendered size and vertical alignment as the pickaxe and trophy markers). Replaced the broken Font Awesome U+F091 trophy glyph (which rendered as literal text) with an inline SVG Lucide trophy icon, repositioned to the top of the chart with an amber dashed vertical line matching the pool-block and retarget marker pattern. All three marker types (box, pickaxe, trophy) now share a consistent Lucide style.
+
+### `[Fix]` Solo best difficulty i18n for Telegram notifications
+
+Added solo_best_difficulty_title and solo_best_difficulty_body to the AlertCopy interface and all three locale catalogs (EN/NL/ES), then wired evaluateSoloBestDifficulty to use copyFor(state) instead of hardcoded English strings. Dutch and Spanish users now receive localized Telegram messages for best difficulty records.
+
 ## 2026-05-21
+
+### `[Fix]` Retry boot-time hashprice fetch up to 3 times with 2s delay
+
+The daemon's initial hashprice fetch could fail on slow networks, leaving the hashprice cache cold and causing the Next Action card to show "Waiting for Ocean hashprice" even though the API was reachable seconds later. Now retries up to 3 times with a 2-second delay between attempts.
+
+### `[Fix]` Hatched region tooltips blocked by overlapping fill paths
+
+The daemon-offline hatched overlay's SVG fill paths intercepted pointer events, blocking tooltips on data points underneath. Added pointer-events="none" to the hatched fill elements.
+
+### `[UI]` Human-readable reason strings in bid event tooltips
+
+Bid event tooltips now show plain-English reasons ("fillable moved down", "overpay cap exceeded") instead of internal enum values, matching the human-readable strings used in the decision log.
+
+### `[Fix]` Silently baseline solo best difficulty on first measurement
+
+The first-ever best difficulty measurement triggered a Telegram notification even though there was no previous record to compare against. Now silently baselines the initial value without firing an alert.
+
+### `[UI]` Rename "best difficulty" to "solo best difficulty" in chart axis and dropdown
+
+Clarifies that the right-axis option and axis label refer to solo-miner best difficulty, not network difficulty.
+
+### `[Perf]` Address 18 performance, correctness, and safety findings
+
+Batch of targeted fixes: eliminated redundant database queries in the tick loop, added bounds checks on array indexing in chart data projection, tightened null guards on optional service dependencies, and replaced several eager-evaluation patterns with lazy alternatives.
+
+### `[UI]` Move marketplace-empty banner into the Next Action card
+
+The "marketplace empty" warning banner previously floated as a standalone element above the dashboard. Now renders inline inside the Next Action card for better visual coherence and less layout shift.
+
+### `[Fix]` Pool luck (30d) step markers missing on the 1m chart
+
+Step markers for the 30d pool luck overlay were only rendered on the 7d and wider presets. Extended the marker query to include all presets down to 1m.
+
+### `[Fix]` Fall back to legacy age key path on upgrade
+
+After the package scope rename, the SOPS age key moved from ~/.config/braiins-hashrate/ to ~/.config/hashrate-autopilot/. Existing bare-metal installs had keys at the old path. The key loader now falls back to the legacy path when the new path is empty.
+
+### `[UI]` Color-coded ASIC chip badges in Solo Miners section (#203)
+
+Each solo miner row now shows an ASIC model badge (e.g. BM1370, BM1366) with a color derived from the chip family. Makes it easy to visually distinguish device generations at a glance in a mixed fleet.
 
 ### `[Fix]` "Waiting for Ocean hashprice" shown while Ocean panel has a value
 
