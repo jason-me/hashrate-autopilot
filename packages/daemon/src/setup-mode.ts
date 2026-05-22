@@ -45,6 +45,7 @@ import {
   APP_CONFIG_DEFAULTS,
   SecretsSchema,
 } from './config/schema.js';
+import { applyEnvOverridesToConfig } from './config/env-overrides.js';
 import type { ConfigRepo } from './state/repos/config.js';
 import type { SecretsRepo } from './state/repos/secrets.js';
 
@@ -103,31 +104,38 @@ export async function createSetupModeServer(
   // Bootstrap data the wizard pre-fills its form from. If config
   // already exists (re-setup after losing secrets) we surface it so
   // the operator doesn't have to re-enter every field; otherwise we
-  // surface the schema defaults - with appliance-detected bitcoind
-  // RPC creds layered on top (#60) so an Umbrel/Start9 install with
-  // bitcoind already running pre-fills that side automatically.
+  // surface the schema defaults with two override layers:
+  //   1. BHA_* env overrides (payout_source, electrs_host, etc.)
+  //   2. Appliance-detected BITCOIN_RPC_* creds (#60)
+  // BHA_* wins because it's the operator's explicit intent (e.g.
+  // BHA_PAYOUT_SOURCE=electrs in docker-compose.yml). The bitcoind
+  // detection only fills in gaps the BHA layer didn't cover.
   app.get('/api/setup-info', async () => {
     const existing = await deps.configRepo.get();
     const detected = detectBitcoindEnv(process.env);
+    const envDefaults = applyEnvOverridesToConfig({
+      ...APP_CONFIG_DEFAULTS,
+      destination_pool_url: 'stratum+tcp://datum.local:23334',
+      destination_pool_worker_name: '',
+      btc_payout_address: '',
+    });
     return {
       has_existing_config: existing !== null,
       has_existing_secrets: await deps.secretsRepo.exists(),
       defaults: {
-        ...APP_CONFIG_DEFAULTS,
-        destination_pool_url: 'stratum+tcp://datum.local:23334',
-        destination_pool_worker_name: '',
-        btc_payout_address: '',
-        // Pre-fill from appliance env vars if detected; the wizard
-        // can offer a one-click "use detected bitcoind" affordance
-        // and falls back to the empty defaults otherwise.
-        bitcoind_rpc_url: detected.url ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
-        bitcoind_rpc_user: detected.user ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_user,
-        bitcoind_rpc_password:
-          detected.password ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_password,
-        // If we found a working URL, suggest bitcoind as the payout
-        // source out of the box. The operator can flip back to none
-        // or pick electrs in the wizard.
-        payout_source: detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source,
+        ...envDefaults,
+        // Bitcoind detection fills gaps only when BHA_* didn't
+        // already set them (envDefaults still carries the schema
+        // default empty strings for these fields when no BHA_*
+        // override was provided).
+        bitcoind_rpc_url: envDefaults.bitcoind_rpc_url || detected.url || APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
+        bitcoind_rpc_user: envDefaults.bitcoind_rpc_user || detected.user || APP_CONFIG_DEFAULTS.bitcoind_rpc_user,
+        bitcoind_rpc_password: envDefaults.bitcoind_rpc_password || detected.password || APP_CONFIG_DEFAULTS.bitcoind_rpc_password,
+        // If BHA_PAYOUT_SOURCE was set, envDefaults already carries
+        // the right value. Otherwise fall back to bitcoind detection.
+        payout_source: envDefaults.payout_source !== APP_CONFIG_DEFAULTS.payout_source
+          ? envDefaults.payout_source
+          : detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source,
       },
       current_config: existing,
       // Surface raw detected values so the wizard can show a
