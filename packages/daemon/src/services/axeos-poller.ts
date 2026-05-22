@@ -259,7 +259,25 @@ export class AxeOSPoller {
       // First boot or missing row - treat as no prior record.
     }
 
-    const isNewRecord = stored === null || fleetMax > stored;
+    // First measurement (stored === null) silently baselines the
+    // high-water mark without firing a notification or logging an
+    // event - the device has likely held this difficulty for a while
+    // before the feature was enabled.
+    if (stored === null) {
+      try {
+        await this.options.runtimeRepo.patch({ solo_best_difficulty_all_time: fleetMax });
+        this.log(`[axeos-poller] baselined fleet best difficulty: ${fleetMax}`);
+      } catch (e) {
+        this.log(`[axeos-poller] best-diff baseline persist failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      this.lastBestDiffResult = {
+        isNewRecord: false, fleetMax, previousRecord: null,
+        deviceLabel: bestLabel, deviceIp: bestIp,
+      };
+      return;
+    }
+
+    const isNewRecord = fleetMax > stored;
     if (isNewRecord) {
       try {
         await this.options.runtimeRepo.patch({ solo_best_difficulty_all_time: fleetMax });
