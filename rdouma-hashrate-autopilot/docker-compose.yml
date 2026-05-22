@@ -31,14 +31,12 @@
 #   BHA_ELECTRS_PORT, and BHA_PAYOUT_SOURCE so on-chain payout
 #   tracking works out of the box without wizard configuration.
 #
-# - Bitcoin RPC is *not* declared as a dependency (the autopilot does
-#   not strictly need Bitcoin RPC to bid - it is only used by the
-#   optional P&L panel's earnings figure as a fallback when electrs
-#   is unavailable). The BITCOIN_RPC_* env block below resolves to
-#   empty when the dep is not declared, and the daemon's
-#   detectBitcoindEnv() handles empty values cleanly, so the wizard
-#   shows blank RPC fields and the operator types in any reachable
-#   RPC after setup.
+# - We declare `bitcoin` as a dependency. Electrs already requires it,
+#   so this is free for the user. Bitcoin RPC enables BIP110 signalling
+#   detection on pool blocks (yellow vs blue cube markers on the chart).
+#   Umbrel injects APP_BITCOIN_NODE_IP / APP_BITCOIN_RPC_PORT / _USER /
+#   _PASS which the BITCOIN_RPC_* env block below forwards to the
+#   daemon's detectBitcoindEnv().
 
 version: "3.7"
 
@@ -76,11 +74,10 @@ services:
       HTTP_HOST: 0.0.0.0
       DB_PATH: /app/data/state.db
       DASHBOARD_STATIC: packages/dashboard/dist
-      # No-op fallback: only meaningful if a future manifest re-adds
-      # `bitcoin` to dependencies (which makes Umbrel inject
-      # APP_BITCOIN_*). With no dep declared they resolve to empty,
-      # the wizard shows blank RPC fields, and the operator types
-      # creds manually. See note at top of file.
+      # Bitcoin RPC auto-config (see note at top of file). Umbrel
+      # injects APP_BITCOIN_* because `bitcoin` is a declared
+      # dependency. The daemon's detectBitcoindEnv() picks these up
+      # on first boot - no wizard configuration needed.
       BITCOIN_RPC_HOST: "${APP_BITCOIN_NODE_IP}"
       BITCOIN_RPC_PORT: "${APP_BITCOIN_RPC_PORT}"
       BITCOIN_RPC_USER: "${APP_BITCOIN_RPC_USER}"
