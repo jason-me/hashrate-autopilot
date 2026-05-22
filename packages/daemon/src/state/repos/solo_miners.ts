@@ -301,12 +301,13 @@ export class SoloMinersRepo {
       const hr =
         coalesceNum(r.hr_10m_sum) ?? coalesceNum(r.hr_1m_sum) ?? coalesceNum(r.hr_instant_sum);
       const temp = maxNullable(coalesceNum(r.temp_max), coalesceNum(r.vr_temp_max));
+      const active = Number(r.active_count ?? 0);
       return {
         tick_at: Number(r.tick_at),
-        total_hashrate_ghs: hr,
-        total_power_w: coalesceNum(r.power_sum),
-        max_temp_c: temp,
-        device_count: Number(r.active_count ?? 0),
+        total_hashrate_ghs: hr ?? (active === 0 ? 0 : null),
+        total_power_w: coalesceNum(r.power_sum) ?? (active === 0 ? 0 : null),
+        max_temp_c: temp ?? (active === 0 ? 0 : null),
+        device_count: active,
         max_best_diff: coalesceNum(r.best_diff_max),
       };
     });
