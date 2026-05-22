@@ -403,11 +403,14 @@ function MiningStep({
     form.payout_source !== 'electrs' ||
     (form.electrs_host.trim().length > 0 && form.electrs_port > 0);
 
+  const poolUrlOk =
+    form.destination_pool_url.trim().length === 0 ||
+    /^stratum\+?tcp:\/\/.+/.test(form.destination_pool_url.trim());
   const valid =
     form.target_hashrate_ph > 0 &&
     form.minimum_floor_hashrate_ph > 0 &&
     form.minimum_floor_hashrate_ph <= form.target_hashrate_ph &&
-    form.destination_pool_url.trim().length > 0 &&
+    poolUrlOk &&
     addr.length > 0 &&
     worker.includes('.') &&
     workerPrefixOk &&
@@ -468,7 +471,7 @@ function MiningStep({
         </div>
       </Section>
       <Section title={t`Pool destination (where Braiins delivers)`}>
-        <Field label={t`Pool URL`} hint={t`Publicly reachable stratum URL for your Datum gateway or pool (e.g. stratum+tcp://myhost.example.com:23334). If you use a DDNS service, enter your static hostname here - Hashrate Autopilot has built-in DDNS support you can configure later from the Config page.`}>
+        <Field label={t`Pool URL`} hint={t`Must be reachable from the public internet (Braiins connects to it). Leave empty if you don't have a public hostname yet - you can set it later from the Config page, which also has built-in DDNS support.`}>
           <input
             type="text"
             placeholder="stratum+tcp://your-public-host:23334"

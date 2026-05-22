@@ -152,10 +152,17 @@ export async function createSetupModeServer(
     }
     const { config: parsedConfig, secrets } = parsed.data;
 
+    // Merge env-detected values the wizard form may not have collected
+    // (hidden sections, auto-configured dependencies).
     const envDatum = process.env['BHA_DATUM_API_URL']?.trim() || null;
-    const config = envDatum && !parsedConfig.datum_api_url
-      ? { ...parsedConfig, datum_api_url: envDatum }
-      : parsedConfig;
+    const detected = detectBitcoindEnv(process.env);
+    const config = {
+      ...parsedConfig,
+      ...(envDatum && !parsedConfig.datum_api_url ? { datum_api_url: envDatum } : {}),
+      ...(detected.url && !parsedConfig.bitcoind_rpc_url ? { bitcoind_rpc_url: detected.url } : {}),
+      ...(detected.user && !parsedConfig.bitcoind_rpc_user ? { bitcoind_rpc_user: detected.user } : {}),
+      ...(detected.password && !parsedConfig.bitcoind_rpc_password ? { bitcoind_rpc_password: detected.password } : {}),
+    };
 
     deps.log?.('setup: writing config + secrets to db');
     await deps.configRepo.upsert(config);

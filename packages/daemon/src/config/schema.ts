@@ -56,8 +56,15 @@ export const AppConfigSchema = z.object({
   target_hashrate_ph: positiveNumber,
   minimum_floor_hashrate_ph: positiveNumber,
 
-  // Destination pool (SPEC §8 - Datum-connected Ocean)
-  destination_pool_url: z.string().url(),
+  // Destination pool (SPEC §8 - Datum-connected Ocean).
+  // Empty string is allowed so the wizard can be completed before the
+  // operator has a publicly reachable hostname (DDNS can be set up
+  // later from Config). The control loop skips bid creation and pool
+  // probing when this is empty.
+  destination_pool_url: z.preprocess(
+    (v) => (typeof v === 'string' ? v.trim() : v),
+    z.union([z.string().url(), z.literal('')]),
+  ),
   destination_pool_worker_name: nonEmptyString,
 
   // Pricing ceilings (sat per EH per day)

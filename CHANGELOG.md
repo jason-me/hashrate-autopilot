@@ -2,6 +2,18 @@
 
 ## 2026-05-22
 
+### `[Release]` v1.8.4
+
+Complete turnkey Umbrel setup: Pool URL is now optional (leave empty, configure later from Config with DDNS support), Bitcoin RPC auto-configured from Umbrel env even when Electrs is selected, hint text corrected.
+
+### `[Fix]` Pool URL is now optional in the wizard
+
+The wizard no longer requires a Pool URL to complete setup. Operators who don't have a publicly reachable hostname yet (no DDNS, no static IP) can leave it empty and configure it later from the Config page. The daemon skips pool probing and bid creation when the URL is empty. The Zod schema now accepts empty string for `destination_pool_url`.
+
+### `[Fix]` Bitcoin RPC auto-configured from Umbrel env on wizard submit
+
+When payout_source is Electrs the wizard hides the bitcoind RPC fields, so the detected BITCOIN_RPC_* env vars were never written to the DB. The BIP 110 scan panel showed "bitcoind RPC not configured" even though Bitcoin Core was a declared dependency. The setup POST handler now merges detected bitcoind creds into config alongside the Datum API URL.
+
 ### `[Release]` v1.8.3
 
 Wizard fixes for turnkey Umbrel setup: Pool URL no longer defaults to unreachable datum.local (empty field with public-host placeholder + DDNS hint), Electrs help text corrected to electrs_electrs_1, and Datum API URL auto-configured from BHA_DATUM_API_URL during setup.

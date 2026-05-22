@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.8.3"
+version: "1.8.4"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,19 +51,15 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
-  v1.8.3 - wizard fixes for turnkey Umbrel setup.
+  v1.8.4 - complete turnkey Umbrel setup.
 
   FIXES
-  - Pool URL field no longer defaults to the unreachable datum.local. Now shows an empty field with a placeholder explaining the URL must be publicly reachable, and a note about built-in DDNS support available in Config after setup.
-  - Electrs help text corrected from wrong IP (10.21.21.10) to actual Docker hostname (electrs_electrs_1).
-  - Datum Gateway API URL is now auto-configured from the BHA_DATUM_API_URL env var during setup, so the Datum panel works on first boot without manual configuration.
+  - Pool URL is now optional in the wizard. Leave it empty if you don't have a public hostname yet - set it later from Config, which has built-in DDNS support.
+  - Bitcoin RPC auto-configured from Umbrel's BITCOIN_RPC_* env vars on wizard submit, even when Electrs is the selected payout backend. BIP 110 scan works on first boot.
+  - Datum API URL, Electrs host/port, and payout source all auto-configured from env during setup.
+  - Electrs help text corrected to actual Docker hostname (electrs_electrs_1).
 
   Safe to upgrade from any 1.8.x release.
-
-  NEW
-  - Temperature unit selector on Config → Display & Logging, alongside Number format and Date layout. Pick Celsius or Fahrenheit (or "system default", which uses °F for English UI and °C otherwise). Honoured everywhere temperatures show up: the Status-page Solo miners card (ASIC + VR temp columns), the right-axis temperature plot on the Hashrate chart, and the Overheating ceiling input on Config (operator types in the chosen unit, daemon round-trips internally in °C). Per-browser setting. Telegram alert bodies stay in °C for now - those go to a phone and the daemon doesn't know per-recipient preferences.
-
-  No migration; safe to upgrade or revert.
 
   v1.7.2 - solo-miner scan reliability.
 

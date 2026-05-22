@@ -70,6 +70,9 @@ export function decide(state: State): readonly Proposal[] {
     }));
   }
 
+  // No pool URL configured - can't create or maintain bids.
+  if (!state.config.destination_pool_url) return [];
+
   // Without a market snapshot we can't price anything.
   if (!state.market) return [];
 

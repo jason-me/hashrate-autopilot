@@ -386,13 +386,17 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   }
 
   // Pool probe (always run - we want outage visibility even if API is down).
-  const { host, port } = parsePoolUrl(config.destination_pool_url);
-  const poolProbe = await deps.poolTracker.probe({ host, port });
-  const pool: PoolHealth = {
-    reachable: poolProbe.reachable,
-    last_ok_at: deps.poolTracker.snapshot().last_ok_at,
-    consecutive_failures: deps.poolTracker.snapshot().consecutive_failures,
-  };
+  // Skip when no pool URL is configured (wizard completed without one).
+  const poolProbe = config.destination_pool_url
+    ? await deps.poolTracker.probe(parsePoolUrl(config.destination_pool_url))
+    : { reachable: false, checked_at: Date.now(), latency_ms: null, error: 'no pool URL configured' } satisfies PoolProbeResult;
+  const pool: PoolHealth = config.destination_pool_url
+    ? {
+        reachable: poolProbe.reachable,
+        last_ok_at: deps.poolTracker.snapshot().last_ok_at,
+        consecutive_failures: deps.poolTracker.snapshot().consecutive_failures,
+      }
+    : { reachable: false, last_ok_at: null, consecutive_failures: 0 };
 
   // ACTUAL delivered hashrate = sum of Braiins's `state_estimate.avg_speed_ph`
   // (already zeroed for non-ACTIVE bids during extraction). NOT

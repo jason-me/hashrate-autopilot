@@ -2998,8 +2998,8 @@ msgid "stratum reachable"
 msgstr "stratum bereikbaar"
 
 #: src/pages/Setup.tsx
-msgid "Publicly reachable stratum URL for your Datum gateway or pool (e.g. stratum+tcp://myhost.example.com:23334). If you use a DDNS service, enter your static hostname here - Hashrate Autopilot has built-in DDNS support you can configure later from the Config page."
-msgstr "Publiek bereikbare stratum-URL voor je Datum-gateway of pool (bijv. stratum+tcp://mijnhost.voorbeeld.nl:23334). Als je een DDNS-dienst gebruikt, vul hier je vaste hostnaam in - Hashrate Autopilot heeft ingebouwde DDNS-ondersteuning die je later kunt instellen via de Config-pagina."
+msgid "Must be reachable from the public internet (Braiins connects to it). Leave empty if you don't have a public hostname yet - you can set it later from the Config page, which also has built-in DDNS support."
+msgstr "Moet bereikbaar zijn vanaf het publieke internet (Braiins maakt er verbinding mee). Laat leeg als je nog geen publieke hostnaam hebt - je kunt dit later instellen via de Config-pagina, die ook ingebouwde DDNS-ondersteuning heeft."
 
 #: src/pages/Config.tsx
 msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel."
