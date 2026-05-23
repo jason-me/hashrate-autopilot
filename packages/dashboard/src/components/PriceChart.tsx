@@ -1446,6 +1446,30 @@ export const PriceChart = memo(function PriceChart({
     return out;
   }, [chartData, showPoolBlockMarkers, ourBlocks, points]);
 
+  const unpaidDropMarkers = useMemo(() => {
+    const empty: Array<{ cx: number; cy: number; tick_at: number; prev: number; cur: number }> = [];
+    if (!chartData?.rightAxis) return empty;
+    if (rightAxisSeries !== 'ocean_unpaid_sat' && rightAxisSeries !== 'lifetime_earnings_sat') return empty;
+    const { dataMinX, dataMaxX, xScale, rightYScale, rightAxis } = chartData;
+    const vals = rightAxis.values;
+    const out: typeof empty = [];
+    for (let i = 1; i < points.length; i += 1) {
+      const prev = vals[i - 1];
+      const cur = vals[i];
+      if (typeof prev !== 'number' || !Number.isFinite(prev)) continue;
+      if (typeof cur !== 'number' || !Number.isFinite(cur)) continue;
+      if (prev <= 0) continue;
+      const drop = prev - cur;
+      if (drop > 0 && drop / prev > 0.3) {
+        const t = points[i]!.tick_at;
+        if (t >= dataMinX && t <= dataMaxX) {
+          out.push({ cx: xScale(t), cy: rightYScale(cur), tick_at: t, prev, cur });
+        }
+      }
+    }
+    return out;
+  }, [chartData, rightAxisSeries, points]);
+
   const difficultyRetargets = useMemo<RetargetEvent[]>(() => {
     const n = points.length;
     if (n === 0) return [];
@@ -1969,6 +1993,18 @@ export const PriceChart = memo(function PriceChart({
             />
             <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
           </g>
+        ))}
+
+        {unpaidDropMarkers.map((d) => (
+          <circle
+            key={`unpaid-drop-${d.tick_at}`}
+            cx={d.cx}
+            cy={d.cy}
+            r="4.5"
+            fill={COLOR_PAYOUT}
+            stroke="#0f172a"
+            strokeWidth="1.5"
+          />
         ))}
 
         {/* Pool-block dots on the right-axis line. Click opens the
