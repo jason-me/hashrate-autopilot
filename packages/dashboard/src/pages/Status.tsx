@@ -496,7 +496,9 @@ export function Status() {
           range={chartRange}
           onRangeChange={setChartRange}
           ourBlocks={visibleOurBlocks}
+          rewardEvents={visibleRewardEvents}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
+          txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
           datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}

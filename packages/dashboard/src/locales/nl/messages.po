@@ -336,6 +336,7 @@ msgstr "Altijd dry-run (veiligst)"
 msgid "Always live (for trusted deployments)"
 msgstr "Altijd live (voor vertrouwde installaties)"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "amount"
 msgstr "bedrag"
@@ -1900,6 +1901,10 @@ msgid "Must be reachable from the public internet - Braiins probes it."
 msgstr "Moet bereikbaar zijn vanaf het publieke internet - Braiins controleert het."
 
 #: src/pages/Setup.tsx
+msgid "Must be reachable from the public internet (Braiins connects to it). You can change this later from the Config page, which also has built-in DDNS support."
+msgstr "Moet bereikbaar zijn vanaf het publieke internet (Braiins maakt er verbinding mee). Je kunt dit later wijzigen via de Config-pagina, die ook ingebouwde DDNS-ondersteuning heeft."
+
+#: src/pages/Setup.tsx
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
 
@@ -2128,6 +2133,10 @@ msgstr "Uit"
 msgid "Off by default. When on, sends an INFO message when Braiins detects a deposit and another when it's cleared compliance and is spendable. Sends an IMPORTANT message if Braiins's compliance returns the deposit (real money on the line)."
 msgstr "Standaard uit. Wanneer aan, stuurt een INFO-bericht zodra Braiins een deposit detecteert en nog een wanneer compliance is doorlopen en de funds beschikbaar zijn. Stuurt een IMPORTANT-bericht als Braiins compliance de deposit terugstuurt (echt geld op het spel)."
 
+#: src/components/SoloMinersCard.tsx
+msgid "offline"
+msgstr "offline"
+
 #: src/pages/Config.tsx
 msgid "OK"
 msgstr "OK"
@@ -2165,6 +2174,12 @@ msgstr "Aan"
 msgid "On target - bid at fillable + overpay."
 msgstr "Op doel - bod gelijk aan vulbaar + toeslag."
 
+#: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
+msgid "on-chain payout"
+msgstr "on-chain uitbetaling"
+
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "ON-CHAIN PAYOUT"
 msgstr "UITBETALING ON-CHAIN"
@@ -2997,10 +3012,6 @@ msgstr "stratum OFFLINE ({consecutiveFailures} achtereenvolgens)"
 msgid "stratum reachable"
 msgstr "stratum bereikbaar"
 
-#: src/pages/Setup.tsx
-msgid "Must be reachable from the public internet (Braiins connects to it). You can change this later from the Config page, which also has built-in DDNS support."
-msgstr "Moet bereikbaar zijn vanaf het publieke internet (Braiins maakt er verbinding mee). Je kunt dit later wijzigen via de Config-pagina, die ook ingebouwde DDNS-ondersteuning heeft."
-
 #: src/pages/Config.tsx
 msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel."
 msgstr "Subnet om te scannen (CIDR). Laat leeg om automatisch te detecteren via de daemon-interface - vereist op Umbrel."
@@ -3199,10 +3210,6 @@ msgstr "onbetaalde verdiensten"
 #: src/pages/Status.tsx
 msgid "unpaid earnings (Ocean)"
 msgstr "openstaande verdiensten (Ocean)"
-
-#: src/components/SoloMinersCard.tsx
-msgid "offline"
-msgstr "offline"
 
 #: src/pages/Config.tsx
 msgid "unsaved changes"

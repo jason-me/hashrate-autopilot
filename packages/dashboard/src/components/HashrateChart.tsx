@@ -25,7 +25,7 @@ import {
   type ChartRange,
 } from '@hashrate-autopilot/shared';
 
-import type { MetricPoint, OurBlockMarker } from '../lib/api';
+import type { MetricPoint, OurBlockMarker, RewardEventView } from '../lib/api';
 import {
   formatAgeMinutes,
   formatCompactNumber,
@@ -83,6 +83,7 @@ const COLOR_BIP110 = '#fde047';
 // well against the slate background. Used for the opt-in `% of Ocean`
 // (share_log) overlay on the right Y-axis.
 const COLOR_SHARE_LOG = '#a78bfa';
+const COLOR_PAYOUT = '#10b981';
 
 /**
  * Rolling-mean smoother over a time window. For each point at time
@@ -246,7 +247,9 @@ export const HashrateChart = memo(function HashrateChart({
   range,
   onRangeChange,
   ourBlocks = [],
+  rewardEvents = [],
   blockExplorerTemplate = 'https://mempool.space/block/{hash}',
+  txExplorerTemplate = '',
   shareLogPct = null,
   braiinsSmoothingMinutes = 1,
   datumSmoothingMinutes = 1,
@@ -268,10 +271,12 @@ export const HashrateChart = memo(function HashrateChart({
    *  under TIDES while mining, plus a gold-flagged subset for the
    *  rare solo-finder case). */
   ourBlocks?: readonly OurBlockMarker[];
+  rewardEvents?: readonly RewardEventView[];
   /** Template applied at click time to turn a block hash/height into
    *  an explorer URL. `{hash}` and `{height}` placeholders are
    *  substituted; at least one must be present. */
   blockExplorerTemplate?: string;
+  txExplorerTemplate?: string;
   /** Current Ocean share-log percentage (e.g. 0.0182). Used in the
    *  block-marker tooltip to estimate our share of each block's
    *  reward. Approximation: share_log shifts as pool/user hashrate
@@ -392,6 +397,51 @@ export const HashrateChart = memo(function HashrateChart({
     [],
   );
   const closeStepTip = useCallback(() => setStepTip(null), []);
+
+  const [rewardTip, setRewardTip] = useState<{
+    reward: RewardEventView;
+    x: number;
+    y: number;
+    pinned: boolean;
+  } | null>(null);
+  const onRewardEnter = useCallback(
+    (reward: RewardEventView) => (e: React.MouseEvent) => {
+      setRewardTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { reward, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onRewardLeave = useCallback(() => {
+    setRewardTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onRewardClick = useCallback(
+    (reward: RewardEventView) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setRewardTip({ reward, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeRewardTip = useCallback(() => setRewardTip(null), []);
+
+  useEffect(() => {
+    if (!rewardTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('hashrate-chart-pinned-reward-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setRewardTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [rewardTip?.pinned]);
 
   useEffect(() => {
     if (!retargetTip?.pinned) return;
@@ -1115,6 +1165,12 @@ export const HashrateChart = memo(function HashrateChart({
                 b.timestamp_ms <= chartData.maxX &&
                 b.found_by_us,
             ) && <Legend color={COLOR_OUR_BLOCK} label={t`found by us`} dashed />}
+          {rewardEvents.some(
+              (r) =>
+                !r.reorged &&
+                r.detected_at >= chartData.minX &&
+                r.detected_at <= chartData.maxX,
+            ) && <Legend color={COLOR_PAYOUT} label={t`on-chain payout`} dashed />}
           {markersHiddenCount > 0 && (
             <span
               className="text-[10px] text-slate-500 italic"
@@ -1633,6 +1689,43 @@ export const HashrateChart = memo(function HashrateChart({
               </g>
             );
           })}
+
+        {rewardEvents
+          .filter((r) => !r.reorged && r.detected_at >= dataMinX && r.detected_at <= dataMaxX)
+          .map((r) => {
+            const x = xScale(r.detected_at);
+            return (
+              <g
+                key={`payout-${r.id}`}
+                onMouseEnter={onRewardEnter(r)}
+                onMouseLeave={onRewardLeave}
+                onClick={onRewardClick(r)}
+                style={{ cursor: 'pointer' }}
+              >
+                <line
+                  x1={x} x2={x}
+                  y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
+                  stroke={COLOR_PAYOUT}
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.55"
+                  pointerEvents="none"
+                />
+                <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
+                <svg
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_PAYOUT} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity="0.85"
+                >
+                  <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT} fillOpacity="0.25" />
+                  <path d="M2 9h20" />
+                  <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
+                </svg>
+              </g>
+            );
+          })}
       </svg>
       {blockTip && (
         <PoolBlockTooltip
@@ -1658,6 +1751,17 @@ export const HashrateChart = memo(function HashrateChart({
           explorerTemplate={blockExplorerTemplate ?? ''}
           locale={intlLocale}
           onClose={closeStepTip}
+        />
+      )}
+      {rewardTip && (
+        <RewardEventTooltip
+          tip={rewardTip}
+          explorerTemplate={txExplorerTemplate}
+          locale={intlLocale}
+          dateTimeLocale={dateTimeLocale}
+          denomination={denomination}
+          onClose={closeRewardTip}
+          pinnedDomId="hashrate-chart-pinned-reward-tooltip"
         />
       )}
     </div>
@@ -2181,6 +2285,121 @@ function PoolLuckStepTooltip({
               <Trans>open in explorer</Trans>
             </a>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RewardEventTooltip({
+  tip,
+  explorerTemplate,
+  locale,
+  dateTimeLocale,
+  denomination,
+  onClose,
+  pinnedDomId,
+}: {
+  tip: { reward: RewardEventView; x: number; y: number; pinned: boolean };
+  explorerTemplate: string;
+  locale: string | undefined;
+  dateTimeLocale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+  onClose: () => void;
+  pinnedDomId?: string;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  void dateTimeLocale;
+  const fmt = useFormatters();
+  const { reward, pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, reward.id]);
+
+  const url = explorerTemplate
+    ? applyExplorerTemplate(explorerTemplate, {
+        txid: reward.txid,
+        height: reward.block_height,
+      })
+    : '';
+  const btc = reward.value_sat / 1e8;
+  const valueText =
+    denomination.mode === 'usd' && denomination.btcPrice !== null
+      ? `$${new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(btc * denomination.btcPrice)}`
+      : denomination.mode === 'btc'
+        ? `₿ ${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8,
+          }).format(btc)}`
+        : `${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(reward.value_sat)} sat`;
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? pinnedDomId : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-emerald-400">
+          <Trans>ON-CHAIN PAYOUT</Trans> · #{reward.block_height.toLocaleString(locale)}
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">
+        {fmt.timestamp(reward.detected_at)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(reward.detected_at)}</span>
+      </div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(reward.detected_at)}</div>
+
+      <div className="mt-2 flex justify-between gap-3 text-slate-300">
+        <span className="text-slate-500"><Trans>amount</Trans></span>
+        <span className="font-mono tabular-nums">{valueText}</span>
+      </div>
+
+      {url && (
+        <div className="mt-3 pt-2 border-t border-slate-800">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+          >
+            <Trans>open in block explorer →</Trans>
+          </a>
         </div>
       )}
     </div>

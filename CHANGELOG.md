@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-23
+
+### `[Feature]` On-chain payout gem markers on both charts (#207)
+
+On-chain payouts now appear as emerald gem icons at the top of both the Hashrate and Price charts, with dashed vertical lines extending down to the x-axis. On the Price chart, reward events also render as gem icons on the right-axis earnings line (replacing the former purple dots) when the right axis is set to paid earnings, lifetime earnings, or unpaid earnings. Clicking a gem opens a pinned tooltip showing the block height, payout date, amount (in the active denomination), and a deep-link to the block explorer. All existing reward_events data is backfilled automatically.
+
 ## 2026-05-22
 
 ### `[UI]` Solo miners offline: clean display + chart axis anchored at zero (#206)

@@ -131,6 +131,7 @@ const COLOR_FILLABLE = '#22d3ee'; // cyan-400
 // "realised" number distinct from the bid (amber) and the market
 // (orange/violet).
 const COLOR_EFFECTIVE = '#34d399';
+const COLOR_PAYOUT = '#10b981';
 
 /**
  * #93: which series to draw on the Price chart's right Y-axis.
@@ -1333,7 +1334,8 @@ export const PriceChart = memo(function PriceChart({
   // Which extra marker series to render based on right-axis choice.
   const showRewardMarkers =
     rightAxisSeries === 'paid_total_sat' ||
-    rightAxisSeries === 'lifetime_earnings_sat';
+    rightAxisSeries === 'lifetime_earnings_sat' ||
+    rightAxisSeries === 'ocean_unpaid_sat';
   const showPoolBlockMarkers =
     rightAxisSeries === 'ocean_unpaid_sat' ||
     rightAxisSeries === 'lifetime_earnings_sat';
@@ -1555,6 +1557,12 @@ export const PriceChart = memo(function PriceChart({
           {hasRightAxis && rightAxis && (
             <Legend color={rightAxis.stroke} label={rightAxis.axisLabel} />
           )}
+          {rewardEvents.some(
+              (r) =>
+                !r.reorged &&
+                r.detected_at >= chartData.minX &&
+                r.detected_at <= chartData.maxX,
+            ) && <Legend color={COLOR_PAYOUT} label={t`on-chain payout`} dashed />}
           {showEventKinds.length > 0 && <EventLegend kinds={showEventKinds} />}
           {markersHiddenKind != null && markersHiddenCount > 0 && (
             <span
@@ -1951,14 +1959,16 @@ export const PriceChart = memo(function PriceChart({
             onClick={onRewardClick(reward)}
             style={{ cursor: 'pointer' }}
           >
-            <circle
-              cx={cx}
-              cy={cy}
-              r="4.5"
-              fill="#c084fc"
-              stroke="#0f172a"
-              strokeWidth="1.5"
-            />
+            <svg
+              x={cx - 6} y={cy - 6}
+              width="12" height="12" viewBox="0 0 24 24"
+              fill="none" stroke={COLOR_PAYOUT} strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+            >
+              <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT} fillOpacity="0.35" />
+              <path d="M2 9h20" />
+              <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
+            </svg>
             <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
           </g>
         ))}
@@ -2036,6 +2046,43 @@ export const PriceChart = memo(function PriceChart({
                     <path d="M12 22V12" />
                   </svg>
                 )}
+              </g>
+            );
+          })}
+
+        {rewardEvents
+          .filter((r) => !r.reorged && r.detected_at >= dataMinX && r.detected_at <= dataMaxX)
+          .map((r) => {
+            const x = xScale(r.detected_at);
+            return (
+              <g
+                key={`payout-icon-${r.id}`}
+                onMouseEnter={onRewardEnter(r)}
+                onMouseLeave={onRewardLeave}
+                onClick={onRewardClick(r)}
+                style={{ cursor: 'pointer' }}
+              >
+                <line
+                  x1={x} x2={x}
+                  y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
+                  stroke={COLOR_PAYOUT}
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.55"
+                  pointerEvents="none"
+                />
+                <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
+                <svg
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_PAYOUT} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity="0.85"
+                >
+                  <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT} fillOpacity="0.25" />
+                  <path d="M2 9h20" />
+                  <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
+                </svg>
               </g>
             );
           })}
@@ -2248,7 +2295,7 @@ function RewardEventTooltip({
       style={{ left: pos.left, top: pos.top }}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="font-semibold uppercase tracking-wider text-violet-300">
+        <span className="font-semibold uppercase tracking-wider text-emerald-400">
           <Trans>ON-CHAIN PAYOUT</Trans> · #{reward.block_height.toLocaleString(locale)}
         </span>
         {pinned && (
