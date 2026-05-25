@@ -1,12 +1,7 @@
 /**
  * BIP 110 scan card - Status-page diagnostic that fires the
  * `/api/bip110/scan` endpoint and renders the deployment header +
- * signaling block cards.
- *
- * Goal (#95): give the operator a way to verify the BIP 110 yellow-
- * cube marker (#94 / #115) renders correctly against known signaling
- * blocks, since Ocean's recent-blocks window may not contain any
- * signaling blocks at all in early adoption (well under 1% block-rate).
+ * signaling block list. Cards on mobile, table on desktop.
  */
 
 import { Trans } from '@lingui/react/macro';
@@ -18,8 +13,8 @@ import React, { useState } from 'react';
 import { api } from '../lib/api';
 import type { Bip110ScanResponse, Bip110ScanSignalingBlock } from '../lib/api';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
-import { formatAgeMinutes, formatNumber, formatTimestampHuman } from '../lib/format';
-import { useLocale } from '../lib/locale';
+import { formatAgeMinutes, formatNumber } from '../lib/format';
+import { useFormatters, useLocale } from '../lib/locale';
 
 const WINDOWS = [2016, 4032, 8064, 16128, 32256] as const;
 type ScanWindow = (typeof WINDOWS)[number];
@@ -36,21 +31,66 @@ function formatSize(bytes: number): string {
   return `${bytes} B`;
 }
 
-function truncateHash(hash: string): string {
-  if (hash.length <= 16) return hash;
-  return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
+const POOL_COLORS = [
+  'bg-amber-600', 'bg-emerald-600', 'bg-sky-600', 'bg-violet-600',
+  'bg-rose-600', 'bg-teal-600', 'bg-orange-600', 'bg-indigo-600',
+];
+
+function poolColor(tag: string): string {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) | 0;
+  return POOL_COLORS[Math.abs(h) % POOL_COLORS.length]!;
 }
+
+function PoolBadge({ tag }: { tag: string }): React.JSX.Element {
+  const initial = tag.replace(/^[^a-zA-Z0-9]*/, '').charAt(0).toUpperCase() || '?';
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-slate-300 truncate max-w-[180px]" title={tag}>
+      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${poolColor(tag)}`}>
+        {initial}
+      </span>
+      <span className="truncate">{tag}</span>
+    </span>
+  );
+}
+
+function ExplorerLink({
+  hash,
+  height,
+  explorerTemplate,
+}: {
+  hash: string;
+  height: number;
+  explorerTemplate: string;
+}): React.JSX.Element {
+  return (
+    <a
+      href={applyExplorerTemplate(explorerTemplate, { block_hash: hash, height })}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs text-amber-400 hover:underline"
+    >
+      <Trans>open in block explorer</Trans>{' →'}
+    </a>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mobile: card layout
+// ---------------------------------------------------------------------------
 
 function SignalingBlockCard({
   block,
   tipHeight,
   explorerTemplate,
   intlLocale,
+  fmtTimestamp,
 }: {
   block: Bip110ScanSignalingBlock;
   tipHeight: number | null;
   explorerTemplate: string;
   intlLocale: string | undefined;
+  fmtTimestamp: (ms: number | null | undefined) => string;
 }): React.JSX.Element {
   const confirmations = tipHeight !== null ? tipHeight - block.height + 1 : null;
   const totalRewardSat =
@@ -60,32 +100,25 @@ function SignalingBlockCard({
 
   return (
     <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
-      {/* Header: height + pool tag */}
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-lg font-semibold text-amber-400 font-mono">
           {formatNumber(block.height, {}, intlLocale)}
         </span>
-        {block.pool_tag && (
-          <span className="text-xs text-slate-400 truncate max-w-[160px]" title={block.pool_tag}>
-            {block.pool_tag}
-          </span>
-        )}
+        {block.pool_tag && <PoolBadge tag={block.pool_tag} />}
       </div>
 
-      {/* Timestamp: absolute + relative */}
       <div className="mt-1.5 text-xs text-slate-400">
-        <span>{formatTimestampHuman(block.time_ms)}</span>
+        <span>{fmtTimestamp(block.time_ms)}</span>
         <span className="text-slate-600 mx-1.5">-</span>
         <span>{formatAgeMinutes(block.time_ms)}</span>
       </div>
 
-      {/* Stats grid */}
-      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-mono">
+      <div className="mt-3 space-y-1 text-xs font-mono">
         {totalRewardSat !== null && (
-          <DetailRow label={t`reward`} value={`${formatBtc(totalRewardSat)} BTC`} />
+          <DetailRow label={t`reward`} value={`₿ ${formatBtc(totalRewardSat)}`} />
         )}
         {block.total_fees_sat !== null && (
-          <DetailRow label={t`fees`} value={`${formatBtc(block.total_fees_sat)} BTC`} />
+          <DetailRow label={t`fees`} value={`₿ ${formatBtc(block.total_fees_sat)}`} />
         )}
         {block.n_tx !== null && (
           <DetailRow label={t`txs`} value={formatNumber(block.n_tx, {}, intlLocale)} />
@@ -98,20 +131,8 @@ function SignalingBlockCard({
         )}
       </div>
 
-      {/* Block hash link */}
       <div className="mt-3 pt-2 border-t border-slate-800">
-        <a
-          href={applyExplorerTemplate(explorerTemplate, {
-            block_hash: block.hash,
-            height: block.height,
-          })}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-amber-400 hover:underline font-mono"
-          title={block.hash}
-        >
-          {truncateHash(block.hash)}
-        </a>
+        <ExplorerLink hash={block.hash} height={block.height} explorerTemplate={explorerTemplate} />
       </div>
     </div>
   );
@@ -126,10 +147,87 @@ function DetailRow({ label, value }: { label: string; value: string }): React.JS
   );
 }
 
+// ---------------------------------------------------------------------------
+// Desktop: table layout
+// ---------------------------------------------------------------------------
+
+function SignalingBlockTable({
+  blocks,
+  tipHeight,
+  explorerTemplate,
+  intlLocale,
+  fmtTimestamp,
+}: {
+  blocks: Bip110ScanSignalingBlock[];
+  tipHeight: number | null;
+  explorerTemplate: string;
+  intlLocale: string | undefined;
+  fmtTimestamp: (ms: number | null | undefined) => string;
+}): React.JSX.Element {
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <table className="w-full text-xs font-mono">
+        <thead>
+          <tr className="text-slate-500 text-left">
+            <th className="pb-2 pr-4 font-normal">{t`height`}</th>
+            <th className="pb-2 pr-4 font-normal">{t`pool`}</th>
+            <th className="pb-2 pr-4 font-normal">{t`found`}</th>
+            <th className="pb-2 pr-4 font-normal text-right">{t`reward`}</th>
+            <th className="pb-2 pr-4 font-normal text-right">{t`fees`}</th>
+            <th className="pb-2 pr-4 font-normal text-right">{t`txs`}</th>
+            <th className="pb-2 pr-4 font-normal text-right">{t`size`}</th>
+            <th className="pb-2 font-normal"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {blocks.map((b) => {
+            const totalRewardSat =
+              b.total_fees_sat !== null ? b.subsidy_sat + b.total_fees_sat : null;
+            return (
+              <tr key={b.hash} className="text-slate-300 border-t border-slate-800">
+                <td className="py-2 pr-4 text-amber-400 font-semibold">
+                  {formatNumber(b.height, {}, intlLocale)}
+                </td>
+                <td className="py-2 pr-4">
+                  {b.pool_tag ? <PoolBadge tag={b.pool_tag} /> : <span className="text-slate-600">-</span>}
+                </td>
+                <td className="py-2 pr-4">
+                  <div>{fmtTimestamp(b.time_ms)}</div>
+                  <div className="text-slate-500">{formatAgeMinutes(b.time_ms)}</div>
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  {totalRewardSat !== null ? `₿ ${formatBtc(totalRewardSat)}` : '-'}
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  {b.total_fees_sat !== null ? `₿ ${formatBtc(b.total_fees_sat)}` : '-'}
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  {b.n_tx !== null ? formatNumber(b.n_tx, {}, intlLocale) : '-'}
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  {b.size_bytes !== null ? formatSize(b.size_bytes) : '-'}
+                </td>
+                <td className="py-2 text-right">
+                  <ExplorerLink hash={b.hash} height={b.height} explorerTemplate={explorerTemplate} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main card
+// ---------------------------------------------------------------------------
+
 export function Bip110ScanCard(): React.JSX.Element {
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
+  const fmt = useFormatters();
 
   const [window, setWindow] = useState<ScanWindow>(2016);
 
@@ -261,17 +359,31 @@ export function Bip110ScanCard(): React.JSX.Element {
               <Trans>No signaling blocks in this window.</Trans>
             </p>
           ) : (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {sortedBlocks.map((b) => (
-                <SignalingBlockCard
-                  key={b.hash}
-                  block={b}
+            <>
+              {/* Desktop: table */}
+              <div className="hidden lg:block">
+                <SignalingBlockTable
+                  blocks={sortedBlocks}
                   tipHeight={data.tip_height}
                   explorerTemplate={explorerTemplate}
                   intlLocale={intlLocale}
+                  fmtTimestamp={fmt.timestamp}
                 />
-              ))}
-            </div>
+              </div>
+              {/* Mobile: cards */}
+              <div className="lg:hidden mt-4 grid gap-3 sm:grid-cols-2">
+                {sortedBlocks.map((b) => (
+                  <SignalingBlockCard
+                    key={b.hash}
+                    block={b}
+                    tipHeight={data.tip_height}
+                    explorerTemplate={explorerTemplate}
+                    intlLocale={intlLocale}
+                    fmtTimestamp={fmt.timestamp}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </>
       )}

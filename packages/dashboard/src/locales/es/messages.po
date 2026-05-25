@@ -1446,6 +1446,7 @@ msgstr "Hashrate mínimo"
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 msgstr "Formato: <dirección-btc>.<etiqueta>. Ocean TIDES acredita shares por el prefijo de la dirección - cualquier otra cosa envía las shares a nadie."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "encontrados"
@@ -1542,8 +1543,8 @@ msgid "headers"
 msgstr "encabezados"
 
 #: src/components/Bip110ScanCard.tsx
-#~ msgid "height"
-#~ msgstr "altura"
+msgid "height"
+msgstr "altura"
 
 #: src/pages/Setup.tsx
 msgid "Hide"
@@ -2215,6 +2216,10 @@ msgstr "abierto · {0}"
 msgid "Open ({0})"
 msgstr "Abiertos ({0})"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "open in block explorer"
+msgstr "abrir en block explorer"
+
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "open in block explorer →"
@@ -2404,6 +2409,7 @@ msgstr "Consultado"
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 msgstr "Consultado cada 5 minutos. El daemon nunca toma decisiones basadas en el precio fiat - esto es puramente una conveniencia de visualización. Pon \"Desactivado\" si quieres un panel solo en sats."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "pool"
 msgstr "pool"

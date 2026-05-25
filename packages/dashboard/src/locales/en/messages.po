@@ -1446,6 +1446,7 @@ msgstr "Floor hashrate"
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 msgstr "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "found"
@@ -1542,8 +1543,8 @@ msgid "headers"
 msgstr "headers"
 
 #: src/components/Bip110ScanCard.tsx
-#~ msgid "height"
-#~ msgstr "height"
+msgid "height"
+msgstr "height"
 
 #: src/pages/Setup.tsx
 msgid "Hide"
@@ -2215,6 +2216,10 @@ msgstr "open · {0}"
 msgid "Open ({0})"
 msgstr "Open ({0})"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "open in block explorer"
+msgstr "open in block explorer"
+
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "open in block explorer →"
@@ -2404,6 +2409,7 @@ msgstr "Polled"
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 msgstr "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "pool"
 msgstr "pool"
