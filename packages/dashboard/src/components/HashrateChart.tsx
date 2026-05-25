@@ -1052,7 +1052,7 @@ export const HashrateChart = memo(function HashrateChart({
         if (luckAfter === null) continue;
         out.push({
           event: { kind, t, block, luckBefore, luckAfter, windowMs },
-          cx: xScale(t),
+          cx: xScale(after.tick_at),
           cy: shareLogYScale(luckAfter),
         });
       }

@@ -1462,6 +1462,7 @@ export const PriceChart = memo(function PriceChart({
         cursor += 1;
       }
       let v: number | null = null;
+      let steppedIdx = -1;
       if (cursor < points.length) {
         const baseline = cursor > 0 ? rightAxis.values[cursor - 1] : null;
         const baselineIsNum =
@@ -1474,6 +1475,7 @@ export const PriceChart = memo(function PriceChart({
             if (typeof c !== 'number' || !Number.isFinite(c)) continue;
             if (c !== baseline) {
               stepped = c;
+              steppedIdx = i;
               break;
             }
           }
@@ -1488,7 +1490,8 @@ export const PriceChart = memo(function PriceChart({
         v = lastNonNull;
       }
       if (v === null) continue;
-      out.push({ block: b, cx: xScale(b.timestamp_ms), cy: rightYScale(v) });
+      const dotX = steppedIdx >= 0 ? points[steppedIdx]!.tick_at : b.timestamp_ms;
+      out.push({ block: b, cx: xScale(dotX), cy: rightYScale(v) });
     }
     return out;
   }, [chartData, showPoolBlockMarkers, ourBlocks, points]);

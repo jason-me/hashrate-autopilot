@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-25
+
+### `[Fix]` Pool-block step marker dots misaligned with actual curve step (#209)
+
+Pool-luck step markers (HashrateChart) and pool-block dots on the unpaid earnings curve (PriceChart) were positioned at the block's on-chain timestamp, but the daemon reflects the value change a few ticks later. The dot sat at the old value while the line stepped up to the right. Both charts now place the dot at the tick where the value actually changes, so the marker sits exactly on the curve's step.
+
 ## 2026-05-24
 
 ### `[UI]` BIP 110 scan: card layout with rich block data
