@@ -1,18 +1,36 @@
 # Changelog
 
+## 2026-05-26
+
+### `[Release]` v1.9.0
+
+On-chain payout gems, Braiins deposit fuel markers with balance step-up connectors, BIP 110 activation progress bar with MASF/UASF tooltip, Braiins balance right-axis series, pool-probe error exposure, rich BIP 110 scan cards, and chart viewport/axis fixes. New migrations 0095-0098.
+
+### `[UI]` Deposit markers and connectors in purple (#211)
+
+Deposit fuel icons changed from amber to purple to match the Braiins balance line. When the right axis shows Braiins balance, a purple dot appears on the balance line at the step-up caused by each deposit, with a dotted connector line back to the fuel icon. Hovering either the dot or the connector opens the deposit tooltip.
+
+### `[UI]` BIP 110 activation progress bar
+
+The BIP 110 scan card now includes an inline progress bar showing the current signaling ratio against the 95% activation threshold. A tooltip explains the two-phase activation path: the current MASF (miner-activated soft fork) phase where miners signal readiness via version bits, and the UASF (user-activated soft fork) enforcement that activates unconditionally at block height 965,664 (~September 2026).
+
+### `[UI]` Pool luck step-down tooltip shows from/to values
+
+When a pool block ages out of the trailing luck window, the step-down tooltip now shows the previous and new luck values (e.g. "went from 1.42x to 1.18x"), matching the step-up format used when new blocks arrive.
+
 ## 2026-05-25
 
 ### `[Feature]` Pool-probe error in dashboard tooltip and daemon log (#212)
 
 When the stratum probe fails, the dashboard now shows the actual error (e.g. "timeout after 2500ms", "connect ECONNREFUSED") as a tooltip on the "stratum DOWN" badge. When the probe succeeds, the tooltip shows latency in ms. Probe failures are also logged to the daemon console at warn level for post-mortem analysis.
 
-### `[UI]` Total balance right-axis series on the Price chart (#211)
+### `[UI]` Braiins balance right-axis series on the Price chart (#211)
 
-New "total balance" option in the Price chart's right-axis dropdown plots the Braiins total wallet balance (available + blocked) over time. The total decreases as bids consume funds and jumps on deposits, giving a complete visual timeline of funding activity. Requires new `total_balance_sat` column in `tick_metrics` (migration 0095); historical ticks show null.
+New "Braiins balance" option in the Price chart's right-axis dropdown plots the Braiins total wallet balance (available + blocked) over time as a purple line. The total decreases as bids consume funds and jumps on deposits, giving a complete visual timeline of funding activity. Zero-anchored right axis so the absolute level is visible at a glance. Requires new `total_balance_sat` column in `tick_metrics` (migration 0095); historical ticks show null.
 
 ### `[Feature]` Deposit markers on the Price chart (#211)
 
-Credited Braiins deposits now appear as amber fuel icons at the top of the Price chart with dashed vertical lines, mirroring the emerald payout gems. Clicking a fuel icon opens a tooltip with the deposit amount, truncated tx_id, receiving address, timestamp, and a block-explorer link. New `/api/deposits` endpoint serves credited deposits from the `braiins_deposits` table. Only deposits that reached `DEPOSIT_STATUS_CREDITED` are shown.
+Credited Braiins deposits now appear as purple fuel icons at the top of the Price chart with dashed vertical lines, mirroring the emerald payout gems. Clicking a fuel icon opens a tooltip with the deposit amount, truncated tx_id, receiving address, timestamp, and a block-explorer link. New `/api/deposits` endpoint serves credited deposits from the `braiins_deposits` table. Only deposits that reached `DEPOSIT_STATUS_CREDITED` are shown.
 
 ### `[Fix]` Deposit-detected notification never fires (#210)
 

@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.8.5"
+version: "1.9.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,15 +51,24 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
-  v1.8.5 - "Bitcoin Knots" rebrand + wizard polish.
+  v1.9.0 - chart overlay maturity pass: payout gems, deposit markers, BIP 110 progress bar.
 
-  CHANGES
-  - Renamed every "Bitcoin Core" reference to "Bitcoin Knots" across the entire app - dashboard labels, Config page, locale catalogs (EN/NL/ES), docs, and Umbrel manifest.
-  - Pool URL default is now a real editable value (stratum+tcp://your-public-host:23334) instead of a disappearing HTML placeholder.
-  - Config page Electrs host hint now mentions electrs_electrs_1 as the typical Umbrel hostname.
-  - Pool URL wizard hint simplified with DDNS mention.
+  NEW
+  - On-chain payout gem markers (emerald) on the Price chart with pinnable tooltips linking to your block explorer.
+  - Braiins deposit fuel markers (purple) on the Price chart. When the right axis shows Braiins balance, a purple dot appears on the balance line at each step-up with a dotted connector back to the fuel icon.
+  - Braiins balance right-axis series on the Price chart - total wallet balance (available + blocked) as a zero-anchored purple line.
+  - BIP 110 activation progress bar on the scan card with a tooltip explaining the MASF (current miner signaling phase) and UASF (block 965,664, ~September 2026) activation path.
+  - BIP 110 scan cards now show pool name, block reward, fees, size, and confirmations.
+  - Pool-probe error and latency shown as tooltip on the stratum reachability badge.
 
-  Safe to upgrade from any 1.8.x release.
+  FIXES
+  - Deposit-detected notification now fires correctly from the on-chain endpoint.
+  - Pool-block step markers aligned with the actual curve step, with dotted connector when offset.
+  - Right-axis Y-domain scoped to visible viewport (no more inflated scale from off-screen data).
+  - Pool luck step-down tooltip shows from/to values (matching step-up format).
+  - Solo fleet series anchored at zero when all devices are offline.
+
+  New migrations 0095-0098; safe to upgrade from any 1.8.x release.
 
   v1.7.2 - solo-miner scan reliability.
 
