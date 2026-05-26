@@ -1,17 +1,12 @@
 /**
- * Repository for the `braiins_deposits` table (#130 - DEAD WEIGHT
- * post-#132).
+ * Repository for the `braiins_deposits` table (#130, revived #210).
  *
- * The on-chain-transaction polling design that this table backed was
- * retired in #132 - the Braiins endpoint produced zero rows in
- * practice and the per-tick `tick_metrics.braiins_total_deposited_sat`
- * delta turned out to be a far simpler and more reliable signal. No
- * code in the daemon writes or reads this table any longer; the
- * migration (0080) and this repo are kept in tree for schema
- * continuity, mirroring the legacy-column precedent
- * (`hibernate_on_expensive_market` and friends). A future cleanup
- * commit could drop the table via DROP TABLE migration if it ever
- * matters; for now the cost of leaving it is one empty SQLite table.
+ * Written by `BraiinsDepositWatcherService` which polls the Braiins
+ * on-chain transaction endpoint every 60s. Each row tracks one
+ * deposit across its lifecycle (detected -> credited -> optionally
+ * returned). The `notified_*` flags ensure each notification fires
+ * exactly once. The `/api/deposits` route reads credited rows for
+ * the Price chart's deposit markers (#211).
  */
 
 import type { Kysely } from 'kysely';

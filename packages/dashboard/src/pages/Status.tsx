@@ -67,6 +67,7 @@ const EMPTY_METRIC_POINTS: readonly never[] = Object.freeze([]) as readonly neve
 const EMPTY_BID_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_REWARD_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_OUR_BLOCKS: readonly never[] = Object.freeze([]) as readonly never[];
+const EMPTY_DEPOSITS: readonly never[] = Object.freeze([]) as readonly never[];
 
 // #93: per-chart secondary Y-axis selection, persisted per-browser.
 const HASHRATE_RIGHT_AXIS_KEY = 'braiins.hashrateRightAxis';
@@ -253,6 +254,12 @@ export function Status() {
   const rewardEventsQuery = useQuery({
     queryKey: ['reward-events'],
     queryFn: () => api.rewardEvents(500),
+    refetchInterval: 60_000,
+  });
+
+  const depositsQuery = useQuery({
+    queryKey: ['deposits'],
+    queryFn: () => api.deposits(),
     refetchInterval: 60_000,
   });
 
@@ -560,6 +567,7 @@ export function Status() {
           rightAxisSeries={priceRightAxis}
           soloSeries={soloSeries}
           rewardEvents={visibleRewardEvents}
+          deposits={depositsQuery.data?.deposits ?? EMPTY_DEPOSITS}
           ourBlocks={visibleOurBlocks}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}

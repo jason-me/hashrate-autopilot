@@ -306,6 +306,10 @@ msgstr "Apparaat toevoegen"
 msgid "adding…"
 msgstr "bezig met toevoegen…"
 
+#: src/components/PriceChart.tsx
+msgid "address"
+msgstr "adres"
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
@@ -588,10 +592,6 @@ msgstr "Bitcoin uitbetaaladres"
 #: src/components/Bip110ScanCard.tsx
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC is niet geconfigureerd in de daemon. Stel BHA_BITCOIND_RPC_URL / _USER / _PASSWORD in of vul de corresponderende velden in op de Config-pagina."
-
-#: src/components/Bip110ScanCard.tsx
-#~ msgid "block"
-#~ msgstr "blok"
 
 #. placeholder {0}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
@@ -1136,6 +1136,10 @@ msgstr "eenheid"
 #: src/components/Bip110ScanCard.tsx
 msgid "deployment"
 msgstr "uitrol"
+
+#: src/components/PriceChart.tsx
+msgid "DEPOSIT"
+msgstr "STORTING"
 
 #: src/components/SoloMinersCard.tsx
 msgid "Device"
@@ -2918,10 +2922,6 @@ msgid "Signaling BIP 110"
 msgstr "Signaleert BIP 110"
 
 #: src/components/HashrateChart.tsx
-#~ msgid "Signaling BIP 110 (Reduced Data soft fork)"
-#~ msgstr "Signaleert BIP 110 (Reduced Data softfork)"
-
-#: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Signaleert BIP 110 (Reduced Data Temporary Soft Fork)"
 
@@ -3205,6 +3205,10 @@ msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers
 msgid "Transaction URL template"
 msgstr "Transactie-URL-sjabloon"
 
+#: src/components/PriceChart.tsx
+msgid "tx"
+msgstr "tx"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "txs"
 msgstr "txs"
@@ -3313,10 +3317,6 @@ msgstr "UTXO's op het geconfigureerde uitbetaaladres. Gelezen via Electrs (voork
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-
-#: src/components/Bip110ScanCard.tsx
-#~ msgid "version"
-#~ msgstr "versie"
 
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"

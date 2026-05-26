@@ -47,6 +47,7 @@ import { registerBlockFoundSoundRoute } from './routes/block-found-sound.js';
 import { registerBtcPriceRoute } from './routes/btc-price.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
+import { registerDepositsRoute } from './routes/deposits.js';
 import { registerFinanceRoute } from './routes/finance.js';
 import { registerMetricsRoute } from './routes/metrics.js';
 import { registerNotificationsTestRoute } from './routes/notifications-test.js';
@@ -222,6 +223,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerStorageEstimateRoute(app, { db: deps.db });
   await registerRewardEventsRoute(app, { db: deps.db });
+  await registerDepositsRoute(app, { db: deps.db });
   await registerBlockFoundSoundRoute(app, { db: deps.db });
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,

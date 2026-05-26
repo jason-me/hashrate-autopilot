@@ -2,6 +2,10 @@
 
 ## 2026-05-25
 
+### `[Feature]` Deposit markers on the Price chart (#211)
+
+Credited Braiins deposits now appear as amber fuel icons at the top of the Price chart with dashed vertical lines, mirroring the emerald payout gems. Clicking a fuel icon opens a tooltip with the deposit amount, truncated tx_id, receiving address, timestamp, and a block-explorer link. New `/api/deposits` endpoint serves credited deposits from the `braiins_deposits` table. Only deposits that reached `DEPOSIT_STATUS_CREDITED` are shown.
+
 ### `[Fix]` Deposit-detected notification never fires (#210)
 
 The `braiins_deposit_detected` notification was silently swallowed because the deposit watcher assumed the on-chain endpoint never returns `DEPOSIT_STATUS_DETECTED` entries. Empirical testing confirmed the Braiins API does report this status. The watcher now fires the detected notification directly from the on-chain endpoint poll, and the balance-delta workaround in AlertEvaluator has been retired.

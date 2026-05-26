@@ -29,6 +29,7 @@ import {
   type BidEventView,
   type DecisionDetail,
   type DecisionSummary,
+  type DepositView,
   type MetricPoint,
   type OurBlockMarker,
   type RewardEventView,
@@ -70,6 +71,7 @@ const COLOR_CREATE = '#34d399';
 const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
+const COLOR_DEPOSIT = '#f59e0b';
 
 interface TooltipState {
   event: BidEventView;
@@ -80,6 +82,13 @@ interface TooltipState {
 
 interface RewardTooltipState {
   reward: RewardEventView;
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+
+interface DepositTooltipState {
+  deposit: DepositView;
   x: number;
   y: number;
   pinned: boolean;
@@ -222,6 +231,7 @@ export const PriceChart = memo(function PriceChart({
   historicalPayoutsOffsetSat = 0,
   rightAxisSeries = 'none',
   rewardEvents = [],
+  deposits = [],
   ourBlocks = [],
   blockExplorerTemplate,
   txExplorerTemplate,
@@ -301,6 +311,11 @@ export const PriceChart = memo(function PriceChart({
    */
   rewardEvents?: readonly RewardEventView[];
   /**
+   * Credited Braiins deposits. Renders as amber fuel icons at the
+   * top of the chart with dashed vertical lines (#211).
+   */
+  deposits?: readonly DepositView[];
+  /**
    * Recent Ocean pool blocks (TIDES-credited). Renders as small
    * filled-circle dots on the right-axis line when `rightAxisSeries`
    * is `ocean_unpaid_sat` or `lifetime_earnings_sat`. Reuses the
@@ -350,6 +365,7 @@ export const PriceChart = memo(function PriceChart({
   // + explorer link.
   const [poolBlockTip, setPoolBlockTip] = useState<PoolBlockTooltipState | null>(null);
   const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
+  const [depositTip, setDepositTip] = useState<DepositTooltipState | null>(null);
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
   const [unpaidDropTip, setUnpaidDropTip] = useState<{
     tick_at: number; prev: number; cur: number;
@@ -1284,6 +1300,27 @@ export const PriceChart = memo(function PriceChart({
   );
   const closeRewardTip = useCallback(() => setRewardTip(null), []);
 
+  const onDepositEnter = useCallback(
+    (deposit: DepositView) => (e: React.MouseEvent) => {
+      setDepositTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { deposit, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onDepositLeave = useCallback(() => {
+    setDepositTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onDepositClick = useCallback(
+    (deposit: DepositView) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setDepositTip({ deposit, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeDepositTip = useCallback(() => setDepositTip(null), []);
+
   const onUnpaidDropEnter = useCallback(
     (d: { tick_at: number; prev: number; cur: number }) => (e: React.MouseEvent) => {
       setUnpaidDropTip((prev) => {
@@ -1342,6 +1379,24 @@ export const PriceChart = memo(function PriceChart({
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [rewardTip?.pinned]);
+
+  useEffect(() => {
+    if (!depositTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('price-chart-pinned-deposit-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setDepositTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [depositTip?.pinned]);
 
   useEffect(() => {
     if (!unpaidDropTip?.pinned) return;
@@ -2192,6 +2247,44 @@ export const PriceChart = memo(function PriceChart({
             );
           })}
 
+        {deposits
+          .filter((d) => d.first_seen_at_ms >= dataMinX && d.first_seen_at_ms <= dataMaxX)
+          .map((d) => {
+            const x = xScale(d.first_seen_at_ms);
+            return (
+              <g
+                key={`deposit-icon-${d.tx_id}`}
+                onMouseEnter={onDepositEnter(d)}
+                onMouseLeave={onDepositLeave}
+                onClick={onDepositClick(d)}
+                style={{ cursor: 'pointer' }}
+              >
+                <line
+                  x1={x} x2={x}
+                  y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
+                  stroke={COLOR_DEPOSIT}
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.55"
+                  pointerEvents="none"
+                />
+                <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
+                <svg
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_DEPOSIT} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity="0.85"
+                >
+                  <path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0v-6.998a2 2 0 0 0-.59-1.42L18 5" />
+                  <path d="M14 21V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16" fill={COLOR_DEPOSIT} fillOpacity="0.25" />
+                  <path d="M2 21h13" />
+                  <path d="M3 9h11" />
+                </svg>
+              </g>
+            );
+          })}
+
         {difficultyRetargets
           .filter((r) => r.tick_at >= dataMinX && r.tick_at <= dataMaxX)
           .map((r) => {
@@ -2269,6 +2362,15 @@ export const PriceChart = memo(function PriceChart({
           dateTimeLocale={dateTimeLocale}
           denomination={denomination}
           onClose={closeRewardTip}
+        />
+      )}
+      {depositTip && (
+        <DepositTooltip
+          tip={depositTip}
+          explorerTemplate={txExplorerTemplate ?? ''}
+          locale={intlLocale}
+          denomination={denomination}
+          onClose={closeDepositTip}
         />
       )}
       {unpaidDropTip && (
@@ -2432,6 +2534,129 @@ function RewardEventTooltip({
         <span className="text-slate-500"><Trans>amount</Trans></span>
         <span className="font-mono tabular-nums">{valueText}</span>
       </div>
+
+      {url && (
+        <div className="mt-3 pt-2 border-t border-slate-800">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+          >
+            <Trans>open in block explorer →</Trans>
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DepositTooltip({
+  tip,
+  explorerTemplate,
+  locale,
+  denomination,
+  onClose,
+}: {
+  tip: DepositTooltipState;
+  explorerTemplate: string;
+  locale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const fmt = useFormatters();
+  const { deposit, pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, deposit.tx_id]);
+
+  const url = explorerTemplate
+    ? applyExplorerTemplate(explorerTemplate, { txid: deposit.tx_id })
+    : '';
+  const btc = deposit.amount_sat / 1e8;
+  const valueText =
+    denomination.mode === 'usd' && denomination.btcPrice !== null
+      ? `$${new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(btc * denomination.btcPrice)}`
+      : denomination.mode === 'btc'
+        ? `₿ ${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8,
+          }).format(btc)}`
+        : `${new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(deposit.amount_sat)} sat`;
+
+  const txShort = deposit.tx_id.length > 16
+    ? `${deposit.tx_id.slice(0, 8)}...${deposit.tx_id.slice(-8)}`
+    : deposit.tx_id;
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'price-chart-pinned-deposit-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-amber-400">
+          <Trans>DEPOSIT</Trans>
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">
+        {fmt.timestamp(deposit.first_seen_at_ms)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(deposit.first_seen_at_ms)}</span>
+      </div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.first_seen_at_ms)}</div>
+
+      <div className="mt-2 flex justify-between gap-3 text-slate-300">
+        <span className="text-slate-500"><Trans>amount</Trans></span>
+        <span className="font-mono tabular-nums">{valueText}</span>
+      </div>
+
+      <div className="mt-1 flex justify-between gap-3 text-slate-300">
+        <span className="text-slate-500"><Trans>tx</Trans></span>
+        <span className="font-mono tabular-nums text-slate-400">{txShort}</span>
+      </div>
+
+      {deposit.address && (
+        <div className="mt-1 flex justify-between gap-3 text-slate-300">
+          <span className="text-slate-500"><Trans>address</Trans></span>
+          <span className="font-mono tabular-nums text-slate-400">{deposit.address.slice(0, 12)}...</span>
+        </div>
+      )}
 
       {url && (
         <div className="mt-3 pt-2 border-t border-slate-800">

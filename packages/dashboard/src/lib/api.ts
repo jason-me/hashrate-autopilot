@@ -659,6 +659,10 @@ export const api = {
     request<RewardEventsResponse>(
       `/api/reward-events${limit ? `?limit=${limit}` : ''}`,
     ),
+  deposits: (limit?: number) =>
+    request<DepositsResponse>(
+      `/api/deposits${limit ? `?limit=${limit}` : ''}`,
+    ),
   uploadBlockFoundSound: (dataBase64: string, mime: string, filename: string | null) =>
     request<{ ok: boolean; bytes?: number; mime?: string; filename?: string | null; error?: string }>(
       '/api/config/block-found-sound',
@@ -861,6 +865,17 @@ export interface RewardEventView {
 
 export interface RewardEventsResponse {
   events: RewardEventView[];
+}
+
+export interface DepositView {
+  tx_id: string;
+  amount_sat: number;
+  address: string | null;
+  first_seen_at_ms: number;
+}
+
+export interface DepositsResponse {
+  deposits: DepositView[];
 }
 
 export interface StorageEstimateBucket {

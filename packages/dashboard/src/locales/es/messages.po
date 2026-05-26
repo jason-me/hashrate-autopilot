@@ -306,6 +306,10 @@ msgstr "Anadir dispositivo"
 msgid "adding…"
 msgstr "anadiendo…"
 
+#: src/components/PriceChart.tsx
+msgid "address"
+msgstr "dirección"
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
@@ -588,10 +592,6 @@ msgstr "Dirección de pago Bitcoin"
 #: src/components/Bip110ScanCard.tsx
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC no está configurado en el daemon. Defina BHA_BITCOIND_RPC_URL / _USER / _PASSWORD o complete los campos correspondientes en la página de Configuración."
-
-#: src/components/Bip110ScanCard.tsx
-#~ msgid "block"
-#~ msgstr "bloque"
 
 #. placeholder {0}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
@@ -1136,6 +1136,10 @@ msgstr "denominación"
 #: src/components/Bip110ScanCard.tsx
 msgid "deployment"
 msgstr "despliegue"
+
+#: src/components/PriceChart.tsx
+msgid "DEPOSIT"
+msgstr "DEPÓSITO"
 
 #: src/components/SoloMinersCard.tsx
 msgid "Device"
@@ -2918,10 +2922,6 @@ msgid "Signaling BIP 110"
 msgstr "Señaliza BIP 110"
 
 #: src/components/HashrateChart.tsx
-#~ msgid "Signaling BIP 110 (Reduced Data soft fork)"
-#~ msgstr "Señaliza BIP 110 (soft fork de Reduced Data)"
-
-#: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Senalizando BIP 110 (Reduced Data Temporary Soft Fork)"
 
@@ -3205,6 +3205,10 @@ msgstr "Total de conexiones de workers en Ocean (una dirección puede tener much
 msgid "Transaction URL template"
 msgstr "Plantilla URL de la transacción"
 
+#: src/components/PriceChart.tsx
+msgid "tx"
+msgstr "tx"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "txs"
 msgstr "txs"
@@ -3313,10 +3317,6 @@ msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (prefer
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-
-#: src/components/Bip110ScanCard.tsx
-#~ msgid "version"
-#~ msgstr "versión"
 
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"

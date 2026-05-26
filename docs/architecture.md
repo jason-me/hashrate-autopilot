@@ -129,7 +129,7 @@ hashrate-autopilot/
 │   │       └── routes/             (status, config, decisions, actions, metrics, run-mode,
 │   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
 │   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound, build,
-│   │                                reward-events, alerts, notifications-test, notifications-test-event,
+│   │                                reward-events, deposits, alerts, notifications-test, notifications-test-event,
 │   │                                ddns, ddns-test, datum-test, pool-url-test, stale-urls,
 │   │                                solo-miners, debug-dump)
 │   │
@@ -827,3 +827,4 @@ Remaining work is tracked in GitHub issues.
 | 1.9     | 2026-05-22 | §5 DDL accuracy pass: rewrote `pool_blocks` (height-keyed PK, correct column names), `bid_events` (occurred_at, source, old/new price split, overpay snapshot columns from 0077), `braiins_deposits` (tx_id, integer status, notified_* idempotency flags, address column), `solo_miners` (UNIQUE ip, updated_at), and `solo_miner_samples` (composite PK, 20+ columns from actual migration 0085-0087 including reachable, voltage, current, asic_model, version, stratum_port/user). No code or control-loop shape changes - pure documentation accuracy. |
 | 1.10    | 2026-05-25 | §5 DDL fixes from /check-code audit: `tick_metrics.network_difficulty` type corrected from REAL to INTEGER (matches migration 0053); added missing `paid_total_sat` (0066), `block_found_sound*` (0052/0061) columns; removed dropped `operator_available` from `runtime_state` (0083). No code changes. |
 | 1.11    | 2026-05-25 | §2 repo layout: updated braiins-deposit-watcher.ts annotation - all three deposit events (_detected, _available, _returned) now sourced from the on-chain endpoint poller (#210). Retired the balance-delta workaround in AlertEvaluator. |
+| 1.12    | 2026-05-25 | §2 routes listing: added `deposits` route (#211, `/api/deposits` serves credited Braiins deposits for Price chart markers). |
