@@ -2133,7 +2133,9 @@ function PoolLuckStepTooltip({
       ? t`Block landed - the rolling-${windowLabel} numerator went from ${
           luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
         } to ${luckAfter.toFixed(2)}×.`
-      : t`Block aged out of the rolling-${windowLabel} window - numerator dropped, line stepped down to ${luckAfter.toFixed(2)}×.`;
+      : t`Block aged out of the rolling-${windowLabel} window - numerator went from ${
+          luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
+        } to ${luckAfter.toFixed(2)}×.`;
 
   return (
     <div

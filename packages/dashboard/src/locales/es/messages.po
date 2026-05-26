@@ -600,10 +600,11 @@ msgstr "Dirección de pago Bitcoin"
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC no está configurado en el daemon. Defina BHA_BITCOIND_RPC_URL / _USER / _PASSWORD o complete los campos correspondientes en la página de Configuración."
 
-#. placeholder {0}: luckAfter.toFixed(2)
+#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
+#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
-msgstr "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
+msgid "Block aged out of the rolling-{windowLabel} window - numerator went from {0} to {1}×."
+msgstr "Bloque salio de la ventana rodante de {windowLabel} - el numerador fue de {0} a {1}×."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
