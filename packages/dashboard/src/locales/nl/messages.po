@@ -266,6 +266,11 @@ msgstr "Bevestigd en opgelost ({0})"
 msgid "action mode blocks this"
 msgstr "actie-modus blokkeert dit"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "activation"
+msgstr "activering"
+
+#: src/components/Bip110ScanCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "active"
 msgstr "actief"
@@ -343,6 +348,10 @@ msgstr "Altijd live (voor vertrouwde installaties)"
 #: src/components/PriceChart.tsx
 msgid "amount"
 msgstr "bedrag"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "and activates after one more period."
+msgstr "en activeert na nog een periode."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -560,6 +569,10 @@ msgstr "BIP 110 scan"
 msgid "BIP 110 SIGNAL"
 msgstr "BIP 110-SIGNAAL"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "BIP 9 activation requires miners to signal support"
+msgstr "BIP 9-activering vereist dat miners ondersteuning signaleren"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
 msgstr "Bitcoin Knots (bitcoind RPC)"
@@ -633,6 +646,10 @@ msgstr "geblokkeerd - update-misbruik gedetecteerd"
 msgid "blocks"
 msgstr "blokken"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "blocks into the current retarget period"
+msgstr "blokken in de huidige retarget-periode"
+
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
 msgstr "Blokken die Ocean in de laatste 24u vond. De \"X,XX× verwacht\"-vermenigvuldiger vergelijkt waargenomen met Poisson-verwacht. Pool-hashrate / netwerk-difficulty momenteel niet beschikbaar; tooltip toont het live aandeel-% zodra Ocean-statistieken weer bereikbaar zijn."
@@ -659,6 +676,10 @@ msgstr "Blokken die Ocean in de laatste 7d vond, dezelfde waargenomen-vs-Poisson
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of {shareStr}, the 7d expectation is ~{0} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 msgstr "Blokken die Ocean in de laatste 7d vond. Dezelfde waargenomen-vs-Poisson-verwachte verhouding als de 24u-rij, met een groter venster: bij Ocean's huidige aandeel van {shareStr} is de 7d-verwachting ~{0} blokken. 7d strijkt de korte-termijn Poisson-variantie glad: aanhoudend <0,70× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "blocks remaining in this period"
+msgstr "blokken resterend in deze periode"
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
@@ -967,6 +988,10 @@ msgstr "aangemaakt"
 #: src/pages/Config.tsx
 msgid "Credential (DDNS Key password / token)"
 msgstr "Credential (DDNS Key wachtwoord / token)"
+
+#: src/components/PriceChart.tsx
+msgid "credited"
+msgstr "gecrediteerd"
 
 #: src/pages/Status.tsx
 msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
@@ -1612,6 +1637,10 @@ msgstr "belangrijk"
 msgid "IMPORTANT"
 msgstr "BELANGRIJK"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "in their block headers. Once the threshold is met"
+msgstr "in hun block headers. Zodra de drempel is bereikt"
+
 #: src/pages/Config.tsx
 msgid "Include historical Ocean payouts in lifetime earnings"
 msgstr "Tel historische Ocean-uitbetalingen mee in totale inkomsten"
@@ -1771,6 +1800,10 @@ msgstr "laden…"
 msgid "Loading…"
 msgstr "Laden…"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "locked in"
+msgstr "vergrendeld"
+
 #: src/pages/Config.tsx
 msgid "Log retention"
 msgstr "Logbewaring"
@@ -1915,10 +1948,6 @@ msgstr "Moet bereikbaar zijn vanaf het publieke internet (Braiins maakt er verbi
 #: src/pages/Setup.tsx
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "needed"
-msgstr "nodig"
 
 #: src/pages/Status.tsx
 msgid "net"
@@ -2929,6 +2958,10 @@ msgstr "Signaleert BIP 110"
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Signaleert BIP 110 (Reduced Data Temporary Soft Fork)"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "signaling blocks in this period"
+msgstr "signalerende blokken in deze periode"
+
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "bezig met aanmelden…"
@@ -3428,6 +3461,10 @@ msgstr "De lokale cache van afgesloten biedingen wissen en bij de volgende refre
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
 msgstr "Wis de lokale cache van afgesloten biedingen en pagineer bij de volgende refresh elk bod opnieuw vanaf Braiins. Gebruik als het 'uitgegeven (hele account)' bedrag verkeerd lijkt."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "within a retarget period, the softfork locks in"
+msgstr "binnen een retarget-periode, wordt de softfork vergrendeld"
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx

@@ -2267,11 +2267,11 @@ export const PriceChart = memo(function PriceChart({
 
         {deposits
           .filter((d) => {
-            const t = d.credited_at_ms ?? d.tx_timestamp_ms ?? d.first_seen_at_ms;
+            const t = d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms;
             return t >= dataMinX && t <= dataMaxX;
           })
           .map((d) => {
-            const x = xScale(d.credited_at_ms ?? d.tx_timestamp_ms ?? d.first_seen_at_ms);
+            const x = xScale(d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms);
             return (
               <g
                 key={`deposit-icon-${d.tx_id}`}
@@ -2657,13 +2657,13 @@ function DepositTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {fmt.timestamp(deposit.credited_at_ms ?? deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}
-        <span className="text-slate-500 ml-2">· {formatAgeMinutes(deposit.credited_at_ms ?? deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}</span>
+        {fmt.timestamp(deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms)}</span>
       </div>
-      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.credited_at_ms ?? deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}</div>
-      {deposit.tx_timestamp_ms && deposit.credited_at_ms && deposit.tx_timestamp_ms !== deposit.credited_at_ms && (
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms)}</div>
+      {deposit.credited_at_ms && deposit.tx_timestamp_ms && deposit.credited_at_ms !== deposit.tx_timestamp_ms && (
         <div className="text-slate-600 text-[10px]">
-          <Trans>tx</Trans>: {formatTimestampUtc(deposit.tx_timestamp_ms)}
+          <Trans>credited</Trans>: {formatTimestampUtc(deposit.credited_at_ms)}
         </div>
       )}
 

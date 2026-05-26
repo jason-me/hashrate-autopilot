@@ -11,7 +11,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 
 import { api } from '../lib/api';
-import type { Bip110ScanResponse, Bip110ScanSignalingBlock } from '../lib/api';
+import type { Bip110ScanDeployment, Bip110ScanResponse, Bip110ScanSignalingBlock } from '../lib/api';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { formatAgeMinutes, formatNumber } from '../lib/format';
 import { useFormatters, useLocale } from '../lib/locale';
@@ -341,16 +341,7 @@ export function Bip110ScanCard(): React.JSX.Element {
             {data.deployment ? (
               <>
                 <Divider />
-                {data.deployment.statistics ? (
-                  <span className="text-slate-200 text-xs">
-                    {formatNumber(data.deployment.statistics.count, {}, intlLocale)}{' '}
-                    <Trans>of</Trans>{' '}
-                    {formatNumber(data.deployment.statistics.threshold, {}, intlLocale)}{' '}
-                    <Trans>needed</Trans>
-                  </span>
-                ) : (
-                  <span className="text-slate-200">{data.deployment.status ?? '-'}</span>
-                )}
+                <DeploymentProgressBar deployment={data.deployment} intlLocale={intlLocale} />
               </>
             ) : (
               <>
@@ -400,6 +391,56 @@ export function Bip110ScanCard(): React.JSX.Element {
         </>
       )}
     </section>
+  );
+}
+
+function DeploymentProgressBar({
+  deployment,
+  intlLocale,
+}: {
+  deployment: Bip110ScanDeployment;
+  intlLocale: string | undefined;
+}): React.JSX.Element {
+  const stats = deployment.statistics;
+  if (!stats) {
+    return (
+      <span className="text-slate-200 text-xs">{deployment.status ?? '-'}</span>
+    );
+  }
+
+  const pct = Math.min((stats.count / stats.threshold) * 100, 100);
+  const remaining = Math.max(stats.period - stats.elapsed, 0);
+  const statusLabel =
+    deployment.status === 'locked_in' ? t`locked in`
+    : deployment.status === 'active' ? t`active`
+    : t`signaling`;
+
+  const tooltip = [
+    `${t`activation`}: ${statusLabel}`,
+    `${formatNumber(stats.count, {}, intlLocale)} / ${formatNumber(stats.threshold, {}, intlLocale)} ${t`signaling blocks in this period`}`,
+    `${formatNumber(stats.elapsed, {}, intlLocale)} / ${formatNumber(stats.period, {}, intlLocale)} ${t`blocks into the current retarget period`}`,
+    `${formatNumber(remaining, {}, intlLocale)} ${t`blocks remaining in this period`}`,
+    '',
+    t`BIP 9 activation requires miners to signal support`,
+    t`in their block headers. Once the threshold is met`,
+    t`within a retarget period, the softfork locks in`,
+    t`and activates after one more period.`,
+  ].join('\n');
+
+  return (
+    <div className="flex items-center gap-2 group relative" title={tooltip}>
+      <div className="w-24 h-2 rounded-full bg-slate-700 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-amber-400 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-slate-200 text-xs">
+        {formatNumber(stats.count, {}, intlLocale)}{' '}
+        <Trans>of</Trans>{' '}
+        {formatNumber(stats.threshold, {}, intlLocale)}
+      </span>
+    </div>
   );
 }
 
