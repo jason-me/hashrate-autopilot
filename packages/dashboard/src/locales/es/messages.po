@@ -267,10 +267,6 @@ msgid "action mode blocks this"
 msgstr "el modo de acción bloquea esto"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "activation"
-msgstr "activacion"
-
-#: src/components/Bip110ScanCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "active"
 msgstr "activo"
@@ -348,10 +344,6 @@ msgstr "Siempre live (para despliegues de confianza)"
 #: src/components/PriceChart.tsx
 msgid "amount"
 msgstr "monto"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "and activates after one more period."
-msgstr "y se activa despues de un periodo mas."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -562,16 +554,16 @@ msgid "Bids"
 msgstr "Ofertas"
 
 #: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
+msgstr "La activacion de BIP 110 requiere que los mineros senalicen soporte en sus encabezados de bloque. Una vez alcanzado el umbral dentro de un periodo de retarget (2.016 bloques), el softfork se bloquea y se activa despues de un periodo mas."
+
+#: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
 msgstr "Escaneo BIP 110"
 
 #: src/components/HashrateChart.tsx
 msgid "BIP 110 SIGNAL"
 msgstr "SEÑAL BIP 110"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "BIP 9 activation requires miners to signal support"
-msgstr "La activacion BIP 9 requiere que los mineros senalicen soporte"
 
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
@@ -990,8 +982,8 @@ msgid "Credential (DDNS Key password / token)"
 msgstr "Credencial (contraseña / token del DDNS Key)"
 
 #: src/components/PriceChart.tsx
-msgid "credited"
-msgstr "acreditado"
+msgid "credited on Braiins"
+msgstr "acreditado en Braiins"
 
 #: src/pages/Status.tsx
 msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
@@ -1637,10 +1629,6 @@ msgstr "importante"
 msgid "IMPORTANT"
 msgstr "IMPORTANTE"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "in their block headers. Once the threshold is met"
-msgstr "en sus encabezados de bloque. Una vez alcanzado el umbral"
-
 #: src/pages/Config.tsx
 msgid "Include historical Ocean payouts in lifetime earnings"
 msgstr "Incluir pagos históricos de Ocean en las ganancias totales"
@@ -1827,6 +1815,10 @@ msgstr "marcar todo como visto ({unackedCount})"
 #: src/pages/Alerts.tsx
 msgid "mark as seen"
 msgstr "marcar como visto"
+
+#: src/components/PriceChart.tsx
+msgid "Marker at tx time. Balance updates after Braiins confirms the deposit."
+msgstr "Marcador en tiempo de transaccion. El saldo se actualiza despues de que Braiins confirme el deposito."
 
 #: src/components/PriceChart.tsx
 msgid "Markers were hidden because the combined count (bid events + pool blocks + reward events) exceeded the configured chart-marker cap. Adjust the cap on Config → Display & Logging."
@@ -3055,6 +3047,7 @@ msgstr "gastado (cuenta completa)"
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Inicia un chat con tu bot y envía /start. Luego envía cualquier mensaje a <0>@userinfobot</0> y copia el Id numérico de vuelta en este campo. Test connection valida los valores actuales del formulario, antes de guardar."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "status"
 msgstr "estado"
@@ -3461,10 +3454,6 @@ msgstr "¿Borrar la caché local de ofertas terminales y volver a paginar cada o
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
 msgstr "Borra la caché local de ofertas terminales y vuelve a paginar cada oferta desde Braiins en el próximo refresco. Úsalo si la cifra 'gastado (cuenta completa)' parece incorrecta."
-
-#: src/components/Bip110ScanCard.tsx
-msgid "within a retarget period, the softfork locks in"
-msgstr "dentro de un periodo de retarget, el softfork se bloquea"
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx

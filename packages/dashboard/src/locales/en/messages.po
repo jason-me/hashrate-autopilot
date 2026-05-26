@@ -267,10 +267,6 @@ msgid "action mode blocks this"
 msgstr "action mode blocks this"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "activation"
-msgstr "activation"
-
-#: src/components/Bip110ScanCard.tsx
 #: src/components/SoloMinersCard.tsx
 msgid "active"
 msgstr "active"
@@ -348,10 +344,6 @@ msgstr "Always live (for trusted deployments)"
 #: src/components/PriceChart.tsx
 msgid "amount"
 msgstr "amount"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "and activates after one more period."
-msgstr "and activates after one more period."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -562,16 +554,16 @@ msgid "Bids"
 msgstr "Bids"
 
 #: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
+msgstr "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
+
+#: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
 msgstr "BIP 110 scan"
 
 #: src/components/HashrateChart.tsx
 msgid "BIP 110 SIGNAL"
 msgstr "BIP 110 SIGNAL"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "BIP 9 activation requires miners to signal support"
-msgstr "BIP 9 activation requires miners to signal support"
 
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
@@ -990,8 +982,8 @@ msgid "Credential (DDNS Key password / token)"
 msgstr "Credential (DDNS Key password / token)"
 
 #: src/components/PriceChart.tsx
-msgid "credited"
-msgstr "credited"
+msgid "credited on Braiins"
+msgstr "credited on Braiins"
 
 #: src/pages/Status.tsx
 msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
@@ -1637,10 +1629,6 @@ msgstr "important"
 msgid "IMPORTANT"
 msgstr "IMPORTANT"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "in their block headers. Once the threshold is met"
-msgstr "in their block headers. Once the threshold is met"
-
 #: src/pages/Config.tsx
 msgid "Include historical Ocean payouts in lifetime earnings"
 msgstr "Include historical Ocean payouts in lifetime earnings"
@@ -1827,6 +1815,10 @@ msgstr "mark all as seen ({unackedCount})"
 #: src/pages/Alerts.tsx
 msgid "mark as seen"
 msgstr "mark as seen"
+
+#: src/components/PriceChart.tsx
+msgid "Marker at tx time. Balance updates after Braiins confirms the deposit."
+msgstr "Marker at tx time. Balance updates after Braiins confirms the deposit."
 
 #: src/components/PriceChart.tsx
 msgid "Markers were hidden because the combined count (bid events + pool blocks + reward events) exceeded the configured chart-marker cap. Adjust the cap on Config → Display & Logging."
@@ -3055,6 +3047,7 @@ msgstr "spent (whole account)"
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "status"
 msgstr "status"
@@ -3461,10 +3454,6 @@ msgstr "Wipe the local terminal-bid cache and re-paginate every bid from Braiins
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
 msgstr "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
-
-#: src/components/Bip110ScanCard.tsx
-msgid "within a retarget period, the softfork locks in"
-msgstr "within a retarget period, the softfork locks in"
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx

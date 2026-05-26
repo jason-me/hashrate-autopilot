@@ -13,9 +13,11 @@ import { createPortal } from 'react-dom';
 export function Tooltip({
   text,
   children,
+  preWrap,
 }: {
   text: string;
   children: ReactNode;
+  preWrap?: boolean;
 }) {
   const [show, setShow] = useState(false);
   // #157: tooltip placement carries its own flag so the transform
@@ -96,7 +98,7 @@ export function Tooltip({
             transform: `translate(-50%, ${pos?.placement === 'below' ? '0' : '-100%'})`,
           }}
         >
-          <div className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 shadow-lg max-w-xs whitespace-normal leading-relaxed">
+          <div className={`bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 shadow-lg max-w-xs leading-relaxed ${preWrap ? 'whitespace-pre-line' : 'whitespace-normal'}`}>
             {text}
           </div>
         </div>,

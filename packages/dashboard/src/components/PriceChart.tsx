@@ -2272,6 +2272,11 @@ export const PriceChart = memo(function PriceChart({
           })
           .map((d) => {
             const x = xScale(d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms);
+            const hasCreditGap = d.credited_at_ms && d.tx_timestamp_ms
+              && d.credited_at_ms !== d.tx_timestamp_ms
+              && d.credited_at_ms <= dataMaxX;
+            const xCredit = hasCreditGap ? xScale(d.credited_at_ms!) : null;
+            const connectorY = PADDING.top + 2;
             return (
               <g
                 key={`deposit-icon-${d.tx_id}`}
@@ -2289,6 +2294,27 @@ export const PriceChart = memo(function PriceChart({
                   opacity="0.55"
                   pointerEvents="none"
                 />
+                {xCredit !== null && (
+                  <>
+                    <line
+                      x1={x + 9} x2={xCredit}
+                      y1={connectorY} y2={connectorY}
+                      stroke={COLOR_DEPOSIT}
+                      strokeWidth="1"
+                      strokeDasharray="3 3"
+                      opacity="0.4"
+                      pointerEvents="none"
+                    />
+                    <line
+                      x1={xCredit} x2={xCredit}
+                      y1={connectorY - 3} y2={connectorY + 3}
+                      stroke={COLOR_DEPOSIT}
+                      strokeWidth="1.5"
+                      opacity="0.6"
+                      pointerEvents="none"
+                    />
+                  </>
+                )}
                 <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
                 <svg
                   x={x - 7} y={PADDING.top - 11}
@@ -2663,7 +2689,12 @@ function DepositTooltip({
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms)}</div>
       {deposit.credited_at_ms && deposit.tx_timestamp_ms && deposit.credited_at_ms !== deposit.tx_timestamp_ms && (
         <div className="text-slate-600 text-[10px]">
-          <Trans>credited</Trans>: {formatTimestampUtc(deposit.credited_at_ms)}
+          <Trans>credited on Braiins</Trans>: {formatTimestampUtc(deposit.credited_at_ms)}
+        </div>
+      )}
+      {deposit.credited_at_ms && deposit.tx_timestamp_ms && deposit.credited_at_ms !== deposit.tx_timestamp_ms && (
+        <div className="text-slate-600 text-[10px] mt-0.5 max-w-[220px] whitespace-normal leading-tight">
+          <Trans>Marker at tx time. Balance updates after Braiins confirms the deposit.</Trans>
         </div>
       )}
 

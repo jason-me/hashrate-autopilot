@@ -15,6 +15,7 @@ import type { Bip110ScanDeployment, Bip110ScanResponse, Bip110ScanSignalingBlock
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { formatAgeMinutes, formatNumber } from '../lib/format';
 import { useFormatters, useLocale } from '../lib/locale';
+import { Tooltip } from './Tooltip';
 
 const WINDOWS = [2016, 4032, 8064, 16128, 32256] as const;
 type ScanWindow = (typeof WINDOWS)[number];
@@ -316,7 +317,7 @@ export function Bip110ScanCard(): React.JSX.Element {
 
       {data && data.rpc_available && !data.error && (
         <>
-          <div className="mt-4 flex items-baseline flex-wrap gap-y-1 rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-2.5 text-sm font-mono">
+          <div className="mt-4 flex items-center flex-wrap gap-y-1 rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-2.5 text-sm font-mono">
             <span className="text-slate-500 text-xs mr-1.5">{t`tip`}</span>
             <span className="text-slate-200 font-semibold">
               {data.tip_height !== null ? formatNumber(data.tip_height, {}, intlLocale) : '-'}
@@ -341,7 +342,9 @@ export function Bip110ScanCard(): React.JSX.Element {
             {data.deployment ? (
               <>
                 <Divider />
-                <DeploymentProgressBar deployment={data.deployment} intlLocale={intlLocale} />
+                <div className="flex-1 min-w-[120px]">
+                  <DeploymentProgressBar deployment={data.deployment} intlLocale={intlLocale} />
+                </div>
               </>
             ) : (
               <>
@@ -416,31 +419,30 @@ function DeploymentProgressBar({
     : t`signaling`;
 
   const tooltip = [
-    `${t`activation`}: ${statusLabel}`,
+    `${t`status`}: ${statusLabel}`,
     `${formatNumber(stats.count, {}, intlLocale)} / ${formatNumber(stats.threshold, {}, intlLocale)} ${t`signaling blocks in this period`}`,
     `${formatNumber(stats.elapsed, {}, intlLocale)} / ${formatNumber(stats.period, {}, intlLocale)} ${t`blocks into the current retarget period`}`,
     `${formatNumber(remaining, {}, intlLocale)} ${t`blocks remaining in this period`}`,
     '',
-    t`BIP 9 activation requires miners to signal support`,
-    t`in their block headers. Once the threshold is met`,
-    t`within a retarget period, the softfork locks in`,
-    t`and activates after one more period.`,
+    t`BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period.`,
   ].join('\n');
 
   return (
-    <div className="flex items-center gap-2 group relative" title={tooltip}>
-      <div className="w-24 h-2 rounded-full bg-slate-700 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-amber-400 transition-all"
-          style={{ width: `${pct}%` }}
-        />
+    <Tooltip text={tooltip} preWrap>
+      <div className="flex items-center gap-2 cursor-help min-w-0">
+        <div className="flex-1 h-2 rounded-full bg-slate-700 overflow-hidden min-w-[60px]">
+          <div
+            className="h-full rounded-full bg-amber-400 transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="text-slate-200 text-xs whitespace-nowrap">
+          {formatNumber(stats.count, {}, intlLocale)}{' '}
+          <Trans>of</Trans>{' '}
+          {formatNumber(stats.threshold, {}, intlLocale)}
+        </span>
       </div>
-      <span className="text-slate-200 text-xs">
-        {formatNumber(stats.count, {}, intlLocale)}{' '}
-        <Trans>of</Trans>{' '}
-        {formatNumber(stats.threshold, {}, intlLocale)}
-      </span>
-    </div>
+    </Tooltip>
   );
 }
 
