@@ -2323,12 +2323,11 @@ export const PriceChart = memo(function PriceChart({
                 />
                 {stepUp && (
                   <>
-                    <circle
-                      cx={stepUp.stepX} cy={stepUp.stepY}
-                      r={4}
-                      fill={COLOR_DEPOSIT} fillOpacity={0.8}
-                      stroke="none"
-                      pointerEvents="none"
+                    <line
+                      x1={x} x2={stepUp.stepX}
+                      y1={stepUp.stepY} y2={stepUp.stepY}
+                      stroke="transparent"
+                      strokeWidth="10"
                     />
                     <line
                       x1={x} x2={stepUp.stepX}
@@ -2338,6 +2337,12 @@ export const PriceChart = memo(function PriceChart({
                       strokeDasharray="4 3"
                       opacity="0.5"
                       pointerEvents="none"
+                    />
+                    <circle
+                      cx={stepUp.stepX} cy={stepUp.stepY}
+                      r={5}
+                      fill={COLOR_DEPOSIT} fillOpacity={0.8}
+                      stroke="none"
                     />
                   </>
                 )}
