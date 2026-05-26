@@ -209,6 +209,8 @@ export async function registerStatusRoute(
         reachable: state.pool.reachable,
         last_ok_at: state.pool.last_ok_at,
         consecutive_failures: state.pool.consecutive_failures,
+        error: state.pool.error,
+        latency_ms: state.pool.latency_ms,
       },
       datum: state.datum
         ? {

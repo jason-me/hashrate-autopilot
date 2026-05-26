@@ -3081,6 +3081,10 @@ msgid "Target hashrate"
 msgstr "Doel-hashrate"
 
 #: src/pages/Status.tsx
+msgid "TCP probe failed: {poolError}"
+msgstr "TCP-probe mislukt: {poolError}"
+
+#: src/pages/Status.tsx
 msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP-probe van de stratum-poort van de Datum-gateway."
 

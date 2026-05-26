@@ -697,6 +697,8 @@ export function Status() {
           url={s.config_summary.pool_url}
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
+          poolError={s.pool.error}
+          poolLatencyMs={s.pool.latency_ms}
           datum={s.datum}
           nextTickAt={s.next_tick_at}
         />
@@ -2993,12 +2995,16 @@ function DatumPanel({
   url,
   reachable,
   consecutiveFailures,
+  poolError,
+  poolLatencyMs,
   datum,
   nextTickAt,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
+  poolError: string | null;
+  poolLatencyMs: number | null;
   datum: StatusResponse['datum'];
   nextTickAt: number | null;
 }) {
@@ -3037,7 +3043,14 @@ function DatumPanel({
           label={t`stratum reachable`}
           reachable={reachable}
           downLabel={t`stratum DOWN (${consecutiveFailures} consecutive)`}
-          title={t`TCP probe of the Datum gateway's stratum port.`}
+          title={
+            reachable
+              ? t`TCP probe of the Datum gateway's stratum port.` +
+                (poolLatencyMs !== null ? ` ${poolLatencyMs}ms` : '')
+              : poolError
+                ? t`TCP probe failed: ${poolError}`
+                : t`TCP probe of the Datum gateway's stratum port.`
+          }
         />
         {datum && (
           <ReachabilityBadge

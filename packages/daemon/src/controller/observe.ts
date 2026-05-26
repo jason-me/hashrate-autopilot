@@ -390,13 +390,19 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   const poolProbe = config.destination_pool_url
     ? await deps.poolTracker.probe(parsePoolUrl(config.destination_pool_url))
     : { reachable: false, checked_at: Date.now(), latency_ms: null, error: 'no pool URL configured' } satisfies PoolProbeResult;
+  if (!poolProbe.reachable && config.destination_pool_url) {
+    const snap = deps.poolTracker.snapshot();
+    console.warn(`[observe] pool probe failed (${snap.consecutive_failures} consecutive): ${poolProbe.error}`);
+  }
   const pool: PoolHealth = config.destination_pool_url
     ? {
         reachable: poolProbe.reachable,
         last_ok_at: deps.poolTracker.snapshot().last_ok_at,
         consecutive_failures: deps.poolTracker.snapshot().consecutive_failures,
+        error: poolProbe.error,
+        latency_ms: poolProbe.latency_ms,
       }
-    : { reachable: false, last_ok_at: null, consecutive_failures: 0 };
+    : { reachable: false, last_ok_at: null, consecutive_failures: 0, error: null, latency_ms: null };
 
   // ACTUAL delivered hashrate = sum of Braiins's `state_estimate.avg_speed_ph`
   // (already zeroed for non-ACTIVE bids during extraction). NOT

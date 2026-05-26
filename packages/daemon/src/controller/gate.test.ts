@@ -31,7 +31,7 @@ function state(overrides: Partial<State> = {}): State {
     below_floor_since: null,
     above_floor_ticks: 0,
     manual_override_until_ms: null,
-    pool: { reachable: true, last_ok_at: null, consecutive_failures: 0 },
+    pool: { reachable: true, last_ok_at: null, consecutive_failures: 0, error: null, latency_ms: null },
     last_api_ok_at: null,
     ...overrides,
   };

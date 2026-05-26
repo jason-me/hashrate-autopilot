@@ -3081,6 +3081,10 @@ msgid "Target hashrate"
 msgstr "Hashrate objetivo"
 
 #: src/pages/Status.tsx
+msgid "TCP probe failed: {poolError}"
+msgstr "Sondeo TCP fallido: {poolError}"
+
+#: src/pages/Status.tsx
 msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "Sondeo TCP al puerto stratum del gateway Datum."
 

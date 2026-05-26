@@ -238,6 +238,8 @@ export interface StatusResponse {
     reachable: boolean;
     last_ok_at: number | null;
     consecutive_failures: number;
+    error: string | null;
+    latency_ms: number | null;
   };
   datum: {
     reachable: boolean;
