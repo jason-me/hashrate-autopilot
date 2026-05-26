@@ -71,7 +71,7 @@ const COLOR_CREATE = '#34d399';
 const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
-const COLOR_DEPOSIT = '#f59e0b';
+const COLOR_DEPOSIT = '#c084fc';
 
 interface TooltipState {
   event: BidEventView;
@@ -320,7 +320,7 @@ export const PriceChart = memo(function PriceChart({
    */
   rewardEvents?: readonly RewardEventView[];
   /**
-   * Credited Braiins deposits. Renders as amber fuel icons at the
+   * Credited Braiins deposits. Renders as purple fuel icons at the
    * top of the chart with dashed vertical lines (#211).
    */
   deposits?: readonly DepositView[];
@@ -2700,7 +2700,7 @@ function DepositTooltip({
       style={{ left: pos.left, top: pos.top }}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="font-semibold uppercase tracking-wider text-amber-400">
+        <span className="font-semibold uppercase tracking-wider text-purple-400">
           <Trans>DEPOSIT</Trans>
         </span>
         {pinned && (
