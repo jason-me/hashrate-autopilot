@@ -173,7 +173,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   share and the implied expected block count for the current window. Difficulty retargets cause a
   discontinuous luck jump (higher difficulty = smaller pool share = fewer expected blocks = higher luck);
   retarget markers appear on the luck line with before/after luck values in the tooltip so the operator
-  can see exactly how the retarget shifted the reading.
+  can see exactly how the retarget shifted the reading. When a pool block ages out of the trailing window, the step-down tooltip shows from/to luck values (matching the step-up format on new finds) so the operator sees both sides of the jump.
 - **Chart marker shapes** - the icons on the Hashrate chart carry a precedence-ordered
   vocabulary so the rare events stand out. All markers use Lucide icons for visual consistency. **Own block** (Ocean credited the coinbase to your payout
   address - the lottery-win case) renders as a **gold crown**. **BIP 110-signalling pool block**
@@ -182,8 +182,8 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs
   (`blockchain.block.header`) - no third-party API. A separate **BIP 110 scan card** on the Status page
   lets you scan the last N blocks (window selector: 2016 / 4032 / 8064 / 16128 / 32256) and see every signaling block with timestamp,
-  version bits, and explorer link. Block markers and retarget icons are mirrored onto the price chart, so the operator sees these events in
-  context on both charts. **On-chain payout gems** (emerald) appear at the top of the Price chart with a dashed vertical line whenever a payout is detected on-chain; clicking opens a tooltip with block height, date, amount, and a block-explorer deep-link. A purple dot on the unpaid-earnings line marks the earlier moment Ocean debited the balance (payout initiated), bridging the visual gap between the unpaid drop and the on-chain confirmation.
+  version bits, and explorer link. An inline activation progress bar shows the current signaling ratio against the 95% threshold, with a tooltip explaining BIP 110's two-phase activation path: the current MASF (miner-activated soft fork) phase where miners signal readiness via version bits, and the UASF (user-activated soft fork) enforcement that activates unconditionally at block height 965,664 (~September 2026). Block markers and retarget icons are mirrored onto the price chart, so the operator sees these events in
+  context on both charts. **Braiins deposit markers** (purple fuel-pump icons) appear on the Price chart whenever Braiins credits a deposit to your marketplace wallet. The marker is positioned at the Bitcoin transaction timestamp from the Braiins API. When the right-axis series is `total_balance_sat`, a purple dot appears on the balance line at the step-up caused by the deposit, with a dotted connector line back to the fuel icon so the operator can visually trace which deposit caused which balance jump. Hovering either the fuel icon or the dot opens the same tooltip with deposit amount, transaction ID, and timing. **On-chain payout gems** (emerald) appear at the top of the Price chart with a dashed vertical line whenever a payout is detected on-chain; clicking opens a tooltip with block height, date, amount, and a block-explorer deep-link. A purple dot on the unpaid-earnings line marks the earlier moment Ocean debited the balance (payout initiated), bridging the visual gap between the unpaid drop and the on-chain confirmation.
 - **Telegram notifications** - three severity tiers across eighteen event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
