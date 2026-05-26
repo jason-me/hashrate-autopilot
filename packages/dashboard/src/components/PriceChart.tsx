@@ -2266,10 +2266,12 @@ export const PriceChart = memo(function PriceChart({
           })}
 
         {deposits
-          .filter((d) => d.first_seen_at_ms >= dataMinX && d.first_seen_at_ms <= dataMaxX)
-          .filter((d, i, arr) => i === 0 || Math.round(xScale(d.first_seen_at_ms)) !== Math.round(xScale(arr[i - 1]!.first_seen_at_ms)))
+          .filter((d) => {
+            const t = d.tx_timestamp_ms ?? d.first_seen_at_ms;
+            return t >= dataMinX && t <= dataMaxX;
+          })
           .map((d) => {
-            const x = xScale(d.first_seen_at_ms);
+            const x = xScale(d.tx_timestamp_ms ?? d.first_seen_at_ms);
             return (
               <g
                 key={`deposit-icon-${d.tx_id}`}
@@ -2655,10 +2657,10 @@ function DepositTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1">
-        {fmt.timestamp(deposit.first_seen_at_ms)}
-        <span className="text-slate-500 ml-2">· {formatAgeMinutes(deposit.first_seen_at_ms)}</span>
+        {fmt.timestamp(deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}</span>
       </div>
-      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.first_seen_at_ms)}</div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(deposit.tx_timestamp_ms ?? deposit.first_seen_at_ms)}</div>
 
       <div className="mt-2 flex justify-between gap-3 text-slate-300">
         <span className="text-slate-500"><Trans>amount</Trans></span>

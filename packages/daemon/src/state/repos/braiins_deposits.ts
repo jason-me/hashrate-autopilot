@@ -23,6 +23,7 @@ export interface BraiinsDepositRow {
   readonly last_seen_return_tx_id: string | null;
   readonly first_seen_at_ms: number;
   readonly updated_at_ms: number;
+  readonly tx_timestamp_ms: number | null;
   readonly notified_detected: boolean;
   readonly notified_available: boolean;
   readonly notified_returned: boolean;
@@ -35,6 +36,7 @@ export interface UpsertSeenArgs {
   readonly status: number;
   readonly return_tx_id: string | null;
   readonly observed_at_ms: number;
+  readonly tx_timestamp_ms: number | null;
 }
 
 export class BraiinsDepositsRepo {
@@ -57,6 +59,7 @@ export class BraiinsDepositsRepo {
         last_seen_return_tx_id: args.return_tx_id,
         first_seen_at_ms: args.observed_at_ms,
         updated_at_ms: args.observed_at_ms,
+        tx_timestamp_ms: args.tx_timestamp_ms,
         notified_detected: 0,
         notified_available: 0,
         notified_returned: 0,
@@ -66,11 +69,9 @@ export class BraiinsDepositsRepo {
           last_seen_status: args.status,
           last_seen_return_tx_id: args.return_tx_id,
           updated_at_ms: args.observed_at_ms,
-          // amount_sat is immutable per Braiins's own contract; address
-          // could change if Braiins ever cycles its receiving keys.
-          // Keep them refreshed defensively.
           amount_sat: args.amount_sat,
           address: args.address,
+          tx_timestamp_ms: args.tx_timestamp_ms,
         }),
       )
       .execute();
@@ -106,6 +107,7 @@ export class BraiinsDepositsRepo {
       last_seen_return_tx_id: row.last_seen_return_tx_id,
       first_seen_at_ms: row.first_seen_at_ms,
       updated_at_ms: row.updated_at_ms,
+      tx_timestamp_ms: row.tx_timestamp_ms ?? null,
       notified_detected: row.notified_detected === 1,
       notified_available: row.notified_available === 1,
       notified_returned: row.notified_returned === 1,

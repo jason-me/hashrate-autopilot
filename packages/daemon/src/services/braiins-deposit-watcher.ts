@@ -150,6 +150,7 @@ export class BraiinsDepositWatcherService {
           ? tx.return_tx_id
           : null;
       const address = typeof tx.address === 'string' ? tx.address : null;
+      const tx_timestamp_ms = parseTxTimestamp(tx.timestamp);
 
       // status field is now a string. The legacy `last_seen_status`
       // column in braiins_deposits is INTEGER (from #130); we store
@@ -163,6 +164,7 @@ export class BraiinsDepositWatcherService {
         status: statusSentinel,
         return_tx_id,
         observed_at_ms: this.now(),
+        tx_timestamp_ms,
       });
 
       if (!observed.notified_detected) {
@@ -273,6 +275,12 @@ function formatSatAsBtc(sat: number): string {
 function shortenTxId(tx_id: string): string {
   if (tx_id.length <= 16) return tx_id;
   return `${tx_id.slice(0, 8)}...${tx_id.slice(-8)}`;
+}
+
+function parseTxTimestamp(raw: unknown): number | null {
+  if (typeof raw !== 'string' || raw.length === 0) return null;
+  const ms = new Date(raw).getTime();
+  return Number.isFinite(ms) ? ms : null;
 }
 
 function renderMessage(

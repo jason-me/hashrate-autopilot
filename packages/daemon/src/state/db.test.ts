@@ -121,6 +121,7 @@ describe('openDatabase - migrations', () => {
       '0093_tick_metrics_pool_luck_30d.sql',
       '0094_solo_best_difficulty.sql',
       '0095_tick_metrics_total_balance.sql',
+      '0096_deposits_tx_timestamp.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

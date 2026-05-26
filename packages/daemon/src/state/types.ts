@@ -499,6 +499,7 @@ export interface BraiinsDepositsTable {
   last_seen_return_tx_id: string | null;
   first_seen_at_ms: number;
   updated_at_ms: number;
+  tx_timestamp_ms: number | null;
   notified_detected: 0 | 1;
   notified_available: 0 | 1;
   notified_returned: 0 | 1;

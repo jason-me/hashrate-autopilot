@@ -20,6 +20,7 @@ export interface DepositView {
   readonly amount_sat: number;
   readonly address: string | null;
   readonly first_seen_at_ms: number;
+  readonly tx_timestamp_ms: number | null;
 }
 
 export interface DepositsResponse {
@@ -44,7 +45,7 @@ export async function registerDepositsRoute(
       );
       const rows = await deps.db
         .selectFrom('braiins_deposits')
-        .select(['tx_id', 'amount_sat', 'address', 'first_seen_at_ms'])
+        .select(['tx_id', 'amount_sat', 'address', 'first_seen_at_ms', 'tx_timestamp_ms'])
         .where('notified_available', '=', 1)
         .orderBy('first_seen_at_ms', 'desc')
         .limit(limit)
@@ -56,6 +57,7 @@ export async function registerDepositsRoute(
           amount_sat: Number(r.amount_sat),
           address: typeof r.address === 'string' ? r.address : null,
           first_seen_at_ms: Number(r.first_seen_at_ms),
+          tx_timestamp_ms: r.tx_timestamp_ms != null ? Number(r.tx_timestamp_ms) : null,
         }));
       return { deposits };
     },

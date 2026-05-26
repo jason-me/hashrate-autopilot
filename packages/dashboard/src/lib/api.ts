@@ -875,6 +875,7 @@ export interface DepositView {
   amount_sat: number;
   address: string | null;
   first_seen_at_ms: number;
+  tx_timestamp_ms: number | null;
 }
 
 export interface DepositsResponse {
