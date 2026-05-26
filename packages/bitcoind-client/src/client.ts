@@ -89,8 +89,15 @@ export interface BatchRequest {
   readonly params?: readonly unknown[];
 }
 
+export interface DeploymentInfo {
+  readonly hash: string;
+  readonly height: number;
+  readonly deployments?: Record<string, unknown>;
+}
+
 export interface BitcoindClient {
   getBlockchainInfo(): Promise<BlockchainInfo>;
+  getDeploymentInfo(): Promise<DeploymentInfo>;
   scanTxoutSet(descriptors: readonly string[]): Promise<ScanTxoutSetResult>;
   /** Fetch the block header for a given block hash. Used to read
    *  the `version` field for soft-fork signaling detection (#94). */
@@ -240,6 +247,7 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
 
   return {
     getBlockchainInfo: () => call<BlockchainInfo>('getblockchaininfo'),
+    getDeploymentInfo: () => call<DeploymentInfo>('getdeploymentinfo'),
     scanTxoutSet: async (descriptors) => {
       // bitcoind only allows ONE concurrent scantxoutset. If a prior
       // scan orphaned (our HTTP timeout killed the fetch but the node

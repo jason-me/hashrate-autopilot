@@ -316,48 +316,53 @@ export function Bip110ScanCard(): React.JSX.Element {
 
       {data && data.rpc_available && !data.error && (
         <>
-          <div className="mt-4 flex flex-wrap gap-2.5 text-sm font-mono">
-            <StatPill
-              label={t`tip`}
-              value={data.tip_height !== null ? formatNumber(data.tip_height, {}, intlLocale) : '-'}
-              accent="amber"
-            />
-            <StatPill
-              label={t`scanned`}
-              value={formatNumber(data.scanned, {}, intlLocale)}
-              accent="slate"
-            />
-            <StatPill
-              label={t`signaling`}
-              value={`${formatNumber(data.signaling_count, {}, intlLocale)} (${formatNumber(
+          <div className="mt-4 flex items-baseline flex-wrap gap-y-1 rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-2.5 text-sm font-mono">
+            <span className="text-slate-500 text-xs mr-1.5">{t`tip`}</span>
+            <span className="text-amber-400 font-semibold">
+              {data.tip_height !== null ? formatNumber(data.tip_height, {}, intlLocale) : '-'}
+            </span>
+            <Divider />
+            <span className="text-slate-200">
+              {formatNumber(data.scanned, {}, intlLocale)}
+            </span>
+            <span className="text-slate-500 text-xs ml-1.5">{t`scanned`}</span>
+            <Divider />
+            <span className={data.signaling_count > 0 ? 'text-emerald-400' : 'text-slate-200'}>
+              {formatNumber(data.signaling_count, {}, intlLocale)}
+            </span>
+            <span className="text-slate-500 text-xs ml-1.5">{t`signaling`}</span>
+            <span className="text-slate-500 text-xs ml-1">
+              ({formatNumber(
                 data.signaling_pct,
                 { minimumFractionDigits: 2, maximumFractionDigits: 2 },
                 intlLocale,
-              )}%)`}
-              accent={data.signaling_count > 0 ? 'green' : 'slate'}
-            />
+              )}%)
+            </span>
             {data.deployment ? (
-              <StatPill
-                label={t`deployment`}
-                value={data.deployment.status ?? '-'}
-                accent="sky"
-                detail={
-                  data.deployment.statistics
-                    ? `${formatNumber(data.deployment.statistics.count, {}, intlLocale)}/${formatNumber(data.deployment.statistics.threshold, {}, intlLocale)} (${formatNumber(data.deployment.statistics.elapsed, {}, intlLocale)}/${formatNumber(data.deployment.statistics.period, {}, intlLocale)} ${t`elapsed`})${data.deployment.bit !== null ? ` - ${t`bit`} ${data.deployment.bit}` : ''}`
-                    : undefined
-                }
-              />
+              <>
+                <Divider />
+                <span className="text-sky-400">{data.deployment.status ?? '-'}</span>
+                {data.deployment.statistics && (
+                  <span className="text-slate-500 text-xs ml-1.5">
+                    {formatNumber(data.deployment.statistics.count, {}, intlLocale)}/
+                    {formatNumber(data.deployment.statistics.threshold, {}, intlLocale)}
+                    {data.deployment.bit !== null && (
+                      <> - {t`bit`} {data.deployment.bit}</>
+                    )}
+                  </span>
+                )}
+              </>
             ) : (
-              <StatPill
-                label={t`deployment`}
-                value="n/a"
-                accent="muted"
-                detail={
+              <>
+                <Divider />
+                <span className="text-slate-600 text-xs" title={
                   data.softfork_keys && data.softfork_keys.length > 0
                     ? `${t`known softforks`}: ${data.softfork_keys.join(', ')}`
                     : t`node does not track BIP 110 as a named softfork`
-                }
-              />
+                }>
+                  {t`deployment`}: n/a
+                </span>
+              </>
             )}
           </div>
 
@@ -398,45 +403,6 @@ export function Bip110ScanCard(): React.JSX.Element {
   );
 }
 
-const ACCENT_STYLES = {
-  amber: 'border-amber-500/30 bg-amber-500/5',
-  slate: 'border-slate-600/50 bg-slate-800/40',
-  green: 'border-emerald-500/30 bg-emerald-500/5',
-  sky: 'border-sky-500/30 bg-sky-500/5',
-  muted: 'border-slate-700/40 bg-slate-900/40',
-} as const;
-
-const ACCENT_LABEL = {
-  amber: 'text-amber-400/70',
-  slate: 'text-slate-500',
-  green: 'text-emerald-400/70',
-  sky: 'text-sky-400/70',
-  muted: 'text-slate-600',
-} as const;
-
-function StatPill({
-  label,
-  value,
-  accent,
-  detail,
-}: {
-  label: string;
-  value: string;
-  accent: keyof typeof ACCENT_STYLES;
-  detail?: string;
-}): React.JSX.Element {
-  return (
-    <div
-      className={`flex flex-col rounded-lg border px-3.5 py-2 ${ACCENT_STYLES[accent]}`}
-      title={detail}
-    >
-      <span className={`text-[10px] uppercase tracking-wider font-sans ${ACCENT_LABEL[accent]}`}>
-        {label}
-      </span>
-      <span className="text-slate-200 mt-0.5 text-sm">{value}</span>
-      {detail && (
-        <span className="text-[10px] text-slate-500 mt-0.5 font-sans">{detail}</span>
-      )}
-    </div>
-  );
+function Divider(): React.JSX.Element {
+  return <span className="mx-3 text-slate-700 select-none">|</span>;
 }

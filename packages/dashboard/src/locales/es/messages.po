@@ -1286,10 +1286,6 @@ msgstr "Prácticamente sin entrega durante al menos este número de minutos."
 msgid "Efficiency"
 msgstr "Eficiencia"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "elapsed"
-msgstr "transcurrido"
-
 #: src/pages/Config.tsx
 msgid "Electrs"
 msgstr "Electrs"

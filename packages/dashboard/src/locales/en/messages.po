@@ -1286,10 +1286,6 @@ msgstr "Effectively zero delivery for at least this many minutes."
 msgid "Efficiency"
 msgstr "Efficiency"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "elapsed"
-msgstr "elapsed"
-
 #: src/pages/Config.tsx
 msgid "Electrs"
 msgstr "Electrs"

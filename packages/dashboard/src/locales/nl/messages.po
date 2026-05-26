@@ -1286,10 +1286,6 @@ msgstr "Praktisch geen levering gedurende ten minste dit aantal minuten."
 msgid "Efficiency"
 msgstr "Efficiëntie"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "elapsed"
-msgstr "verstreken"
-
 #: src/pages/Config.tsx
 msgid "Electrs"
 msgstr "Electrs"

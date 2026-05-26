@@ -248,8 +248,18 @@ export async function registerBip110ScanRoute(
       const tip = info.blocks;
       const start = Math.max(0, tip - blocks + 1);
       const heights = Array.from({ length: tip - start + 1 }, (_, i) => start + i);
-      const deployment = findBip110Deployment(info.softforks);
-      const softfork_keys = info.softforks ? Object.keys(info.softforks).sort() : null;
+
+      let deploymentSource: Record<string, unknown> | undefined = info.softforks;
+      if (!deploymentSource) {
+        try {
+          const depInfo = await client.getDeploymentInfo();
+          deploymentSource = depInfo.deployments;
+        } catch {
+          // getdeploymentinfo unavailable (old Core); proceed without.
+        }
+      }
+      const deployment = findBip110Deployment(deploymentSource);
+      const softfork_keys = deploymentSource ? Object.keys(deploymentSource).sort() : null;
 
       let hashes: string[];
       try {
