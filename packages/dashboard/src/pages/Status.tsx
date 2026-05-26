@@ -539,7 +539,7 @@ export function Status() {
             <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
             <option value="paid_total_sat">{t`paid earnings (lifetime)`}</option>
             <option value="lifetime_earnings_sat">{t`lifetime earnings (paid + unpaid)`}</option>
-            <option value="total_balance_sat">{t`total balance`}</option>
+            <option value="total_balance_sat">{t`Braiins balance`}</option>
             {/* #164: per-tick avg-overpay series, mirroring the two
                 stat cards at the bottom of the Braiins panel. */}
             <option value="avg_overpay_intent">{t`avg overpay (intent)`}</option>
