@@ -2,6 +2,10 @@
 
 ## 2026-05-25
 
+### `[Feature]` Pool-probe error in dashboard tooltip and daemon log (#212)
+
+When the stratum probe fails, the dashboard now shows the actual error (e.g. "timeout after 2500ms", "connect ECONNREFUSED") as a tooltip on the "stratum DOWN" badge. When the probe succeeds, the tooltip shows latency in ms. Probe failures are also logged to the daemon console at warn level for post-mortem analysis.
+
 ### `[Feature]` Deposit markers on the Price chart (#211)
 
 Credited Braiins deposits now appear as amber fuel icons at the top of the Price chart with dashed vertical lines, mirroring the emerald payout gems. Clicking a fuel icon opens a tooltip with the deposit amount, truncated tx_id, receiving address, timestamp, and a block-explorer link. New `/api/deposits` endpoint serves credited deposits from the `braiins_deposits` table. Only deposits that reached `DEPOSIT_STATUS_CREDITED` are shown.
