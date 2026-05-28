@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-27
+
+### `[Feature]` Profit per bucket overlay on the Price chart (#220)
+
+New `profit / bucket` option in the Price chart's right-axis dropdown renders signed bars per chart bucket: emerald above zero for profit, rose below for loss, with the trailing in-progress bucket drawn with a hatched fill so its lower height isn't read as a closed-bucket comparison. The bar height is `(Δocean_unpaid_sat + Δpaid_total_sat) - Δprimary_bid_consumed_sat` per bucket - TIDES mark-to-market revenue minus what Braiins charged. Computed daemon-side over consecutive aggregated rows, so any future consumer (mobile, CSV export) sees the same number. Hover a bar for a tooltip with the bucket time range and revenue / cost / net profit broken out in whatever unit the global denomination toggle is set to (sats / BTC / USD; USD bars use the per-tick `btc_usd_price` snapshot for honest historical conversion). Buckets where the primary-bid counter reset mid-bucket (bid swap) render as gaps not zero bars, since we cannot honestly account for spend across the counter reset. Pre-migration buckets (before `paid_total_sat` and `ocean_unpaid_sat` were captured) also render as gaps.
+
 ## 2026-05-26
 
 ### `[Release]` v1.9.0

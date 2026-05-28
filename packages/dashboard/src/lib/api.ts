@@ -170,6 +170,17 @@ export interface MetricPoint {
   pool_blocks_30d_count: number | null;
   pool_hashrate_ph_avg_30d: number | null;
   braiins_reachable: number | null;
+  /**
+   * #220: per-bucket profit components. Computed daemon-side as
+   * deltas between consecutive aggregated rows (NOT instantaneous
+   * per-tick values). See `withProfit` in
+   * `packages/daemon/src/http/routes/metrics.ts` for the math and
+   * the bid-swap landmine. First bucket of any returned series has
+   * all three null.
+   */
+  profit_sat: number | null;
+  revenue_sat: number | null;
+  cost_sat: number | null;
 }
 
 export interface BidEventView {

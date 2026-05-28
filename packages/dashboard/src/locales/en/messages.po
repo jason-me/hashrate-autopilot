@@ -761,6 +761,10 @@ msgid "BTC/USD: ${priceStr} - select display currency"
 msgstr "BTC/USD: ${priceStr} - select display currency"
 
 #: src/components/PriceChart.tsx
+msgid "bucket in progress - partial"
+msgstr "bucket in progress - partial"
+
+#: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "budget"
 msgstr "budget"
@@ -967,6 +971,10 @@ msgstr "copy JSON"
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "copy URL"
+
+#: src/components/PriceChart.tsx
+msgid "cost"
+msgstr "cost"
 
 #: src/components/PriceChart.tsx
 msgid "create"
@@ -2590,6 +2598,18 @@ msgstr "Probed {total} hosts. Found {0} device(s)."
 msgid "Probing {done} of {total}…"
 msgstr "Probing {done} of {total}…"
 
+#: src/components/PriceChart.tsx
+msgid "profit"
+msgstr "profit"
+
+#: src/pages/Status.tsx
+msgid "profit / bucket"
+msgstr "profit / bucket"
+
+#: src/components/PriceChart.tsx
+msgid "PROFIT / BUCKET"
+msgstr "PROFIT / BUCKET"
+
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Profit & Loss"
@@ -2732,6 +2752,10 @@ msgstr "Resume last mode"
 #: src/pages/Config.tsx
 msgid "Retry interval"
 msgstr "Retry interval"
+
+#: src/components/PriceChart.tsx
+msgid "revenue"
+msgstr "revenue"
 
 #: src/pages/Config.tsx
 msgid "revert"
