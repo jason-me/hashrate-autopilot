@@ -124,6 +124,7 @@ describe('openDatabase - migrations', () => {
       '0096_deposits_tx_timestamp.sql',
       '0097_deposits_credited_at.sql',
       '0098_fix_credited_at_backfill.sql',
+      '0099_fee_halt_and_deadband.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
