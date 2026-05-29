@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.9.0"
+version: "1.10.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,20 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.10.0 - fee protection + configurable edit deadband, deadband shown in EDIT_PRICE tooltip, chart-marker cap actually works.
+
+  NEW
+  - Fee protection: new Max acceptable fee config knob (default 0). When any active bid carries a non-zero fee_rate_pct above this percentage, the autopilot halts new CREATE_BID / EDIT_PRICE / EDIT_SPEED. CANCEL_BID stays allowed so you (or the Datum-down auto-cancel) can still bail out of a fee-bearing bid. Default 0 = halt on any non-zero fee, matching the existing beta_exit Telegram alert. Raise to (say) 0.5 to tolerate a known small fee without stopping the autopilot. The halt clears automatically as soon as every active bid drops back at-or-below the threshold; the threshold itself is the operator's acknowledgement.
+  - Configurable EDIT_PRICE deadband: new Edit-price deadband config knob (default 20). Replaces the previously hard-coded overpay/5 with overpay × deadband_pct / 100. Default 20 reproduces the legacy behavior. Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size remains the hard floor.
+  - Deadband visible in EDIT_PRICE event tooltip: the MARKET AT THIS TICK section on every yellow event dot now shows the deadband that was in effect at the moment of the edit, as a percentage with the equivalent sat/PH/day floor. Captured per-tick into tick_metrics so historical events show the historically-correct deadband even after the operator changes the knob. Pre-upgrade rows backfill to 20% (the legacy /5 equivalent).
+
+  FIXES
+  - chart_max_markers actually works at longer chart ranges. The dashboard pre-fetches 3x the visible range so pan/zoom stays snappy, but the chart-marker cap was counting the full fetched set. On an actively-editing controller (~18 events/hour), a 12h view fetched 36h ~= 650 events; the cap at 500 fired and dropped every yellow EDIT_PRICE marker, even though only ~220 were in the visible 12h. Shrinking to 6h made markers reappear. Now the cap counts events filtered to the visible viewport; buffered out-of-view events stay loaded for pan/zoom but don't inflate the cap.
+  - Pool-block dots on the unpaid line now correctly anchor at distinct Ocean refresh steps. When two pool blocks landed within Ocean's ~5-min unpaid_sat refresh cadence, both block markers projected to the same first step at an intermediate Y value. Each block now scans past the previous block's claimed step; when Ocean genuinely batches two credits into one observed step, the dots stagger horizontally so both stay hoverable.
+  - Pool-luck step tooltip wording: was "numerator went from X× to Y×" which mislabelled the luck multiplier as the numerator (the actual numerator is a block count). Now reads "pool luck went from X× to Y×".
+
+  New migrations 0099 + 0100 (config fee-protection columns, tick_metrics deadband snapshot). Safe to upgrade from any 1.9.x release.
+
   v1.9.0 - chart overlay maturity pass: payout gems, deposit markers, BIP 110 progress bar.
 
   NEW

@@ -2,6 +2,10 @@
 
 ## 2026-05-29
 
+### `[Release]` v1.10.0
+
+Fee protection + configurable EDIT_PRICE deadband + deadband visible in the EDIT_PRICE event tooltip; chart-marker cap now counts visible events (fixes "EDIT_PRICE markers vanish at the 12h/24h view"); pool-block dots on the unpaid line now correctly track distinct Ocean refresh steps; pool-luck tooltip wording correction. New migrations 0099 + 0100.
+
 ### `[Fix]` chart_max_markers cap now counts visible events, not the buffered fetch window (#225)
 
 The dashboard pre-fetches 3× the visible range (1× visible + 1× buffer on each side) for pan/zoom snappiness, but the chart-marker cap was counting the full fetched set. On an actively-editing controller (~18 events/hour observed today), a 12h view fetched ~36h ≈ 650 events; the cap at 500 fired and the EDIT_PRICE drop step nuked every yellow marker, even though only ~220 were in the visible 12h. Shrinking to 6h made markers reappear because the fetch dropped to ~325 events. Now the cap counts events filtered to `vp.since_ms..vp.until_ms` (the settled viewport); the global step-down drops still apply to the arrays passed to PriceChart, so the buffered out-of-view events stay loaded for pan/zoom but don't inflate the cap decision. `markersHiddenCount` is also now the count visible would have been hidden, not the count in the buffered superset.
