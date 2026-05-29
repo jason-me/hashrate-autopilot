@@ -24,8 +24,14 @@
 > to match migration 0053), adds missing columns (`paid_total_sat` from 0066, `block_found_sound*`
 > from 0052/0061), removes the dropped `operator_available` column from `runtime_state`, and adds
 > `total_balance_sat` to `tick_metrics` (migration 0095, #211). v1.11 (2026-05-25) updated
-> braiins-deposit-watcher annotation and route listing. **v1.12** (this revision, 2026-05-25)
-> added the `deposits` route.
+> braiins-deposit-watcher annotation and route listing. v1.12 (2026-05-25) added the `deposits` route.
+> **v1.13** (this revision, 2026-05-29) covers the v1.10.0 release window: migration 0099 adds
+> `bid_edit_deadband_pct` and `max_acceptable_fee_pct` to the `config` table (#222); migration 0100
+> adds `bid_edit_deadband_pct` to `tick_metrics` so EDIT_PRICE event tooltips can render the deadband
+> in effect at any historical event (#224, default 20 backfills existing rows to the legacy `overpay/5`
+> equivalent). Mutation gate gains a new `FEE_THRESHOLD_EXCEEDED` denial reason that blocks CREATE /
+> EDIT / EDIT_SPEED when any active bid's `fee_rate_pct` exceeds `config.max_acceptable_fee_pct`;
+> CANCEL_BID remains allowed.
 
 ## 1. High-level shape
 
@@ -235,6 +241,9 @@ CREATE TABLE config (
   max_bid_sat_per_eh_day INTEGER NOT NULL,
   max_overpay_vs_hashprice_sat_per_eh_day INTEGER,  -- dynamic cap; null = disabled
   overpay_sat_per_eh_day INTEGER NOT NULL,          -- premium above fillable_ask (#53)
+  -- Fee protection (#222, migration 0099)
+  bid_edit_deadband_pct REAL NOT NULL DEFAULT 20,   -- EDIT_PRICE deadband as % of overpay (legacy /5 = 20%)
+  max_acceptable_fee_pct REAL NOT NULL DEFAULT 0,   -- 0 = halt on any non-zero fee_rate_pct on an active bid
   -- Budget
   bid_budget_sat INTEGER NOT NULL,                   -- 0 = use full wallet balance
   wallet_runway_alert_days INTEGER NOT NULL,
@@ -407,6 +416,10 @@ CREATE TABLE tick_metrics (
   primary_bid_last_pause_reason TEXT,     -- Braiins last_pause_reason on the primary bid
   primary_bid_fee_paid_sat INTEGER,       -- primary bid cumulative fees paid
   primary_bid_fee_rate_pct REAL,          -- primary bid fee rate at creation
+  -- #224 (migration 0100): snapshot of config.bid_edit_deadband_pct so EDIT_PRICE event tooltips
+  -- can render the deadband that was in effect at any historical edit. DEFAULT 20 backfills
+  -- existing rows to the legacy `overpay / 5` equivalent.
+  bid_edit_deadband_pct REAL NOT NULL DEFAULT 20,
   -- #92 (migrations 0055-0057): pool-block / pool-luck plot
   pool_blocks_24h_count INTEGER,          -- pool blocks observed in last 24h
   pool_blocks_7d_count INTEGER,           -- pool blocks observed in last 7d
@@ -832,3 +845,4 @@ Remaining work is tracked in GitHub issues.
 | 1.10    | 2026-05-25 | §5 DDL fixes from /check-code audit: `tick_metrics.network_difficulty` type corrected from REAL to INTEGER (matches migration 0053); added missing `paid_total_sat` (0066), `block_found_sound*` (0052/0061) columns; removed dropped `operator_available` from `runtime_state` (0083). No code changes. |
 | 1.11    | 2026-05-25 | §2 repo layout: updated braiins-deposit-watcher.ts annotation - all three deposit events (_detected, _available, _returned) now sourced from the on-chain endpoint poller (#210). Retired the balance-delta workaround in AlertEvaluator. |
 | 1.12    | 2026-05-25 | §2 routes listing: added `deposits` route (#211, `/api/deposits` serves credited Braiins deposits for Price chart markers). |
+| 1.13    | 2026-05-29 | v1.10.0 release window. §5 `config` schema gains `bid_edit_deadband_pct` and `max_acceptable_fee_pct` (migration 0099, #222) - the EDIT_PRICE deadband formula in `decide.ts` is now `max(tick_size, overpay × bid_edit_deadband_pct / 100)` with default 20 reproducing the legacy `overpay / 5`; the mutation gate gains a new `FEE_THRESHOLD_EXCEEDED` denial reason that blocks CREATE / EDIT / EDIT_SPEED when any active bid's `fee_rate_pct` exceeds `config.max_acceptable_fee_pct` (CANCEL_BID stays allowed). §5 `tick_metrics` gains `bid_edit_deadband_pct` (migration 0100, #224) - per-tick snapshot so EDIT_PRICE event tooltips render the deadband in effect at any historical edit; `DEFAULT 20` backfills existing rows. No other control-loop shape changes. |

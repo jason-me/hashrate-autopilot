@@ -101,10 +101,19 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   "stability against short upward market moves" for "closer to the cheapest fillable price" - default
   1,000 sat/PH/day. The controller skips the tick entirely if `fillable_ask` is null (orderbook
   empty / Braiins API down), rather than defaulting to the cap.
-- **EDIT_PRICE deadband** - a bid isn't edited for small drift. Threshold is `max(tick_size,
-  overpay_sat_per_eh_day / 5)`, which at the default 1,000 sat/PH/day overpay is a 200 sat/PH/day
-  window. Keeps noise out of the mutation log and avoids burning Braiins' 10-minute price-decrease
-  cooldown on moves the operator doesn't care about.
+- **EDIT_PRICE deadband (configurable)** - a bid isn't edited for small drift. Threshold is `max(tick_size,
+  overpay_sat_per_eh_day × bid_edit_deadband_pct / 100)`. Default `bid_edit_deadband_pct = 20` reproduces
+  the legacy hard-coded `overpay / 5`, so at the default 1,000 sat/PH/day overpay it stays a 200 sat/PH/day
+  window. Raise to 50 to halve edit frequency and tolerate ~2x more jitter - useful as a chart-noise
+  reducer today and as per-edit-fee mitigation if Braiins ever introduces an EDIT fee. `tick_size` remains
+  the hard floor.
+- **Fee protection** - operator-tunable ceiling `max_acceptable_fee_pct` (default 0). When any active bid's
+  `fee_rate_pct` exceeds this, the mutation gate blocks CREATE / EDIT / EDIT_SPEED; CANCEL_BID stays
+  allowed so the operator (or the Datum-down auto-cancel) can still bail out of a fee-bearing bid. Default
+  0 halts on any non-zero fee_rate_pct, matching the existing `beta_exit` Telegram alert. The halt clears
+  automatically the next tick all active bids drop back at-or-below the threshold; the threshold itself is
+  the operator's acknowledgement. Raise to a known tolerated value if Braiins introduces a small fee you
+  want to keep trading through.
 - **Two-layer safety ceiling** - a fixed `max_bid_sat_per_eh_day` plus an optional dynamic cap
   `max_overpay_vs_hashprice_sat_per_eh_day`. The effective ceiling is the lower of the two. If
   fillable + overpay would exceed the ceiling, the bid clamps down to it (and may not fill) - the
