@@ -217,11 +217,8 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   dashboard tab needs to be open.
 - **Per-chart right-axis dropdown** - render BTC/USD price, network difficulty, pool hashrate, Ocean unpaid
   balance, estimated block reward, pool-luck (24h/7d/30d), solo best difficulty, share_log, effective rate,
-  paid earnings, lifetime earnings, Braiins balance, or **profit per bucket** against the chart's primary
-  series. Independent picker per chart, persists per browser. The profit overlay (Price chart) renders signed
-  bars per chart bucket: green above zero for profit, red below for loss, with the trailing in-progress bucket
-  hatched so its height isn't compared to closed buckets. Profit math: Δ(Ocean unpaid + paid-out) − Δ(Braiins
-  cost) per bucket. Bid-swap buckets render as gaps rather than guess across a counter reset.
+  paid earnings, lifetime earnings, or Braiins balance against the chart's primary series. Independent picker
+  per chart, persists per browser.
 - **Multilingual UI** - every page (Status, Config, Setup wizard, Login, charts, tooltips, time-relative
   strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
   header next to "sign out"; the choice persists to localStorage and the page boots in the operator's stored

@@ -80,25 +80,6 @@ interface TooltipState {
   pinned: boolean;
 }
 
-/**
- * #220: hover/click state for a profit overlay bar. The bar is
- * keyed by its point index `i`; the tooltip pulls revenue / cost /
- * profit from that point and the bucket bounds from points[i-1].tick_at
- * to points[i].tick_at. `isPartial` toggles a "in progress" caveat.
- */
-interface ProfitBarTooltipState {
-  i: number;
-  bucketStart: number;
-  bucketEnd: number;
-  revenueSat: number | null;
-  costSat: number | null;
-  profitSat: number | null;
-  isPartial: boolean;
-  x: number;
-  y: number;
-  pinned: boolean;
-}
-
 interface RewardTooltipState {
   reward: RewardEventView;
   x: number;
@@ -154,11 +135,6 @@ const COLOR_MAXBID = '#f87171'; // red-400
 // overpay cushion visually explicit - every bid edit is explained
 // by a move in this line.
 const COLOR_FILLABLE = '#22d3ee'; // cyan-400
-// #220: profit bars - emerald for profit, rose for loss. Same hue
-// family as COLOR_EFFECTIVE / COLOR_CANCEL so the bar colour reads
-// consistently with the rest of the chart's "good vs bad" coding.
-const COLOR_PROFIT_POS = '#34d399'; // emerald-400
-const COLOR_PROFIT_NEG = '#f87171'; // red-400
 // Effective rate - what Braiins actually charged, per-tick from
 // primary_bid_consumed_sat deltas. Emerald so it's clearly a
 // "realised" number distinct from the bid (amber) and the market
@@ -196,13 +172,7 @@ export type PriceRightAxis =
   // null-gap behaviour of effective_rate during zero-delivery
   // windows, so the line breaks rather than reads a misleading
   // continuity through outages.
-  | 'avg_overpay_settled'
-  // #220: per-bucket profit (TIDES mark-to-market). Signed bars,
-  // green above the zero baseline (profit), red below (loss).
-  // Bar width = bucket size; trailing in-progress bucket is rendered
-  // with a hatched / faded fill so it's visually distinct from the
-  // closed buckets next to it.
-  | 'profit_per_bucket';
+  | 'avg_overpay_settled';
 
 /** Per-tick aggregated fleet series row from /api/solo-miners/series. */
 export interface SoloSeriesRow {
@@ -398,7 +368,6 @@ export const PriceChart = memo(function PriceChart({
   void i18n;
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const [profitBarTip, setProfitBarTip] = useState<ProfitBarTooltipState | null>(null);
   // Per-marker tooltip state for the new on-line dots: pool-block
   // markers reuse the rich HashrateChart tooltip; reward-event
   // markers use a smaller bespoke tooltip with payout date + amount
@@ -757,12 +726,6 @@ export const PriceChart = memo(function PriceChart({
       stroke: string;
       axisLabel: string;
       formatTick: (v: number, axisSpan?: number) => string;
-      /**
-       * Default 'line' (existing series): values are connected as a path.
-       * 'bars' (#220 profit overlay): values are rendered as signed bars
-       * anchored at the zero line, with the trailing bucket hatched.
-       */
-      kind?: 'line' | 'bars';
     } | null = (() => {
       switch (rightAxisSeries) {
         case 'none':
@@ -883,17 +846,6 @@ export const PriceChart = memo(function PriceChart({
                 maximumFractionDigits: 0,
               }).format(v),
           };
-        case 'profit_per_bucket':
-          return {
-            values: points.map((p) => p.profit_sat),
-            // Stroke is the bar outline + the legend swatch + the
-            // tick-label colour. Slate works whether the bars run
-            // mostly green or mostly red.
-            stroke: '#94a3b8',
-            axisLabel: `profit / bucket (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
-            kind: 'bars',
-          };
       }
     })();
     const hasRightAxis =
@@ -925,37 +877,15 @@ export const PriceChart = memo(function PriceChart({
       // anchors at 0 for visual stability. Pick the floor per-series.
       const allowNegativeAxis =
         rightAxisSeries === 'avg_overpay_intent' ||
-        rightAxisSeries === 'avg_overpay_settled' ||
-        // #220: profit can go negative on a loss bucket. The bar
-        // anchors at zero in both directions; see spanZero below.
-        rightAxisSeries === 'profit_per_bucket';
+        rightAxisSeries === 'avg_overpay_settled';
       const anchorAtZero =
         rightAxisSeries === 'solo_power_watts' ||
         rightAxisSeries === 'total_balance_sat';
-      // #220: signed-bar series need zero on the axis so the baseline
-      // is always in view, even when every visible bucket is the same
-      // sign. The pure anchorAtZero branch only widens upward; this
-      // one widens in both directions.
-      const spanZero = rightAxisSeries === 'profit_per_bucket';
       let yFloor: number;
       let yCeiling: number;
       if (anchorAtZero) {
         yFloor = 0;
         yCeiling = rmax > 0 ? rmax * 1.1 : 1;
-      } else if (spanZero) {
-        // Include zero, then 10% headroom in whichever direction(s)
-        // the data actually goes.
-        const lo = Math.min(0, rmin);
-        const hi = Math.max(0, rmax);
-        const span = hi - lo || 1;
-        yFloor = lo === 0 ? 0 : lo - span * 0.1;
-        yCeiling = hi === 0 ? 0 : hi + span * 0.1;
-        // If everything is exactly zero the niceYTicks fallback below
-        // would collapse; ensure at least a unit span.
-        if (yFloor === yCeiling) {
-          yFloor = -1;
-          yCeiling = 1;
-        }
       } else if (rawSpan === 0) {
         if (rmax === 0 && !allowNegativeAxis) {
           yFloor = 0;
@@ -997,7 +927,6 @@ export const PriceChart = memo(function PriceChart({
     // series - null values become segment breaks.
     const rightAxisPath = ((): string => {
       if (!hasRightAxis || !rightAxis) return '';
-      if (rightAxis.kind === 'bars') return ''; // bars use rightAxisBars
       const segments: string[] = [];
       let current = '';
       for (let i = 0; i < points.length; i += 1) {
@@ -1015,85 +944,6 @@ export const PriceChart = memo(function PriceChart({
       }
       if (current) segments.push(current);
       return segments.join(' ');
-    })();
-
-    // #220: right-axis bar geometry for the profit overlay. The point
-    // tick_at is end-of-bucket (MAX(tick_at) within the SQL group),
-    // so each bar spans backward from tick_at to the prior bucket
-    // boundary (≈ previous point's tick_at + 1).
-    //
-    // Bucket width derived per-point as `tick_at[i] - tick_at[i-1]`
-    // when the prior point exists; first non-first bar gets that
-    // gap, the first bar (which has profit_sat = null anyway) is
-    // never emitted. Width inset by ~15% on each side for visual
-    // separation so adjacent bars don't kiss.
-    //
-    // Trailing in-progress detection: the last point's tick_at is
-    // typically < now by less than one bucket-width when we're
-    // looking at the live edge. If `now - last.tick_at <
-    // typicalBucketMs * 0.9` the rightmost emitted bar is flagged
-    // partial and the renderer paints it with a hatched / faded
-    // fill so the operator doesn't compare an in-progress bucket
-    // height to closed ones.
-    const rightAxisBars = ((): Array<{
-      i: number;
-      x: number;
-      width: number;
-      y: number;
-      height: number;
-      value: number;
-      isPartial: boolean;
-      positive: boolean;
-    }> => {
-      if (!hasRightAxis || !rightAxis || rightAxis.kind !== 'bars') return [];
-      const out: Array<{
-        i: number; x: number; width: number; y: number; height: number;
-        value: number; isPartial: boolean; positive: boolean;
-      }> = [];
-      // Median consecutive-tick gap; used as a fallback bar width
-      // for the first emittable bar (no prior to delta against) and
-      // for the partial-bucket detection threshold.
-      const gaps: number[] = [];
-      for (let i = 1; i < points.length; i += 1) {
-        gaps.push(points[i]!.tick_at - points[i - 1]!.tick_at);
-      }
-      gaps.sort((a, b) => a - b);
-      const typicalGapMs = gaps.length > 0 ? gaps[Math.floor(gaps.length / 2)]! : 60_000;
-      const baselineY = rightYScale(0);
-      const nowMs = Date.now();
-      // Walk forward to find the last non-null bar - that's the
-      // rightmost emittable bucket and the in-progress candidate.
-      let lastNonNullIdx = -1;
-      for (let i = points.length - 1; i >= 0; i -= 1) {
-        const v = rightAxis.values[i];
-        if (v !== null && v !== undefined && Number.isFinite(v)) {
-          lastNonNullIdx = i;
-          break;
-        }
-      }
-      for (let i = 0; i < points.length; i += 1) {
-        const v = rightAxis.values[i];
-        if (v === null || v === undefined || !Number.isFinite(v)) continue;
-        const tickAt = points[i]!.tick_at;
-        const prevTick = i > 0 ? points[i - 1]!.tick_at : tickAt - typicalGapMs;
-        const bucketStart = prevTick;
-        const bucketEnd = tickAt;
-        const xStart = xScale(bucketStart);
-        const xEnd = xScale(bucketEnd);
-        // 15% inset per side so adjacent bars are visually separable.
-        const rawWidth = Math.max(1, xEnd - xStart);
-        const inset = Math.min(rawWidth * 0.15, 4);
-        const x = xStart + inset;
-        const width = Math.max(1, rawWidth - inset * 2);
-        const yVal = rightYScale(v);
-        const positive = v >= 0;
-        const y = positive ? yVal : baselineY;
-        const height = Math.max(1, Math.abs(yVal - baselineY));
-        const isPartial =
-          i === lastNonNullIdx && nowMs - tickAt < typicalGapMs * 0.9;
-        out.push({ i, x, width, y, height, value: v, isPartial, positive });
-      }
-      return out;
     })();
 
     // Null-gap path builder. Iterates the full `points` series and
@@ -1342,7 +1192,7 @@ export const PriceChart = memo(function PriceChart({
       }
     }
 
-    return { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightAxisBars, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
+    return { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
   }, [points, events, showEventKinds, priceSmoothingMinutes, historicalPayoutsOffsetSat, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale, viewportSince, viewportUntil]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -1384,31 +1234,6 @@ export const PriceChart = memo(function PriceChart({
     setTooltip({ event, x: e.clientX, y: e.clientY, pinned: true });
   }, []);
   const closeTooltip = useCallback(() => setTooltip(null), []);
-
-  // #220: profit bar tooltip handlers. Same pin-on-click /
-  // transient-on-hover discipline as the bid-event tooltip.
-  const onProfitBarEnter = useCallback(
-    (state: Omit<ProfitBarTooltipState, 'x' | 'y' | 'pinned'>) =>
-      (e: React.MouseEvent) => {
-        setProfitBarTip((prev) => {
-          if (prev?.pinned) return prev;
-          return { ...state, x: e.clientX, y: e.clientY, pinned: false };
-        });
-      },
-    [],
-  );
-  const onProfitBarLeave = useCallback(() => {
-    setProfitBarTip((prev) => (prev?.pinned ? prev : null));
-  }, []);
-  const onProfitBarClick = useCallback(
-    (state: Omit<ProfitBarTooltipState, 'x' | 'y' | 'pinned'>) =>
-      (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setProfitBarTip({ ...state, x: e.clientX, y: e.clientY, pinned: true });
-      },
-    [],
-  );
-  const closeProfitBarTip = useCallback(() => setProfitBarTip(null), []);
 
   // Pool-block dots (right-axis = ocean_unpaid_sat or lifetime_earnings_sat).
   const onPoolBlockEnter = useCallback(
@@ -1879,7 +1704,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightAxisBars, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals } = chartData;
+  const { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals } = chartData;
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
@@ -1988,18 +1813,6 @@ export const PriceChart = memo(function PriceChart({
           <clipPath id="px-data-clip">
             <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
           </clipPath>
-          {/* #220: hatched fills for the in-progress profit bucket.
-              Two variants so a partial-loss bar reads red and a
-              partial-profit bar reads green at a glance, with the
-              hatching as the "this bar isn't done yet" signal. */}
-          <pattern id="px-profit-hatch-pos" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-            <rect width="6" height="6" fill={COLOR_PROFIT_POS} opacity="0.25" />
-            <line x1="0" y1="0" x2="0" y2="6" stroke={COLOR_PROFIT_POS} strokeWidth="2" />
-          </pattern>
-          <pattern id="px-profit-hatch-neg" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-            <rect width="6" height="6" fill={COLOR_PROFIT_NEG} opacity="0.25" />
-            <line x1="0" y1="0" x2="0" y2="6" stroke={COLOR_PROFIT_NEG} strokeWidth="2" />
-          </pattern>
         </defs>
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
@@ -2344,7 +2157,7 @@ export const PriceChart = memo(function PriceChart({
         )}
 
         <g clipPath="url(#px-data-clip)">
-        {hasRightAxis && rightAxis && rightAxis.kind !== 'bars' && (
+        {hasRightAxis && rightAxis && (
           <path
             d={rightAxisPath}
             stroke={rightAxis.stroke}
@@ -2354,78 +2167,6 @@ export const PriceChart = memo(function PriceChart({
             strokeLinejoin="round"
           />
         )}
-        {/* #220: profit-overlay zero baseline. Drawn before the bars
-            so the bars overlay it; tinted in the right-axis stroke so
-            it visually anchors to the same axis. */}
-        {hasRightAxis && rightAxis && rightAxis.kind === 'bars' && (
-          <line
-            x1={PADDING.left}
-            x2={WIDTH - padRight}
-            y1={rightYScale(0)}
-            y2={rightYScale(0)}
-            stroke={rightAxis.stroke}
-            strokeWidth="1"
-            strokeDasharray="2 3"
-            opacity="0.7"
-          />
-        )}
-        {/* #220: profit bars. Signed: positive bars green (above the
-            zero baseline), negative red (below). Trailing in-progress
-            bucket uses the hatched fill from <defs> so its lower
-            height isn't read as a closed-bucket comparison. Hover
-            opens a tooltip with the revenue/cost breakdown; click
-            pins it. */}
-        {hasRightAxis && rightAxis && rightAxis.kind === 'bars' &&
-          rightAxisBars.map((b) => {
-            const cur = points[b.i]!;
-            const prevTickAt = b.i > 0 ? points[b.i - 1]!.tick_at : cur.tick_at;
-            const tipState = {
-              i: b.i,
-              bucketStart: prevTickAt,
-              bucketEnd: cur.tick_at,
-              revenueSat: cur.revenue_sat,
-              costSat: cur.cost_sat,
-              profitSat: cur.profit_sat,
-              isPartial: b.isPartial,
-            };
-            return (
-              <g
-                key={`profit-bar-${b.i}`}
-                onMouseEnter={onProfitBarEnter(tipState)}
-                onMouseLeave={onProfitBarLeave}
-                onClick={onProfitBarClick(tipState)}
-                style={{ cursor: 'pointer' }}
-              >
-                <rect
-                  x={b.x}
-                  y={b.y}
-                  width={b.width}
-                  height={b.height}
-                  fill={
-                    b.isPartial
-                      ? b.positive
-                        ? 'url(#px-profit-hatch-pos)'
-                        : 'url(#px-profit-hatch-neg)'
-                      : b.positive
-                        ? COLOR_PROFIT_POS
-                        : COLOR_PROFIT_NEG
-                  }
-                  stroke={b.positive ? COLOR_PROFIT_POS : COLOR_PROFIT_NEG}
-                  strokeWidth="0.5"
-                  opacity={b.isPartial ? 0.8 : 0.9}
-                />
-                {/* Invisible wider hit target so thin bars are still
-                    hoverable; the visible rect is unchanged. */}
-                <rect
-                  x={Math.max(PADDING.left, b.x - 2)}
-                  y={Math.min(b.y, rightYScale(0))}
-                  width={b.width + 4}
-                  height={Math.abs(b.y + b.height - rightYScale(0)) + Math.abs(b.y - rightYScale(0)) + 1}
-                  fill="transparent"
-                />
-              </g>
-            );
-          })}
 
         {/* Reward-event dots on the right-axis line. Operator click
             opens a pinned tooltip with payout date, sat amount, and
@@ -2803,14 +2544,6 @@ export const PriceChart = memo(function PriceChart({
           overpaySatPerPhDay={overpaySatPerPhDay}
         />
       )}
-      {profitBarTip && (
-        <ProfitBarTooltip
-          tip={profitBarTip}
-          locale={intlLocale}
-          denomination={denomination}
-          onClose={closeProfitBarTip}
-        />
-      )}
     </div>
   );
 });
@@ -2967,133 +2700,6 @@ function RewardEventTooltip({
           </a>
         </div>
       )}
-    </div>
-  );
-}
-
-/**
- * #220: tooltip for the profit overlay bars. Shows bucket time
- * range, the three components (revenue, cost, profit), and an
- * "in progress" caveat when the bar is the trailing partial
- * bucket. Hover is transient; click pins (close × shows when
- * pinned).
- */
-function ProfitBarTooltip({
-  tip,
-  locale,
-  denomination,
-  onClose,
-}: {
-  tip: ProfitBarTooltipState;
-  locale: string | undefined;
-  denomination: ReturnType<typeof useDenomination>;
-  onClose: () => void;
-}) {
-  const { i18n } = useLingui();
-  void i18n;
-  const fmt = useFormatters();
-  const { pinned } = tip;
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
-    left: tip.x + 12,
-    top: tip.y + 12,
-    ready: false,
-  });
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
-    setPos({ left, top, ready: true });
-  }, [tip.x, tip.y, tip.i]);
-
-  // Format a signed sat amount through the global denomination. We
-  // can't reuse RewardEventTooltip's path because that one's tied to
-  // a positive `reward.value_sat`; profit needs the sign preserved
-  // and zero rendered cleanly.
-  const formatSigned = (sat: number | null): string => {
-    if (sat === null) return '—';
-    const sign = sat < 0 ? '-' : '';
-    const abs = Math.abs(sat);
-    if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
-      const usd = (abs / 1e8) * denomination.btcPrice;
-      return `${sign}$${new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(usd)}`;
-    }
-    if (denomination.mode === 'btc') {
-      return `${sign}₿ ${new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 8,
-        maximumFractionDigits: 8,
-      }).format(abs / 1e8)}`;
-    }
-    return `${sign}${new Intl.NumberFormat(locale, {
-      maximumFractionDigits: 0,
-    }).format(abs)} sat`;
-  };
-
-  const profitColor =
-    tip.profitSat === null
-      ? 'text-slate-400'
-      : tip.profitSat >= 0
-        ? 'text-emerald-400'
-        : 'text-rose-400';
-
-  return (
-    <div
-      ref={ref}
-      id={pinned ? 'price-chart-pinned-profit-bar-tooltip' : undefined}
-      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
-      style={{ left: pos.left, top: pos.top }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className={`font-semibold uppercase tracking-wider ${profitColor}`}>
-          <Trans>PROFIT / BUCKET</Trans>
-        </span>
-        {pinned && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t`close`}
-            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
-          >
-            ×
-          </button>
-        )}
-      </div>
-      <div className="text-slate-300 mt-1">
-        {fmt.timestamp(tip.bucketStart)} → {fmt.timestamp(tip.bucketEnd)}
-      </div>
-      {tip.isPartial && (
-        <div className="mt-1 text-amber-400 text-[10px] italic">
-          <Trans>bucket in progress - partial</Trans>
-        </div>
-      )}
-
-      <div className="mt-2 space-y-1 text-slate-300">
-        <div className="flex justify-between gap-3">
-          <span className="text-slate-500"><Trans>revenue</Trans></span>
-          <span className="font-mono tabular-nums">{formatSigned(tip.revenueSat)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-slate-500"><Trans>cost</Trans></span>
-          <span className="font-mono tabular-nums">{formatSigned(tip.costSat !== null ? -tip.costSat : null)}</span>
-        </div>
-        <div className="flex justify-between gap-3 border-t border-slate-800 pt-1">
-          <span className="text-slate-400 font-semibold"><Trans>profit</Trans></span>
-          <span className={`font-mono tabular-nums font-semibold ${profitColor}`}>
-            {formatSigned(tip.profitSat)}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

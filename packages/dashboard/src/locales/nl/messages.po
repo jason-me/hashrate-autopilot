@@ -761,10 +761,6 @@ msgid "BTC/USD: ${priceStr} - select display currency"
 msgstr "BTC/USD: ${priceStr} - kies weergavevaluta"
 
 #: src/components/PriceChart.tsx
-msgid "bucket in progress - partial"
-msgstr "periode loopt nog - gedeeltelijk"
-
-#: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "budget"
 msgstr "budget"
@@ -971,10 +967,6 @@ msgstr "JSON kopiëren"
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "URL kopiëren"
-
-#: src/components/PriceChart.tsx
-msgid "cost"
-msgstr "kosten"
 
 #: src/components/PriceChart.tsx
 msgid "create"
@@ -2598,18 +2590,6 @@ msgstr "{total} hosts gescand. {0} apparaat/apparaten gevonden."
 msgid "Probing {done} of {total}…"
 msgstr "Bezig met scannen {done} van {total}…"
 
-#: src/components/PriceChart.tsx
-msgid "profit"
-msgstr "winst"
-
-#: src/pages/Status.tsx
-msgid "profit / bucket"
-msgstr "winst / periode"
-
-#: src/components/PriceChart.tsx
-msgid "PROFIT / BUCKET"
-msgstr "WINST / PERIODE"
-
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Profit & Loss"
@@ -2752,10 +2732,6 @@ msgstr "Laatste modus hervatten"
 #: src/pages/Config.tsx
 msgid "Retry interval"
 msgstr "Herhaalinterval"
-
-#: src/components/PriceChart.tsx
-msgid "revenue"
-msgstr "omzet"
 
 #: src/pages/Config.tsx
 msgid "revert"

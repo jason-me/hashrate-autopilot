@@ -109,34 +109,6 @@ export interface MetricPoint {
   readonly pool_blocks_30d_count: number | null;
   readonly pool_hashrate_ph_avg_30d: number | null;
   readonly braiins_reachable: number | null;
-  /**
-   * #220: per-bucket profit components, computed in the route from
-   * consecutive aggregated rows (NOT a per-tick instantaneous value).
-   *
-   * Semantics for a given bucket i:
-   *   revenue_sat = (ocean_unpaid_sat[i] - ocean_unpaid_sat[i-1])
-   *               + (paid_total_sat[i]    - paid_total_sat[i-1])
-   *   cost_sat    =  primary_bid_consumed_sat[i]
-   *               -  primary_bid_consumed_sat[i-1]
-   *   profit_sat  = revenue_sat - cost_sat
-   *
-   * - First bucket has all three null (no prior to delta against).
-   * - Any bucket where the relevant cumulative input is null at either
-   *   end gets the component null (pre-migration tail, transient
-   *   observer gaps).
-   * - A negative cost_sat delta (primary-bid swap reset the counter)
-   *   yields cost_sat = null and therefore profit_sat = null. We don't
-   *   know the actual spend across the swap and would rather show a
-   *   gap than inflate profit. Documented landmine for this bucket
-   *   only; subsequent buckets reference the new counter and resume
-   *   normal accounting.
-   * - When a payout crystallizes mid-bucket, ocean_unpaid_sat drops
-   *   and paid_total_sat rises by the same amount; revenue_sat sums
-   *   to the actual share work done in the bucket.
-   */
-  readonly profit_sat: number | null;
-  readonly revenue_sat: number | null;
-  readonly cost_sat: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -171,13 +143,13 @@ export async function registerMetricsRoute(
         const rows = await deps.tickMetricsRepo.listAggregated(
           parsedSince, bucketMs, limit, parsedUntil,
         );
-        return { points: withProfit(rows.map(toMetricPoint)), range: null };
+        return { points: rows.map(toMetricPoint), range: null };
       }
 
       // Legacy path: since=<ms> alone -> raw rows from that timestamp.
       if (!req.query.range && Number.isFinite(parsedSince) && parsedSince > 0) {
         const rows = await deps.tickMetricsRepo.listSince(parsedSince, limit);
-        return { points: withProfit(rows.map(toMetricPoint)), range: null };
+        return { points: rows.map(toMetricPoint), range: null };
       }
 
       const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
@@ -196,7 +168,7 @@ export async function registerMetricsRoute(
       }
 
       const rows = await deps.tickMetricsRepo.listAggregated(sinceMs, bucketMs, limit);
-      return { points: withProfit(rows.map(toMetricPoint)), range };
+      return { points: rows.map(toMetricPoint), range };
     },
   );
 }
@@ -282,83 +254,7 @@ function toMetricPoint(r: {
     pool_blocks_30d_count: r.pool_blocks_30d_count,
     pool_hashrate_ph_avg_30d: r.pool_hashrate_ph_avg_30d,
     braiins_reachable: r.braiins_reachable,
-    // Populated in withProfit() below once the full ascending series
-    // is known. toMetricPoint sees one row at a time so it can't
-    // delta against the prior bucket; that's the second pass's job.
-    profit_sat: null,
-    revenue_sat: null,
-    cost_sat: null,
   };
-}
-
-/**
- * #220: second pass over an ascending-by-tick_at series of MetricPoints,
- * populating profit_sat / revenue_sat / cost_sat from consecutive-bucket
- * deltas. See the field-level docstring on MetricPoint.profit_sat for
- * the math and the bid-swap landmine.
- *
- * Exported for tests. Returns a new array; does not mutate the input.
- * Same length and same per-row identity in everything but the three
- * profit fields.
- */
-export function withProfit(points: readonly MetricPoint[]): MetricPoint[] {
-  const out: MetricPoint[] = [];
-  for (let i = 0; i < points.length; i += 1) {
-    const cur = points[i]!;
-    if (i === 0) {
-      out.push(cur);
-      continue;
-    }
-    const prev = points[i - 1]!;
-
-    const unpaidDelta = deltaSnapshot(prev.ocean_unpaid_sat, cur.ocean_unpaid_sat);
-    const paidDelta = deltaMonotonic(prev.paid_total_sat, cur.paid_total_sat);
-    const costDelta = deltaMonotonic(prev.primary_bid_consumed_sat, cur.primary_bid_consumed_sat);
-
-    // Revenue is summable across its two parts: if one component is
-    // null we still drop the bucket (we can't honestly say "revenue
-    // was just the paid portion" when unpaid changed by some unknown
-    // amount over the bucket).
-    const revenue =
-      unpaidDelta !== null && paidDelta !== null
-        ? unpaidDelta + paidDelta
-        : null;
-    const profit =
-      revenue !== null && costDelta !== null ? revenue - costDelta : null;
-
-    out.push({
-      ...cur,
-      profit_sat: profit,
-      revenue_sat: revenue,
-      cost_sat: costDelta,
-    });
-  }
-  return out;
-}
-
-/**
- * Delta of a snapshot column (e.g. ocean_unpaid_sat). Either endpoint
- * null -> null. The delta itself can be negative (payout crystallized,
- * unpaid dropped) and that's fine - the caller pairs it with the
- * matching paid_total_sat rise to keep the sum honest.
- */
-function deltaSnapshot(prev: number | null, cur: number | null): number | null {
-  if (prev === null || cur === null) return null;
-  return cur - prev;
-}
-
-/**
- * Delta of a monotonic-cumulative column (paid_total_sat,
- * primary_bid_consumed_sat). Either endpoint null -> null. A negative
- * delta means the counter reset (primary-bid swap on consumed; should
- * never happen on paid). Return null in that case rather than guess;
- * the gap propagates to profit_sat and the chart renders no bar for
- * the swap bucket.
- */
-function deltaMonotonic(prev: number | null, cur: number | null): number | null {
-  if (prev === null || cur === null) return null;
-  if (cur < prev) return null;
-  return cur - prev;
 }
 
 function clamp(n: number, min: number, max: number): number {

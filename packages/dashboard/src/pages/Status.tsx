@@ -116,9 +116,7 @@ function readStoredPriceRightAxis(fallback: PriceRightAxis): PriceRightAxis {
     raw === 'solo_power_watts' ||
     raw === 'total_balance_sat' ||
     raw === 'avg_overpay_intent' ||
-    raw === 'avg_overpay_settled' ||
-    // #220: per-bucket profit overlay (signed bars).
-    raw === 'profit_per_bucket'
+    raw === 'avg_overpay_settled'
   ) {
     return raw;
   }
@@ -546,10 +544,6 @@ export function Status() {
                 stat cards at the bottom of the Braiins panel. */}
             <option value="avg_overpay_intent">{t`avg overpay (intent)`}</option>
             <option value="avg_overpay_settled">{t`avg overpay (settled)`}</option>
-            {/* #220: per-bucket profit overlay. Signed bars on the
-                right axis - green for profit, red for loss, hatched
-                for the in-progress trailing bucket. */}
-            <option value="profit_per_bucket">{t`profit / bucket`}</option>
             {/* #149: solo power (W) only listed when the master toggle is on. */}
             {soloMiningEnabled && (
               <option value="solo_power_watts">{t`solo power (W)`}</option>
