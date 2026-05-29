@@ -335,7 +335,12 @@ export type Proposal =
 export type GateDenialReason =
   | 'RUN_MODE_NOT_LIVE'
   | 'RUN_MODE_PAUSED'
-  | 'PRICE_DECREASE_COOLDOWN';
+  | 'PRICE_DECREASE_COOLDOWN'
+  // #222: any active owned bid's fee_rate_pct exceeds
+  // config.max_acceptable_fee_pct. Blocks CREATE / EDIT / EDIT_SPEED;
+  // CANCEL_BID is still allowed so the operator (or the Datum-down
+  // auto-cancel) can still bail out of a fee-bearing bid.
+  | 'FEE_THRESHOLD_EXCEEDED';
 
 export type GateOutcome =
   | { readonly proposal: Proposal; readonly allowed: true }

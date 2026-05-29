@@ -93,6 +93,32 @@ export const AppConfigSchema = z.object({
   // Default 1_000_000 sat/EH/day = 1,000 sat/PH/day.
   overpay_sat_per_eh_day: positiveInt.default(1_000_000),
 
+  // #222: EDIT_PRICE deadband as a percentage of overpay. The deadband
+  // computed in decide.ts is `max(tick_size, overpay × pct / 100)`. If
+  // the absolute difference from target to current bid sits below the
+  // deadband, no EDIT_PRICE fires. Default 20 reproduces the legacy
+  // hard-coded `overpay / 5` behaviour (1/5 = 20%). Raising to 50 ≈
+  // halves the edit frequency and roughly doubles the price-jitter
+  // tolerated before a re-price - useful to dampen chart noise today
+  // and to reduce per-edit costs if Braiins ever introduces an EDIT
+  // fee (see SpotMarketFeeType SPOT_FEE_TYPE_EDIT). The `tick_size`
+  // floor is independent of this setting - Braiins rejects sub-tick
+  // edits regardless.
+  bid_edit_deadband_pct: z.number().nonnegative().default(20),
+
+  // #222: maximum fee_rate_pct (carried per-bid in /spot/bid/current)
+  // the operator is willing to tolerate before the mutation gate
+  // halts new CREATE_BID / EDIT_PRICE / EDIT_SPEED. CANCEL_BID
+  // remains allowed so the operator (or a Datum-down auto-cancel)
+  // can still bail out of a fee-bearing bid. Default 0: halt the
+  // moment Braiins exits beta and starts charging any fee at all,
+  // matching the semantics of the existing `beta_exit` Telegram
+  // alert. Raise to (say) 0.5 to tolerate a 0.5% fee without
+  // tripping the halt. The halt clears automatically the next tick
+  // every active bid is at-or-below the threshold - the threshold
+  // *is* the operator's acknowledgement; no separate clear button.
+  max_acceptable_fee_pct: z.number().nonnegative().default(0),
+
   // Budgeting - size of the `amount_sat` on each CREATE_BID. 0 is a
   // sentinel meaning "use the full available wallet balance on each
   // create" (resolved at decision time, clamped to Braiins' 1 BTC
@@ -497,6 +523,11 @@ export const APP_CONFIG_DEFAULTS: Omit<
   max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day
   // Pay-your-bid overpay above fillable_ask (#53). 1,000 sat/PH/day.
   overpay_sat_per_eh_day: 1_000_000,
+  // #222: 20 reproduces the legacy hard-coded overpay/5 = 20% deadband.
+  bid_edit_deadband_pct: 20,
+  // #222: 0 = halt on any non-zero fee_rate_pct (matches existing
+  // beta_exit alert semantics). Set higher to tolerate known fees.
+  max_acceptable_fee_pct: 0,
 
   bid_budget_sat: 0, // 0 = use full wallet balance per CREATE (#40)
 

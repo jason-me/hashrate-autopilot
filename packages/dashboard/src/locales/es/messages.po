@@ -724,6 +724,10 @@ msgstr "Ciclo de vida de depósito Braiins"
 msgid "Braiins doesn't allow changing a live bid's destination URL. Your config now points at a different host than the bid was created with - miners on this bid keep going to the old destination until you cancel and recreate. Cancel here, the next decision tick will create a fresh bid with the current URL automatically."
 msgstr "Braiins no permite cambiar la URL de destino de una oferta en curso. Tu configuración ahora apunta a un host distinto del que se creó la oferta - los mineros de esta oferta siguen yendo al destino antiguo hasta que canceles y la recrees. Cancela aquí; el siguiente tick creará automáticamente una oferta nueva con la URL actual."
 
+#: src/pages/Status.tsx
+msgid "Braiins fee above your threshold"
+msgstr "Comisión de Braiins por encima de tu umbral"
+
 #: src/pages/Config.tsx
 msgid "Braiins marketplace"
 msgstr "Marketplace de Braiins"
@@ -735,6 +739,10 @@ msgstr "API del marketplace de Braiins - accesible cuando el último observe() l
 #: src/pages/Config.tsx
 msgid "Braiins marketplace empty for"
 msgstr "Mercado Braiins vacío durante"
+
+#: src/pages/Config.tsx
+msgid "Braiins's marketplace fees are currently zero (beta). These two knobs pre-arm the autopilot for the day that changes: an automatic halt when fees exceed your comfort level, and a configurable edit deadband to keep the bid-adjustment count down."
+msgstr "Las comisiones del marketplace de Braiins son actualmente cero (beta). Estos dos ajustes preparan al autopiloto para el día en que esto cambie: una parada automática cuando las comisiones superen tu umbral de comodidad, y una deadband de edición configurable para reducir el número de ajustes de oferta."
 
 #: src/pages/Status.tsx
 msgid "Braiins's own `state_estimate.avg_speed_ph` reading - their internal estimate of current matched hashrate. Reacts to a CREATE_BID / EDIT_SPEED within ~3 min. The orange \"delivered (Braiins)\" line on the Hashrate chart below plots a different signal: real billed PH/s derived from the consumed-sat counter (Δconsumed / (bid × Δt)). That counter signal is the truthful long-run billing record but takes longer to catch up to a capacity bump because matched shares have to accumulate. During a Datum outage the counter goes to zero correctly while this estimate holds elevated for minutes - that's why the chart uses the counter signal."
@@ -1269,6 +1277,10 @@ msgstr "Editar velocidad"
 msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
 
+#: src/pages/Config.tsx
+msgid "Edit-price deadband"
+msgstr "Deadband de edit-price"
+
 #: src/components/PriceChart.tsx
 msgid "effective"
 msgstr "efectivo"
@@ -1398,6 +1410,10 @@ msgstr "fallo al cargar: {0}"
 #: src/pages/Config.tsx
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
 msgstr "Rápido y ligero. Consultado cada minuto. Búsqueda instantánea de saldo vía tu servidor Electrum."
+
+#: src/pages/Config.tsx
+msgid "Fee protection"
+msgstr "Protección de comisiones"
 
 #: src/components/Bip110ScanCard.tsx
 #: src/components/HashrateChart.tsx
@@ -1850,6 +1866,10 @@ msgstr "marcando…"
 #: src/pages/Config.tsx
 msgid "Match - hostname is pointing at this box."
 msgstr "Coinciden - el nombre de host apunta a esta máquina."
+
+#: src/pages/Config.tsx
+msgid "Max acceptable fee"
+msgstr "Comisión máxima aceptable"
 
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
@@ -2434,8 +2454,12 @@ msgid "Per-hostname DDNS Key user, not your account login."
 msgstr "Usuario de DDNS Key por hostname, no el login de tu cuenta."
 
 #: src/pages/Config.tsx
-msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)."
-msgstr "Bid por tick = fillable_ask + este valor. Braiins aplica pay-your-bid, por lo que esto es la prima real que pagas sobre el precio mas bajo disponible. Mayor = mas colchon antes de que el bid quede por debajo de fillable en subidas cortas del mercado, prima de estado estacionario mayor. Menor = mas cerca del precio fillable mas bajo y ajustes de bid mas frecuentes (la deadband de edit-price del controlador es overpay/5)."
+msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments. The edit-price deadband is a percentage of this value (see Fee protection below)."
+msgstr "Oferta por tick = fillable_ask + este valor. Braiins usa pay-your-bid, así que esta es la prima real que pagas sobre el precio disponible más barato. Mayor = más colchón antes de que la oferta caiga bajo fillable en subidas cortas del mercado, prima en estado estacionario mayor. Menor = más cercano al precio fillable más barato y ajustes de oferta más frecuentes. La deadband de edit-price es un porcentaje de este valor (ver Protección de comisiones abajo)."
+
+#: src/pages/Config.tsx
+msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
+msgstr "Porcentaje de overpay por debajo del cual el autopiloto NO ejecuta un EDIT_PRICE. El valor por defecto 20 reproduce el comportamiento legacy (overpay / 5). Sube a 50 para reducir a la mitad la frecuencia de ediciones y tolerar ~2x más jitter de precio antes de reajustar - útil para reducir el ruido del gráfico hoy, y como mitigación de comisiones por edición si Braiins llega a introducir una comisión EDIT. tick_size es siempre el suelo absoluto; Braiins rechaza ediciones por debajo de este tamaño."
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -3395,6 +3419,10 @@ msgstr "Lo que nos ganó este último bloque, estimado como block_reward * share
 #: src/pages/Config.tsx
 msgid "What to send to Telegram"
 msgstr "Qué enviar a Telegram"
+
+#: src/pages/Config.tsx
+msgid "When any active bid carries a fee_rate_pct above this, the mutation gate blocks CREATE_BID, EDIT_PRICE, and EDIT_SPEED. CANCEL_BID is still allowed so you (or the Datum-down auto-cancel) can bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee at all, matching the existing beta_exit Telegram alert. Set higher (e.g. 0.5) to tolerate a known fee without stopping the autopilot."
+msgstr "Cuando cualquier oferta activa tiene un fee_rate_pct por encima de este valor, el gate de mutación bloquea CREATE_BID, EDIT_PRICE y EDIT_SPEED. CANCEL_BID sigue permitido para que tú (o el auto-cancel cuando Datum cae) puedas salir de una oferta con comisión. Por defecto 0 = parar en el momento en que Braiins salga de beta y cobre cualquier comisión, igual que la alerta beta_exit de Telegram. Sube (p. ej. 0.5) para tolerar una comisión conocida sin detener el autopiloto."
 
 #: src/pages/Config.tsx
 msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."

@@ -296,6 +296,10 @@ export interface AppConfig {
   // need to special-case the UI's "disabled" representation.
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   overpay_sat_per_eh_day: number;
+  /** #222: EDIT_PRICE deadband as a percentage of overpay. Default 20 = legacy `overpay/5`. */
+  bid_edit_deadband_pct: number;
+  /** #222: operator-acceptable max Braiins fee_rate_pct before gate halts CREATE/EDIT. Default 0. */
+  max_acceptable_fee_pct: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;

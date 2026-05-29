@@ -87,6 +87,10 @@ const APP_CONFIG_ENV: {
     coerce: asIntOrNullOnEmpty,
   },
   overpay_sat_per_eh_day: { varName: 'BHA_OVERPAY_SAT_PER_EH_DAY', coerce: asInt },
+  // #222: percent (0-100); legacy default 20 reproduces the hard-coded `overpay/5`.
+  bid_edit_deadband_pct: { varName: 'BHA_BID_EDIT_DEADBAND_PCT', coerce: asNumber },
+  // #222: percent. Default 0 = halt on any non-zero fee_rate_pct, matching beta_exit alert semantics.
+  max_acceptable_fee_pct: { varName: 'BHA_MAX_ACCEPTABLE_FEE_PCT', coerce: asNumber },
   bid_budget_sat: { varName: 'BHA_BID_BUDGET_SAT', coerce: asInt },
   wallet_runway_alert_days: { varName: 'BHA_WALLET_RUNWAY_ALERT_DAYS', coerce: asInt },
   below_floor_alert_after_minutes: {

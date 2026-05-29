@@ -77,6 +77,10 @@ export interface ConfigTable {
   datum_api_url: string | null;
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   overpay_sat_per_eh_day: number;
+  /** #222: EDIT_PRICE deadband as a percentage of overpay. Default 20 = legacy `overpay/5`. */
+  bid_edit_deadband_pct: number;
+  /** #222: operator-acceptable max Braiins fee_rate_pct before mutation gate halts CREATE/EDIT. Default 0. */
+  max_acceptable_fee_pct: number;
   block_explorer_url_template: string;
   /** Transaction counterpart to block_explorer_url_template; supports `{txid}` / `{hash}` placeholders. */
   block_explorer_tx_url_template: string;

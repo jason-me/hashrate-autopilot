@@ -157,15 +157,22 @@ export function decide(state: State): readonly Proposal[] {
   // (~1,000-5,000 sat/EH/day) tick-to-tick as distant supply levels
   // reshuffle. With the naive tick_size tolerance, every jitter triggers
   // a mutation - dense trade storm on the chart, API noise, and each
-  // lower burns the 10-min cooldown. Scale the deadband to 1/5 of
-  // overpay: if fillable has moved by less than 20 % of our overpay
+  // lower burns the 10-min cooldown. Scale the deadband to a percentage
+  // of overpay: if fillable has moved by less than `pct%` of our overpay
   // cushion, the current bid still sits comfortably above fillable and
-  // delivery stays healthy. At the 1,000 sat/PH/day default overpay this
-  // gives a ~200 sat/PH/day deadband. Never below tick_size - Braiins
-  // would reject a smaller edit.
+  // delivery stays healthy.
+  //
+  // #222: `bid_edit_deadband_pct` (default 20, preserving the legacy
+  // hard-coded `/ 5`). Operator can raise to e.g. 50 to halve edit
+  // frequency and tolerate ~2x more price jitter before re-pricing.
+  // Useful as a chart-noise reducer today and as a per-edit-fee
+  // mitigation if Braiins ever introduces an EDIT_PRICE fee. At the
+  // 1,000 sat/PH/day default overpay × 20%, the deadband is
+  // ~200 sat/PH/day. Never below tick_size - Braiins would reject a
+  // smaller edit anyway.
   const editDeadband = Math.max(
     tickSize,
-    Math.floor(config.overpay_sat_per_eh_day / 5),
+    Math.floor((config.overpay_sat_per_eh_day * config.bid_edit_deadband_pct) / 100),
   );
 
   const priceSuffix = cappedByCeiling

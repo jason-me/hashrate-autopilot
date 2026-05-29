@@ -1092,6 +1092,8 @@ function NextActionCard({
     RUN_MODE_PAUSED: t`paused`,
     ACTION_MODE_BLOCKS_CREATE_OR_EDIT: t`action mode blocks this`,
     PRICE_DECREASE_COOLDOWN: t`Braiins 10-min cooldown`,
+    // #222: a bid's fee_rate_pct is above config.max_acceptable_fee_pct.
+    FEE_THRESHOLD_EXCEEDED: t`Braiins fee above your threshold`,
   };
 
   return (
@@ -3446,6 +3448,9 @@ function gateReasonLabel(reason: string): string {
       return t`paused`;
     case 'ACTION_MODE_BLOCKS_CREATE_OR_EDIT':
       return t`action mode blocks this`;
+    // #222: any active bid's fee_rate_pct above max_acceptable_fee_pct.
+    case 'FEE_THRESHOLD_EXCEEDED':
+      return t`Braiins fee above your threshold`;
     default:
       // Fall back to a humanised form of the raw enum -
       // PRICE_DECREASE_COOLDOWN → "price decrease cooldown" - so an

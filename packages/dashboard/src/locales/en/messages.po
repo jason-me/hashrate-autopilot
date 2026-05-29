@@ -724,6 +724,10 @@ msgstr "Braiins deposit lifecycle"
 msgid "Braiins doesn't allow changing a live bid's destination URL. Your config now points at a different host than the bid was created with - miners on this bid keep going to the old destination until you cancel and recreate. Cancel here, the next decision tick will create a fresh bid with the current URL automatically."
 msgstr "Braiins doesn't allow changing a live bid's destination URL. Your config now points at a different host than the bid was created with - miners on this bid keep going to the old destination until you cancel and recreate. Cancel here, the next decision tick will create a fresh bid with the current URL automatically."
 
+#: src/pages/Status.tsx
+msgid "Braiins fee above your threshold"
+msgstr "Braiins fee above your threshold"
+
 #: src/pages/Config.tsx
 msgid "Braiins marketplace"
 msgstr "Braiins marketplace"
@@ -735,6 +739,10 @@ msgstr "Braiins marketplace API - reachable when the last observe() read market/
 #: src/pages/Config.tsx
 msgid "Braiins marketplace empty for"
 msgstr "Braiins marketplace empty for"
+
+#: src/pages/Config.tsx
+msgid "Braiins's marketplace fees are currently zero (beta). These two knobs pre-arm the autopilot for the day that changes: an automatic halt when fees exceed your comfort level, and a configurable edit deadband to keep the bid-adjustment count down."
+msgstr "Braiins's marketplace fees are currently zero (beta). These two knobs pre-arm the autopilot for the day that changes: an automatic halt when fees exceed your comfort level, and a configurable edit deadband to keep the bid-adjustment count down."
 
 #: src/pages/Status.tsx
 msgid "Braiins's own `state_estimate.avg_speed_ph` reading - their internal estimate of current matched hashrate. Reacts to a CREATE_BID / EDIT_SPEED within ~3 min. The orange \"delivered (Braiins)\" line on the Hashrate chart below plots a different signal: real billed PH/s derived from the consumed-sat counter (Δconsumed / (bid × Δt)). That counter signal is the truthful long-run billing record but takes longer to catch up to a capacity bump because matched shares have to accumulate. During a Datum outage the counter goes to zero correctly while this estimate holds elevated for minutes - that's why the chart uses the counter signal."
@@ -1269,6 +1277,10 @@ msgstr "Edit speed"
 msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
 
+#: src/pages/Config.tsx
+msgid "Edit-price deadband"
+msgstr "Edit-price deadband"
+
 #: src/components/PriceChart.tsx
 msgid "effective"
 msgstr "effective"
@@ -1398,6 +1410,10 @@ msgstr "failed to load: {0}"
 #: src/pages/Config.tsx
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
 msgstr "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
+
+#: src/pages/Config.tsx
+msgid "Fee protection"
+msgstr "Fee protection"
 
 #: src/components/Bip110ScanCard.tsx
 #: src/components/HashrateChart.tsx
@@ -1850,6 +1866,10 @@ msgstr "marking…"
 #: src/pages/Config.tsx
 msgid "Match - hostname is pointing at this box."
 msgstr "Match - hostname is pointing at this box."
+
+#: src/pages/Config.tsx
+msgid "Max acceptable fee"
+msgstr "Max acceptable fee"
 
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
@@ -2434,8 +2454,12 @@ msgid "Per-hostname DDNS Key user, not your account login."
 msgstr "Per-hostname DDNS Key user, not your account login."
 
 #: src/pages/Config.tsx
-msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)."
-msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5)."
+msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments. The edit-price deadband is a percentage of this value (see Fee protection below)."
+msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments. The edit-price deadband is a percentage of this value (see Fee protection below)."
+
+#: src/pages/Config.tsx
+msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
+msgstr "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -3395,6 +3419,10 @@ msgstr "What this last block earned us, estimated as block_reward * share_log_pc
 #: src/pages/Config.tsx
 msgid "What to send to Telegram"
 msgstr "What to send to Telegram"
+
+#: src/pages/Config.tsx
+msgid "When any active bid carries a fee_rate_pct above this, the mutation gate blocks CREATE_BID, EDIT_PRICE, and EDIT_SPEED. CANCEL_BID is still allowed so you (or the Datum-down auto-cancel) can bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee at all, matching the existing beta_exit Telegram alert. Set higher (e.g. 0.5) to tolerate a known fee without stopping the autopilot."
+msgstr "When any active bid carries a fee_rate_pct above this, the mutation gate blocks CREATE_BID, EDIT_PRICE, and EDIT_SPEED. CANCEL_BID is still allowed so you (or the Datum-down auto-cancel) can bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee at all, matching the existing beta_exit Telegram alert. Set higher (e.g. 0.5) to tolerate a known fee without stopping the autopilot."
 
 #: src/pages/Config.tsx
 msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."

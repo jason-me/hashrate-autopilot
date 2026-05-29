@@ -142,3 +142,89 @@ describe('gate - price-decrease cooldown', () => {
     expect(outcome).toMatchObject({ allowed: true });
   });
 });
+
+// #222: fee-threshold halt. When any active owned bid carries a
+// fee_rate_pct above config.max_acceptable_fee_pct, the gate blocks
+// CREATE / EDIT_PRICE / EDIT_SPEED but still allows CANCEL_BID so
+// the operator (or the Datum-down auto-cancel) can bail out of a
+// fee-bearing bid.
+describe('gate - fee-threshold halt (#222)', () => {
+  function bidWithFee(
+    feePct: number | null,
+    status = 'BID_STATUS_ACTIVE',
+  ): State['owned_bids'][number] {
+    return {
+      braiins_order_id: 'bid-a',
+      cl_order_id: null,
+      price_sat: 50_000_000,
+      amount_sat: 50_000,
+      speed_limit_ph: 2,
+      avg_speed_ph: 0,
+      progress_pct: 0,
+      amount_remaining_sat: 50_000,
+      amount_consumed_sat: 0,
+      status,
+      last_price_decrease_at: null,
+      last_pause_reason: null,
+      fee_rate_pct: feePct,
+    };
+  }
+
+  it('default config (max_acceptable_fee_pct = 0): any non-zero fee blocks CREATE', () => {
+    const s = state({ owned_bids: [bidWithFee(0.5)] });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: false, reason: 'FEE_THRESHOLD_EXCEEDED' });
+  });
+
+  it('default config: any non-zero fee blocks EDIT_PRICE', () => {
+    const s = state({ owned_bids: [bidWithFee(0.01)] });
+    const [outcome] = gate([EDIT_UP], s);
+    expect(outcome).toMatchObject({ allowed: false, reason: 'FEE_THRESHOLD_EXCEEDED' });
+  });
+
+  it('CANCEL is allowed even when the fee threshold is exceeded (escape hatch)', () => {
+    const s = state({ owned_bids: [bidWithFee(5)] });
+    const [outcome] = gate([CANCEL], s);
+    expect(outcome).toMatchObject({ allowed: true });
+  });
+
+  it('fee at the threshold (equal) does NOT trip the halt (> not >=)', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, max_acceptable_fee_pct: 1 },
+      owned_bids: [bidWithFee(1)],
+    });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: true });
+  });
+
+  it('fee above an operator-raised threshold still trips', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, max_acceptable_fee_pct: 1 },
+      owned_bids: [bidWithFee(1.5)],
+    });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: false, reason: 'FEE_THRESHOLD_EXCEEDED' });
+  });
+
+  it('non-ACTIVE bid with a non-zero fee does NOT trip the halt', () => {
+    // Finished/paused bids carrying a stale fee_rate_pct in the
+    // snapshot would otherwise lock the operator out indefinitely.
+    const s = state({
+      owned_bids: [bidWithFee(2, 'BID_STATUS_FINISHED')],
+    });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: true });
+  });
+
+  it('null fee_rate_pct (pre-migration / missing field) does NOT trip the halt', () => {
+    const s = state({ owned_bids: [bidWithFee(null)] });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: true });
+  });
+
+  it('empty owned_bids does NOT trip the halt', () => {
+    const s = state({ owned_bids: [] });
+    const [outcome] = gate([CREATE], s);
+    expect(outcome).toMatchObject({ allowed: true });
+  });
+});

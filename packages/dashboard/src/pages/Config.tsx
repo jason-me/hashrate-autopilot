@@ -201,7 +201,7 @@ function useSections(): Section[] {
             key: 'overpay_sat_per_eh_day',
             label: t`Overpay above fillable`,
             kind: 'price_sat_per_eh_day',
-            help: t`Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments (the controller's edit-price deadband is overpay/5).`,
+            help: t`Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more cushion before the bid drifts under fillable on short upward market moves, bigger steady-state premium. Lower = closer to the cheapest fillable price and more frequent bid adjustments. The edit-price deadband is a percentage of this value (see Fee protection below).`,
           },
           {
             key: 'max_bid_sat_per_eh_day',
@@ -214,6 +214,31 @@ function useSections(): Section[] {
             label: t`Max premium over hashprice`,
             kind: 'price_sat_per_eh_day',
             help: t`Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable.`,
+          },
+        ],
+      },
+      {
+        // #222: fee-protection section. Two knobs that together control
+        // exposure to Braiins's marketplace fees (the marketplace is
+        // currently in beta with fee_rate_pct = 0; this section is
+        // pre-armed for the day that changes).
+        id: 'fee-protection',
+        title: t`Fee protection`,
+        description: t`Braiins's marketplace fees are currently zero (beta). These two knobs pre-arm the autopilot for the day that changes: an automatic halt when fees exceed your comfort level, and a configurable edit deadband to keep the bid-adjustment count down.`,
+        fields: [
+          {
+            key: 'max_acceptable_fee_pct',
+            label: t`Max acceptable fee`,
+            kind: 'decimal',
+            unit: '%',
+            help: t`When any active bid carries a fee_rate_pct above this, the mutation gate blocks CREATE_BID, EDIT_PRICE, and EDIT_SPEED. CANCEL_BID is still allowed so you (or the Datum-down auto-cancel) can bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee at all, matching the existing beta_exit Telegram alert. Set higher (e.g. 0.5) to tolerate a known fee without stopping the autopilot.`,
+          },
+          {
+            key: 'bid_edit_deadband_pct',
+            label: t`Edit-price deadband`,
+            kind: 'decimal',
+            unit: '%',
+            help: t`Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless.`,
           },
         ],
       },
@@ -750,7 +775,10 @@ const TAB_ORDER: TabId[] = ['strategy', 'pool', 'notifications', 'display'];
  * IDs but get their own switch arm during rendering.
  */
 const TAB_SECTIONS: Record<TabId, readonly string[]> = {
-  strategy: ['hashrate-targets', 'cheap-mode', 'pricing', 'budget', 'daemon-startup'],
+  // #222: fee-protection sits between pricing and budget - the two
+  // knobs (max acceptable fee, edit deadband) modify the pricing
+  // controller's behavior under marketplace fees.
+  strategy: ['hashrate-targets', 'cheap-mode', 'pricing', 'fee-protection', 'budget', 'daemon-startup'],
   pool: ['pool-destination', 'ddns', 'payout-source', 'profit-and-loss', 'btc-price-oracle'],
   notifications: ['notifications', 'block-found-sound'],
   display: ['display-settings', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api'],

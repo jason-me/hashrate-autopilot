@@ -2,6 +2,10 @@
 
 ## 2026-05-29
 
+### `[Feature]` Configurable fee threshold + edit deadband (#222)
+
+Two new operator-configurable knobs on Config → Strategy under a new "Fee protection" section. **Max acceptable fee** (`max_acceptable_fee_pct`, default 0): when any active owned bid carries a `fee_rate_pct` above this percentage, the mutation gate blocks new `CREATE_BID` / `EDIT_PRICE` / `EDIT_SPEED`. `CANCEL_BID` remains allowed so you (or the Datum-down auto-cancel) can still bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee, matching the existing `beta_exit` Telegram alert. The halt clears automatically once every active bid drops back at-or-below the threshold; the threshold itself is the operator's acknowledgement, no clear button. **Edit-price deadband** (`bid_edit_deadband_pct`, default 20): replaces the hard-coded `editDeadband = max(tick_size, overpay / 5)` in `decide.ts` with `max(tick_size, overpay × pct / 100)`. Default 20 preserves the legacy behaviour (1/5 = 20%). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today and as per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size remains the hard floor regardless. Migration 0099 adds both columns with their defaults. The Status panel's proposals strip shows "Braiins fee above your threshold" when the gate fires the new reason code `FEE_THRESHOLD_EXCEEDED`. Supersedes the cancelled #200 (absolute knob).
+
 ### `[Fix]` Pool-luck step tooltip wording (#223)
 
 The pool-luck step tooltip on the Hashrate chart was labelling the luck value as the "numerator" - e.g. "Block aged out of the rolling-24h window - numerator went from 1.14× to 0.91×." The numerator of the luck formula is actually the block count over the rolling window (an integer, N → N±1); the 1.14× / 0.91× values shown are the pool luck multiplier before and after the step. Reworded to "pool luck went from X× to Y×" on both step-up (block landed) and step-down (block aged out) variants. en / nl / es catalogs updated.

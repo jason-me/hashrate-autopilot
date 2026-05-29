@@ -301,6 +301,53 @@ describe('decide - EDIT_PRICE to target', () => {
       new_price_sat: 46_300_000,
     });
   });
+
+  // #222: deadband percentage is now operator-configurable. The
+  // existing tests above cover the default 20% (= legacy `overpay/5`).
+  // These cover the configurability itself.
+  it('configurable deadband: 50% raises the threshold from 200k to 500k', () => {
+    // bid_edit_deadband_pct = 50 → deadband = max(tick_size, overpay × 50 / 100)
+    //   = max(1,000, 500,000) = 500,000.
+    // fillable 45,550,000 + overpay 1M = 46,550,000; current 46M → delta 550k
+    // crosses 50% deadband but would cross 20% trivially - the 50%
+    // version still edits.
+    const s = state({
+      config: { ...BASE_CONFIG, bid_edit_deadband_pct: 50 },
+      fillable_ask_sat_per_eh_day: 45_550_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
+      kind: 'EDIT_PRICE',
+      new_price_sat: 46_550_000,
+    });
+  });
+
+  it('configurable deadband: 50% absorbs a drift the 20% default would have edited', () => {
+    // bid_edit_deadband_pct = 50 → deadband = 500,000.
+    // fillable 45_300_000 + overpay 1M = 46,300,000; current 46M → delta 300k.
+    // Above 20% (= 200k) but below 50% (= 500k), so no edit.
+    const s = state({
+      config: { ...BASE_CONFIG, bid_edit_deadband_pct: 50 },
+      fillable_ask_sat_per_eh_day: 45_300_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toBeUndefined();
+  });
+
+  it('configurable deadband: 0% falls back to tick_size floor (1,000)', () => {
+    // bid_edit_deadband_pct = 0 → deadband = max(tick_size, 0) = 1,000.
+    // fillable 45,001,000 + overpay 1M = 46,001,000; current 46M → delta 1k.
+    // Equals tick_size exactly so it qualifies for an edit.
+    const s = state({
+      config: { ...BASE_CONFIG, bid_edit_deadband_pct: 0 },
+      fillable_ask_sat_per_eh_day: 45_001_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
+      kind: 'EDIT_PRICE',
+      new_price_sat: 46_001_000,
+    });
+  });
 });
 
 describe('decide - EDIT_SPEED', () => {
