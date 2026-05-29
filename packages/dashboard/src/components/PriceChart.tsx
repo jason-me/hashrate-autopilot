@@ -3155,17 +3155,35 @@ function EventTooltip({
             />
           )}
           {/* #224 (#222): deadband at the tick. Shown as a percentage
-              with the equivalent sat/PH/day floor in parentheses, so
-              the operator can sanity-check "did this edit clear the
-              threshold?" without doing the math in their head. Pre-
-              migration rows render as 20% (the backfilled value). */}
+              with the equivalent sat/PH/day floor inline so the
+              operator can sanity-check "did this edit clear the
+              threshold?" without doing the math in their head.
+              Custom JSX (not Row) because the unit suffix mixes a
+              percent and a sat-unit; Row's splitUnit regex assumes a
+              single trailing unit. Both numeric values rendered in
+              normal weight; the `%`, `≈`, and `≡/PH/day` parts pick
+              up the muted-unit styling that the SatUnit helper gives
+              every other row above. Pre-migration rows render as 20%
+              (the backfilled value). */}
           {marketAtEvent.bid_edit_deadband_pct !== null && overpayAtEvent !== null && (
-            <Row
-              label={t`deadband`}
-              value={`${formatNumber(marketAtEvent.bid_edit_deadband_pct)} % (≈ ${formatNumber(
-                Math.round((overpayAtEvent * marketAtEvent.bid_edit_deadband_pct) / 100),
-              )} sat/PH/day)`}
-            />
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500">
+                <Trans>deadband</Trans>
+              </span>
+              <span className="font-mono tabular-nums">
+                {formatNumber(marketAtEvent.bid_edit_deadband_pct)}
+                <span className="text-slate-500 text-[11px] ml-1">% ≈</span>{' '}
+                {formatNumber(
+                  Math.round(
+                    (overpayAtEvent * marketAtEvent.bid_edit_deadband_pct) / 100,
+                  ),
+                )}
+                <span className="text-slate-500 text-[11px] ml-1">
+                  <SatSymbol className="opacity-70" />
+                  {t`/PH/day`}
+                </span>
+              </span>
+            </div>
           )}
         </div>
       )}
