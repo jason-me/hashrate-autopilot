@@ -923,9 +923,12 @@ export class AlertEvaluator {
       const valueSatStr = row.value_sat.toLocaleString('en-US');
       const valueBtcStr = (row.value_sat / 1e8).toFixed(8);
       const heightStr = row.block_height.toLocaleString('en-US');
-      const txidShort = row.txid.length > 16
-        ? `${row.txid.slice(0, 8)}…${row.txid.slice(-8)}`
-        : row.txid;
+      // #226 follow-up: txid intentionally omitted from the body for
+      // operator privacy. The chart already deep-links each payout
+      // marker to a block explorer; surfacing the txid in Telegram
+      // would broadcast it through whatever chat history the
+      // operator has retained, which is more exposure than the
+      // event itself warrants.
       await this.alertManager.recordAlert({
         severity: 'INFO',
         title: copyFor(state).payout_confirmed_title({ payout_btc: valueBtcStr }),
@@ -933,8 +936,6 @@ export class AlertEvaluator {
           payout_sat: valueSatStr,
           payout_btc: valueBtcStr,
           height: heightStr,
-          txid_short: txidShort,
-          txid_full: row.txid,
         }),
         event_class: 'payout_confirmed',
       });

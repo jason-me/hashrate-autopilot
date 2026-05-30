@@ -108,8 +108,19 @@ export interface AlertCopy {
     unpaid: string;
   }): string;
 
-  // #226 - Ocean payout lifecycle (initiated when Ocean debits unpaid_sat,
-  // confirmed when on-chain coinbase to payout address lands).
+  // #226 - Ocean payout lifecycle. payout_initiated fires when the
+  // daemon observes Ocean debiting ocean_unpaid_sat (a payout is on
+  // its way). payout_confirmed fires when a new on-chain receipt
+  // hits the operator's payout address. Deliberately doesn't claim
+  // anything about WHICH block the payout will ride in: empirically
+  // operators see payouts confirm in non-Ocean blocks too
+  // (#226 follow-up, operator observation 2026-05-30). The body
+  // sticks to what we can prove: the balance dropped, the
+  // transaction will land, you'll get a second message.
+  //
+  // Tx id is intentionally omitted from the confirmed body (privacy
+  // posture — the operator's payout-tx history is sensitive and
+  // shouldn't broadcast through Telegram by default).
   payout_initiated_title(args: { payout_btc: string }): string;
   payout_initiated_body(args: {
     payout_sat: string;
@@ -122,8 +133,6 @@ export interface AlertCopy {
     payout_sat: string;
     payout_btc: string;
     height: string;
-    txid_short: string;
-    txid_full: string;
   }): string;
 
   // #130 - Braiins deposit lifecycle.
@@ -250,11 +259,11 @@ const EN: AlertCopy = {
   payout_initiated_title: ({ payout_btc }) =>
     `Payout initiated - ${payout_btc} BTC`,
   payout_initiated_body: ({ payout_sat, payout_btc, pre_drop_unpaid, residual_unpaid }) =>
-    `Ocean has debited your unpaid balance: ${pre_drop_unpaid} → ${residual_unpaid}. A payout of ~${payout_sat} sat (${payout_btc} BTC) is now committed to the coinbase of the next block Ocean finds. On-chain confirmation follows; you'll get a second message when the transaction lands.`,
+    `Ocean has debited your unpaid balance: ${pre_drop_unpaid} → ${residual_unpaid}. A payout of ~${payout_sat} sat (${payout_btc} BTC) has been initiated. On-chain confirmation follows; you'll get a second message when the transaction lands.`,
   payout_confirmed_title: ({ payout_btc }) =>
     `Payout confirmed on-chain - ${payout_btc} BTC`,
-  payout_confirmed_body: ({ payout_sat, payout_btc, height, txid_short }) =>
-    `Coinbase payout of ${payout_sat} sat (${payout_btc} BTC) confirmed on-chain in block #${height}. Tx: ${txid_short}.`,
+  payout_confirmed_body: ({ payout_sat, payout_btc, height }) =>
+    `Payout of ${payout_sat} sat (${payout_btc} BTC) confirmed on-chain in block #${height}.`,
 
   braiins_deposit_detected_title: () => 'Braiins deposit detected',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
@@ -378,11 +387,11 @@ const NL: AlertCopy = {
   payout_initiated_title: ({ payout_btc }) =>
     `Uitbetaling gestart - ${payout_btc} BTC`,
   payout_initiated_body: ({ payout_sat, payout_btc, pre_drop_unpaid, residual_unpaid }) =>
-    `Ocean heeft je unpaid-saldo gedebiteerd: ${pre_drop_unpaid} → ${residual_unpaid}. Een uitbetaling van ~${payout_sat} sat (${payout_btc} BTC) zit nu in de coinbase van het eerstvolgende blok dat Ocean vindt. On-chain bevestiging volgt; je krijgt een tweede bericht zodra de transactie landt.`,
+    `Ocean heeft je unpaid-saldo gedebiteerd: ${pre_drop_unpaid} → ${residual_unpaid}. Een uitbetaling van ~${payout_sat} sat (${payout_btc} BTC) is gestart. On-chain bevestiging volgt; je krijgt een tweede bericht zodra de transactie landt.`,
   payout_confirmed_title: ({ payout_btc }) =>
     `Uitbetaling bevestigd on-chain - ${payout_btc} BTC`,
-  payout_confirmed_body: ({ payout_sat, payout_btc, height, txid_short }) =>
-    `Coinbase-uitbetaling van ${payout_sat} sat (${payout_btc} BTC) bevestigd on-chain in blok #${height}. Tx: ${txid_short}.`,
+  payout_confirmed_body: ({ payout_sat, payout_btc, height }) =>
+    `Uitbetaling van ${payout_sat} sat (${payout_btc} BTC) bevestigd on-chain in blok #${height}.`,
 
   braiins_deposit_detected_title: () => 'Braiins deposit gedetecteerd',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
@@ -507,11 +516,11 @@ const ES: AlertCopy = {
   payout_initiated_title: ({ payout_btc }) =>
     `Pago iniciado - ${payout_btc} BTC`,
   payout_initiated_body: ({ payout_sat, payout_btc, pre_drop_unpaid, residual_unpaid }) =>
-    `Ocean ha debitado tu saldo no pagado: ${pre_drop_unpaid} → ${residual_unpaid}. Un pago de ~${payout_sat} sat (${payout_btc} BTC) está ahora comprometido en la coinbase del próximo bloque que Ocean encuentre. La confirmación en cadena seguirá; recibirás un segundo mensaje cuando la transacción aterrice.`,
+    `Ocean ha debitado tu saldo no pagado: ${pre_drop_unpaid} → ${residual_unpaid}. Un pago de ~${payout_sat} sat (${payout_btc} BTC) se ha iniciado. La confirmación en cadena seguirá; recibirás un segundo mensaje cuando la transacción aterrice.`,
   payout_confirmed_title: ({ payout_btc }) =>
     `Pago confirmado on-chain - ${payout_btc} BTC`,
-  payout_confirmed_body: ({ payout_sat, payout_btc, height, txid_short }) =>
-    `Pago de coinbase de ${payout_sat} sat (${payout_btc} BTC) confirmado on-chain en el bloque #${height}. Tx: ${txid_short}.`,
+  payout_confirmed_body: ({ payout_sat, payout_btc, height }) =>
+    `Pago de ${payout_sat} sat (${payout_btc} BTC) confirmado on-chain en el bloque #${height}.`,
 
   braiins_deposit_detected_title: () => 'Depósito en Braiins detectado',
   braiins_deposit_detected_body: ({ amount, address_short }) =>

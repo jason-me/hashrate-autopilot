@@ -231,8 +231,6 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
         payout_sat: '1,062,144',
         payout_btc: '0.01062144',
         height: '951,602',
-        txid_short: 'a1b2c3d4…e5f6g7h8',
-        txid_full: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e5f6g7h8',
       }),
       is_recovery: false,
     };
