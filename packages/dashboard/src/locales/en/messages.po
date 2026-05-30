@@ -446,6 +446,10 @@ msgstr "Average delivered hashrate over the selected chart range. Multiplied by 
 msgid "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
 msgstr "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
 
+#: src/components/HashrateChart.tsx
+msgid "avg block time"
+msgstr "avg block time"
+
 #: src/pages/Status.tsx
 msgid "avg braiins"
 msgstr "avg braiins"
@@ -613,6 +617,10 @@ msgstr "Block explorer"
 #: src/components/HashrateChart.tsx
 msgid "block found:"
 msgstr "block found:"
+
+#: src/components/HashrateChart.tsx
+msgid "block height"
+msgstr "block height"
 
 #. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
 #. placeholder {1}: luckAfter.toFixed(2)
@@ -1186,8 +1194,8 @@ msgid "Devices"
 msgstr "Devices"
 
 #: src/components/HashrateChart.tsx
-msgid "DIFFICULTY RETARGET"
-msgstr "DIFFICULTY RETARGET"
+msgid "DIFFICULTY ADJUSTMENT"
+msgstr "DIFFICULTY ADJUSTMENT"
 
 #: src/pages/Config.tsx
 msgid "Disabled"
@@ -2001,6 +2009,10 @@ msgstr "network difficulty"
 msgid "network error"
 msgstr "network error"
 
+#: src/components/HashrateChart.tsx
+msgid "network hashrate"
+msgstr "network hashrate"
+
 #: src/pages/Status.tsx
 msgid "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
 msgstr "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
@@ -2525,6 +2537,10 @@ msgstr "pool blocks 7d"
 #: src/pages/Status.tsx
 msgid "pool blocks all time"
 msgstr "pool blocks all time"
+
+#: src/components/HashrateChart.tsx
+msgid "pool blocks this epoch"
+msgstr "pool blocks this epoch"
 
 #: src/pages/Config.tsx
 msgid "Pool destination"

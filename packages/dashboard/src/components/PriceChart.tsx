@@ -34,7 +34,11 @@ import {
   type OurBlockMarker,
   type RewardEventView,
 } from '../lib/api';
-import { projectSoloSeries } from './HashrateChart';
+import {
+  countPriorEpochPoolBlocks,
+  inferRetargetBlockHeight,
+  projectSoloSeries,
+} from './HashrateChart';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
@@ -1685,13 +1689,28 @@ export const PriceChart = memo(function PriceChart({
       if (prev !== null && Math.abs(d - prev) / prev > 0.005) {
         const next = i + 1 < n ? nextNonNull[i + 1] ?? null : null;
         if (next === null || Math.abs(next - d) / d <= 0.005) {
-          out.push({ tick_at: points[i]!.tick_at, difficulty: d, previous: prev });
+          // #229: same enrichment as HashrateChart's mirror builder
+          // so the tooltip's block_height / pool_blocks_prior_epoch
+          // fields read correctly regardless of which chart the
+          // operator hovers on.
+          const retargetTickAt = points[i]!.tick_at;
+          const blockHeight = inferRetargetBlockHeight(retargetTickAt, ourBlocks);
+          const poolBlocksPriorEpoch = blockHeight !== null
+            ? countPriorEpochPoolBlocks(blockHeight, ourBlocks)
+            : null;
+          out.push({
+            tick_at: retargetTickAt,
+            difficulty: d,
+            previous: prev,
+            block_height: blockHeight,
+            pool_blocks_prior_epoch: poolBlocksPriorEpoch,
+          });
         }
       }
       prev = d;
     }
     return out;
-  }, [points]);
+  }, [points, ourBlocks]);
 
   if (!chartData) {
     return (

@@ -125,6 +125,59 @@ function rollingMean(
   return out;
 }
 
+/**
+ * #229: derive the retarget block height from an `OurBlockMarker[]`
+ * window. Bitcoin's difficulty retargets at every multiple of 2016,
+ * so any pool block whose height we know lets us snap to its epoch
+ * start. Walks `ourBlocks` for the block whose timestamp is closest
+ * to the retarget tick, then:
+ *   - If that block is AT or AFTER the retarget, its height lives
+ *     in the new epoch -> retarget block = floor(height / 2016) * 2016.
+ *   - If BEFORE, it lives in the prior epoch -> retarget block =
+ *     the next 2016 boundary above its height.
+ * Returns null when `ourBlocks` is empty or carries no height field
+ * for the closest match. Exported for PriceChart's mirror builder.
+ */
+export function inferRetargetBlockHeight(
+  retargetTickAt: number,
+  ourBlocks: ReadonlyArray<{ timestamp_ms: number; height: number | null | undefined }>,
+): number | null {
+  let best: { timestamp_ms: number; height: number | null | undefined } | null = null;
+  let bestDiff = Infinity;
+  for (const b of ourBlocks) {
+    if (typeof b.height !== 'number') continue;
+    const diff = Math.abs(b.timestamp_ms - retargetTickAt);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = b;
+    }
+  }
+  if (!best || typeof best.height !== 'number') return null;
+  if (best.timestamp_ms >= retargetTickAt) {
+    return Math.floor(best.height / 2016) * 2016;
+  }
+  return Math.ceil((best.height + 1) / 2016) * 2016;
+}
+
+/**
+ * #229: count pool blocks whose height falls inside the prior
+ * epoch's range `[retargetHeight - 2016, retargetHeight)`. Used by
+ * the retarget tooltip to surface "how many blocks did Ocean find
+ * last epoch" in operator-relevant terms.
+ */
+export function countPriorEpochPoolBlocks(
+  retargetHeight: number,
+  ourBlocks: ReadonlyArray<{ height: number | null | undefined }>,
+): number {
+  const epochStart = retargetHeight - 2016;
+  let n = 0;
+  for (const b of ourBlocks) {
+    if (typeof b.height !== 'number') continue;
+    if (b.height >= epochStart && b.height < retargetHeight) n += 1;
+  }
+  return n;
+}
+
 export interface RetargetEvent {
   /** Tick timestamp of the first sample at the new difficulty. */
   tick_at: number;
@@ -137,6 +190,22 @@ export interface RetargetEvent {
   luckBefore?: number | null;
   /** Pool luck at the retarget tick. */
   luckAfter?: number | null;
+  /**
+   * #229: retarget block height, derived from `ourBlocks` (the
+   * pool_blocks table). Any Ocean block within the prior or new
+   * epoch lets us snap to the epoch boundary via
+   * `floor(height / 2016) × 2016`. Null when no pool block in the
+   * relevant window is available (rare; Ocean finds ~3 blocks/day,
+   * so a 14-day epoch will normally have ~40+).
+   */
+  block_height?: number | null;
+  /**
+   * #229: count of Ocean pool blocks whose height falls inside the
+   * prior epoch's range `[block_height - 2016, block_height)`.
+   * Surfaces "how lucky were we last epoch" in operator-relevant
+   * terms. Null when `block_height` is null.
+   */
+  pool_blocks_prior_epoch?: number | null;
 }
 
 export interface RetargetTooltipState {
@@ -477,19 +546,30 @@ export const HashrateChart = memo(function HashrateChart({
       if (prev !== null && Math.abs(d - prev) / prev > 0.005) {
         const next = i + 1 < n ? nextNonNull[i + 1] ?? null : null;
         if (next === null || Math.abs(next - d) / d <= 0.005) {
+          // #229: derive retarget block height + prior-epoch pool
+          // block count from `ourBlocks` (the pool_blocks table).
+          // Trivial to compute since the helpers walk the array;
+          // doing it here means the tooltip just reads the field.
+          const retargetTickAt = points[i]!.tick_at;
+          const blockHeight = inferRetargetBlockHeight(retargetTickAt, ourBlocks);
+          const poolBlocksPriorEpoch = blockHeight !== null
+            ? countPriorEpochPoolBlocks(blockHeight, ourBlocks)
+            : null;
           out.push({
-            tick_at: points[i]!.tick_at,
+            tick_at: retargetTickAt,
             difficulty: d,
             previous: prev,
             luckBefore: luckKey && i > 0 ? points[i - 1]![luckKey] : undefined,
             luckAfter: luckKey ? points[i]![luckKey] : undefined,
+            block_height: blockHeight,
+            pool_blocks_prior_epoch: poolBlocksPriorEpoch,
           });
         }
       }
       prev = d;
     }
     return out;
-  }, [points, rightAxisSeries]);
+  }, [points, rightAxisSeries, ourBlocks]);
 
   const chartData = useMemo(() => {
     if (points.length < 2) return null;
@@ -1922,6 +2002,42 @@ export function RetargetTooltip({
       maximumFractionDigits: 2,
     }).format(v);
 
+  // #229: avg block time over the prior epoch, derived exactly from
+  // the difficulty delta. Bitcoin's retarget formula is
+  //   new_difficulty / old_difficulty = target_timespan / actual_timespan
+  // so actual avg block time = 600s × (old / new). Render as
+  // "9m 52s" with sub-minute precision.
+  const avgBlockSec = event.previous > 0 && event.difficulty > 0
+    ? 600 * (event.previous / event.difficulty)
+    : null;
+  const avgBlockText = avgBlockSec !== null
+    ? `${Math.floor(avgBlockSec / 60)}m ${Math.round(avgBlockSec % 60)}s`
+    : '—';
+
+  // #229: network hashrate from difficulty. `difficulty × 2^32 / 600`
+  // gives H/s. Bitcoin's network is in the high-hundreds-of-EH range
+  // at retarget time so always render EH/s with one decimal.
+  const hashrateEHs = event.difficulty * 2 ** 32 / 600 / 1e18;
+  const hashrateText = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(hashrateEHs);
+
+  const heightText = event.block_height !== null && event.block_height !== undefined
+    ? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(event.block_height)
+    : null;
+
+  // #229: pool blocks Ocean found in the prior epoch. Hidden when
+  // null (no nearby pool block available to derive the epoch range)
+  // or when the count is zero (Ocean had a no-luck epoch — surface
+  // it as a gap rather than misleadingly imply we know the count
+  // is exactly zero; in practice this is near-impossible).
+  const poolBlocksText = event.pool_blocks_prior_epoch !== null
+      && event.pool_blocks_prior_epoch !== undefined
+      && event.pool_blocks_prior_epoch > 0
+    ? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(event.pool_blocks_prior_epoch)
+    : null;
+
   return (
     <div
       ref={ref}
@@ -1931,7 +2047,7 @@ export function RetargetTooltip({
     >
       <div className="flex items-start justify-between gap-3">
         <span className="font-semibold uppercase tracking-wider text-violet-300">
-          <Trans>DIFFICULTY RETARGET</Trans>
+          <Trans>DIFFICULTY ADJUSTMENT</Trans>
         </span>
         {pinned && (
           <button
@@ -1963,6 +2079,29 @@ export function RetargetTooltip({
           <span className="text-slate-500"><Trans>change</Trans></span>
           <span className={`font-mono tabular-nums ${pctColor}`}>{pctText}</span>
         </div>
+        {/* #229: enrichment fields below the existing three. All
+            derived from the event payload + the pool_blocks lookup;
+            no new daemon plumbing. */}
+        {heightText !== null && (
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500"><Trans>block height</Trans></span>
+            <span className="font-mono tabular-nums">{heightText}</span>
+          </div>
+        )}
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-500"><Trans>avg block time</Trans></span>
+          <span className="font-mono tabular-nums">{avgBlockText}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-500"><Trans>network hashrate</Trans></span>
+          <span className="font-mono tabular-nums">≈ {hashrateText} EH/s</span>
+        </div>
+        {poolBlocksText !== null && (
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500"><Trans>pool blocks this epoch</Trans></span>
+            <span className="font-mono tabular-nums">{poolBlocksText}</span>
+          </div>
+        )}
       </div>
 
       {hasLuck && (
