@@ -164,18 +164,31 @@ export function inferRetargetBlockHeight(
  * epoch's range `[retargetHeight - 2016, retargetHeight)`. Used by
  * the retarget tooltip to surface "how many blocks did Ocean find
  * last epoch" in operator-relevant terms.
+ *
+ * #229 follow-up: returns `null` when we can't prove full coverage
+ * of the prior epoch. A fresh install (or any adjustment older than
+ * our 60-day server-side pool_blocks cutoff) won't have a block at
+ * or before `epochStart`, which means the count is artificially
+ * low — showing "5 blocks this epoch" right after a fresh install
+ * would mislead the operator into thinking Ocean had a horrible
+ * run when actually we just don't have the data yet. The coverage
+ * check requires at least one block whose height is ≤ `epochStart`;
+ * its existence proves we were recording (or backfilled to) before
+ * the epoch began. The tooltip hides the row on null.
  */
 export function countPriorEpochPoolBlocks(
   retargetHeight: number,
   ourBlocks: ReadonlyArray<{ height: number | null | undefined }>,
-): number {
+): number | null {
   const epochStart = retargetHeight - 2016;
-  let n = 0;
+  let haveCoverage = false;
+  let count = 0;
   for (const b of ourBlocks) {
     if (typeof b.height !== 'number') continue;
-    if (b.height >= epochStart && b.height < retargetHeight) n += 1;
+    if (b.height <= epochStart) haveCoverage = true;
+    if (b.height >= epochStart && b.height < retargetHeight) count += 1;
   }
-  return n;
+  return haveCoverage ? count : null;
 }
 
 export interface RetargetEvent {

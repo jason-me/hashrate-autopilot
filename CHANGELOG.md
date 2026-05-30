@@ -2,6 +2,10 @@
 
 ## 2026-05-30
 
+### `[Fix]` Pool-blocks-this-epoch hidden when prior epoch isn't fully covered (#229 follow-up)
+
+The "pool blocks this epoch" row would have shown an artificially low count for any adjustment whose prior epoch started before the operator's pool_blocks data did — a fresh install five minutes before a difficulty adjustment would have read "0 blocks this epoch", misleading the operator into thinking Ocean had a horrible run when really we just didn't have the data yet. `countPriorEpochPoolBlocks` now requires at least one observed pool block at-or-before the prior-epoch's start height (proves we were already recording / backfilled to before the epoch began) and returns null otherwise. The tooltip's existing null-hide behaviour drops the row entirely on those events instead of lying with a low count.
+
 ### `[UI]` Enriched difficulty adjustment tooltip (#229)
 
 The retarget tooltip on the Hashrate + Price charts now reads as a proper "difficulty adjustment" summary instead of a thin difficulty-only diff. Title renamed from "DIFFICULTY RETARGET" to "DIFFICULTY ADJUSTMENT" (the common bitcoiner term, per operator preference). New fields below the existing change row: **block height** of the retarget (derived from `pool_blocks` — any Ocean block in the new epoch snaps via `floor(height / 2016) × 2016`); **avg block time** over the prior epoch (computed exactly from the difficulty delta via Bitcoin's own retarget formula `600s × (old / new)`, format `9m 52s`); **network hashrate** at the new difficulty (`difficulty × 2³² / 600`, rendered in EH/s); **pool blocks this epoch** (count of Ocean blocks in the prior epoch's height range — operator-relevant context). All four fields are dashboard-side derivations, no daemon changes. Block height and pool-block count hidden when `pool_blocks` doesn't have a nearby block to anchor against. en + nl + es translations.
