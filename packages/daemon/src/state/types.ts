@@ -59,6 +59,10 @@ export interface ConfigTable {
   notify_on_payout_confirmed: 0 | 1;
   /** #131: locale for Telegram message rendering. 'en' (default) | 'nl' | 'es'. */
   notification_locale: string;
+  /** #227 follow-up: number-format preference (mirrors dashboard's `braiins.numberLocale`). Default 'system'. */
+  display_number_locale: string;
+  /** #227 follow-up: date-layout preference (mirrors dashboard's `braiins.dateLayout`). Default 'system'. */
+  display_date_layout: string;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;

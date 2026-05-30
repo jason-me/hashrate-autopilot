@@ -35,12 +35,77 @@ export function localeTag(locale: string | null | undefined): string {
 }
 
 /**
+ * #227 follow-up: resolve `config.display_number_locale` (which mirrors
+ * the dashboard's `braiins.numberLocale` localStorage value) into the
+ * concrete `{ bcp47, useGrouping }` pair the formatting helpers need.
+ *
+ * Inputs the dashboard produces (see NUMBER_LOCALE_PRESETS in
+ * packages/dashboard/src/lib/locale.ts):
+ *
+ *   - 'system'      — "follow the browser default." There IS no
+ *                     browser on the daemon side; resolve to en-US
+ *                     (and grouping on). Operators who want
+ *                     non-en-US numbers in Telegram must actively
+ *                     pick a non-system value on Display & Logging.
+ *   - 'en-US'       — comma thousands, period decimal.
+ *   - 'nl-NL'       — period thousands, comma decimal.
+ *   - 'fr-FR'       — narrow-no-break-space thousands, comma decimal.
+ *   - 'no-grouping' — disable thousand separators entirely. Render
+ *                     via 'en-US' with useGrouping: false; the
+ *                     formatting helpers honor the flag.
+ *
+ * Anything we don't recognise (operator manually set a weird value
+ * via the env override) falls back to the safe en-US default.
+ */
+export interface ResolvedDisplayLocale {
+  readonly bcp47: string;
+  readonly useGrouping: boolean;
+}
+export function resolveDisplayLocale(
+  value: string | null | undefined,
+): ResolvedDisplayLocale {
+  if (!value || value === 'system') return { bcp47: 'en-US', useGrouping: true };
+  if (value === 'no-grouping') return { bcp47: 'en-US', useGrouping: false };
+  if (value === 'en-US' || value === 'nl-NL' || value === 'fr-FR') {
+    return { bcp47: value, useGrouping: true };
+  }
+  return { bcp47: 'en-US', useGrouping: true };
+}
+
+/**
+ * Internal: build an `Intl.NumberFormat` from either a short
+ * `notification_locale` code (for callers that still pass that) or
+ * an already-resolved `{ bcp47, useGrouping }` pair (for callers
+ * that resolved via `resolveDisplayLocale`).
+ */
+function nf(
+  locale: string | null | undefined | ResolvedDisplayLocale,
+  opts: Intl.NumberFormatOptions,
+): Intl.NumberFormat {
+  if (locale && typeof locale === 'object' && 'bcp47' in locale) {
+    return new Intl.NumberFormat(locale.bcp47, {
+      ...opts,
+      useGrouping: locale.useGrouping,
+    });
+  }
+  return new Intl.NumberFormat(localeTag(locale as string | null | undefined), opts);
+}
+
+/**
  * Locale-aware thousands-separated integer. Drops any fractional part.
  * Use for sat counts, block heights, minute counters, anything where
  * the precision is whole-number.
+ *
+ * Accepts either a short locale code ('en' / 'nl' / 'es', mapped via
+ * `localeTag`) or a `ResolvedDisplayLocale` from
+ * `resolveDisplayLocale(config.display_number_locale)`. The latter
+ * honours the 'no-grouping' preset by suppressing thousand separators.
  */
-export function formatInteger(value: number, locale: string | null | undefined): string {
-  return new Intl.NumberFormat(localeTag(locale), { maximumFractionDigits: 0 }).format(value);
+export function formatInteger(
+  value: number,
+  locale: string | null | undefined | ResolvedDisplayLocale,
+): string {
+  return nf(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
 /**
@@ -48,8 +113,11 @@ export function formatInteger(value: number, locale: string | null | undefined):
  * places. Returns just the number (no unit) so the caller can decide
  * whether to suffix " BTC" or wrap differently.
  */
-export function formatBtc(sat: number, locale: string | null | undefined): string {
-  return new Intl.NumberFormat(localeTag(locale), {
+export function formatBtc(
+  sat: number,
+  locale: string | null | undefined | ResolvedDisplayLocale,
+): string {
+  return nf(locale, {
     minimumFractionDigits: 8,
     maximumFractionDigits: 8,
   }).format(sat / 1e8);
@@ -60,7 +128,10 @@ export function formatBtc(sat: number, locale: string | null | undefined): strin
  * is intentionally not translated — it's the same token in EN / NL / ES
  * for "satoshi" in this project's vocabulary.
  */
-export function formatSat(sat: number, locale: string | null | undefined): string {
+export function formatSat(
+  sat: number,
+  locale: string | null | undefined | ResolvedDisplayLocale,
+): string {
   return `${formatInteger(sat, locale)} sat`;
 }
 
@@ -79,7 +150,10 @@ export function formatSat(sat: number, locale: string | null | undefined): strin
  * BTC denomination is still meaningful to the operator) should
  * compose `formatBtc` + `formatInteger` directly.
  */
-export function formatSatAmount(sat: number, locale: string | null | undefined): string {
+export function formatSatAmount(
+  sat: number,
+  locale: string | null | undefined | ResolvedDisplayLocale,
+): string {
   if (sat >= 100_000_000) {
     return `${formatBtc(sat, locale)} BTC (${formatInteger(sat, locale)} sat)`;
   }
@@ -94,9 +168,9 @@ export function formatSatAmount(sat: number, locale: string | null | undefined):
 export function formatFixed(
   value: number,
   fractionDigits: number,
-  locale: string | null | undefined,
+  locale: string | null | undefined | ResolvedDisplayLocale,
 ): string {
-  return new Intl.NumberFormat(localeTag(locale), {
+  return nf(locale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
@@ -110,7 +184,7 @@ export function formatFixed(
 export function formatPct(
   value: number,
   fractionDigits: number,
-  locale: string | null | undefined,
+  locale: string | null | undefined | ResolvedDisplayLocale,
 ): string {
   return `${formatFixed(value, fractionDigits, locale)}%`;
 }

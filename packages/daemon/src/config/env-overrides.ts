@@ -221,6 +221,17 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_NOTIFICATION_LOCALE',
     coerce: asString,
   },
+  // #227 follow-up: display format preferences. Stored as the same
+  // string the dashboard's dropdowns produce; daemon resolves to
+  // BCP-47 + grouping flag at format time.
+  display_number_locale: {
+    varName: 'BHA_DISPLAY_NUMBER_LOCALE',
+    coerce: asString,
+  },
+  display_date_layout: {
+    varName: 'BHA_DISPLAY_DATE_LAYOUT',
+    coerce: asString,
+  },
   ddns_provider: { varName: 'BHA_DDNS_PROVIDER', coerce: asString },
   ddns_hostname: { varName: 'BHA_DDNS_HOSTNAME', coerce: asString },
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },

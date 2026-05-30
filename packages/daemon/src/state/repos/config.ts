@@ -50,6 +50,11 @@ export class ConfigRepo {
       notify_on_payout_initiated: rest.notify_on_payout_initiated === 1,
       notify_on_payout_confirmed: rest.notify_on_payout_confirmed === 1,
       notification_locale: rest.notification_locale as AppConfig['notification_locale'],
+      // #227 follow-up: display format preferences. The TEXT column
+      // accepts whatever the dashboard puts in; Zod will validate
+      // against the preset enums on the next round-trip.
+      display_number_locale: rest.display_number_locale as AppConfig['display_number_locale'],
+      display_date_layout: rest.display_date_layout as AppConfig['display_date_layout'],
       // #106: stored as comma-separated TEXT; surface as string[].
       // Empty string -> empty array (no opt-outs).
       notification_disabled_event_classes: rest.notification_disabled_event_classes
@@ -90,6 +95,9 @@ export class ConfigRepo {
       notify_on_payout_initiated: (validated.notify_on_payout_initiated ? 1 : 0) as 0 | 1,
       notify_on_payout_confirmed: (validated.notify_on_payout_confirmed ? 1 : 0) as 0 | 1,
       notification_locale: validated.notification_locale,
+      // #227 follow-up: write-through for display format preferences.
+      display_number_locale: validated.display_number_locale,
+      display_date_layout: validated.display_date_layout,
       // #106: comma-join the opt-out list back to TEXT.
       notification_disabled_event_classes:
         validated.notification_disabled_event_classes.join(','),

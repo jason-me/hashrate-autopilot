@@ -329,6 +329,10 @@ export interface AppConfig {
   notify_on_payout_initiated: boolean;
   /** #226: payout-confirmed Telegram alert (on-chain coinbase to payout address). Off by default. */
   notify_on_payout_confirmed: boolean;
+  /** #227 follow-up: display number format ('system' | 'en-US' | 'nl-NL' | 'fr-FR' | 'no-grouping'). */
+  display_number_locale: string;
+  /** #227 follow-up: display date layout ('system' | 'us' | 'eu-spaced-24h' | 'slash-dmy-24h' | 'iso' | 'slash-mdy-12h'). */
+  display_date_layout: string;
   notification_locale: 'en' | 'nl' | 'es';
   electrs_host: string | null;
   electrs_port: number | null;

@@ -44,16 +44,32 @@ import type { RewardEventsRepo } from '../state/repos/reward_events.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { State } from '../controller/types.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';
-// #227: locale-aware number formatting. Every body string used to
-// hard-code en-US thousand / decimal separators; these helpers thread
-// state.config.notification_locale through Intl.NumberFormat so a
-// Dutch / Spanish operator sees the conventions they expect.
+// #227 + follow-up: locale-aware number formatting. Every Telegram
+// body used to hard-code en-US thousand / decimal separators; these
+// helpers + `resolveDisplayLocale(state.config.display_number_locale)`
+// thread the operator's Display & Logging preference into
+// Intl.NumberFormat. We deliberately read display_number_locale (the
+// dashboard's "number format" dropdown) rather than notification_locale
+// (which is the *language* of the message body); the two are
+// independent — an operator can have English Telegram copy with Dutch
+// number separators, or vice versa.
 import {
   formatBtc,
   formatFixed,
   formatInteger,
   formatPct,
+  resolveDisplayLocale,
 } from '../i18n/format-numbers.js';
+
+/**
+ * Pull the resolved display locale once per evaluator pass. All
+ * format helper calls in this file flow through this so the
+ * `display_number_locale` ↔ `{ bcp47, useGrouping }` translation
+ * happens in exactly one place.
+ */
+function numberLocale(state: State) {
+  return resolveDisplayLocale(state.config.display_number_locale);
+}
 
 const HOURS_3_MS = 3 * 60 * 60 * 1000;
 // Ocean's on-chain payout threshold per the TIDES + payouts mechanic.
@@ -398,8 +414,8 @@ export class AlertEvaluator {
       bodyForFiring: (durMs) =>
         copyFor(state).hashrate_below_floor_body({
           duration: formatDuration(durMs),
-          actual_ph: formatFixed(state.actual_hashrate.total_ph, 2, state.config.notification_locale),
-          floor_ph: formatFixed(state.config.minimum_floor_hashrate_ph, 2, state.config.notification_locale),
+          actual_ph: formatFixed(state.actual_hashrate.total_ph, 2, numberLocale(state)),
+          floor_ph: formatFixed(state.config.minimum_floor_hashrate_ph, 2, numberLocale(state)),
         }),
       bodyForRecovery: (durMs) =>
         copyFor(state).hashrate_below_floor_body_recovery({ duration: formatDuration(durMs) }),
@@ -598,23 +614,23 @@ export class AlertEvaluator {
       currentState: this.wallet_runway,
       disabledClasses,
       title: copyFor(state).wallet_runway_title({
-        runway_days: formatFixed(runwayDays, 1, state.config.notification_locale),
-        threshold_days: formatFixed(thresholdDays, 1, state.config.notification_locale),
+        runway_days: formatFixed(runwayDays, 1, numberLocale(state)),
+        threshold_days: formatFixed(thresholdDays, 1, numberLocale(state)),
       }),
       titleForRecovery: copyFor(state).wallet_runway_title_recovery({
-        runway_days: formatFixed(runwayDays, 1, state.config.notification_locale),
-        threshold_days: formatFixed(thresholdDays, 1, state.config.notification_locale),
+        runway_days: formatFixed(runwayDays, 1, numberLocale(state)),
+        threshold_days: formatFixed(thresholdDays, 1, numberLocale(state)),
       }),
       bodyForFiring: () =>
         copyFor(state).wallet_runway_body({
-          balance_sat: formatInteger(balanceSat, state.config.notification_locale),
-          burn_per_day_sat: formatInteger(Math.round(burnPerDaySat), state.config.notification_locale),
-          runway_days: formatFixed(runwayDays, 1, state.config.notification_locale),
+          balance_sat: formatInteger(balanceSat, numberLocale(state)),
+          burn_per_day_sat: formatInteger(Math.round(burnPerDaySat), numberLocale(state)),
+          runway_days: formatFixed(runwayDays, 1, numberLocale(state)),
           threshold_days: thresholdDays,
         }),
       bodyForRecovery: () =>
         copyFor(state).wallet_runway_body_recovery({
-          runway_days: formatFixed(runwayDays, 1, state.config.notification_locale),
+          runway_days: formatFixed(runwayDays, 1, numberLocale(state)),
           threshold_days: thresholdDays,
         }),
     });
@@ -755,7 +771,7 @@ export class AlertEvaluator {
         sharePct !== null && sharePct > 0
           ? Math.round((blk.total_reward_sat * sharePct) / 100)
           : null;
-      const locale = state.config.notification_locale;
+      const locale = numberLocale(state);
       const heightStr = formatInteger(blk.height, locale);
       const rewardBtc = formatBtc(blk.total_reward_sat, locale);
       const sharePctStr = sharePct !== null ? formatPct(sharePct, 4, locale) : 'unknown';
@@ -878,7 +894,7 @@ export class AlertEvaluator {
       return;
     }
     // All gates passed - fire once, advance the baseline.
-    const locale = state.config.notification_locale;
+    const locale = numberLocale(state);
     const payoutAmountSat = drop;
     const payoutBtc = formatBtc(payoutAmountSat, locale);
     const preDropStr = `${formatInteger(prev, locale)} sat`;
@@ -930,7 +946,7 @@ export class AlertEvaluator {
     const newRows = await repo
       .sinceId(this.lastNotifiedRewardEventId)
       .catch(() => [] as Awaited<ReturnType<typeof repo.sinceId>>);
-    const locale = state.config.notification_locale;
+    const locale = numberLocale(state);
     for (const row of newRows) {
       const valueSatStr = formatInteger(row.value_sat, locale);
       const valueBtcStr = formatBtc(row.value_sat, locale);
@@ -1153,7 +1169,7 @@ export class AlertEvaluator {
       disabledClasses: disabled,
       title: copyFor(state).solo_overheating_title({
         label: entry.device.label,
-        temp_c: formatFixed(reportedTemp, 1, state.config.notification_locale),
+        temp_c: formatFixed(reportedTemp, 1, numberLocale(state)),
         ceiling_c: reportedCeiling.toString(),
       }),
       titleForRecovery: copyFor(state).solo_overheating_title_recovery({
@@ -1162,7 +1178,7 @@ export class AlertEvaluator {
       bodyForFiring: (durMs) =>
         copyFor(state).solo_overheating_body({
           label: entry.device.label,
-          temp_c: formatFixed(reportedTemp, 1, state.config.notification_locale),
+          temp_c: formatFixed(reportedTemp, 1, numberLocale(state)),
           ceiling_c: reportedCeiling.toString(),
           duration: formatDuration(durMs),
         }),
@@ -1279,7 +1295,7 @@ export class AlertEvaluator {
       title: copyFor(state).solo_share_rejection_title({ label: entry.device.label }),
       body: copyFor(state).solo_share_rejection_body({
         label: entry.device.label,
-        rate_pct: formatFixed(ratePct, 2, state.config.notification_locale),
+        rate_pct: formatFixed(ratePct, 2, numberLocale(state)),
         rejected: dRejected.toString(),
         total: total.toString(),
         window_min: state.config.solo_share_rejection_window_minutes.toString(),
@@ -1332,10 +1348,10 @@ export class AlertEvaluator {
     if (!result.isNewRecord || result.fleetMax === null) return;
     const prev = result.previousRecord;
     const copy = copyFor(state);
-    const diffStr = formatDifficultyCompact(result.fleetMax, state.config.notification_locale);
-    const prevStr = prev !== null ? formatDifficultyCompact(prev, state.config.notification_locale) : null;
+    const diffStr = formatDifficultyCompact(result.fleetMax, numberLocale(state));
+    const prevStr = prev !== null ? formatDifficultyCompact(prev, numberLocale(state)) : null;
     const improvementStr = prev !== null && prev > 0
-      ? formatFixed(result.fleetMax / prev, 1, state.config.notification_locale)
+      ? formatFixed(result.fleetMax / prev, 1, numberLocale(state))
       : null;
     await this.alertManager.recordAlert({
       severity: 'INFO',
@@ -1360,7 +1376,10 @@ function pickLiveHashrate(entry: SoloMinerSnapshotEntry): number | null {
   return null;
 }
 
-function formatDifficultyCompact(v: number, locale: string | null | undefined): string {
+function formatDifficultyCompact(
+  v: number,
+  locale: Parameters<typeof formatFixed>[2],
+): string {
   // SI-style prefix scaling. The trailing letter (E/P/T/G/M/K) is a
   // unit suffix and stays the same across locales; only the numeric
   // formatting differs.

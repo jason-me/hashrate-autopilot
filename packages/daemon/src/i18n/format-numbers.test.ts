@@ -8,6 +8,7 @@ import {
   formatSat,
   formatSatAmount,
   localeTag,
+  resolveDisplayLocale,
 } from './format-numbers.js';
 
 describe('localeTag', () => {
@@ -94,5 +95,45 @@ describe('formatPct', () => {
     expect(formatPct(0.51, 2, 'en')).toBe('0.51%');
     expect(formatPct(0.51, 2, 'nl')).toBe('0,51%');
     expect(formatPct(0.51, 2, 'es')).toBe('0,51%');
+  });
+});
+
+// #227 follow-up: resolveDisplayLocale takes the dashboard's preset
+// value (config.display_number_locale) and produces the concrete
+// `{ bcp47, useGrouping }` pair the formatting helpers need.
+describe('resolveDisplayLocale', () => {
+  it('system falls back to en-US with grouping', () => {
+    expect(resolveDisplayLocale('system')).toEqual({ bcp47: 'en-US', useGrouping: true });
+    expect(resolveDisplayLocale(null)).toEqual({ bcp47: 'en-US', useGrouping: true });
+    expect(resolveDisplayLocale(undefined)).toEqual({ bcp47: 'en-US', useGrouping: true });
+  });
+  it('en-US / nl-NL / fr-FR pass through unchanged', () => {
+    expect(resolveDisplayLocale('en-US')).toEqual({ bcp47: 'en-US', useGrouping: true });
+    expect(resolveDisplayLocale('nl-NL')).toEqual({ bcp47: 'nl-NL', useGrouping: true });
+    expect(resolveDisplayLocale('fr-FR')).toEqual({ bcp47: 'fr-FR', useGrouping: true });
+  });
+  it('no-grouping renders en-US with thousand separators disabled', () => {
+    expect(resolveDisplayLocale('no-grouping')).toEqual({
+      bcp47: 'en-US',
+      useGrouping: false,
+    });
+  });
+  it('unknown values fall back to the safe en-US default', () => {
+    expect(resolveDisplayLocale('zh-CN')).toEqual({ bcp47: 'en-US', useGrouping: true });
+    expect(resolveDisplayLocale('')).toEqual({ bcp47: 'en-US', useGrouping: true });
+  });
+});
+
+describe('formatters accept ResolvedDisplayLocale', () => {
+  it('formatInteger honors useGrouping: false on no-grouping', () => {
+    const resolved = resolveDisplayLocale('no-grouping');
+    expect(formatInteger(1_062_144, resolved)).toBe('1062144');
+  });
+  it('formatBtc with nl-NL produces comma decimal', () => {
+    expect(formatBtc(1_062_144, resolveDisplayLocale('nl-NL'))).toBe('0,01062144');
+  });
+  it('formatSatAmount with no-grouping drops thousand separators', () => {
+    const resolved = resolveDisplayLocale('no-grouping');
+    expect(formatSatAmount(150_000_000, resolved)).toBe('1.50000000 BTC (150000000 sat)');
   });
 });

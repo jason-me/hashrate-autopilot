@@ -430,6 +430,27 @@ export const AppConfigSchema = z.object({
   // back to en at render time.
   notification_locale: z.enum(['en', 'nl', 'es']).default('en'),
 
+  // #227 follow-up: display format preferences promoted from the
+  // dashboard's browser localStorage to daemon-managed config. The
+  // Display & Logging tab has dropdowns for number format
+  // (thousand/decimal separators) and date layout; these used to live
+  // in `braiins.numberLocale` / `braiins.dateLayout` localStorage
+  // keys, which the daemon couldn't see. Now mirrored here so the
+  // Telegram render path can read them. Both default 'system'; the
+  // daemon resolves 'system' to 'en-US' since there's no browser
+  // context server-side. Values follow the same enums the dashboard
+  // shows in its presets: number_locale ∈ {'system','en-US','nl-NL',
+  // 'fr-FR','no-grouping'}, date_layout ∈ {'system','us',
+  // 'eu-spaced-24h','slash-dmy-24h','iso','slash-mdy-12h'}. The
+  // dashboard PATCHes these on change; the daemon caches stay in
+  // sync as a write-through.
+  display_number_locale: z
+    .enum(['system', 'en-US', 'nl-NL', 'fr-FR', 'no-grouping'])
+    .default('system'),
+  display_date_layout: z
+    .enum(['system', 'us', 'eu-spaced-24h', 'slash-dmy-24h', 'iso', 'slash-mdy-12h'])
+    .default('system'),
+
   // #111: daemon-managed DDNS updater. When ddns_provider is non-empty
   // the daemon pushes the current public IP to the configured DDNS
   // provider every 5 minutes (and forces a heartbeat at least hourly,
@@ -611,6 +632,13 @@ export const APP_CONFIG_DEFAULTS: Omit<
   notify_on_payout_initiated: false,
   notify_on_payout_confirmed: false,
   notification_locale: 'en',
+  // #227 follow-up: 'system' = "follow the operator's browser /
+  // default", resolved daemon-side to 'en-US' since there's no
+  // browser context. Operators who pick a non-system value on the
+  // Display & Logging tab get the dashboard to PATCH the new value
+  // and Telegram immediately renders with it.
+  display_number_locale: 'system',
+  display_date_layout: 'system',
 
   ddns_provider: '',
   ddns_hostname: '',

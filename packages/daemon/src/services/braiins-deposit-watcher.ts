@@ -34,10 +34,11 @@ import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { AppConfig } from '../config/schema.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';
-// #227: replaces this file's local `formatSatAsBtc` with the central
-// locale-aware helper so a Dutch / Spanish operator sees thousand /
-// decimal separators that match their notification_locale.
-import { formatSatAmount } from '../i18n/format-numbers.js';
+// #227 + follow-up: locale-aware sat amount rendering. The body's
+// language follows `notification_locale`; the number format
+// (thousand / decimal separators) follows the operator's Display &
+// Logging preference promoted to `display_number_locale`.
+import { formatSatAmount, resolveDisplayLocale } from '../i18n/format-numbers.js';
 import type {
   BraiinsDepositsRepo,
   DepositNotificationKind,
@@ -237,7 +238,12 @@ export class BraiinsDepositWatcherService {
       return;
     }
 
-    const { title, body } = renderMessage(cfg.notification_locale, kind, payload);
+    const { title, body } = renderMessage(
+      cfg.notification_locale,
+      cfg.display_number_locale,
+      kind,
+      payload,
+    );
     try {
       await this.options.alertManager.recordAlert({
         severity,
@@ -284,12 +290,13 @@ function parseTxTimestamp(raw: unknown): number | null {
 }
 
 function renderMessage(
-  locale: string,
+  languageLocale: string,
+  displayNumberLocale: string,
   kind: DepositNotificationKind,
   payload: { amount_sat: number; address?: string | null; return_tx_id?: string },
 ): { title: string; body: string } {
-  const copy = getAlertCopy(locale);
-  const amount = formatSatAmount(payload.amount_sat, locale);
+  const copy = getAlertCopy(languageLocale);
+  const amount = formatSatAmount(payload.amount_sat, resolveDisplayLocale(displayNumberLocale));
   switch (kind) {
     case 'detected': {
       const address_short = payload.address
