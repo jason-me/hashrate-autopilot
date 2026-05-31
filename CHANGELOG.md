@@ -2,6 +2,10 @@
 
 ## 2026-05-31
 
+### `[UI]` BIP 110 scanner shows date range per epoch (#231 follow-up #2)
+
+The per-epoch breakdown's Block-range column now carries a secondary date-range line ("May 18 – Jun 1, 2026") derived from the first and last scanned block timestamps in each epoch. Locale-aware (UI-language driven month names) and collapses to a single date when both endpoints fall on the same calendar day (in-progress epoch right after a retarget). Backend extends `Bip110EpochBucket` with `start_time_ms` / `end_time_ms` populated from the same block headers we already fetch for signaling detection — no extra RPC.
+
 ### `[UI]` BIP 110 scanner consolidates two tables into expandable epoch rows (#231 follow-up)
 
 The per-epoch breakdown and the signaling-blocks list were two separate tables stacked on top of each other. Replaced with a single table where each epoch row is clickable: rows with ≥1 signaling block expand to show those blocks inline (desktop signaling-block table / mobile cards reused as-is). Rows with zero signaling blocks have no chevron and aren't clickable — visually unmuted to mark them as "nothing to see here". Default state is all-collapsed. en + nl + es translations updated for the two new tooltip strings.

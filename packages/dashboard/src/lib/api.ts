@@ -963,6 +963,10 @@ export interface Bip110ScanDeployment {
 export interface Bip110EpochBucket {
   start_height: number;
   end_height: number;
+  /** First and last block timestamps observed in the epoch's scanned
+   *  range. Null when the epoch had no headers in the scan (defensive). */
+  start_time_ms: number | null;
+  end_time_ms: number | null;
   scanned: number;
   signaling_count: number;
   signaling_pct: number;

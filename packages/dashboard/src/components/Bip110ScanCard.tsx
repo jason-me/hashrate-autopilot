@@ -19,8 +19,33 @@ import type {
 } from '../lib/api';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { formatAgeMinutes, formatNumber } from '../lib/format';
-import { useFormatters, useLocale } from '../lib/locale';
+import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { Tooltip } from './Tooltip';
+
+/**
+ * Compact date-range string for the per-epoch breakdown's secondary
+ * line. Uses `dateStyle: 'medium'` (locale-aware) on both endpoints,
+ * collapsed to a single date when both fall on the same calendar day
+ * (in-progress epoch right after a retarget). The UI-language locale
+ * drives month-name language so a Dutch UI gets Dutch month names
+ * even when the number-format preset is set to en-US.
+ */
+function formatEpochDateRange(
+  startMs: number,
+  endMs: number,
+  dateTimeLocale: string,
+): string {
+  const fmt = new Intl.DateTimeFormat(dateTimeLocale, { dateStyle: 'medium' });
+  const startDate = new Date(startMs);
+  const endDate = new Date(endMs);
+  const sameDay =
+    startDate.getFullYear() === endDate.getFullYear() &&
+    startDate.getMonth() === endDate.getMonth() &&
+    startDate.getDate() === endDate.getDate();
+  return sameDay
+    ? fmt.format(startDate)
+    : `${fmt.format(startDate)} – ${fmt.format(endDate)}`;
+}
 
 /**
  * #231: range options are number of past epochs in addition to the
@@ -522,6 +547,7 @@ function EpochBreakdown({
   // what the operator is usually checking on.
   const ordered = [...epochs].sort((a, b) => b.start_height - a.start_height);
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  const dateTimeLocale = useDateTimeLocale();
 
   const blocksForEpoch = (e: Bip110EpochBucket): Bip110ScanSignalingBlock[] =>
     signalingBlocks.filter((b) => b.height >= e.start_height && b.height <= e.end_height);
@@ -588,7 +614,14 @@ function EpochBreakdown({
                       )}
                     </td>
                     <td className="px-3 py-2 text-slate-300">
-                      {formatNumber(e.start_height, {}, intlLocale)} – {formatNumber(e.end_height, {}, intlLocale)}
+                      <div>
+                        {formatNumber(e.start_height, {}, intlLocale)} – {formatNumber(e.end_height, {}, intlLocale)}
+                      </div>
+                      {e.start_time_ms !== null && e.end_time_ms !== null && (
+                        <div className="text-xs text-slate-500 mt-0.5 font-sans">
+                          {formatEpochDateRange(e.start_time_ms, e.end_time_ms, dateTimeLocale)}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-300">
                       {formatNumber(e.scanned, {}, intlLocale)}

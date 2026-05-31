@@ -94,6 +94,17 @@ export interface Bip110Deployment {
 export interface Bip110EpochBucket {
   readonly start_height: number;
   readonly end_height: number;
+  /**
+   * Wall-clock timestamps of the first and last scanned headers in
+   * the bucket. For completed epochs that's the actual first and last
+   * block of the epoch (so the operator sees the date span the
+   * difficulty was in force). For the in-progress epoch that's the
+   * epoch start through "as of the chain tip we scanned." Both null
+   * when no headers fell in the bucket (defensive — shouldn't happen
+   * on a healthy node).
+   */
+  readonly start_time_ms: number | null;
+  readonly end_time_ms: number | null;
   readonly scanned: number;
   readonly signaling_count: number;
   readonly signaling_pct: number;
@@ -254,20 +265,32 @@ export function computeScanRange(
  * Exported for testing.
  */
 export function bucketByEpoch(
-  headers: readonly { height: number; version: number }[],
+  headers: readonly { height: number; version: number; time: number }[],
   startHeight: number,
   currentEpochStart: number,
   tipHeight: number,
 ): Bip110EpochBucket[] {
   const buckets = new Map<
     number,
-    { signaling: number; scanned: number }
+    {
+      signaling: number;
+      scanned: number;
+      minTimeSecs: number | null;
+      maxTimeSecs: number | null;
+    }
   >();
   for (const h of headers) {
     const epochStart = Math.floor(h.height / BLOCKS_PER_EPOCH) * BLOCKS_PER_EPOCH;
-    const slot = buckets.get(epochStart) ?? { signaling: 0, scanned: 0 };
+    const slot = buckets.get(epochStart) ?? {
+      signaling: 0,
+      scanned: 0,
+      minTimeSecs: null,
+      maxTimeSecs: null,
+    };
     slot.scanned += 1;
     if (isBip110Signal(h.version)) slot.signaling += 1;
+    slot.minTimeSecs = slot.minTimeSecs === null ? h.time : Math.min(slot.minTimeSecs, h.time);
+    slot.maxTimeSecs = slot.maxTimeSecs === null ? h.time : Math.max(slot.maxTimeSecs, h.time);
     buckets.set(epochStart, slot);
   }
   // Seed any epoch starts that produced zero headers (defensive — a
@@ -278,15 +301,24 @@ export function bucketByEpoch(
     start <= currentEpochStart;
     start += BLOCKS_PER_EPOCH
   ) {
-    if (!buckets.has(start)) buckets.set(start, { signaling: 0, scanned: 0 });
+    if (!buckets.has(start)) {
+      buckets.set(start, {
+        signaling: 0,
+        scanned: 0,
+        minTimeSecs: null,
+        maxTimeSecs: null,
+      });
+    }
   }
   const sorted = Array.from(buckets.entries()).sort(([a], [b]) => a - b);
-  return sorted.map(([start, { signaling, scanned }]) => {
+  return sorted.map(([start, { signaling, scanned, minTimeSecs, maxTimeSecs }]) => {
     const isCurrent = start === currentEpochStart;
     const endHeight = isCurrent ? tipHeight : start + BLOCKS_PER_EPOCH - 1;
     return {
       start_height: start,
       end_height: endHeight,
+      start_time_ms: minTimeSecs !== null ? minTimeSecs * 1000 : null,
+      end_time_ms: maxTimeSecs !== null ? maxTimeSecs * 1000 : null,
       scanned,
       signaling_count: signaling,
       signaling_pct: scanned > 0 ? (signaling / scanned) * 100 : 0,

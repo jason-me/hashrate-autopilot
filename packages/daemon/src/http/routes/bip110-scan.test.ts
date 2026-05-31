@@ -45,8 +45,20 @@ describe('computeScanRange', () => {
 });
 
 describe('bucketByEpoch', () => {
-  const sig = (height: number) => ({ height, version: 0x20000010 }); // BIP 110 signal
-  const nosig = (height: number) => ({ height, version: 0x20000000 });
+  // Timestamps are seconds-since-epoch in bitcoind block headers.
+  // We pick a reasonable base time so the assertions on `_time_ms`
+  // are easy to read.
+  const BASE = 1_700_000_000; // 2023-11-14T22:13:20Z, doesn't matter
+  const sig = (height: number, time = BASE + height * 600) => ({
+    height,
+    version: 0x20000010,
+    time,
+  });
+  const nosig = (height: number, time = BASE + height * 600) => ({
+    height,
+    version: 0x20000000,
+    time,
+  });
 
   it('puts each height into the right epoch bucket and computes pct', () => {
     const start = 4 * EPOCH;
@@ -78,7 +90,28 @@ describe('bucketByEpoch', () => {
     });
   });
 
-  it('seeds empty buckets when no header lands in an epoch', () => {
+  it('captures start_time_ms / end_time_ms from min / max scanned header times', () => {
+    const start = 4 * EPOCH;
+    const tip = 5 * EPOCH + 100;
+    const currentEpochStart = 5 * EPOCH;
+    const headers = [
+      // Epoch 4 — three headers with deliberately non-monotone times
+      // (block time isn't strictly monotonic in Bitcoin; min/max
+      // tracking has to handle that).
+      sig(4 * EPOCH, BASE + 100),
+      nosig(4 * EPOCH + 1, BASE + 50),
+      sig(4 * EPOCH + 2, BASE + 200),
+      // Epoch 5 — one header
+      nosig(5 * EPOCH, BASE + 500),
+    ];
+    const buckets = bucketByEpoch(headers, start, currentEpochStart, tip);
+    expect(buckets[0]!.start_time_ms).toBe((BASE + 50) * 1000);
+    expect(buckets[0]!.end_time_ms).toBe((BASE + 200) * 1000);
+    expect(buckets[1]!.start_time_ms).toBe((BASE + 500) * 1000);
+    expect(buckets[1]!.end_time_ms).toBe((BASE + 500) * 1000);
+  });
+
+  it('seeds empty buckets when no header lands in an epoch — timestamps are null', () => {
     const start = 3 * EPOCH;
     const tip = 5 * EPOCH + 50;
     const currentEpochStart = 5 * EPOCH;
@@ -88,7 +121,10 @@ describe('bucketByEpoch', () => {
     expect(buckets.map((b) => b.start_height)).toEqual([3 * EPOCH, 4 * EPOCH, 5 * EPOCH]);
     expect(buckets[0]!.scanned).toBe(0);
     expect(buckets[0]!.signaling_pct).toBe(0);
+    expect(buckets[0]!.start_time_ms).toBeNull();
+    expect(buckets[0]!.end_time_ms).toBeNull();
     expect(buckets[2]!.in_progress).toBe(true);
+    expect(buckets[2]!.start_time_ms).not.toBeNull();
   });
 
   it('current-epoch-only scan reflects in-progress signaling pct (comparable to 55% MASF)', () => {
