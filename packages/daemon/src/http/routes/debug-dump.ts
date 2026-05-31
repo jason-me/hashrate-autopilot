@@ -88,7 +88,13 @@ const SAFE_CONFIG_FIELDS: ReadonlySet<keyof AppConfig> = new Set([
   'notification_disabled_event_classes',
   'notify_on_pool_block_credit',
   'notify_on_braiins_deposit',
+  // #226: payout-lifecycle Telegram toggles.
+  'notify_on_payout_initiated',
+  'notify_on_payout_confirmed',
   'notification_locale',
+  // #227 follow-up: display format preferences (number separators + date layout).
+  'display_number_locale',
+  'display_date_layout',
   'solo_mining_enabled',
   'solo_overheating_threshold_celsius',
   'solo_zero_hashrate_alert_after_minutes',

@@ -2,6 +2,10 @@
 
 ## 2026-05-30
 
+### `[Fix]` Test-notification preview honors Display & Logging → Number format (#227 follow-up #2)
+
+The "Send test notification" button on Config → Notifications still produced English-formatted previews (`#948,512`, `1,062,144 sat`, `0.01062144 BTC`) for operators with Display & Logging set to `1.234,56`. Root cause: `notifications-test-event.ts`'s `SAMPLE_BUILDERS` hardcoded those numeric strings as English literals, so the synthetic values never passed through the same `formatInteger`/`formatBtc`/`formatSat` helpers the live alert path uses. The live alerts were already correct — only the test preview was lying. Each builder now takes a `ResolvedDisplayLocale` argument and routes every synthetic number through the format helpers; route handler resolves it from `cfg.display_number_locale`. Added regression test pinning `pool_block_credited`, `payout_initiated`, `payout_confirmed`, `wallet_runway`, `braiins_deposit`, and `solo_share_rejection` previews against both en-US and nl-NL so future builders can't reintroduce literal numbers. Also added `display_number_locale`, `display_date_layout`, `notify_on_payout_initiated`, and `notify_on_payout_confirmed` to `debug-dump.ts`'s `SAFE_CONFIG_FIELDS` whitelist so `/api/debug/dump`'s `app_config` shows their values (previously surfaced as `null`).
+
 ### `[Fix]` Pool-blocks-this-epoch hidden when prior epoch isn't fully covered (#229 follow-up)
 
 The "pool blocks this epoch" row would have shown an artificially low count for any adjustment whose prior epoch started before the operator's pool_blocks data did — a fresh install five minutes before a difficulty adjustment would have read "0 blocks this epoch", misleading the operator into thinking Ocean had a horrible run when really we just didn't have the data yet. `countPriorEpochPoolBlocks` now requires at least one observed pool block at-or-before the prior-epoch's start height (proves we were already recording / backfilled to before the epoch began) and returns null otherwise. The tooltip's existing null-hide behaviour drops the row entirely on those events instead of lying with a low count.

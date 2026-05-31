@@ -23,6 +23,15 @@ import type { FastifyInstance } from 'fastify';
 import { formatTelegramBody } from '../../services/alert-manager.js';
 import { TelegramSink } from '../../services/notifier.js';
 import { getAlertCopy } from '../../i18n/alert-copy.js';
+import {
+  formatBtc,
+  formatFixed,
+  formatInteger,
+  formatPct,
+  formatSat,
+  resolveDisplayLocale,
+  type ResolvedDisplayLocale,
+} from '../../i18n/format-numbers.js';
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { AlertSeverity } from '../../state/types.js';
 
@@ -52,21 +61,42 @@ interface Sample {
  * separate "[SAMPLE]" copy hedge - the [TEST] title prefix added
  * below already disambiguates from a real fired alert in chat
  * history.
+ *
+ * #227 follow-up #2: builders also take `display_number_locale`
+ * (resolved) so synthetic numbers route through the same
+ * formatInteger / formatBtc / formatSat / formatPct helpers the live
+ * alert path uses. Previously the synthetic values were hardcoded
+ * English literals (`'948,512'`, `'1,062,144'`, `'~40,635 sat'`),
+ * which meant an operator with Display & Logging set to 1.234,56
+ * still saw comma-thousand previews — making "test notification"
+ * useless as a check that the locale plumbing was working. With this
+ * change the preview matches the real-alert formatting exactly.
  */
-function buildDepositDetected(locale: string | null | undefined): Sample {
+function buildDepositDetected(
+  locale: string | null | undefined,
+  fmt: ResolvedDisplayLocale,
+): Sample {
   const c = getAlertCopy(locale);
   return {
     severity: 'INFO',
     title: c.braiins_deposit_detected_title(),
     body: c.braiins_deposit_detected_body({
-      amount: '0.01000000 BTC (1,000,000 sat)',
+      amount: `${formatBtc(1_000_000, fmt)} BTC (${formatInteger(1_000_000, fmt)} sat)`,
       address_short: null,
     }),
     is_recovery: false,
   };
 }
 
-const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sample> = {
+/** Exported for testing: each entry takes (language, numberLocale)
+ *  and returns the synthetic Sample shipped to Telegram on /api/notifications/test-event.
+ *  Synthetic values must route through formatInteger / formatBtc /
+ *  formatSat / formatFixed / formatPct so the preview matches the
+ *  live alert path's locale handling exactly. */
+export const SAMPLE_BUILDERS: Record<
+  string,
+  (locale: string | null | undefined, fmt: ResolvedDisplayLocale) => Sample
+> = {
   datum_unreachable: (locale) => {
     const c = getAlertCopy(locale);
     return {
@@ -85,15 +115,15 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
-  hashrate_below_floor: (locale) => {
+  hashrate_below_floor: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'IMPORTANT',
       title: c.hashrate_below_floor_title(),
       body: c.hashrate_below_floor_body({
         duration: '11m',
-        actual_ph: '0.50',
-        floor_ph: '1.00',
+        actual_ph: formatFixed(0.5, 2, fmt),
+        floor_ph: formatFixed(1.0, 2, fmt),
       }),
       is_recovery: false,
     };
@@ -137,24 +167,27 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
-  beta_exit: (locale) => {
+  beta_exit: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'WARNING',
       title: c.beta_exit_title(),
-      body: c.beta_exit_body({ fee_pct: '1.5' }),
+      body: c.beta_exit_body({ fee_pct: formatFixed(1.5, 1, fmt) }),
       is_recovery: false,
     };
   },
-  wallet_runway: (locale) => {
+  wallet_runway: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'IMPORTANT',
-      title: c.wallet_runway_title({ runway_days: '1.5', threshold_days: '3.0' }),
+      title: c.wallet_runway_title({
+        runway_days: formatFixed(1.5, 1, fmt),
+        threshold_days: formatFixed(3.0, 1, fmt),
+      }),
       body: c.wallet_runway_body({
-        balance_sat: '210,000',
-        burn_per_day_sat: '140,000',
-        runway_days: '1.5',
+        balance_sat: formatInteger(210_000, fmt),
+        burn_per_day_sat: formatInteger(140_000, fmt),
+        runway_days: formatFixed(1.5, 1, fmt),
         threshold_days: 3,
       }),
       is_recovery: false,
@@ -164,73 +197,74 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
   // `braiins_deposit` test-button previews the Detected message;
   // each of the three per-class canonical event_class names is also
   // accepted so an operator can probe any leg via the API directly.
-  braiins_deposit: (locale) => buildDepositDetected(locale),
-  braiins_deposit_detected: (locale) => buildDepositDetected(locale),
-  braiins_deposit_available: (locale) => {
+  braiins_deposit: (locale, fmt) => buildDepositDetected(locale, fmt),
+  braiins_deposit_detected: (locale, fmt) => buildDepositDetected(locale, fmt),
+  braiins_deposit_available: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'INFO',
       title: c.braiins_deposit_available_title(),
       body: c.braiins_deposit_available_body({
-        amount: '0.01000000 BTC (1,000,000 sat)',
+        amount: `${formatBtc(1_000_000, fmt)} BTC (${formatInteger(1_000_000, fmt)} sat)`,
       }),
       is_recovery: false,
     };
   },
-  braiins_deposit_returned: (locale) => {
+  braiins_deposit_returned: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'IMPORTANT',
       title: c.braiins_deposit_returned_title(),
       body: c.braiins_deposit_returned_body({
-        amount: '0.01000000 BTC (1,000,000 sat)',
+        amount: `${formatBtc(1_000_000, fmt)} BTC (${formatInteger(1_000_000, fmt)} sat)`,
         return_tx_short: 'a1b2c3d4...e5f6g7h8',
       }),
       is_recovery: false,
     };
   },
-  pool_block_credited: (locale) => {
+  pool_block_credited: (locale, fmt) => {
     const c = getAlertCopy(locale);
+    const height = formatInteger(948_512, fmt);
     return {
       severity: 'INFO',
-      title: c.pool_block_credited_title({ height: '948,512', payout_btc: null }),
+      title: c.pool_block_credited_title({ height, payout_btc: null }),
       body: c.pool_block_credited_body({
-        height: '948,512',
-        reward_btc: '3.12575382',
-        share_pct: '0.0130%',
-        credit: '~40,635 sat',
+        height,
+        reward_btc: formatBtc(312_575_382, fmt),
+        share_pct: formatPct(0.013, 4, fmt),
+        credit: `~${formatSat(40_635, fmt)}`,
         payout_sat: null,
         payout_btc: null,
-        unpaid: '250,000 sat (23.8% of 1,048,576-sat payout)',
+        unpaid: `${formatSat(250_000, fmt)} (${formatPct(23.8, 1, fmt)} of ${formatInteger(1_048_576, fmt)}-sat payout)`,
       }),
       is_recovery: false,
     };
   },
   // #226: Ocean payout lifecycle previews. Plausible synthetic
   // values reflecting a real payout near the 1,048,576-sat threshold.
-  payout_initiated: (locale) => {
+  payout_initiated: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'INFO',
-      title: c.payout_initiated_title({ payout_btc: '0.01062144' }),
+      title: c.payout_initiated_title({ payout_btc: formatBtc(1_062_144, fmt) }),
       body: c.payout_initiated_body({
-        payout_sat: '1,062,144',
-        payout_btc: '0.01062144',
-        pre_drop_unpaid: '1,074,562 sat',
-        residual_unpaid: '12,418 sat',
+        payout_sat: formatInteger(1_062_144, fmt),
+        payout_btc: formatBtc(1_062_144, fmt),
+        pre_drop_unpaid: formatSat(1_074_562, fmt),
+        residual_unpaid: formatSat(12_418, fmt),
       }),
       is_recovery: false,
     };
   },
-  payout_confirmed: (locale) => {
+  payout_confirmed: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'INFO',
-      title: c.payout_confirmed_title({ payout_btc: '0.01062144' }),
+      title: c.payout_confirmed_title({ payout_btc: formatBtc(1_062_144, fmt) }),
       body: c.payout_confirmed_body({
-        payout_sat: '1,062,144',
-        payout_btc: '0.01062144',
-        height: '951,602',
+        payout_sat: formatInteger(1_062_144, fmt),
+        payout_btc: formatBtc(1_062_144, fmt),
+        height: formatInteger(951_602, fmt),
       }),
       is_recovery: false,
     };
@@ -238,19 +272,19 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
   // #149: solo-mining event classes. Each preview uses a plausible
   // synthetic device label + readings so the operator can see
   // exactly what a real alert will look like in chat history.
-  solo_overheating: (locale) => {
+  solo_overheating: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'IMPORTANT',
       title: c.solo_overheating_title({
         label: 'Bedroom Gamma',
-        temp_c: '72.5',
-        ceiling_c: '68',
+        temp_c: formatFixed(72.5, 1, fmt),
+        ceiling_c: formatInteger(68, fmt),
       }),
       body: c.solo_overheating_body({
         label: 'Bedroom Gamma',
-        temp_c: '72.5',
-        ceiling_c: '68',
+        temp_c: formatFixed(72.5, 1, fmt),
+        ceiling_c: formatInteger(68, fmt),
         duration: '2m',
       }),
       is_recovery: false,
@@ -269,16 +303,16 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
-  solo_share_rejection: (locale) => {
+  solo_share_rejection: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {
       severity: 'IMPORTANT',
       title: c.solo_share_rejection_title({ label: 'Bedroom Gamma' }),
       body: c.solo_share_rejection_body({
         label: 'Bedroom Gamma',
-        rate_pct: '12.40',
-        rejected: '124',
-        total: '1,000',
+        rate_pct: formatFixed(12.4, 2, fmt),
+        rejected: formatInteger(124, fmt),
+        total: formatInteger(1_000, fmt),
         window_min: '60',
       }),
       is_recovery: false,
@@ -331,7 +365,13 @@ export async function registerNotificationsTestEventRoute(
       }
 
       const locale = cfg.notification_locale ?? 'en';
-      const sample = builder(locale);
+      // #227 follow-up #2: synthetic numbers in the test preview
+      // honor Display & Logging → Number format, same path the live
+      // alert evaluator uses (numberLocale(state) on alert-evaluator.ts).
+      // Without this, an operator with 1.234,56 still saw 948,512 in
+      // the preview and concluded the locale wiring was broken.
+      const fmt = resolveDisplayLocale(cfg.display_number_locale);
+      const sample = builder(locale, fmt);
       const sink = new TelegramSink({
         bot_token,
         chat_id,
