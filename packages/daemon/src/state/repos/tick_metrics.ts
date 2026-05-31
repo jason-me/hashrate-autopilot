@@ -697,6 +697,55 @@ export class TickMetricsRepo {
     return row?.avg ?? null;
   }
 
+  /**
+   * #230: range scan for the historical-difficulty backfill.
+   * Returns the earliest and latest `tick_at` of rows whose
+   * `network_difficulty` is currently NULL, plus the count. The
+   * backfill skips entirely when count is 0; otherwise it uses the
+   * range to size its bitcoind query window.
+   */
+  async nullDifficultyRange(): Promise<{
+    earliest_tick_at: number | null;
+    latest_tick_at: number | null;
+    count: number;
+  }> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select((eb) => [
+        eb.fn.min<number | null>('tick_at').as('earliest'),
+        eb.fn.max<number | null>('tick_at').as('latest'),
+        eb.fn.count<number>('tick_at').as('count'),
+      ])
+      .where('network_difficulty', 'is', null)
+      .executeTakeFirst();
+    return {
+      earliest_tick_at: row?.earliest ?? null,
+      latest_tick_at: row?.latest ?? null,
+      count: Number(row?.count ?? 0),
+    };
+  }
+
+  /**
+   * #230: write `difficulty` to every row in `[fromTickAtMs, toTickAtMs)`
+   * whose `network_difficulty` is currently NULL. The `IS NULL` guard
+   * is load-bearing — backfill never overwrites a live observation,
+   * only fills gaps. Returns the number of rows updated.
+   */
+  async updateDifficultyForNullRange(
+    fromTickAtMs: number,
+    toTickAtMs: number,
+    difficulty: number,
+  ): Promise<number> {
+    const result = await this.db
+      .updateTable('tick_metrics')
+      .set({ network_difficulty: difficulty })
+      .where('network_difficulty', 'is', null)
+      .where('tick_at', '>=', fromTickAtMs)
+      .where('tick_at', '<', toTickAtMs)
+      .executeTakeFirst();
+    return Number(result.numUpdatedRows ?? 0);
+  }
+
   async pruneOlderThan(cutoffMs: number): Promise<void> {
     await this.db.deleteFrom('tick_metrics').where('tick_at', '<', cutoffMs).execute();
   }

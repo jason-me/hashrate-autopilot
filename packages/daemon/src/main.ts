@@ -59,6 +59,7 @@ import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
+import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
 import { runRetargetBackfill } from './services/retarget-backfill.js';
@@ -545,6 +546,22 @@ async function bootOperational(
     .catch((err) =>
       log(`[pool-blocks] backfill/recompute failed: ${(err as Error).message}`),
     );
+
+  // #230: fill NULL `network_difficulty` ticks from bitcoind block
+  // headers. Pre-existing rows that predate the daemon-side
+  // observation hold the chart's difficulty line back from extending
+  // through full history; this backfill walks the gap. Boot-time,
+  // idempotent, never overwrites a non-null value. Silent skip when
+  // bitcoind isn't configured / reachable.
+  if (bitcoindClient) {
+    void runNetworkDifficultyBackfill({
+      bitcoindClient,
+      tickMetricsRepo,
+      log: (m) => log(m),
+    }).catch((err) =>
+      log(`[network-difficulty-backfill] ${(err as Error).message}`),
+    );
+  }
 
   // #100: Telegram notifier wiring. Sink credentials are re-read from
   // the latest config snapshot on every send so live edits to bot
