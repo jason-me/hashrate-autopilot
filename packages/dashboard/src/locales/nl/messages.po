@@ -390,10 +390,6 @@ msgstr "ASIC-oververhittingsgrens (°C, 0 = automatisch per model)"
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "ASIC-oververhittingsgrens (°F, 0 = automatisch per model)"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "At block height 965,664 (approximately September 2026), user-activated enforcement begins: nodes running BIP 110-compatible software will enforce the rules regardless of miner signaling."
-msgstr "Op blokhoogte 965.664 (ongeveer september 2026) begint user-activated handhaving: nodes die BIP 110-compatibele software draaien zullen de regels afdwingen ongeacht miner-signalering."
-
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
@@ -573,12 +569,6 @@ msgstr "Bid:"
 msgid "Bids"
 msgstr "Biedingen"
 
-#. placeholder {0}: formatNumber(stats.threshold, {}, intlLocale)
-#. placeholder {1}: formatNumber(stats.period, {}, intlLocale)
-#: src/components/Bip110ScanCard.tsx
-msgid "BIP 110 (Reduced Data Temporary Softfork) activation happens in two phases. Currently in the miner-activated phase: miners can optionally signal support in their block headers. If the threshold ({0} of {1} blocks) is reached within a retarget period, the softfork locks in early."
-msgstr "BIP 110 (Reduced Data Temporary Softfork) activering verloopt in twee fasen. Momenteel in de miner-activated fase: miners kunnen optioneel ondersteuning signaleren in hun block headers. Als de drempel ({0} van {1} blokken) wordt bereikt binnen een retarget-periode, wordt de softfork vervroegd vergrendeld."
-
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
 msgstr "BIP 110 scan"
@@ -672,10 +662,6 @@ msgstr "geblokkeerd - update-misbruik gedetecteerd"
 msgid "blocks"
 msgstr "blokken"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "blocks into the current retarget period"
-msgstr "blokken in de huidige retarget-periode"
-
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
 msgstr "Blokken die Ocean in de laatste 24u vond. De \"X,XX× verwacht\"-vermenigvuldiger vergelijkt waargenomen met Poisson-verwacht. Pool-hashrate / netwerk-difficulty momenteel niet beschikbaar; tooltip toont het live aandeel-% zodra Ocean-statistieken weer bereikbaar zijn."
@@ -702,10 +688,6 @@ msgstr "Blokken die Ocean in de laatste 7d vond, dezelfde waargenomen-vs-Poisson
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of {shareStr}, the 7d expectation is ~{0} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 msgstr "Blokken die Ocean in de laatste 7d vond. Dezelfde waargenomen-vs-Poisson-verwachte verhouding als de 24u-rij, met een groter venster: bij Ocean's huidige aandeel van {shareStr} is de 7d-verwachting ~{0} blokken. 7d strijkt de korte-termijn Poisson-variantie glad: aanhoudend <0,70× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
-
-#: src/components/Bip110ScanCard.tsx
-msgid "blocks remaining in this period"
-msgstr "blokken resterend in deze periode"
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
@@ -1014,6 +996,10 @@ msgstr "JSON kopiëren"
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "URL kopiëren"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Core's BIP 9 deployment status for BIP 110. Per-epoch MASF progress is shown in the per-epoch breakdown below; this badge surfaces the chain-level state Core itself reports."
+msgstr "Core's BIP 9-implementatiestatus voor BIP 110. MASF-voortgang per epoch staat in de uitsplitsing hieronder; deze badge toont de keten-status zoals Core die rapporteert."
 
 #: src/components/PriceChart.tsx
 msgid "create"
@@ -1406,6 +1392,10 @@ msgstr "Epoch"
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalatie over"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "est."
+msgstr "geschat"
 
 #: src/pages/Config.tsx
 msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
@@ -2260,10 +2250,6 @@ msgstr "Oceans eigen schatting - de pool extrapoleert vanuit de hashrate van het
 msgid "Ocean's Unpaid Earnings - what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
 msgstr "Oceans openstaande verdiensten - wat bij de volgende uitbetaling on-chain binnenkomt. Drempel: {0} sat (~0.01 BTC)."
 
-#: src/components/Bip110ScanCard.tsx
-msgid "of"
-msgstr "van"
-
 #: src/pages/Config.tsx
 msgid "Off"
 msgstr "Uit"
@@ -3068,10 +3054,6 @@ msgstr "Signaleert BIP 110"
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Signaleert BIP 110 (Reduced Data Temporary Soft Fork)"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "signaling blocks in this period"
-msgstr "signalerende blokken in deze periode"
-
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "bezig met aanmelden…"
@@ -3169,7 +3151,6 @@ msgstr "Start een chat met je bot en stuur /start. Stuur daarna een willekeurig 
 msgid "status"
 msgstr "status"
 
-#: src/components/Bip110ScanCard.tsx
 #: src/components/Layout.tsx
 msgid "Status"
 msgstr "Status"

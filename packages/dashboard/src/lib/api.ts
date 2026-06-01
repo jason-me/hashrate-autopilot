@@ -968,6 +968,11 @@ export interface Bip110EpochBucket {
    *  range. Null when the epoch had no headers in the scan (defensive). */
   start_time_ms: number | null;
   end_time_ms: number | null;
+  /** #233: linear-extrapolated forecast of when block 2016 of the
+   *  in-progress epoch will be mined, based on the average block
+   *  time observed in the bucket so far. Null for completed
+   *  epochs and when an average can't be computed. */
+  expected_end_time_ms: number | null;
   scanned: number;
   signaling_count: number;
   signaling_pct: number;

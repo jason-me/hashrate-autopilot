@@ -13,6 +13,7 @@ import {
   BIP110_FIRST_SIGNALING_BLOCK_HEIGHT,
   bucketByEpoch,
   computeScanRange,
+  forecastEpochEnd,
 } from './bip110-scan.js';
 
 const EPOCH = 2016;
@@ -137,6 +138,28 @@ describe('bucketByEpoch', () => {
     expect(buckets[2]!.start_time_ms).not.toBeNull();
   });
 
+  it('in-progress bucket carries expected_end_time_ms; completed buckets do not', () => {
+    const start = 4 * EPOCH;
+    const tip = 5 * EPOCH + 100;
+    const currentEpochStart = 5 * EPOCH;
+    const headers = [
+      // Epoch 4 (completed): two headers with constant 600s spacing.
+      sig(4 * EPOCH, BASE),
+      sig(4 * EPOCH + 1, BASE + 600),
+      // Epoch 5 (in-progress): 101 headers (heights 5*EPOCH..5*EPOCH+100),
+      // each ~600s apart.
+      ...Array.from({ length: 101 }, (_, i) => sig(5 * EPOCH + i, BASE + 1_000_000 + i * 600)),
+    ];
+    const buckets = bucketByEpoch(headers, start, currentEpochStart, tip);
+    expect(buckets[0]!.expected_end_time_ms).toBeNull();
+    expect(buckets[1]!.expected_end_time_ms).not.toBeNull();
+    // 101 scanned out of 2016 → 1915 blocks remaining at ~600s each
+    // → forecast ≈ last observed + 1915 × 600s.
+    const lastObservedMs = (BASE + 1_000_000 + 100 * 600) * 1000;
+    const expected = lastObservedMs + (2016 - 101) * 600 * 1000;
+    expect(buckets[1]!.expected_end_time_ms).toBeCloseTo(expected, -3);
+  });
+
   it('current-epoch-only scan reflects in-progress signaling pct (comparable to 55% MASF)', () => {
     const tip = 5 * EPOCH + 999; // halfway through epoch 5
     const start = 5 * EPOCH;
@@ -152,5 +175,37 @@ describe('bucketByEpoch', () => {
     expect(buckets[0]!.signaling_pct).toBe(60);
     expect(buckets[0]!.in_progress).toBe(true);
     expect(buckets[0]!.end_height).toBe(tip);
+  });
+});
+
+describe('forecastEpochEnd', () => {
+  it('linear extrapolation: end + (2016 - scanned) × avg_block_time', () => {
+    const startMs = 1_000_000_000_000;
+    const endMs = startMs + 100 * 600_000; // 100 ticks at 600s each
+    const result = forecastEpochEnd(startMs, endMs, 101);
+    // avg = (endMs - startMs) / 100 = 600_000ms
+    // forecast = endMs + (2016 - 101) * 600_000ms
+    expect(result).toBe(endMs + (2016 - 101) * 600_000);
+  });
+
+  it('falls back to 600s × 2016 from start when only 1 block scanned (can\'t average)', () => {
+    const startMs = 1_000_000_000_000;
+    const endMs = startMs; // single block
+    expect(forecastEpochEnd(startMs, endMs, 1)).toBe(startMs + 2016 * 600_000);
+  });
+
+  it('returns null when inputs are missing', () => {
+    expect(forecastEpochEnd(null, 1, 5)).toBeNull();
+    expect(forecastEpochEnd(1, null, 5)).toBeNull();
+    expect(forecastEpochEnd(1, 1, 0)).toBeNull();
+  });
+
+  it('degrades to target-time fallback when computed average is non-positive (clock skew)', () => {
+    const startMs = 1_000_000_000_000;
+    // end < start across two blocks — defensive against header
+    // time non-monotonicity / clock skew.
+    const endMs = startMs - 1000;
+    const result = forecastEpochEnd(startMs, endMs, 2);
+    expect(result).toBe(startMs + 2016 * 600_000);
   });
 });

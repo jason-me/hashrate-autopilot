@@ -113,6 +113,16 @@ export interface Bip110EpochBucket {
    */
   readonly start_time_ms: number | null;
   readonly end_time_ms: number | null;
+  /**
+   * #233: linear-extrapolated forecast for when the in-progress
+   * epoch's 2016th block will be mined, based on the average block
+   * time observed within the bucket so far. Null for completed
+   * epochs (their actual end is in `end_time_ms`) and null when the
+   * in-progress bucket has fewer than 2 scanned headers (can't
+   * compute an average; falls back to a target-time estimate of
+   * 600s × remaining).
+   */
+  readonly expected_end_time_ms: number | null;
   readonly scanned: number;
   readonly signaling_count: number;
   readonly signaling_pct: number;
@@ -329,17 +339,55 @@ export function bucketByEpoch(
   return sorted.map(([start, { signaling, scanned, minTimeSecs, maxTimeSecs }]) => {
     const isCurrent = start === currentEpochStart;
     const endHeight = isCurrent ? tipHeight : start + BLOCKS_PER_EPOCH - 1;
+    const startMs = minTimeSecs !== null ? minTimeSecs * 1000 : null;
+    const endMs = maxTimeSecs !== null ? maxTimeSecs * 1000 : null;
     return {
       start_height: start,
       end_height: endHeight,
-      start_time_ms: minTimeSecs !== null ? minTimeSecs * 1000 : null,
-      end_time_ms: maxTimeSecs !== null ? maxTimeSecs * 1000 : null,
+      start_time_ms: startMs,
+      end_time_ms: endMs,
+      expected_end_time_ms: isCurrent
+        ? forecastEpochEnd(startMs, endMs, scanned)
+        : null,
       scanned,
       signaling_count: signaling,
       signaling_pct: scanned > 0 ? (signaling / scanned) * 100 : 0,
       in_progress: isCurrent,
     };
   });
+}
+
+/**
+ * #233: linear extrapolation of when the in-progress epoch's 2016th
+ * block will be mined.
+ *
+ *   scanned >= 2: avg_block_time = (end - start) / (scanned - 1),
+ *                 forecast = end + (2016 - scanned) * avg_block_time.
+ *   scanned == 1: can't compute average; fall back to a target-time
+ *                 estimate (600s × 2016 from start).
+ *   scanned == 0 / null inputs: null.
+ *
+ * Exported for testing.
+ */
+export function forecastEpochEnd(
+  startMs: number | null,
+  endMs: number | null,
+  scanned: number,
+): number | null {
+  if (startMs === null || endMs === null || scanned <= 0) return null;
+  if (scanned === 1) {
+    return startMs + BLOCKS_PER_EPOCH * 600 * 1000;
+  }
+  const avgBlockMs = (endMs - startMs) / (scanned - 1);
+  // Defensive: clamp ridiculous averages (e.g. clock skew producing
+  // 0 or negative deltas across two adjacent blocks). Bitcoin's
+  // median-time-past rule means blocks can have non-monotone time
+  // within reason; an aggregate over the whole epoch shouldn't hit
+  // this, but we'd rather degrade than return a nonsensical date.
+  if (!Number.isFinite(avgBlockMs) || avgBlockMs <= 0) {
+    return startMs + BLOCKS_PER_EPOCH * 600 * 1000;
+  }
+  return endMs + (BLOCKS_PER_EPOCH - scanned) * avgBlockMs;
 }
 
 export async function registerBip110ScanRoute(
