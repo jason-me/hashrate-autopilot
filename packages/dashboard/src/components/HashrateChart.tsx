@@ -873,19 +873,31 @@ export const HashrateChart = memo(function HashrateChart({
       }
       shareLogYMin = shareLogYTicks[0] ?? 0;
       shareLogYMax = shareLogYTicks[shareLogYTicks.length - 1] ?? 1;
-      // #236: when every tick in the visible range renders to the same
-      // formatted label (constant data within the formatter's display
-      // precision - e.g. network difficulty over a 24h window where
+      // #236 follow-up: when every tick renders to the same formatted
+      // label, the data is constant within the formatter's display
+      // precision (e.g. network difficulty over a 24h window where
       // niceYTicks pads ±0.0001 around the central value but the
-      // trillion-scale "X.XX T" formatter rounds them all to the same
-      // string) collapse to a single midpoint label. The line still
-      // draws at the correct vertical position because shareLogYMin /
-      // shareLogYMax stay at the full padded extent; the user just sees
-      // one honest label instead of 5 lying ones.
+      // trillion-scale "X.XX T" formatter rounds them all identically).
+      // Re-pad with a value-relative minimum (5%) so the surrounding
+      // scale shows distinct round-number ticks, and anchor the
+      // actual data value at the top so the line sits where the
+      // operator expects (138.96 T at top, 132/134/136 below). The
+      // collapsed-to-one-label variant of this fix turned out to be
+      // too austere - the operator wants a real scale, just an
+      // honest one.
       if (rightAxis) {
         const labels = new Set(shareLogYTicks.map((v) => rightAxis.formatTick(v)));
         if (labels.size === 1 && shareLogYTicks.length > 1) {
-          shareLogYTicks = [(shareLogYMin + shareLogYMax) / 2];
+          const center = (slMin + slMax) / 2;
+          const pad = Math.max(Math.abs(center) * 0.05, 1);
+          const newFloor = Math.max(0, center - pad);
+          const newCeiling = center;
+          const niceTicks = niceYTicks(newFloor, newCeiling, 4);
+          const tooClose = pad * 0.2;
+          const filteredNice = niceTicks.filter((tk) => Math.abs(tk - center) > tooClose);
+          shareLogYTicks = [...filteredNice, center];
+          shareLogYMin = shareLogYTicks[0] ?? newFloor;
+          shareLogYMax = center;
         }
       }
     }

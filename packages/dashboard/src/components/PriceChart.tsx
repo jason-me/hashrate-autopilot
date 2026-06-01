@@ -908,18 +908,24 @@ export const PriceChart = memo(function PriceChart({
       rightYTicks = niceYTicks(yFloor, yCeiling, 5);
       rightYMin = rightYTicks[0] ?? 0;
       rightYMax = rightYTicks[rightYTicks.length - 1] ?? 1;
-      // #236: collapse to a single midpoint label when every tick
-      // renders to the same string at the formatter's display
-      // precision (e.g. constant-over-the-window data padded by a
-      // sub-precision amount). The line still draws at the correct
-      // vertical position because rightYMin / rightYMax stay at the
-      // padded extent; the operator just sees one honest label
-      // instead of N identical ones.
+      // #236 follow-up: when every tick renders identically, re-pad
+      // with a value-relative minimum (5%) and anchor the actual
+      // value at the top so the operator sees a real scale below
+      // it (sister fix in HashrateChart for the same condition).
       if (rightAxis) {
         const span = rightYMax - rightYMin;
         const labels = new Set(rightYTicks.map((v) => rightAxis.formatTick(v, span)));
         if (labels.size === 1 && rightYTicks.length > 1) {
-          rightYTicks = [(rightYMin + rightYMax) / 2];
+          const center = (rmin + rmax) / 2;
+          const pad = Math.max(Math.abs(center) * 0.05, 1);
+          const newFloor = allowNegativeAxis ? center - pad : Math.max(0, center - pad);
+          const newCeiling = center;
+          const niceTicks = niceYTicks(newFloor, newCeiling, 4);
+          const tooClose = pad * 0.2;
+          const filteredNice = niceTicks.filter((tk) => Math.abs(tk - center) > tooClose);
+          rightYTicks = [...filteredNice, center];
+          rightYMin = rightYTicks[0] ?? newFloor;
+          rightYMax = center;
         }
       }
     }
