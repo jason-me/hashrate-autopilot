@@ -938,9 +938,15 @@ export interface Bip110ScanSignalingBlock {
   weight: number | null;
   subsidy_sat: number;
   total_fees_sat: number | null;
-  /** #234: miner identity extracted from the coinbase. For Ocean
-   *  blocks this is the inner-miner tag (e.g. "Roughnecks"), NOT
-   *  the "<OCEAN.XYZ>" pool-wrapper signature. */
+  /** #237: pool identity from the coinbase. For Ocean blocks
+   *  normalised to the literal "Ocean"; for non-Ocean blocks it's
+   *  the longest printable run in the coinbase (Foundry USA Pool,
+   *  AntPool, etc.). Null when there are no printable runs ≥3 chars. */
+  pool_tag: string | null;
+  /** #234 / #237: miner identity extracted from the coinbase. For Ocean
+   *  blocks this is the inner-miner tag (e.g. "Roughnecks"), NOT the
+   *  "<OCEAN.XYZ>" pool-wrapper signature. Null for non-Ocean blocks
+   *  (the two-actor pool/miner distinction doesn't apply). */
   miner_tag: string | null;
 }
 

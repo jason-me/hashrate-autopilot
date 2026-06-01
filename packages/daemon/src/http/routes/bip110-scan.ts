@@ -77,13 +77,22 @@ export interface Bip110SignalingBlock {
   readonly subsidy_sat: number;
   readonly total_fees_sat: number | null;
   /**
-   * Miner identity extracted from the coinbase scriptSig. On Ocean
-   * (the operator's pool) this is the inner-miner tag the template
-   * author embedded - e.g. "Roughnecks" or "Peer to Peer Money" -
-   * NOT the "<OCEAN.XYZ>" pool-wrapper signature that lives next to
-   * it in the same coinbase. See #234 for the extraction rule.
-   * Renamed from `pool_tag` because the pool is always Ocean for
-   * this operator; the meaningful identity is the miner.
+   * #237: Pool identity extracted from the coinbase. For Ocean blocks
+   * (any printable run matches `OCEAN.XYZ`) this is the literal
+   * string "Ocean" — the pool-wrapper text is normalised so the
+   * column reads consistently regardless of how Ocean shapes the
+   * wrapper (`< OCEAN.XYZ >`, `!< OCEAN.XYZ >`, etc.). For non-Ocean
+   * blocks this is the longest printable run in the coinbase, which
+   * is conventionally the pool tag (Foundry USA Pool, AntPool, etc.).
+   * Null when the coinbase has no printable run ≥3 chars.
+   */
+  readonly pool_tag: string | null;
+  /**
+   * #234 / #237: Miner identity extracted from the coinbase. For Ocean
+   * blocks this is the inner-miner tag the template author embedded
+   * (e.g. "Roughnecks" or "Peer to Peer Money"). For non-Ocean blocks
+   * the two-actor distinction doesn't apply and `miner_tag` is null —
+   * the pool itself is the only identity carried in the coinbase.
    */
   readonly miner_tag: string | null;
 }
@@ -195,25 +204,21 @@ function subsidySat(height: number): number {
 /**
  * Ocean's DATUM coinbase carries a pool-wrapper signature ("< OCEAN.XYZ >"
  * or "!< OCEAN.XYZ >", ~13-14 chars) alongside the inner-miner identity
- * tag the template author embedded. When the inner tag is shorter than
- * the wrapper (e.g. "Roughnecks" = 10 chars) the naive longest-printable-
- * run pick returns the wrapper, which is wrong for our purposes - the
- * pool is always Ocean, what we want to surface is the miner. This
- * pattern matches anything containing OCEAN.XYZ regardless of
- * surrounding punctuation. See #234.
+ * tag the template author embedded. See #234 (extraction split) and
+ * #237 (separate Pool vs Miner columns). This pattern matches anything
+ * containing OCEAN.XYZ regardless of surrounding punctuation.
  */
 const OCEAN_WRAPPER_PATTERN = /OCEAN\.?XYZ/i;
 
-/**
- * Extract the miner-identity tag from a coinbase transaction's
- * scriptSig hex. Walks the bytes, collects every printable-ASCII run
- * of length ≥3, filters out the Ocean pool-wrapper signature, and
- * returns the longest remaining run. Falls back to the unfiltered
- * pool if the filter leaves nothing (defensive - would mean the
- * Ocean wrapper was the only printable string in the coinbase, which
- * shouldn't happen but we'd rather render something than nothing).
- */
-export function extractMinerTag(coinbaseHex: string): string | null {
+function longestRun(runs: readonly string[]): string | null {
+  let best = '';
+  for (const r of runs) {
+    if (r.length > best.length) best = r;
+  }
+  return best.length >= 3 ? best.trim() : null;
+}
+
+function collectPrintableRuns(coinbaseHex: string): string[] {
   const bytes = Buffer.from(coinbaseHex, 'hex');
   const runs: string[] = [];
   let cur = '';
@@ -226,14 +231,35 @@ export function extractMinerTag(coinbaseHex: string): string | null {
     }
   }
   if (cur.length >= 3) runs.push(cur);
-  if (runs.length === 0) return null;
-  const filtered = runs.filter((r) => !OCEAN_WRAPPER_PATTERN.test(r));
-  const pool = filtered.length > 0 ? filtered : runs;
-  let best = '';
-  for (const r of pool) {
-    if (r.length > best.length) best = r;
+  return runs;
+}
+
+/**
+ * #237: split the coinbase identity into separate pool and miner
+ * fields so the UI can show two columns instead of conflating
+ * everything into one.
+ *
+ * - Ocean coinbase (any run matches `OCEAN.XYZ`): pool = "Ocean"
+ *   (normalised — we don't care which wrapper shape Ocean used);
+ *   miner = longest non-Ocean run (the inner template-author tag,
+ *   e.g. "Roughnecks"), or null when there's no inner tag.
+ * - Non-Ocean coinbase: pool = longest printable run (the pool tag —
+ *   "Foundry USA Pool", "AntPool", etc.); miner = null (the
+ *   two-actor distinction doesn't apply to traditional pools).
+ * - No printable runs ≥3 chars: both null.
+ */
+export function extractCoinbaseTags(coinbaseHex: string): {
+  pool: string | null;
+  miner: string | null;
+} {
+  const runs = collectPrintableRuns(coinbaseHex);
+  if (runs.length === 0) return { pool: null, miner: null };
+  const isOcean = runs.some((r) => OCEAN_WRAPPER_PATTERN.test(r));
+  if (isOcean) {
+    const nonOcean = runs.filter((r) => !OCEAN_WRAPPER_PATTERN.test(r));
+    return { pool: 'Ocean', miner: longestRun(nonOcean) };
   }
-  return best.length >= 3 ? best.trim() : null;
+  return { pool: longestRun(runs), miner: null };
 }
 
 interface SoftforkBip9 {
@@ -585,6 +611,7 @@ export async function registerBip110ScanRoute(
         const cbTx = coinbaseMap.get(h.hash);
         const sub = subsidySat(h.height);
         let totalFeesSat: number | null = null;
+        let poolTag: string | null = null;
         let minerTag: string | null = null;
         if (cbTx) {
           const cbOutputSat = Math.round(
@@ -592,7 +619,11 @@ export async function registerBip110ScanRoute(
           );
           totalFeesSat = Math.max(0, cbOutputSat - sub);
           const scriptSig = cbTx.vin[0]?.coinbase;
-          if (scriptSig) minerTag = extractMinerTag(scriptSig);
+          if (scriptSig) {
+            const tags = extractCoinbaseTags(scriptSig);
+            poolTag = tags.pool;
+            minerTag = tags.miner;
+          }
         }
         return {
           height: h.height,
@@ -605,6 +636,7 @@ export async function registerBip110ScanRoute(
           weight: block?.weight ?? null,
           subsidy_sat: sub,
           total_fees_sat: totalFeesSat,
+          pool_tag: poolTag,
           miner_tag: minerTag,
         };
       });

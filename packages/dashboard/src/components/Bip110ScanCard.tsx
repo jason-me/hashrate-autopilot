@@ -199,7 +199,15 @@ function SignalingBlockCard({
         <span className="text-lg font-semibold text-amber-400 font-mono">
           {formatNumber(block.height, {}, intlLocale)}
         </span>
-        {block.miner_tag && <MinerBadge tag={block.miner_tag} />}
+        {/* #237: pool and miner badges stack vertically in the top-right
+            so both identities are visible on mobile without a horizontal
+            scroll. Pool on top (more identity-stable across blocks);
+            miner below. When miner is null (non-Ocean blocks) only the
+            pool badge renders. */}
+        <div className="flex flex-col items-end gap-1">
+          {block.pool_tag && <MinerBadge tag={block.pool_tag} />}
+          {block.miner_tag && <MinerBadge tag={block.miner_tag} />}
+        </div>
       </div>
 
       <div className="mt-1.5 text-xs text-slate-400">
@@ -265,6 +273,7 @@ function SignalingBlockTable({
         <thead>
           <tr className="text-slate-500 text-left">
             <th className="pb-2 pr-4 font-normal">{t`height`}</th>
+            <th className="pb-2 pr-4 font-normal">{t`pool`}</th>
             <th className="pb-2 pr-4 font-normal">{t`miner`}</th>
             <th className="pb-2 pr-4 font-normal">{t`found`}</th>
             <th className="pb-2 pr-4 font-normal text-right">{t`reward`}</th>
@@ -282,6 +291,9 @@ function SignalingBlockTable({
               <tr key={b.hash} className="text-slate-300 border-t border-slate-800 align-top">
                 <td className="py-2 pr-4 text-amber-400 font-semibold">
                   {formatNumber(b.height, {}, intlLocale)}
+                </td>
+                <td className="py-2 pr-4">
+                  {b.pool_tag ? <MinerBadge tag={b.pool_tag} /> : <span className="text-slate-600">-</span>}
                 </td>
                 <td className="py-2 pr-4">
                   {b.miner_tag ? <MinerBadge tag={b.miner_tag} /> : <span className="text-slate-600">-</span>}

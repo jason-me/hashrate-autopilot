@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[UI]` BIP 110 scanner: separate Pool and Miner columns (#237)
+
+The signaling-block table had a single column conflating two distinct identities: who built the block template (miner) and which pool the block was mined to. For Ocean blocks the operator wants both visible (Ocean as pool, Roughnecks / Peer to Peer Money / etc. as miner). For non-Ocean blocks the pool tag is the only identity (Foundry, AntPool — no separable miner identity). `extractMinerTag` restructured into `extractCoinbaseTags(hex) → {pool, miner}`: Ocean coinbase → pool="Ocean" (normalised), miner=longest non-Ocean run; non-Ocean coinbase → pool=longest run, miner=null. Desktop table adds a Pool column between Height and Miner. Mobile signaling-block cards stack the two badges vertically in the top-right (pool on top, miner below); non-Ocean blocks show only the pool badge. `Bip110SignalingBlock` adds `pool_tag: string | null`; `miner_tag` retains its #234 semantics. en + nl + es translations re-include `pool` (dropped from the catalog after #234, now reintroduced).
+
 ### `[Fix]` Right-axis collapses to a single label when all ticks render identically (#236)
 
 Charts with constant data over the visible window would render N right-axis tick labels that all show the same string — most visible on the Hashrate chart's `network difficulty` series at 24h, where the entire window sits inside one difficulty epoch (no retarget) and the 2-decimal "X.XX T" formatter rounds every tick to the same value. Post-processed `niceYTicks` output: render each tick value through the formatter, dedupe by string, and collapse to a single midpoint label when only one unique label remains. Y-scale extent stays at the original padded range so the line still draws at the correct vertical position. Applied symmetrically to HashrateChart and PriceChart. Multi-tick rendering for series with genuine variance is unchanged.

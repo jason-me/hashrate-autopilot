@@ -13,7 +13,7 @@ import {
   BIP110_FIRST_SIGNALING_BLOCK_HEIGHT,
   bucketByEpoch,
   computeScanRange,
-  extractMinerTag,
+  extractCoinbaseTags,
   forecastEpochEnd,
 } from './bip110-scan.js';
 
@@ -212,45 +212,50 @@ describe('forecastEpochEnd', () => {
 });
 
 /**
- * #234: miner-tag extraction. The two cases below are real Ocean
- * coinbases pulled from mempool.space's API for blocks 951929
- * (mempool labels: Roughnecks) and 951972 (Peer to Peer Money).
- * Before #234 the longest-printable-run heuristic mis-picked the
- * Ocean wrapper "<OCEAN.XYZ>" for block 951929 because it was
- * longer than "Roughnecks"; the new filter drops the wrapper and
- * the inner tag wins.
+ * #234 → #237: coinbase identity extraction is split into `pool`
+ * and `miner` so the UI can show two columns. For Ocean blocks
+ * (any printable run matches OCEAN.XYZ) pool is normalised to
+ * "Ocean" and miner is the inner template-author tag. For
+ * non-Ocean blocks pool is the longest printable run and miner is
+ * null. The Ocean cases below are real coinbases pulled from
+ * mempool.space's API for blocks 951929 (mempool labels:
+ * Roughnecks) and 951972 (Peer to Peer Money).
  */
-describe('extractMinerTag', () => {
-  it('picks the inner miner tag over the Ocean wrapper (block 951929: Roughnecks)', () => {
-    // Coinbase scriptSig segment for block 951929. Both runs
-    // present: "< OCEAN.XYZ >" (13 chars) + "Roughnecks" (10).
+describe('extractCoinbaseTags', () => {
+  it('Ocean with inner-miner tag: pool=Ocean, miner=inner (block 951929: Roughnecks)', () => {
     const hex =
       '0379860e193c204f4345414e2e58595a203e0f526f7567686e65636b73000000';
-    expect(extractMinerTag(hex)).toBe('Roughnecks');
+    expect(extractCoinbaseTags(hex)).toEqual({ pool: 'Ocean', miner: 'Roughnecks' });
   });
 
-  it('still picks the longer non-wrapper run when both exist (block 951972: Peer to Peer Money)', () => {
-    // Coinbase: "!< OCEAN.XYZ >" (14) + "Peer to Peer Money" (18).
+  it('Ocean with longer inner-miner tag (block 951972: Peer to Peer Money)', () => {
     const hex =
       '0364860e1921213c204f4345414e2e58595a203e125065657220746f20506565722' +
       '04d6f6e6579';
-    expect(extractMinerTag(hex)).toBe('Peer to Peer Money');
+    expect(extractCoinbaseTags(hex)).toEqual({
+      pool: 'Ocean',
+      miner: 'Peer to Peer Money',
+    });
   });
 
-  it('returns null when the coinbase has no printable run ≥3 chars', () => {
-    expect(extractMinerTag('00000000000000000000')).toBeNull();
-  });
-
-  it('falls back to the unfiltered list when the Ocean wrapper is the only run', () => {
-    // Pathological: only the Ocean wrapper, no inner tag. Render
-    // the wrapper rather than nothing.
+  it('Ocean wrapper only, no inner tag: pool=Ocean, miner=null', () => {
     const hex = '003c204f4345414e2e58595a203e00';
-    expect(extractMinerTag(hex)).toBe('< OCEAN.XYZ >');
+    expect(extractCoinbaseTags(hex)).toEqual({ pool: 'Ocean', miner: null });
   });
 
-  it('non-Ocean blocks behave like the old heuristic (longest run)', () => {
+  it('non-Ocean pool: pool=tag, miner=null (Foundry)', () => {
     // "Foundry USA Pool #" - a typical Foundry tag, no Ocean wrapper.
     const hex = '00466f756e6472792055534120506f6f6c202300';
-    expect(extractMinerTag(hex)).toBe('Foundry USA Pool #');
+    expect(extractCoinbaseTags(hex)).toEqual({
+      pool: 'Foundry USA Pool #',
+      miner: null,
+    });
+  });
+
+  it('empty / no printable runs: both null', () => {
+    expect(extractCoinbaseTags('00000000000000000000')).toEqual({
+      pool: null,
+      miner: null,
+    });
   });
 });
