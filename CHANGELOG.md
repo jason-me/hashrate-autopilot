@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[UI]` BIP 110 deployment tooltip explains both activation paths (#233 follow-up #2)
+
+The SIGNALING-state tooltip now names both BIP 110 activation paths and shows the UASF flag-day block (965,664) with a dynamically forecasted date from the average block time observed in the in-progress epoch. The previous one-paragraph "Your Bitcoin node is in the BIP 110 signaling window..." was read as time-related and didn't mention the user-activated path at all. New copy: "Your Bitcoin node supports BIP 110, currently in its activation window. Miner-activated (MASF): 55% threshold in any epoch locks in early. User-activated (UASF): at block 965,664 (estimated {date}), BIP 110-aware nodes — Bitcoin Knots included — enforce the rules regardless." The forecasted UASF date drifts with network conditions (blocks have been coming faster than 600s on average — earlier September-2026 calendar reference was already off). LOCKED_IN and ACTIVE tooltips unchanged. en + nl + es translations updated for six new strings.
+
 ### `[UI]` BIP 110 scanner: mobile header layout + drop "Core" terminology (#233 follow-up)
 
 Two refinements after the per-epoch breakdown shipped on mobile. **Header layout**: the `tip | scanned | signaling | deployment` row with vertical `|` dividers wrapped awkwardly at narrow widths; now stacks vertically below `lg:` and only renders the dividers on `lg+`. **Deployment-status tooltip**: rewrote in plain English with per-status guidance ("Your Bitcoin node is in the BIP 110 signaling window..."). Dropped the old "Core's BIP 9 deployment status for BIP 110..." text — the operator runs Bitcoin Knots, and the project convention is to say "your Bitcoin node" generically (Core was the only outlier in user-facing UI). en + nl + es translations updated for the four new status/explanation strings.

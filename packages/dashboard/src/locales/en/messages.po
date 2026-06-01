@@ -390,6 +390,14 @@ msgstr "ASIC overheating ceiling (°C, 0 = auto per model)"
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "ASIC overheating ceiling (°F, 0 = auto per model)"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+msgstr "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+msgstr "at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -1685,6 +1693,10 @@ msgstr "id {0}"
 msgid "IDs: {0}"
 msgstr "IDs: {0}"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "if at least 55% of a difficulty epoch's blocks signal BIP 110 in their headers, the soft fork locks in at the next epoch boundary."
+msgstr "if at least 55% of a difficulty epoch's blocks signal BIP 110 in their headers, the soft fork locks in at the next epoch boundary."
+
 #: src/pages/Alerts.tsx
 msgid "important"
 msgstr "important"
@@ -1968,6 +1980,10 @@ msgstr "Metallic clank 1"
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Metallic clank 2"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Miner-activated (MASF):"
+msgstr "Miner-activated (MASF):"
 
 #: src/pages/Config.tsx
 msgid "Minimum floor"
@@ -3431,6 +3447,10 @@ msgstr "Used by the on-chain payout balance check (when \"Bitcoin Knots RPC\" is
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 msgstr "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "User-activated (UASF):"
+msgstr "User-activated (UASF):"
+
 #: src/pages/Config.tsx
 msgid "Username (DDNS Key user)"
 msgstr "Username (DDNS Key user)"
@@ -3584,8 +3604,8 @@ msgid "your Bitcoin node does not track BIP 110 as a named softfork"
 msgstr "your Bitcoin node does not track BIP 110 as a named softfork"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early."
-msgstr "Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early."
+msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
+msgstr "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

@@ -71,6 +71,38 @@ const MASF_THRESHOLD_PCT = 55;
  *  (#233 moved the bar from the header to inside each epoch row). */
 const BLOCKS_PER_EPOCH = 2016;
 const MASF_THRESHOLD_BLOCKS = Math.ceil(BLOCKS_PER_EPOCH * (MASF_THRESHOLD_PCT / 100));
+/** BIP 110 UASF flag-day block height. At this height, BIP 110-aware
+ *  nodes begin enforcing the rules regardless of miner signaling.
+ *  The operator-visible "estimated activation date" is computed
+ *  dynamically from the average block time observed in the in-progress
+ *  difficulty epoch, so the displayed date drifts with network
+ *  conditions instead of citing a fixed calendar guess. */
+const UASF_HEIGHT_BIP110 = 965_664;
+
+/**
+ * Linear extrapolation: estimated wall-clock time at which the chain
+ * will reach `targetHeight`, based on the average block time observed
+ * in the in-progress difficulty epoch. Null when we can't compute it
+ * (no scan data yet, target already past, or fewer than 2 blocks of
+ * observation in the in-progress epoch).
+ */
+function forecastBlockHeightTime(
+  targetHeight: number,
+  tipHeight: number | null,
+  inProgressEpoch: Bip110EpochBucket | null | undefined,
+): number | null {
+  if (tipHeight === null || tipHeight >= targetHeight) return null;
+  if (!inProgressEpoch) return null;
+  if (inProgressEpoch.start_time_ms === null || inProgressEpoch.end_time_ms === null) return null;
+  if (inProgressEpoch.scanned < 2) return null;
+  const avgMs = (inProgressEpoch.end_time_ms - inProgressEpoch.start_time_ms) / (inProgressEpoch.scanned - 1);
+  if (!Number.isFinite(avgMs) || avgMs <= 0) return null;
+  return inProgressEpoch.end_time_ms + (targetHeight - tipHeight) * avgMs;
+}
+
+function formatMediumDate(ms: number, dateTimeLocale: string): string {
+  return new Intl.DateTimeFormat(dateTimeLocale, { dateStyle: 'medium' }).format(new Date(ms));
+}
 
 const BIP110_REFERENCE_URL = 'https://bip110.org/';
 
@@ -444,7 +476,12 @@ export function Bip110ScanCard(): React.JSX.Element {
             {data.deployment ? (
               <>
                 <span className="hidden lg:inline"><Divider /></span>
-                <DeploymentStatusBadge deployment={data.deployment} />
+                <DeploymentStatusBadge
+                  deployment={data.deployment}
+                  tipHeight={data.tip_height}
+                  inProgressEpoch={data.epochs?.find((e) => e.in_progress) ?? null}
+                  intlLocale={intlLocale}
+                />
               </>
             ) : (
               <>
@@ -773,30 +810,92 @@ function MasfProgress({
  * shows just the status label (Signaling / Locked in / Active) with
  * a plain-English tooltip per state.
  *
- * #233 follow-up: explanation text is per-status and uses the
- * project's neutral "your Bitcoin node" / "Bitcoin Knots" phrasing
- * — never the C-word that we don't say (see the
- * never-say-bitcoin-core-in-ui feedback memory).
+ * #233 follow-up #2: SIGNALING tooltip now names both activation
+ * paths (MASF + UASF) and surfaces the UASF flag-day block (965,664)
+ * with a dynamically forecasted date from the average block time
+ * observed in the in-progress difficulty epoch. The fixed September-
+ * 2026 calendar reference the older deleted DeploymentProgressBar
+ * carried was already off (blocks are coming faster than 600s on
+ * average), so the dynamic forecast replaces the calendar fact too.
+ *
+ * Wording: never the C-word in user-visible text — see the
+ * never-say-bitcoin-core-in-ui memory.
  */
 function DeploymentStatusBadge({
   deployment,
+  tipHeight,
+  inProgressEpoch,
+  intlLocale,
 }: {
   deployment: Bip110ScanDeployment;
+  tipHeight: number | null;
+  inProgressEpoch: Bip110EpochBucket | null;
+  intlLocale: string | undefined;
 }): React.JSX.Element {
+  const dateTimeLocale = useDateTimeLocale();
   const statusLabel =
     deployment.status === 'locked_in' ? t`locked in`
     : deployment.status === 'active' ? t`active`
     : t`signaling`;
-  const tooltipText =
-    deployment.status === 'locked_in'
-      ? t`The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary.`
-      : deployment.status === 'active'
-        ? t`BIP 110 is active — your Bitcoin node is enforcing the new consensus rules.`
-        : t`Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early.`;
+  const uasfForecastMs = forecastBlockHeightTime(UASF_HEIGHT_BIP110, tipHeight, inProgressEpoch);
+  const uasfHeightStr = formatNumber(UASF_HEIGHT_BIP110, {}, intlLocale);
+  const uasfDateStr = uasfForecastMs !== null
+    ? formatMediumDate(uasfForecastMs, dateTimeLocale)
+    : null;
+  const tooltip = (() => {
+    if (deployment.status === 'locked_in') {
+      return (
+        <p className="text-slate-300 leading-relaxed max-w-xs">
+          <Trans>
+            The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary.
+          </Trans>
+        </p>
+      );
+    }
+    if (deployment.status === 'active') {
+      return (
+        <p className="text-slate-300 leading-relaxed max-w-xs">
+          <Trans>
+            BIP 110 is active — your Bitcoin node is enforcing the new consensus rules.
+          </Trans>
+        </p>
+      );
+    }
+    // Default: signaling (or any other state we don't recognize).
+    return (
+      <div className="text-slate-300 leading-relaxed max-w-xs space-y-2">
+        <p>
+          <Trans>
+            Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:
+          </Trans>
+        </p>
+        <p>
+          <span className="text-amber-300 font-semibold">
+            <Trans>Miner-activated (MASF):</Trans>
+          </span>{' '}
+          <Trans>
+            if at least 55% of a difficulty epoch's blocks signal BIP 110 in their headers, the soft fork locks in at the next epoch boundary.
+          </Trans>
+        </p>
+        <p>
+          <span className="text-amber-300 font-semibold">
+            <Trans>User-activated (UASF):</Trans>
+          </span>{' '}
+          {uasfDateStr !== null ? (
+            <Trans>
+              at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling.
+            </Trans>
+          ) : (
+            <Trans>
+              at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling.
+            </Trans>
+          )}
+        </p>
+      </div>
+    );
+  })();
   return (
-    <Tooltip content={
-      <p className="text-slate-300 leading-relaxed max-w-xs">{tooltipText}</p>
-    }>
+    <Tooltip content={tooltip}>
       <span className="inline-flex items-center gap-1.5 cursor-help">
         <span className="text-slate-500 text-xs">{t`deployment`}:</span>
         <span className="bg-amber-400/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider">

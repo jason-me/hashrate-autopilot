@@ -390,6 +390,14 @@ msgstr "Techo de sobrecalentamiento del ASIC (°C, 0 = automático por modelo)"
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "Techo de sobrecalentamiento del ASIC (°F, 0 = automático por modelo)"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+msgstr "en el bloque {uasfHeightStr} (estimado {uasfDateStr}), los nodos compatibles con BIP 110 — incluido Bitcoin Knots — comienzan a aplicar las reglas independientemente de la señalización de los mineros."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
+msgstr "en el bloque {uasfHeightStr}, los nodos compatibles con BIP 110 — incluido Bitcoin Knots — comienzan a aplicar las reglas independientemente de la señalización de los mineros."
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
@@ -1685,6 +1693,10 @@ msgstr "id {0}"
 msgid "IDs: {0}"
 msgstr "IDs: {0}"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "if at least 55% of a difficulty epoch's blocks signal BIP 110 in their headers, the soft fork locks in at the next epoch boundary."
+msgstr "si al menos el 55% de los bloques de una época de dificultad señalizan BIP 110 en sus encabezados, la soft fork se activa en el siguiente límite de época."
+
 #: src/pages/Alerts.tsx
 msgid "important"
 msgstr "importante"
@@ -1968,6 +1980,10 @@ msgstr "Golpe metálico 1"
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Golpe metálico 2"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Miner-activated (MASF):"
+msgstr "Activado por mineros (MASF):"
 
 #: src/pages/Config.tsx
 msgid "Minimum floor"
@@ -3431,6 +3447,10 @@ msgstr "Usado por la comprobación de saldo de pagos on-chain (cuando \"Bitcoin 
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 msgstr "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "User-activated (UASF):"
+msgstr "Activado por usuarios (UASF):"
+
 #: src/pages/Config.tsx
 msgid "Username (DDNS Key user)"
 msgstr "Usuario (usuario del DDNS Key)"
@@ -3584,8 +3604,8 @@ msgid "your Bitcoin node does not track BIP 110 as a named softfork"
 msgstr "tu nodo Bitcoin no registra BIP 110 como una softfork con nombre"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early."
-msgstr "Tu nodo Bitcoin está en la ventana de señalización de BIP 110. Los mineros pueden participar señalizando en los encabezados de sus bloques; si al menos el 55% de los bloques de una época señaliza, la soft fork se activa de forma anticipada."
+msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
+msgstr "Tu nodo Bitcoin admite BIP 110, que actualmente está en su ventana de activación. Hay dos caminos por los que puede activarse:"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"
