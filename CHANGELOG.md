@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[Infra]` Wire chart color overrides through Hashrate + Price charts (#238 step 2)
+
+`HashrateChart` and `PriceChart` now accept a `chartColorOverrides` prop (the JSON string from `config.chart_color_overrides`). Each component parses it via `parseOverrides`, then resolves all named series colors with `getChartColor` and shadows the module-scope `COLOR_*` defaults so the rest of the component body keeps using the same identifier names — minimal-touch refactor. The 8 right-axis `'#c084fc'` literals on HashrateChart and the 10 on PriceChart now read from `COLOR_RIGHT_AXIS` (per-chart slot). `Status.tsx` passes `chart_color_overrides` from the config response into both charts. With no overrides set every color is unchanged from before; populating the JSON object on the daemon side now repaints the charts. UI for actually editing the overrides ships in step 3.
+
 ### `[Infra]` Foundation for user-configurable chart colors (#238 step 1)
 
 First of three commits implementing per-series chart color overrides. Migration 0103 adds `chart_color_overrides TEXT NOT NULL DEFAULT '{}'` to `config`; daemon schema, repo, types, and env-override map all extend through. New dashboard module `lib/chartColors.ts` carries the canonical defaults table (18 series — every left/right-axis line plus the four bid-event marker hues), 12 curated preset swatches, and `parseOverrides` / `getChartColor` / `serializeOverrides` helpers. `parseOverrides` is defensive — malformed JSON, non-object roots, unknown keys, non-string values, and non-`#RRGGBB` hex strings all silently drop so a stray browser write can't break the chart. 11 unit tests cover the parser, getter, and round-trip serialization plus a snapshot guard that every default is a valid hex. No visible UI change yet; wire-through into the chart components and the Settings panel ship in the follow-up commits.

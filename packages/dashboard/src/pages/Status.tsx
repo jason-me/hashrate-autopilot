@@ -556,6 +556,7 @@ export function Status() {
           isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
+          chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
         />
       </div>
       <div className="space-y-1">
@@ -618,6 +619,7 @@ export function Status() {
           isFocused={chartViewport.isFocused}
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
+          chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
         />
       </div>
 

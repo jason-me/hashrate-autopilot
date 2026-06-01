@@ -26,6 +26,7 @@ import {
 } from '@hashrate-autopilot/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
+import { getChartColor, parseOverrides } from '../lib/chartColors';
 import {
   formatAgeMinutes,
   formatCompactNumber,
@@ -342,6 +343,7 @@ export const HashrateChart = memo(function HashrateChart({
   isFocused = false,
   viewportSince,
   viewportUntil,
+  chartColorOverrides,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -389,10 +391,32 @@ export const HashrateChart = memo(function HashrateChart({
   isFocused?: boolean;
   viewportSince?: number;
   viewportUntil?: number;
+  /** #238: per-series chart color overrides as a JSON string from
+   *  `config.chart_color_overrides`. Empty `'{}'` (or undefined)
+   *  resolves every series to its built-in default. */
+  chartColorOverrides?: string;
 }) {
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
+  // #238: resolve per-series colors from the operator's config.
+  // These shadow the module-scope `COLOR_*` defaults so the rest of
+  // the component body keeps using the same names without changes.
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const _colorOverrides = useMemo(
+    () => parseOverrides(chartColorOverrides),
+    [chartColorOverrides],
+  );
+  /* eslint-disable @typescript-eslint/no-shadow */
+  const COLOR_DELIVERED = getChartColor('hashrate.delivered', _colorOverrides);
+  const COLOR_DATUM = getChartColor('hashrate.received_datum', _colorOverrides);
+  const COLOR_OCEAN = getChartColor('hashrate.received_ocean', _colorOverrides);
+  const COLOR_TARGET = getChartColor('hashrate.target', _colorOverrides);
+  const COLOR_FLOOR = getChartColor('hashrate.floor', _colorOverrides);
+  const COLOR_OUR_BLOCK = getChartColor('hashrate.pool_block_ours', _colorOverrides);
+  const COLOR_POOL_BLOCK = getChartColor('hashrate.pool_block_others', _colorOverrides);
+  const COLOR_RIGHT_AXIS = getChartColor('hashrate.right_axis', _colorOverrides);
+  /* eslint-enable @typescript-eslint/no-shadow */
   const dateTimeLocale = useDateTimeLocale();
   const denomination = useDenomination();
   const tempUnit = useTemperatureUnit();
@@ -639,7 +663,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 4,
               }).format(v)}%`,
             axisLabel: '% of Ocean',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         case 'network_difficulty':
           return {
@@ -652,7 +676,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               })} T`,
             axisLabel: 'difficulty',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         case 'pool_hashrate':
           return {
@@ -667,7 +691,7 @@ export const HashrateChart = memo(function HashrateChart({
               return formatCompactNumber(v * factor, intlLocale);
             },
             axisLabel: `pool ${denomination.hashrateSuffix}`,
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         case 'solo_hashrate': {
           // Project the per-tick fleet series onto the chart's x-axis.
@@ -688,7 +712,7 @@ export const HashrateChart = memo(function HashrateChart({
               return `${v.toFixed(0)} GH/s`;
             },
             axisLabel: 'solo hashrate',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         }
         case 'solo_device_count': {
@@ -697,7 +721,7 @@ export const HashrateChart = memo(function HashrateChart({
             values: projectSoloSeries(xs, soloSeries, (r) => r.device_count),
             formatTick: (v) => v.toFixed(0),
             axisLabel: 'solo devices',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             // Whole-device counts only - prevents the degenerate
             // "constant value over a tight range" case where every
             // tick would round-format to the same integer.
@@ -712,7 +736,7 @@ export const HashrateChart = memo(function HashrateChart({
             values: projectSoloSeries(xs, soloSeries, (r) => convert(r.max_temp_c)),
             formatTick: (v) => `${v.toFixed(1)} °${tempUnit}`,
             axisLabel: tempUnit === 'F' ? 'solo max temp (°F)' : 'solo max temp (°C)',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         }
         case 'solo_best_diff': {
@@ -736,7 +760,7 @@ export const HashrateChart = memo(function HashrateChart({
               return v.toFixed(0);
             },
             axisLabel: 'solo best difficulty',
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         }
         case 'pool_luck_24h':
@@ -754,7 +778,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               }).format(v)}×`,
             axisLabel: label,
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
           };
         }
       }

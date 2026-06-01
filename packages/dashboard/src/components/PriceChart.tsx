@@ -40,6 +40,7 @@ import {
   projectSoloSeries,
 } from './HashrateChart';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
+import { getChartColor, parseOverrides } from '../lib/chartColors';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
 import {
@@ -258,6 +259,7 @@ export const PriceChart = memo(function PriceChart({
   isFocused = false,
   viewportSince,
   viewportUntil,
+  chartColorOverrides,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -367,9 +369,31 @@ export const PriceChart = memo(function PriceChart({
   isFocused?: boolean;
   viewportSince?: number;
   viewportUntil?: number;
+  /** #238: per-series chart color overrides as a JSON string from
+   *  `config.chart_color_overrides`. */
+  chartColorOverrides?: string;
 }) {
   const { i18n } = useLingui();
   void i18n;
+  // #238: resolve per-series colors from the operator's config.
+  // Shadows the module-scope `COLOR_*` defaults so the rest of the
+  // component body keeps using the same names without changes.
+  const _colorOverrides = useMemo(
+    () => parseOverrides(chartColorOverrides),
+    [chartColorOverrides],
+  );
+  /* eslint-disable @typescript-eslint/no-shadow */
+  const COLOR_PRICE = getChartColor('price.our_bid', _colorOverrides);
+  const COLOR_FILLABLE = getChartColor('price.fillable', _colorOverrides);
+  const COLOR_HASHPRICE = getChartColor('price.hashprice', _colorOverrides);
+  const COLOR_MAXBID = getChartColor('price.max_bid', _colorOverrides);
+  const COLOR_DEPOSIT = getChartColor('price.unpaid', _colorOverrides);
+  const COLOR_CREATE = getChartColor('events.create', _colorOverrides);
+  const COLOR_EDIT = getChartColor('events.edit_price', _colorOverrides);
+  const COLOR_EDIT_SPEED = getChartColor('events.edit_speed', _colorOverrides);
+  const COLOR_CANCEL = getChartColor('events.cancel', _colorOverrides);
+  const COLOR_RIGHT_AXIS = getChartColor('price.right_axis', _colorOverrides);
+  /* eslint-enable @typescript-eslint/no-shadow */
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   // Per-marker tooltip state for the new on-line dots: pool-block
@@ -740,7 +764,7 @@ export const PriceChart = memo(function PriceChart({
             // #149: right-axis colour convention - operator wants
             // every right-axis series rendered in a consistent purple
             // since only one ever shows at a time. Was green (#34d399).
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: 'effective (sat/PH/day)',
             formatTick: (v) =>
               new Intl.NumberFormat(intlLocale, {
@@ -750,14 +774,14 @@ export const PriceChart = memo(function PriceChart({
         case 'estimated_block_reward':
           return {
             values: points.map((p) => p.estimated_block_reward_sat),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: `block reward (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'btc_usd_price':
           return {
             values: points.map((p) => p.btc_usd_price),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: 'BTC/USD ($)',
             // The $ prefix + thousand-sep dot makes "$80.500" 7
             // chars, which overruns the right-axis padding. Keep
@@ -778,7 +802,7 @@ export const PriceChart = memo(function PriceChart({
         case 'ocean_unpaid_sat':
           return {
             values: points.map((p) => p.ocean_unpaid_sat),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
@@ -789,14 +813,14 @@ export const PriceChart = memo(function PriceChart({
                 ? null
                 : p.paid_total_sat + historicalPayoutsOffsetSat,
             ),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'total_balance_sat':
           return {
             values: points.map((p) => p.total_balance_sat),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: `Braiins balance (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
@@ -808,7 +832,7 @@ export const PriceChart = memo(function PriceChart({
           const xs = points.map((p) => p.tick_at);
           return {
             values: projectSoloSeries(xs, soloSeries, (r) => r.total_power_w),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: 'solo power (W)',
             // Watts displayed without the `k` shortening - home Bitaxe
             // fleets are typically 15-100W where kW scale would round
@@ -826,14 +850,14 @@ export const PriceChart = memo(function PriceChart({
                   (p.ocean_unpaid_sat ?? 0) +
                   historicalPayoutsOffsetSat,
             ),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'avg_overpay_intent':
           return {
             values: points.map((p) => intentByTick.get(p.tick_at) ?? null),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: 'avg overpay intent (sat/PH/day)',
             formatTick: (v) =>
               new Intl.NumberFormat(intlLocale, {
@@ -843,7 +867,7 @@ export const PriceChart = memo(function PriceChart({
         case 'avg_overpay_settled':
           return {
             values: points.map((p) => settledByTick.get(p.tick_at) ?? null),
-            stroke: '#c084fc',
+            stroke: COLOR_RIGHT_AXIS,
             axisLabel: 'avg overpay settled (sat/PH/day)',
             formatTick: (v) =>
               new Intl.NumberFormat(intlLocale, {
