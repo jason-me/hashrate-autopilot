@@ -1,8 +1,6 @@
--- #241: mark synthetic tick_metrics rows (inserted by boot-time
--- backfill services to fill offline-gap state - currently
--- runRetargetBackfill; future per-tick gap-fill from the broader
--- #241 work). Real polled rows have synthetic=0; backfilled rows
--- have synthetic=1.
+-- #241: mark synthetic tick_metrics rows inserted by runGapBackfill
+-- to fill offline-gap state. Real polled rows have synthetic=0;
+-- backfilled rows have synthetic=1.
 --
 -- Why: the gap-detection logic in runRetargetBackfill queries the
 -- "previous tick" before the current outage. If a previous boot

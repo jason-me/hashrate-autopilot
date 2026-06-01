@@ -62,7 +62,7 @@ import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
 import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
-import { runRetargetBackfill } from './services/retarget-backfill.js';
+import { runGapBackfill } from './services/gap-backfill.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
 import type { State } from './controller/types.js';
@@ -523,6 +523,20 @@ async function bootOperational(
     (err) => log(`[ocean-unpaid-cleanup] ${(err as Error).message}`),
   );
 
+  // Boot chain order (#241):
+  //   1. pool-blocks-backfill - pull Ocean's pool_blocks for the
+  //      lookback window so the per-tick gap-fill below can compute
+  //      pool_blocks_*_count and pool_luck_* at synthetic-tick times.
+  //   2. gap-backfill - if there's an offline gap in tick_metrics,
+  //      insert synthetic ticks across it (per-tick when bitcoindClient
+  //      is wired so each tick carries the correct epoch difficulty,
+  //      falls back to a single-marker estimate without it).
+  //   3. pool-luck-recompute - walk every tick_metrics row (including
+  //      the newly-inserted synthetics) and populate
+  //      pool_blocks_*_count / pool_luck_* / paid_total_sat from the
+  //      pool_blocks + reward_events ground truth. This is what turns
+  //      the in-gap synthetics into a luck line that step-changes on
+  //      each in-gap pool block instead of flat-interpolating.
   void runPoolBlocksBackfill({
     oceanClient,
     poolBlocksRepo,
@@ -530,17 +544,17 @@ async function bootOperational(
     log: (m) => log(m),
   })
     .then(() =>
-      runPoolLuckRecompute({
+      runGapBackfill({
         db: handle.db,
         poolBlocksRepo,
+        ...(bitcoindClient ? { bitcoindClient } : {}),
         log: (m) => log(m),
       }),
     )
     .then(() =>
-      runRetargetBackfill({
+      runPoolLuckRecompute({
         db: handle.db,
         poolBlocksRepo,
-        ...(bitcoindClient ? { bitcoindClient } : {}),
         log: (m) => log(m),
       }),
     )
