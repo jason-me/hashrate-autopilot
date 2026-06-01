@@ -19,30 +19,47 @@
  * Approach
  * --------
  *
- * Walk back through every retarget height (mod 2016) from chain tip
- * until the retarget block's canonical timestamp falls before the
- * gap; for each one inside the gap, record (canonical_time,
- * canonical_difficulty) from bitcoind. Then generate a synthetic tick
- * every {@link SYNTHETIC_INTERVAL_MS} across the gap, plus one tick
- * at each retarget's canonical timestamp. Assign each tick the
- * difficulty as-of its time (= the difficulty of the most recent
- * retarget at or before that time, falling back to prevTick's
- * difficulty for ticks before any in-gap retarget).
+ * Determine the set of retargets in the gap. With `bitcoindClient`
+ * wired, walk back through every retarget height (mod 2016) from
+ * chain tip until the block's canonical timestamp is before the gap;
+ * each in-gap retarget contributes (canonical_time,
+ * canonical_difficulty). Without bitcoindClient, if the pre/post
+ * difficulty diff is > 0.5%, derive a single pseudo-retarget at the
+ * latest retarget height's nearest-pool-block estimate (legacy
+ * pre-bitcoind behavior preserved as a fallback so multi-retarget
+ * cases can't be detected, but the most-recent one still surfaces).
  *
- * The downstream {@link runPoolLuckRecompute} picks up the new rows
- * and populates `pool_blocks_*_count` and `pool_luck_*` for each
- * synthetic tick from the pool_blocks data - so the luck line
- * actually step-changes when pool blocks land in the gap, matching
- * the icons the chart already draws from pool_blocks_backfill.
+ * Then generate a synthetic tick every {@link SYNTHETIC_INTERVAL_MS}
+ * across the gap, plus a tick at each retarget timestamp. Assign
+ * each tick the difficulty as-of its time (= the difficulty of the
+ * most recent retarget at-or-before that time, falling back to
+ * prevTick's difficulty for ticks before any in-gap retarget).
  *
- * Without bitcoindClient
- * ----------------------
+ * Bucket alignment (the gotcha)
+ * -----------------------------
  *
- * Falls back to the legacy "one synthetic tick at the latest
- * retarget's nearest-pool-block estimate" behavior - the
- * pre-bitcoind retarget-backfill implementation. The per-tick
- * gap-fill is skipped entirely (we can't assign difficulty per
- * epoch without a way to find each retarget's canonical time).
+ * The chart's `/api/metrics` endpoint AVG-aggregates rows into
+ * server-side buckets sized per the visible range (5-min raw for
+ * 24h, 30-min for 1w, 1h for 1m, 1d for 1y/all). The chart's
+ * retarget-marker detector also has a sustained-check filter: a
+ * detected diff jump is only accepted if the *next* non-null bucket
+ * matches the current within 0.5% (suppresses spurious markers from
+ * smoothed bucket transitions). If a bucket contains both pre and
+ * post-retarget ticks, its AVG is intermediate, the sustained check
+ * fails, and the marker is rejected. Empirical: 5-min synthetic
+ * cadence + 30-min 1w bucket = 6 pre-retarget ticks averaged with 1
+ * post-retarget canonical tick in the same bucket, AVG mostly
+ * pre-retarget, sustained-check fails, marker invisible on the very
+ * range the operator is most likely viewing.
+ *
+ * Fix: skip cadence synthetics whose 30-min bucket collides with
+ * any retarget canonical's 30-min bucket. The canonical synthetic
+ * is then alone in its 30-min bucket, AVG = newDiff exactly, the
+ * adjacent bucket's AVG = prevDiff exactly (no mixed rows), step
+ * crosses the 0.5% threshold cleanly and sustains. Works for 1w
+ * (30-min) and 1m (1h) views; 1y / All (1d bucket) is too coarse
+ * - the bucket containing canonical still mixes pre and post within
+ * the day - and is a documented limitation.
  *
  * Idempotency
  * -----------
@@ -68,12 +85,23 @@ const AVG_BLOCK_TIME_MS = 600_000;
 const DIFFICULTY_THRESHOLD = 0.005;
 
 /**
- * Synthetic tick cadence. 5 min aligns with the 1w chart bucket size
- * (so each visible bucket sees at least one synthetic). Finer would
- * be wasted; coarser would leave the bucket aggregation thin for
- * weeks-long gaps.
+ * Synthetic tick cadence. 5 min is finer than the 1w / 1m chart
+ * bucket sizes (30 min / 1h) so each bucket has multiple synthetics
+ * to AVG, and the pool-luck line on the chart shows real step
+ * changes when in-gap pool blocks enter / exit the 24h / 7d / 30d
+ * windows. The retarget-bucket-skip below cleans up the bucket-AVG
+ * collision so cadence-fineness doesn't dilute the marker.
  */
 const SYNTHETIC_INTERVAL_MS = 5 * 60_000;
+
+/**
+ * Cadence-skip window around each canonical retarget. The 30-min
+ * value matches the 1w chart preset's `bucketMs`; cadence ticks
+ * inside the canonical's 30-min bucket are skipped so the AVG is
+ * post-retarget only and the chart's sustained-check filter
+ * accepts the marker.
+ */
+const RETARGET_SKIP_BUCKET_MS = 30 * 60_000;
 
 /**
  * Skip "gaps" shorter than this. Normal poll variance from the
@@ -85,7 +113,7 @@ const MIN_GAP_MS = 10 * 60_000;
 
 /**
  * Safety cap on retarget walk-back: if bitcoind returns plausible
- * timestamps every time, we'd stop at the first one before gapStart.
+ * timestamps every time, we stop at the first one before gapStart.
  * This guards against an unbounded loop if a degenerate response
  * arrives (very-stale node, time anomaly).
  */
@@ -95,15 +123,19 @@ interface RetargetEntry {
   readonly height: number;
   readonly timeMs: number;
   readonly difficulty: number;
+  /** 'bitcoind' = canonical from block header; 'estimate' = nearest-pool-block fallback. */
+  readonly source: 'bitcoind' | 'estimate';
 }
 
 export interface GapBackfillDeps {
   readonly db: Kysely<Database>;
   readonly poolBlocksRepo: PoolBlocksRepo;
   /**
-   * When wired, per-tick gap-fill with correct difficulty per epoch.
-   * Without it, falls back to the legacy single-synthetic-tick
-   * behavior at the latest retarget's nearest-pool-block estimate.
+   * When wired, walk back canonical retarget times via bitcoind RPC
+   * so multi-retarget gaps surface every marker. Without it, falls
+   * back to a single pseudo-retarget at the latest retarget height's
+   * nearest-pool-block estimate - same per-tick gap-fill, fewer
+   * markers (typically 1 instead of N).
    */
   readonly bitcoindClient?: BitcoindClient;
   readonly log?: (msg: string) => void;
@@ -111,6 +143,8 @@ export interface GapBackfillDeps {
 
 export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
   const { db, log = () => {} } = deps;
+
+  log(`[gap-backfill] starting; bitcoindClient=${deps.bitcoindClient ? 'available' : 'null (fallback path)'}`);
 
   // Gap detection anchors on REAL polled rows only (synthetic = 0).
   // A previous boot's backfill row must not be the gap-boundary
@@ -124,7 +158,10 @@ export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
     .orderBy('tick_at', 'desc')
     .limit(1)
     .executeTakeFirst();
-  if (!lastTick || lastTick.network_difficulty == null) return;
+  if (!lastTick || lastTick.network_difficulty == null) {
+    log(`[gap-backfill] no lastTick with non-null difficulty; nothing to do`);
+    return;
+  }
 
   const prevTick = await db
     .selectFrom('tick_metrics')
@@ -135,12 +172,20 @@ export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
     .orderBy('tick_at', 'desc')
     .limit(1)
     .executeTakeFirst();
-  if (!prevTick || prevTick.network_difficulty == null) return;
+  if (!prevTick || prevTick.network_difficulty == null) {
+    log(`[gap-backfill] no prevTick with non-null difficulty before lastTick=${new Date(lastTick.tick_at).toISOString()}; nothing to do`);
+    return;
+  }
 
   const gapStart = prevTick.tick_at;
   const gapEnd = lastTick.tick_at;
   const gapMs = gapEnd - gapStart;
-  if (gapMs < MIN_GAP_MS) return;
+  if (gapMs < MIN_GAP_MS) {
+    log(`[gap-backfill] gap ${(gapMs / 60_000).toFixed(1)} min < ${MIN_GAP_MS / 60_000} min threshold; nothing to do`);
+    return;
+  }
+
+  log(`[gap-backfill] gap detected: ${new Date(gapStart).toISOString()} -> ${new Date(gapEnd).toISOString()} (${(gapMs / 3_600_000).toFixed(1)}h); prevDiff=${prevTick.network_difficulty.toExponential(3)}, lastDiff=${lastTick.network_difficulty.toExponential(3)}`);
 
   // Always clear any stale synthetic rows in the detected gap before
   // re-inserting. Safe because real polled rows can't exist strictly
@@ -153,124 +198,171 @@ export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
     .where('tick_at', '<', gapEnd)
     .executeTakeFirst();
   if (cleared.numDeletedRows > 0n) {
-    log(`[gap-backfill] cleared ${cleared.numDeletedRows} stale synthetic tick(s) in (${new Date(gapStart).toISOString()}, ${new Date(gapEnd).toISOString()})`);
+    log(`[gap-backfill] cleared ${cleared.numDeletedRows} stale synthetic tick(s) in detected gap`);
   }
 
-  if (deps.bitcoindClient) {
-    await runPerTickGapFill({
-      db,
-      bitcoindClient: deps.bitcoindClient,
-      poolBlocksRepo: deps.poolBlocksRepo,
-      log,
-      prevTick,
-      lastTick,
-      gapStart,
-      gapEnd,
-      gapMs,
-    });
-  } else {
-    await runLegacySingleMarker({
-      db,
-      poolBlocksRepo: deps.poolBlocksRepo,
-      log,
-      prevTick,
-      lastTick,
-      gapStart,
-      gapEnd,
-    });
-  }
+  const retargets = await collectRetargets({
+    bitcoindClient: deps.bitcoindClient,
+    poolBlocksRepo: deps.poolBlocksRepo,
+    db,
+    prevDiff: prevTick.network_difficulty,
+    lastDiff: lastTick.network_difficulty,
+    gapStart,
+    gapEnd,
+    log,
+  });
+
+  await insertSyntheticGapTicks({
+    db,
+    log,
+    prevTick,
+    gapStart,
+    gapEnd,
+    gapMs,
+    retargets,
+  });
 }
 
 /**
- * Backwards-compat alias for callers that imported the previous name
- * before the gap-fill scope expansion. Removed in a follow-up cleanup.
+ * Backwards-compat alias for any external caller still importing the
+ * previous name. Removed in a follow-up cleanup.
  *
  * @deprecated use runGapBackfill
  */
 export const runRetargetBackfill = runGapBackfill;
 
-interface PerTickArgs {
-  readonly db: Kysely<Database>;
-  readonly bitcoindClient: BitcoindClient;
+interface CollectRetargetsArgs {
+  readonly bitcoindClient: BitcoindClient | undefined;
   readonly poolBlocksRepo: PoolBlocksRepo;
-  readonly log: (msg: string) => void;
-  readonly prevTick: TickMetricsRow;
-  readonly lastTick: TickMetricsRow;
+  readonly db: Kysely<Database>;
+  readonly prevDiff: number;
+  readonly lastDiff: number;
   readonly gapStart: number;
   readonly gapEnd: number;
-  readonly gapMs: number;
+  readonly log: (msg: string) => void;
 }
 
-async function runPerTickGapFill(args: PerTickArgs): Promise<void> {
-  const { db, bitcoindClient, log, prevTick, gapStart, gapEnd, gapMs } = args;
+async function collectRetargets(args: CollectRetargetsArgs): Promise<readonly RetargetEntry[]> {
+  const { bitcoindClient, poolBlocksRepo, db, prevDiff, lastDiff, gapStart, gapEnd, log } = args;
 
-  // Walk back through retarget heights from chain tip, collecting any
-  // whose canonical block time falls inside the gap. We use poolBlocks'
-  // max height as the chain-tip proxy (avoids one extra getblockcount
-  // round-trip; the poll keeps it within a few blocks of tip).
-  const maxHeight = await args.poolBlocksRepo.maxHeight();
+  const maxHeight = await poolBlocksRepo.maxHeight();
   if (maxHeight == null) {
-    log(`[gap-backfill] pool_blocks empty - cannot determine chain tip; skipping per-tick fill`);
-    return;
+    log(`[gap-backfill] pool_blocks empty - cannot determine chain tip; no retarget metadata available`);
+    return [];
   }
   const startHeight = Math.floor(maxHeight / RETARGET_INTERVAL) * RETARGET_INTERVAL;
 
-  const retargets: RetargetEntry[] = [];
-  let h = startHeight;
-  for (let n = 0; n < RETARGET_WALKBACK_CAP && h > 0; n += 1) {
-    let timeMs: number;
-    let difficulty: number;
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      const hashResp = await bitcoindClient.batch<string>([
-        { method: 'getblockhash', params: [h] },
-      ]);
-      const blockHash = hashResp[0];
-      if (!blockHash) break;
-      // Second round-trip for the header. Can't batch with the hash
-      // call because the header request depends on the hash result.
-      // eslint-disable-next-line no-await-in-loop
-      const headerResp = await bitcoindClient.batch<{ time: number; difficulty: number }>([
-        { method: 'getblockheader', params: [blockHash, true] },
-      ]);
-      const header = headerResp[0];
-      if (!header) break;
-      timeMs = header.time * 1000;
-      difficulty = header.difficulty;
-    } catch (err) {
-      log(`[gap-backfill] bitcoind lookup for retarget block ${h} failed (${(err as Error).message}); aborting walk-back`);
-      break;
+  if (bitcoindClient) {
+    const retargets: RetargetEntry[] = [];
+    let h = startHeight;
+    for (let n = 0; n < RETARGET_WALKBACK_CAP && h > 0; n += 1) {
+      let timeMs: number;
+      let difficulty: number;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const hashResp = await bitcoindClient.batch<string>([
+          { method: 'getblockhash', params: [h] },
+        ]);
+        const blockHash = hashResp[0];
+        if (!blockHash) break;
+        // Second round-trip for the header. Can't batch with the hash
+        // call because the header request depends on the hash result.
+        // eslint-disable-next-line no-await-in-loop
+        const headerResp = await bitcoindClient.batch<{ time: number; difficulty: number }>([
+          { method: 'getblockheader', params: [blockHash, true] },
+        ]);
+        const header = headerResp[0];
+        if (!header) break;
+        timeMs = header.time * 1000;
+        difficulty = header.difficulty;
+      } catch (err) {
+        log(`[gap-backfill] bitcoind lookup for retarget block ${h} failed (${(err as Error).message}); aborting walk-back`);
+        break;
+      }
+      if (timeMs < gapStart) break;
+      if (timeMs <= gapEnd) {
+        retargets.push({ height: h, timeMs, difficulty, source: 'bitcoind' });
+      }
+      h -= RETARGET_INTERVAL;
     }
-    if (timeMs < gapStart) break;
-    if (timeMs <= gapEnd) {
-      retargets.push({ height: h, timeMs, difficulty });
-    }
-    h -= RETARGET_INTERVAL;
+    retargets.sort((a, b) => a.timeMs - b.timeMs);
+    log(`[gap-backfill] bitcoind walk-back found ${retargets.length} in-gap retarget(s): ${retargets.map((r) => `${r.height}@${new Date(r.timeMs).toISOString()}(diff=${r.difficulty.toExponential(3)})`).join(', ') || '(none)'}`);
+    return retargets;
   }
-  retargets.sort((a, b) => a.timeMs - b.timeMs);
 
-  // Generate synthetic timestamps every SYNTHETIC_INTERVAL_MS across
-  // the gap, plus a tick at each retarget's canonical time. The Set
-  // dedupes the case where a regular interval lands within a few
-  // seconds of a retarget canonical (unlikely but possible).
+  // No bitcoind: derive a single pseudo-retarget at the latest
+  // retarget height's nearest-pool-block estimate. Only if the pre vs
+  // post difficulty actually changed; otherwise the gap straddled no
+  // retarget and there's nothing to mark.
+  if (Math.abs(lastDiff - prevDiff) / prevDiff < DIFFICULTY_THRESHOLD) {
+    log(`[gap-backfill] no bitcoind + no difficulty change > ${DIFFICULTY_THRESHOLD * 100}%; no retarget metadata`);
+    return [];
+  }
+  const nearestBlock = await db
+    .selectFrom('pool_blocks')
+    .select(['height', 'timestamp_ms'])
+    .orderBy(sql`ABS(height - ${startHeight})`)
+    .limit(1)
+    .executeTakeFirst();
+  if (!nearestBlock) {
+    log(`[gap-backfill] no bitcoind + no pool_block near retarget height ${startHeight}; no retarget metadata`);
+    return [];
+  }
+  const estimatedMs = nearestBlock.timestamp_ms - (nearestBlock.height - startHeight) * AVG_BLOCK_TIME_MS;
+  if (estimatedMs <= gapStart || estimatedMs >= gapEnd) {
+    log(`[gap-backfill] no bitcoind + estimated retarget at ${new Date(estimatedMs).toISOString()} falls outside gap; no retarget metadata`);
+    return [];
+  }
+  const pseudo: RetargetEntry = {
+    height: startHeight,
+    timeMs: estimatedMs,
+    difficulty: lastDiff,
+    source: 'estimate',
+  };
+  log(`[gap-backfill] no bitcoind + estimated single retarget: ${pseudo.height}@${new Date(pseudo.timeMs).toISOString()}(diff=${pseudo.difficulty.toExponential(3)}, source=estimate)`);
+  return [pseudo];
+}
+
+interface InsertSyntheticsArgs {
+  readonly db: Kysely<Database>;
+  readonly log: (msg: string) => void;
+  readonly prevTick: TickMetricsRow;
+  readonly gapStart: number;
+  readonly gapEnd: number;
+  readonly gapMs: number;
+  readonly retargets: readonly RetargetEntry[];
+}
+
+async function insertSyntheticGapTicks(args: InsertSyntheticsArgs): Promise<void> {
+  const { db, log, prevTick, gapStart, gapEnd, gapMs, retargets } = args;
+
+  // Buckets to skip for cadence synthetics. Each retarget canonical
+  // is alone in its 30-min bucket so the bucket AVG = newDiff exactly
+  // and the chart's sustained-check accepts the marker.
+  const skipBuckets = new Set<number>();
+  for (const r of retargets) {
+    skipBuckets.add(Math.floor(r.timeMs / RETARGET_SKIP_BUCKET_MS));
+  }
+
   const timestamps = new Set<number>();
   for (let t = gapStart + SYNTHETIC_INTERVAL_MS; t < gapEnd; t += SYNTHETIC_INTERVAL_MS) {
+    if (skipBuckets.has(Math.floor(t / RETARGET_SKIP_BUCKET_MS))) continue;
     timestamps.add(t);
   }
-  for (const r of retargets) {
-    timestamps.add(r.timeMs);
-  }
+  for (const r of retargets) timestamps.add(r.timeMs);
   if (timestamps.size === 0) return;
 
   const ordered = Array.from(timestamps).sort((a, b) => a - b);
 
-  // Assign difficulty per timestamp: the post-retarget difficulty of
-  // the most recent retarget at-or-before T, falling back to prevTick's
-  // (last pre-gap) difficulty for ticks before any in-gap retarget.
+  // Difficulty as-of each timestamp: the post-retarget difficulty of
+  // the most recent retarget at-or-before T, falling back to
+  // prevTick's last-pre-gap difficulty for ticks before any in-gap
+  // retarget.
   const prevDiff = prevTick.network_difficulty;
+  const sortedRetargets = [...retargets].sort((a, b) => a.timeMs - b.timeMs);
   const diffForTimestamp = (t: number): number | null => {
     let diff: number | null = prevDiff;
-    for (const r of retargets) {
+    for (const r of sortedRetargets) {
       if (r.timeMs <= t) diff = r.difficulty;
       else break;
     }
@@ -281,8 +373,10 @@ async function runPerTickGapFill(args: PerTickArgs): Promise<void> {
   // bid prices, balances, oracle reading) - the operator was offline
   // and inheriting the template's last-pre-gap values would falsely
   // imply the daemon was up. Keep config snapshots (target/floor,
-  // deadband, run/action mode) because they really were that value
-  // throughout the gap.
+  // deadband, run/action mode) because they really were in effect
+  // throughout the gap. pool_blocks_*_count, pool_hashrate_ph_avg_*,
+  // pool_luck_*, paid_total_sat all stay null - runPoolLuckRecompute
+  // fills them immediately after this service.
   const rows: Insertable<TickMetricsTable>[] = ordered.map((t) => ({
     tick_at: t,
     delivered_ph: 0,
@@ -310,9 +404,6 @@ async function runPerTickGapFill(args: PerTickArgs): Promise<void> {
     braiins_total_deposited_sat: null,
     braiins_total_spent_sat: null,
     ocean_unpaid_sat: null,
-    // pool_blocks_*_count, pool_hashrate_ph_avg_*, pool_luck_*,
-    // paid_total_sat all stay null - runPoolLuckRecompute fills them
-    // immediately after this service.
     paid_total_sat: null,
     btc_usd_price: null,
     btc_usd_price_source: null,
@@ -345,76 +436,5 @@ async function runPerTickGapFill(args: PerTickArgs): Promise<void> {
   /* eslint-enable no-await-in-loop */
 
   const gapHrs = (gapMs / 3_600_000).toFixed(1);
-  log(`[gap-backfill] inserted ${rows.length} synthetic tick(s) across ${gapHrs}h gap; ${retargets.length} retarget(s) embedded (heights: ${retargets.map((r) => r.height).join(', ') || 'none'})`);
-}
-
-interface LegacySingleMarkerArgs {
-  readonly db: Kysely<Database>;
-  readonly poolBlocksRepo: PoolBlocksRepo;
-  readonly log: (msg: string) => void;
-  readonly prevTick: TickMetricsRow;
-  readonly lastTick: TickMetricsRow;
-  readonly gapStart: number;
-  readonly gapEnd: number;
-}
-
-/**
- * Pre-bitcoind fallback: one synthetic tick at the latest retarget's
- * nearest-pool-block-estimated time. Same behavior as
- * `runRetargetBackfill` before the per-tick gap-fill was added.
- *
- * Difficulty-stability short-circuit only applies here - in the
- * per-tick path, the gap fill happens regardless of whether the
- * pre/post difficulty diff is large, because we want the synthetic
- * ticks for pool-luck recompute too.
- */
-async function runLegacySingleMarker(args: LegacySingleMarkerArgs): Promise<void> {
-  const { db, poolBlocksRepo, log, prevTick, lastTick, gapStart, gapEnd } = args;
-
-  const oldDiff = prevTick.network_difficulty!;
-  const newDiff = lastTick.network_difficulty!;
-  if (Math.abs(newDiff - oldDiff) / oldDiff < DIFFICULTY_THRESHOLD) return;
-
-  const maxHeight = await poolBlocksRepo.maxHeight();
-  if (maxHeight == null) return;
-  const latestRetargetHeight = Math.floor(maxHeight / RETARGET_INTERVAL) * RETARGET_INTERVAL;
-
-  const nearestBlock = await db
-    .selectFrom('pool_blocks')
-    .select(['height', 'timestamp_ms'])
-    .orderBy(sql`ABS(height - ${latestRetargetHeight})`)
-    .limit(1)
-    .executeTakeFirst();
-  if (!nearestBlock) return;
-
-  const estimatedRetargetMs =
-    nearestBlock.timestamp_ms - (nearestBlock.height - latestRetargetHeight) * AVG_BLOCK_TIME_MS;
-  if (estimatedRetargetMs <= gapStart || estimatedRetargetMs >= gapEnd) {
-    log(`[gap-backfill] legacy fallback: estimated retarget at ${new Date(estimatedRetargetMs).toISOString()} outside gap; skipping`);
-    return;
-  }
-
-  const templateTick = await db
-    .selectFrom('tick_metrics')
-    .selectAll()
-    .where('synthetic', '=', 0)
-    .where('tick_at', '<=', gapStart)
-    .orderBy('tick_at', 'desc')
-    .limit(1)
-    .executeTakeFirst();
-  if (!templateTick) return;
-
-  const { id: _id, synthetic: _syn, ...rest } = templateTick;
-  await db
-    .insertInto('tick_metrics')
-    .values({
-      ...rest,
-      tick_at: estimatedRetargetMs,
-      network_difficulty: newDiff,
-      synthetic: 1,
-    })
-    .execute();
-
-  const pctChange = (((newDiff - oldDiff) / oldDiff) * 100).toFixed(2);
-  log(`[gap-backfill] legacy fallback: inserted synthetic tick at ${new Date(estimatedRetargetMs).toISOString()} for retarget at height ${latestRetargetHeight} (difficulty ${pctChange > '0' ? '+' : ''}${pctChange}%)`);
+  log(`[gap-backfill] inserted ${rows.length} synthetic tick(s) across ${gapHrs}h gap; ${retargets.length} retarget(s) embedded${retargets.length > 0 ? ` (sources: ${retargets.map((r) => r.source).join(',')})` : ''}`);
 }
