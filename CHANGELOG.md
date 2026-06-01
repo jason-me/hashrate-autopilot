@@ -2,6 +2,10 @@
 
 ## 2026-05-31
 
+### `[Fix]` Right-axis solo-mining lines truncated to 24h at All chart range (#232)
+
+At the `All` chart range, the right-axis solo-power / solo-hashrate / device-count / max-temp / max-best-difficulty lines silently rendered only the trailing 24h of data — narrower presets worked fine. `Status.tsx`'s `Date.now() - (CHART_RANGE_SPECS[preset].windowMs ?? 24*60*60_000)` fell through to the 24h fallback when `windowMs` is null (the All sentinel), so the solo-series query asked for `since = now - 24h`. Fixed with explicit All handling (`since = 0`) plus a backend tweak to honor `since=0` as "everything" instead of the previous `> 0` guard that quietly degraded it to 24h. Custom panned viewports now also use `vp.since_ms` directly instead of anchoring to "now", so a panned past window returns the correct slice.
+
 ### `[UI]` BIP 110 scanner shows date range per epoch (#231 follow-up #2)
 
 The per-epoch breakdown's Block-range column now carries a secondary date-range line ("May 18 – Jun 1, 2026") derived from the first and last scanned block timestamps in each epoch. Locale-aware (UI-language driven month names) and collapses to a single date when both endpoints fall on the same calendar day (in-progress epoch right after a retarget). Backend extends `Bip110EpochBucket` with `start_time_ms` / `end_time_ms` populated from the same block headers we already fetch for signaling detection — no extra RPC.

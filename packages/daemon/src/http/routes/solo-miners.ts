@@ -144,12 +144,14 @@ export async function registerSoloMinersRoute(
   // series for the chart right-axis options. Returns one row per
   // tick_at with summed hashrate (GH/s), summed power (W), max
   // temperature (°C) across {temp_c, vr_temp_c}, and the active
-  // device count. Default `since` = now() - 24h.
+  // device count. Default `since` (param missing or non-numeric) =
+  // now() - 24h. `since=0` is honored as "everything" — the
+  // dashboard's "All" chart range sends 0 to mean since-the-dawn-of-time.
   app.get<{ Querystring: { since?: string } }>(
     '/api/solo-miners/series',
     async (req) => {
       const sinceRaw = Number.parseInt(req.query.since ?? '', 10);
-      const since = Number.isFinite(sinceRaw) && sinceRaw > 0
+      const since = Number.isFinite(sinceRaw) && sinceRaw >= 0
         ? sinceRaw
         : Date.now() - 24 * 60 * 60 * 1000;
       const rows = await deps.soloMinersRepo.fleetSeriesSince(since);
@@ -158,12 +160,13 @@ export async function registerSoloMinersRoute(
   );
 
   // GET /api/solo-miners/best-diff-events?since=<ms> - record-breaking
-  // best difficulty events for chart trophy markers.
+  // best difficulty events for chart trophy markers. Same `since=0`
+  // semantics as /series above.
   app.get<{ Querystring: { since?: string } }>(
     '/api/solo-miners/best-diff-events',
     async (req) => {
       const sinceRaw = Number.parseInt(req.query.since ?? '', 10);
-      const since = Number.isFinite(sinceRaw) && sinceRaw > 0
+      const since = Number.isFinite(sinceRaw) && sinceRaw >= 0
         ? sinceRaw
         : Date.now() - 24 * 60 * 60 * 1000;
       const events = await deps.soloMinersRepo.bestDiffEventsSince(since);

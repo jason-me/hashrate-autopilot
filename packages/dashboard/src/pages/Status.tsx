@@ -308,16 +308,31 @@ export function Status() {
   // render no right-axis line. `since` follows the chart range so we
   // don't pull a week of samples to fill a 3h window.
   const soloMiningEnabled = configQuery.data?.config?.solo_mining_enabled ?? false;
+  /**
+   * Resolve the `since` timestamp to send to /api/solo-miners/series and
+   * /api/solo-miners/best-diff-events for the current chart range:
+   *
+   *   - preset "all"  → since=0 (everything from the dawn of time).
+   *                      CHART_RANGE_SPECS.all.windowMs is null and the
+   *                      previous `?? 24h` fallback truncated the series
+   *                      to a trailing 24h window at the widest preset.
+   *   - other preset  → since = now - presetWindow.
+   *   - custom (pan)  → since = vp.since_ms — line up exactly with the
+   *                      visible viewport. The previous formula
+   *                      (`now - (until - since)`) anchored to "now"
+   *                      instead of "since", so a panned viewport over
+   *                      old data returned the wrong slice.
+   */
+  const soloSinceMs = vp.activePreset
+    ? (CHART_RANGE_SPECS[vp.activePreset].windowMs === null
+        ? 0
+        : Date.now() - CHART_RANGE_SPECS[vp.activePreset].windowMs!)
+    : vp.since_ms;
   const soloSeriesQuery = useQuery({
     queryKey: vp.activePreset
       ? ['solo-fleet-series', vp.activePreset]
       : ['solo-fleet-series', vp.since_ms, vp.until_ms],
-    queryFn: () => {
-      const windowMs = vp.activePreset
-        ? (CHART_RANGE_SPECS[vp.activePreset].windowMs ?? 24 * 60 * 60_000)
-        : (vp.until_ms - vp.since_ms);
-      return api.soloFleetSeries(Date.now() - windowMs);
-    },
+    queryFn: () => api.soloFleetSeries(soloSinceMs),
     enabled: soloMiningEnabled,
     refetchInterval: vp.activePreset ? 60_000 : false,
   });
@@ -327,12 +342,7 @@ export function Status() {
     queryKey: vp.activePreset
       ? ['solo-best-diff-events', vp.activePreset]
       : ['solo-best-diff-events', vp.since_ms, vp.until_ms],
-    queryFn: () => {
-      const windowMs = vp.activePreset
-        ? (CHART_RANGE_SPECS[vp.activePreset].windowMs ?? 24 * 60 * 60_000)
-        : (vp.until_ms - vp.since_ms);
-      return api.soloBestDiffEvents(Date.now() - windowMs);
-    },
+    queryFn: () => api.soloBestDiffEvents(soloSinceMs),
     enabled: soloMiningEnabled,
     refetchInterval: vp.activePreset ? 60_000 : false,
   });
