@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Fix]` Chart hang / out-of-memory on right-axis range switch (#236 follow-up #2)
+
+When switching the chart range to one whose visible data has multiple distinct values for the active right-axis series but a tiny absolute rawSpan relative to the value's magnitude (real case from the operator's data: `network_difficulty` at 24h with two values 0.15 apart at scale `1.39 × 10¹⁴`), `niceYTicks` could compute a `step` smaller than IEEE 754's mantissa resolution at the data's magnitude. The accumulator loop `for (let v = lo; ...; v += step)` then has `v + step === v` — the loop never progresses, runs forever, and allocates SVG tick labels until Firefox throws `out of memory`. Hardened `niceYTicks` with three guards: rejects NaN / Infinity inputs (returns `[]`), floors `step` at `max(|dataMin|, |dataMax|) × Number.EPSILON × 16` so the accumulator can always increment, and hard-caps the output at 50 ticks plus a secondary `v === prev` no-progress break that bails immediately rather than spinning. Six new unit tests in `chart-axis.test.ts` pin the new behavior; the operator's real-data scenario is one of them.
+
 ### `[UI]` Ocean panel row renamed "pool blocks all time" → "pool blocks since start"
 
 Operator note: "all time" reads as if the count covers the lifetime of the pool, but the value is the count Ocean has found since this daemon started tracking — which is what the tooltip already says. Renamed the row label to match the truthful framing. Tooltip wording unchanged. Internal field names (`blocks_all_time`, `pool_luck_all_time`) untouched. en + nl + es translations updated.

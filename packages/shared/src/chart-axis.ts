@@ -122,14 +122,44 @@ export function niceYTicks(
   dataMax: number,
   targetCount = 5,
 ): number[] {
+  // #236 follow-up: defensive against pathological inputs that
+  // a chart's right-axis recomputation could surface (NaN slMin
+  // when no data passed the viewport filter; Infinity slMax from
+  // a stale-cache poison; runaway step / dataMax combinations
+  // that lose FP precision in the v += step accumulator). Each
+  // guard below addresses a specific failure mode that has been
+  // (or could realistically be) observed in production.
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) return [];
   if (dataMax <= dataMin) return [dataMin];
   const rawStep = (dataMax - dataMin) / Math.max(1, targetCount - 1);
-  const step = niceStep(rawStep);
+  let step = niceStep(rawStep);
+  // Precision floor: when `step` is smaller than the IEEE 754
+  // significand resolution at the data's magnitude, `v + step === v`
+  // and the accumulator loop below never progresses. We've seen this
+  // surface in the dashboard when a right-axis recompute lands with
+  // sub-precision rawSpan at trillion-scale values (#236 follow-up
+  // operator report: difficulty at 1m chart range, ~1e14 data, span
+  // <1e-2). Floor the step to a safe multiple of Number.EPSILON ×
+  // scale so v + step always moves.
+  const scale = Math.max(Math.abs(dataMin), Math.abs(dataMax));
+  const minStep = Math.max(scale * Number.EPSILON * 16, Number.MIN_VALUE);
+  if (step < minStep) step = minStep;
   const lo = Math.floor(dataMin / step) * step;
   const hi = Math.ceil(dataMax / step) * step;
   const ticks: number[] = [];
+  // Hard cap. Even with the precision floor above the loop should
+  // produce at most `targetCount` plus a few extra, so anything past
+  // a couple dozen ticks signals a degenerate input we'd rather
+  // truncate than let into the render pipeline.
+  const MAX_TICKS = 50;
   // +0.5*step guards against floating-point drift skipping the last tick
-  for (let v = lo; v <= hi + step * 0.01; v += step) {
+  let prev = lo;
+  for (let v = lo; v <= hi + step * 0.01 && ticks.length < MAX_TICKS; v += step) {
+    // Secondary anti-runaway: if v stops moving (still possible at
+    // extreme magnitudes where the FP step underflows the mantissa
+    // even with the floor above), bail rather than spin.
+    if (ticks.length > 0 && v === prev) break;
+    prev = v;
     ticks.push(Math.round(v * 1e10) / 1e10); // kill FP noise
   }
   return ticks;

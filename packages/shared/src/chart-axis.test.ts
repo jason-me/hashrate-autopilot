@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatTimeTick,
   localAlignedTimeTicks,
+  niceYTicks,
   pickTimeTickInterval,
 } from './chart-axis.js';
 
@@ -134,5 +135,78 @@ describe('formatTimeTick', () => {
     const out = formatTimeTick(d.getTime(), 30 * DAY, 'en-US');
     expect(out).toMatch(/Apr/);
     expect(out).toMatch(/26/);
+  });
+});
+
+describe('niceYTicks', () => {
+  it('basic 0..1 range with default count produces sensible ticks', () => {
+    const out = niceYTicks(0, 1, 5);
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.length).toBeLessThan(20);
+    expect(out[0]).toBeLessThanOrEqual(0);
+    expect(out[out.length - 1]).toBeGreaterThanOrEqual(1);
+  });
+
+  it('returns [dataMin] when dataMax <= dataMin', () => {
+    expect(niceYTicks(5, 5, 5)).toEqual([5]);
+    expect(niceYTicks(10, 3, 5)).toEqual([10]);
+  });
+
+  it('terminates and stays bounded on trillion-scale tiny rawSpan (the #236 hang scenario)', () => {
+    // Difficulty data at ~1e14 scale, rawSpan of ~3.7 (within an
+    // epoch, post-aggregation FP noise). Pre-fix this could lose
+    // precision in the v += step accumulator and infinite-loop.
+    const start = Date.now();
+    const out = niceYTicks(138959663236498.6, 138959663236502.3, 5);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100); // must be fast, not stuck
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.length).toBeLessThan(100);
+  });
+
+  it('terminates on rawSpan well below FP precision at huge magnitude', () => {
+    // dataMin + step rounds back to dataMin in IEEE 754; loop must
+    // detect the non-progress and bail rather than spin forever.
+    const start = Date.now();
+    const out = niceYTicks(1e14, 1e14 + 1e-5, 5);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100);
+    expect(out.length).toBeLessThan(1000);
+  });
+
+  it('rejects NaN inputs by returning an empty list', () => {
+    expect(niceYTicks(Number.NaN, 1, 5)).toEqual([]);
+    expect(niceYTicks(0, Number.NaN, 5)).toEqual([]);
+  });
+
+  it('rejects Infinity inputs by returning an empty list', () => {
+    expect(niceYTicks(Number.POSITIVE_INFINITY, 0, 5)).toEqual([]);
+    expect(niceYTicks(0, Number.POSITIVE_INFINITY, 5)).toEqual([]);
+  });
+
+  it('caps the tick array at a reasonable maximum for pathological inputs', () => {
+    // Even if step somehow gets computed too small relative to range,
+    // the loop must hard-stop. This guards against degenerate inputs
+    // smuggling in a runaway allocation.
+    const start = Date.now();
+    const out = niceYTicks(0, 1e6, 5);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100);
+    expect(out.length).toBeLessThan(50);
+  });
+
+  it('pinned operator-data scenario: difficulty at 24h chart range (#236 follow-up #2)', () => {
+    // Real values from /api/metrics?range=24h on 2026-06-02:
+    // 2 distinct network_difficulty values 0.15 apart at scale 1.39e14.
+    // Pre-fix this hung Firefox out of memory because `step = 0.05`
+    // computed below double-precision resolution at 1.39e14 magnitude,
+    // so `v += step` never progressed and the loop ran forever
+    // allocating SVG tick labels until the JS heap OOMed.
+    const start = Date.now();
+    const out = niceYTicks(138955357012247.3, 138955357012247.45, 5);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(50);
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.length).toBeLessThan(50);
   });
 });
