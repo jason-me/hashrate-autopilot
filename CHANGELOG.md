@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[UI]` BIP 110 scanner: mobile header layout + drop "Core" terminology (#233 follow-up)
+
+Two refinements after the per-epoch breakdown shipped on mobile. **Header layout**: the `tip | scanned | signaling | deployment` row with vertical `|` dividers wrapped awkwardly at narrow widths; now stacks vertically below `lg:` and only renders the dividers on `lg+`. **Deployment-status tooltip**: rewrote in plain English with per-status guidance ("Your Bitcoin node is in the BIP 110 signaling window..."). Dropped the old "Core's BIP 9 deployment status for BIP 110..." text — the operator runs Bitcoin Knots, and the project convention is to say "your Bitcoin node" generically (Core was the only outlier in user-facing UI). en + nl + es translations updated for the four new status/explanation strings.
+
 ### `[UI]` BIP 110 scanner: mobile layout, auto-expand current epoch, per-row MASF bar, forecasted end date (#233)
 
 Four refinements to the BIP 110 scanner card. **Mobile layout**: the per-epoch table swapped to a stacked card layout below the `lg:` breakpoint so the row content stops overflowing the viewport; same data, no horizontal scrolling. **Auto-expand on scan**: after a scan completes, the in-progress epoch row is auto-opened so the signaling blocks are visible without an extra chevron click. **MASF progress bar per row**: the deployment-level progress bar moved out of the card header and into each epoch row, anchored to the absolute 1109-block (`ceil(2016 × 55%)`) threshold; amber below threshold, emerald at or above. The header retains a smaller deployment status badge with a tooltip explaining the BIP 9 chain-level state. **Forecasted end date**: the in-progress epoch's right-side date now shows the linear-extrapolated retarget date (computed from the average block time observed so far in the epoch) instead of the last-scanned block's time. Marked with `(est.)`. Backend extends `Bip110EpochBucket` with `expected_end_time_ms: number | null`; null for completed epochs and for in-progress when fewer than 2 blocks have been scanned (falls back to the target 600s × 2016 from start). en + nl + es translations updated.

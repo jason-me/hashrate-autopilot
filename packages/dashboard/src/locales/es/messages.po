@@ -570,6 +570,10 @@ msgid "Bids"
 msgstr "Ofertas"
 
 #: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 is active — your Bitcoin node is enforcing the new consensus rules."
+msgstr "BIP 110 está activo — tu nodo Bitcoin está aplicando las nuevas reglas de consenso."
+
+#: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
 msgstr "Escaneo BIP 110"
 
@@ -996,10 +1000,6 @@ msgstr "copiar JSON"
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "copiar URL"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "Core's BIP 9 deployment status for BIP 110. Per-epoch MASF progress is shown in the per-epoch breakdown below; this badge surfaces the chain-level state Core itself reports."
-msgstr "Estado de implementación BIP 9 de Core para BIP 110. El progreso MASF por época se muestra en el desglose siguiente; esta insignia refleja el estado a nivel de cadena que Core mismo reporta."
 
 #: src/components/PriceChart.tsx
 msgid "create"
@@ -2127,10 +2127,6 @@ msgstr "No hay hashrate disponible en el mercado en este momento."
 msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrará el BTC cobrado."
 
-#: src/components/Bip110ScanCard.tsx
-msgid "node does not track BIP 110 as a named softfork"
-msgstr "el nodo no reporta BIP 110 como softfork nombrado"
-
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "ninguno"
@@ -3257,6 +3253,10 @@ msgstr "Probando…"
 msgid "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
 msgstr "El botón \"Backfill ahora\" recorre todo el historial de la dirección vía Electrs y añade cualquier pago coinbase histórico de Ocean que aún no esté registrado. Seguro ejecutarlo varias veces."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary."
+msgstr "Se ha cruzado el umbral del 55% para la activación por mineros. BIP 110 se activará en el siguiente límite de época de dificultad."
+
 #: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in <0/>/PH/day."
 msgstr "La oferta sigue al precio de venta más barato con profundidad suficiente para tu objetivo, más una pequeña prima. Encima hay dos topes duros para que la prima nunca se descontrole. Se introduce en <0/>/PH/día."
@@ -3578,6 +3578,14 @@ msgstr "Lo usarás para iniciar sesión en el panel tras la configuración. Al m
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Tu dirección que recibe los pagos Ocean TIDES. La identidad del worker abajo se deriva automáticamente de esto."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "your Bitcoin node does not track BIP 110 as a named softfork"
+msgstr "tu nodo Bitcoin no registra BIP 110 como una softfork con nombre"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early."
+msgstr "Tu nodo Bitcoin está en la ventana de señalización de BIP 110. Los mineros pueden participar señalizando en los encabezados de sus bloques; si al menos el 55% de los bloques de una época señaliza, la soft fork se activa de forma anticipada."
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

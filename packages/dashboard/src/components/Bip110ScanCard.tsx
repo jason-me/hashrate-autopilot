@@ -409,21 +409,25 @@ export function Bip110ScanCard(): React.JSX.Element {
 
       {data && data.rpc_available && !data.error && (
         <>
-          <div className="mt-4 flex items-center flex-wrap gap-x-3 gap-y-1 rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-2.5 text-sm font-mono">
+          {/* #233 follow-up: header stacks vertically on mobile (the
+              divider-pipe horizontal layout wrapped awkwardly at narrow
+              widths). On lg+ it goes back to the inline row with the
+              pipes between items. */}
+          <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:flex-wrap lg:gap-x-3 gap-y-1 rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-2.5 text-sm font-mono">
             <span>
               <span className="text-slate-500 text-xs mr-1.5">{t`tip`}</span>
               <span className="text-slate-200 font-semibold">
                 {data.tip_height !== null ? formatNumber(data.tip_height, {}, intlLocale) : '-'}
               </span>
             </span>
-            <Divider />
+            <span className="hidden lg:inline"><Divider /></span>
             <span>
               <span className="text-slate-200">
                 {formatNumber(data.scanned, {}, intlLocale)}
               </span>
               <span className="text-slate-500 text-xs ml-1.5">{t`scanned`}</span>
             </span>
-            <Divider />
+            <span className="hidden lg:inline"><Divider /></span>
             <span>
               <span className="text-amber-400">
                 {formatNumber(data.signaling_count, {}, intlLocale)}
@@ -439,16 +443,16 @@ export function Bip110ScanCard(): React.JSX.Element {
             </span>
             {data.deployment ? (
               <>
-                <Divider />
+                <span className="hidden lg:inline"><Divider /></span>
                 <DeploymentStatusBadge deployment={data.deployment} />
               </>
             ) : (
               <>
-                <Divider />
+                <span className="hidden lg:inline"><Divider /></span>
                 <span className="text-slate-600 text-xs" title={
                   data.softfork_keys && data.softfork_keys.length > 0
                     ? `${t`known softforks`}: ${data.softfork_keys.join(', ')}`
-                    : t`node does not track BIP 110 as a named softfork`
+                    : t`your Bitcoin node does not track BIP 110 as a named softfork`
                 }>
                   {t`deployment`}: n/a
                 </span>
@@ -764,11 +768,15 @@ function MasfProgress({
 }
 
 /**
- * #233 replacement for the old DeploymentProgressBar widget. The bar
- * itself moved into the per-epoch table; the deployment header now
- * just shows the status label (Signaling / Locked in / Active) with
- * the same tooltip explanation. Keeping the badge so Core's
- * authoritative state stays visible without dominating the layout.
+ * #233 replacement for the old DeploymentProgressBar widget. The
+ * progress bar itself moved into the per-epoch table; the header now
+ * shows just the status label (Signaling / Locked in / Active) with
+ * a plain-English tooltip per state.
+ *
+ * #233 follow-up: explanation text is per-status and never mentions
+ * "Bitcoin Core" — the operator runs Bitcoin Knots, and the project's
+ * convention is to say "your Bitcoin node" generically (see the
+ * never-say-bitcoin-core-in-ui feedback memory).
  */
 function DeploymentStatusBadge({
   deployment,
@@ -779,17 +787,16 @@ function DeploymentStatusBadge({
     deployment.status === 'locked_in' ? t`locked in`
     : deployment.status === 'active' ? t`active`
     : t`signaling`;
-  const tooltip = (
-    <p className="text-slate-300 leading-relaxed max-w-xs">
-      <Trans>
-        Core's BIP 9 deployment status for BIP 110. Per-epoch MASF
-        progress is shown in the per-epoch breakdown below; this
-        badge surfaces the chain-level state Core itself reports.
-      </Trans>
-    </p>
-  );
+  const tooltipText =
+    deployment.status === 'locked_in'
+      ? t`The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary.`
+      : deployment.status === 'active'
+        ? t`BIP 110 is active — your Bitcoin node is enforcing the new consensus rules.`
+        : t`Your Bitcoin node is in the BIP 110 signaling window. Miners can opt in by signaling in their block headers; if at least 55% of an epoch's blocks signal, the soft fork locks in early.`;
   return (
-    <Tooltip content={tooltip}>
+    <Tooltip content={
+      <p className="text-slate-300 leading-relaxed max-w-xs">{tooltipText}</p>
+    }>
       <span className="inline-flex items-center gap-1.5 cursor-help">
         <span className="text-slate-500 text-xs">{t`deployment`}:</span>
         <span className="bg-amber-400/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider">
