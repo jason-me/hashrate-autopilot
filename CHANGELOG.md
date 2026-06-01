@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[UI]` Ocean panel row renamed "pool blocks all time" → "pool blocks since start"
+
+Operator note: "all time" reads as if the count covers the lifetime of the pool, but the value is the count Ocean has found since this daemon started tracking — which is what the tooltip already says. Renamed the row label to match the truthful framing. Tooltip wording unchanged. Internal field names (`blocks_all_time`, `pool_luck_all_time`) untouched. en + nl + es translations updated.
+
 ### `[Fix]` Chart-color picker: hex input replaces broken Paste button + Copy icon (#238 follow-up #2)
 
 The Paste button shipped in the first follow-up used `navigator.clipboard.readText()`, which is undefined on LAN-HTTP contexts (the operator's `http://clarent:3010`) and gated by an explicit permission grant even in secure contexts — net effect: clicking Paste did nothing. Replaced with a hex text input next to the native color picker; operator pastes (`Ctrl+V` / `Cmd+V`) or hand-types and a valid `#RRGGBB` (or bare `RRGGBB`) applies immediately. Copy button now carries a Lucide `Copy` SVG icon (inlined per the icons-from-lucide memory) and briefly flashes a check icon on success instead of relying on a text label swap. en + nl + es translations updated.

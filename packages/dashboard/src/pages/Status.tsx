@@ -2396,7 +2396,7 @@ function OceanPanel() {
                 tooltip={tooltip30d}
               />
               <Row
-                k={t`pool blocks all time`}
+                k={t`pool blocks since start`}
                 v={renderPoolBlocksRow(o.blocks_all_time, o.pool_luck_all_time, intlLocale)}
                 tooltip={tooltipAllTime}
               />

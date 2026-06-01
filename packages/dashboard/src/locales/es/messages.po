@@ -2670,8 +2670,8 @@ msgid "pool blocks 7d"
 msgstr "bloques del pool 7d"
 
 #: src/pages/Status.tsx
-msgid "pool blocks all time"
-msgstr "bloques del pool total"
+msgid "pool blocks since start"
+msgstr "bloques del pool desde el inicio"
 
 #: src/components/HashrateChart.tsx
 msgid "pool blocks this epoch"
