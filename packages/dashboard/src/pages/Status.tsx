@@ -657,26 +657,28 @@ export function Status() {
             }
           />
           <Row k={t`floor`} v={denomination.formatHashrate(s.config_summary.minimum_floor_hashrate_ph)} />
-          {/* #243: instantaneous share-rejection rate for the primary
-              bid, computed from the most recent ~10 min of ticks as
-              Δrejected_m / Δpurchased_m × 100. NULL window (no
-              points, no usable counter samples, or a bid rotation
-              inside the window leaving every delta non-positive)
-              renders as an em-dash. */}
+          {/* #243: share-rejection rate for the primary bid,
+              aggregated across whatever chart range the operator
+              picked at the top of the page (3h / 24h / 1w / 1m / All
+              etc.). `metricsQuery.data?.points` is already range-
+              scoped by chartRange, so summing Δrejected and
+              Δpurchased over the whole array gives the average rate
+              for that range. Same mental model as the AVG Braiins /
+              AVG Datum / AVG Ocean cards above. Skips samples whose
+              Δpurchased ≤ 0 (counter stayed flat between Braiins
+              batch updates, or went negative on a bid rotation where
+              the counter reset) - including those would either
+              pollute the divisor with zeros or fold a counter reset
+              into the rate. Em-dash when no usable delta in the
+              range. */}
           <Row
             k={t`rejection rate`}
             v={(() => {
               const pts = metricsQuery.data?.points ?? [];
               if (pts.length < 2) return '—';
-              // Window: prefer 10 min of wall-clock back from the
-              // latest tick, but always include at least 2 points
-              // so a single-tick window doesn't render zero.
-              const latestAt = pts[pts.length - 1]!.tick_at;
-              const sinceMs = latestAt - 10 * 60_000;
               let dr = 0;
               let dp = 0;
               for (let i = 1; i < pts.length; i += 1) {
-                if (pts[i]!.tick_at < sinceMs) continue;
                 const prev = pts[i - 1]!;
                 const cur = pts[i]!;
                 const pp = prev.primary_bid_shares_purchased_m;
@@ -686,9 +688,6 @@ export function Status() {
                 if (pp === null || cp === null || pr === null || cr === null) continue;
                 const localDp = cp - pp;
                 const localDr = cr - pr;
-                // Bid rotation -> counters reset -> negative delta.
-                // Skip those samples; aggregating across bid
-                // rotations would mix counter resets into the rate.
                 if (localDp <= 0) continue;
                 dp += localDp;
                 dr += localDr;

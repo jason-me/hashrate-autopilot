@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Fix]` Braiins card "rejection rate" follows the chart range selector (#243 follow-up)
+
+Card was hard-coded to a 10-min rolling window. Operator: "I would think it has to be the average of the selected period. If I select three hours, then that is a three-hour average." Right — same mental model as the AVG Braiins / AVG Datum / AVG Ocean cards. `metricsQuery.data?.points` is already range-scoped by `chartRange`, so the card now just sums Δrejected and Δpurchased over the whole array. Skips samples whose Δpurchased ≤ 0 (Braiins's batch-update gaps and bid-rotation resets) so they don't pollute the divisor or fold counter resets into the rate.
+
 ### `[Fix]` Rejection-rate chart uses 5-min rolling window + correct NULL/0 semantics (#243 follow-up)
 
 Operator on Clarent: chart axis came up but no line, just empty across 20 min of data despite the daemon clearly storing values (debug dump shows `primary_bid_shares_purchased_m = 196,593`). Cause: Braiins's per-bid counters update in BATCHES (sometimes seconds, sometimes minutes between bumps), so the naive per-tick `Δpurchased / Δpurchased * 100` was hitting `Δ = 0` on most ticks and emitting NULL. With 95% of ticks NULL the chart line had nothing to draw. Plus the NULL semantic itself was wrong: within an active tracking period, "counters didn't advance this tick" is **0 rejections / 0 purchased = 0%**, not "unknown." Switched the chart to a 5-min rolling window (each point T sums Δ over `[T-5min, T]` and divides). Δpurchased is now nearly always >0 over that window, line stays continuous. NULL is reserved for "counter samples were missing across the whole window" (pre-#243 rows, or `getBidDetail` failed throughout). 0 means "tracking active, no rejections observable in window" - matches operator's "0 vs NULL" semantic. Bid rotation inside the window still produces NULL on that one sample so the line breaks cleanly across the reset.
