@@ -788,36 +788,73 @@ export const HashrateChart = memo(function HashrateChart({
           };
         }
         case 'braiins_rejection_pct': {
-          // #243: instantaneous per-tick rejection rate derived from
-          // the cumulative-since-bid-creation share counters.
-          //   rate[i] = (rejected[i] - rejected[i-1])
-          //           / (purchased[i] - purchased[i-1]) * 100
-          // NULL on:
-          //   - first point (no previous to delta against)
-          //   - either side of a bid rotation (counter resets, so
-          //     Δpurchased goes negative)
-          //   - any bucket where Δpurchased <= 0 (no shares
-          //     purchased -> divide-by-zero, and the rate is
-          //     undefined in that case)
-          // The Δrejected can be negative on bid rotation too; the
-          // Δpurchased ≤ 0 guard catches that case as well.
+          // #243: per-tick rejection rate from the cumulative-since-
+          // bid-creation share counters. The naive "delta against the
+          // previous tick" doesn't work in practice because Braiins's
+          // counters update in BATCHES (sometimes seconds, sometimes
+          // a few minutes per bump). Per-tick Δpurchased is 0 on most
+          // ticks, then jumps when the counter sync runs. That made
+          // the chart line all NULL.
+          //
+          // Fix: rolling 5-minute window. For each point T, find the
+          // earliest point at or after T - 5 min and use the deltas
+          // across that window. Window is wide enough that
+          // Δpurchased > 0 almost always (unless hashrate has been
+          // literally zero for 5 min), narrow enough that the line
+          // still moves visibly when the rate spikes.
+          //
+          // Semantics (NULL vs 0):
+          //   - NULL = no counter samples in the window (pre-#243
+          //     rows, or getBidDetail failed throughout). Honest
+          //     "we don't know."
+          //   - 0    = counters present and tracking, but no shares
+          //     were purchased in the window (e.g. hashrate dropped
+          //     to zero). No rejection observable -> rate is 0.
+          //   - real number = rejection percentage over the window.
+          // The operator was right: within a tracking period, 0
+          // means "no activity / no rejections," not "no data."
+          const windowMs = 5 * 60_000;
           const values: (number | null)[] = new Array(points.length);
-          values[0] = null;
-          for (let i = 1; i < points.length; i += 1) {
-            const prev = points[i - 1]!;
-            const cur = points[i]!;
-            const pp = prev.primary_bid_shares_purchased_m;
-            const cp = cur.primary_bid_shares_purchased_m;
-            const pr = prev.primary_bid_shares_rejected_m;
-            const cr = cur.primary_bid_shares_rejected_m;
-            if (pp === null || cp === null || pr === null || cr === null) {
+          for (let i = 0; i < points.length; i += 1) {
+            const tEnd = points[i]!.tick_at;
+            const tStart = tEnd - windowMs;
+            // Walk back to the earliest point still inside the window.
+            let earliestIdx = i;
+            while (
+              earliestIdx > 0 &&
+              points[earliestIdx - 1]!.tick_at >= tStart
+            ) {
+              earliestIdx -= 1;
+            }
+            if (earliestIdx === i) {
+              // Single point (typically the first tick); no
+              // lookback available. Honest unknown -> NULL.
+              values[i] = null;
+              continue;
+            }
+            const cp = points[i]!.primary_bid_shares_purchased_m;
+            const pp = points[earliestIdx]!.primary_bid_shares_purchased_m;
+            const cr = points[i]!.primary_bid_shares_rejected_m;
+            const pr = points[earliestIdx]!.primary_bid_shares_rejected_m;
+            if (cp === null || pp === null || cr === null || pr === null) {
+              // Genuine no-data: counters were NULL across the window.
               values[i] = null;
               continue;
             }
             const dp = cp - pp;
             const dr = cr - pr;
-            if (dp <= 0) {
+            if (dp < 0) {
+              // Bid rotation inside the window (counters reset). Skip
+              // this sample; the next window will start fresh.
               values[i] = null;
+              continue;
+            }
+            if (dp === 0) {
+              // Counters tracking but no shares purchased in the
+              // window. No rejection observable -> 0 (per operator
+              // semantic: 0 means "no activity," NULL would be
+              // wrong here because we DO have data).
+              values[i] = 0;
               continue;
             }
             values[i] = (dr / dp) * 100;
