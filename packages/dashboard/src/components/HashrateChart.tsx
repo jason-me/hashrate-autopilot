@@ -937,7 +937,15 @@ export const HashrateChart = memo(function HashrateChart({
             yFloor = 0;
             yCeiling = 1;
           } else {
-            const pad = Math.max(Math.abs(slMax) * 0.1, 1);
+            // #243: pad proportional to magnitude, no absolute floor.
+            // The previous `Math.max(..., 1)` floor was a safety against
+            // tiny magnitudes but it stretched the axis 7x for a 0.14%
+            // rejection rate (pad=1 made the scale 0-1% and the line
+            // visually invisible near the X axis). Pure 10% of magnitude
+            // gives a tight range for percentages AND keeps trillion-
+            // scale series (network_difficulty) from sitting on the top
+            // rule.
+            const pad = Math.abs(slMax) * 0.1;
             yFloor = Math.max(0, slMax - pad);
             yCeiling = slMax + pad;
           }
