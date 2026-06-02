@@ -119,6 +119,14 @@ const MIN_GAP_MS = 10 * 60_000;
  */
 const RETARGET_WALKBACK_CAP = 30;
 
+/**
+ * Only consider gaps in the last LOOKBACK_MS of history. The chart
+ * shows at most 1y so older gaps aren't worth filling. Tied to
+ * tick_metrics retention; if the operator's retention is shorter,
+ * gaps older than retention get pruned with the rest.
+ */
+const LOOKBACK_MS = 365 * 24 * 60 * 60_000;
+
 interface RetargetEntry {
   readonly height: number;
   readonly timeMs: number;
@@ -146,48 +154,118 @@ export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
 
   log(`[gap-backfill] starting; bitcoindClient=${deps.bitcoindClient ? 'available' : 'null (fallback path)'}`);
 
-  // Gap detection anchors on REAL polled rows only (synthetic = 0).
-  // A previous boot's backfill row must not be the gap-boundary
-  // candidate - the synthetic carries post-retarget difficulty, so
-  // including it would falsely make the diff appear stable and
-  // short-circuit re-correction on the next boot.
-  const lastTick = await db
-    .selectFrom('tick_metrics')
-    .selectAll()
-    .where('synthetic', '=', 0)
-    .orderBy('tick_at', 'desc')
-    .limit(1)
-    .executeTakeFirst();
-  if (!lastTick || lastTick.network_difficulty == null) {
-    log(`[gap-backfill] no lastTick with non-null difficulty; nothing to do`);
+  // Find ALL gaps > MIN_GAP_MS in tick_metrics history (real rows
+  // only - synthetic=0). Previously this function only looked at the
+  // MOST RECENT inter-tick interval, which meant: once the daemon
+  // had been running for a few minutes after an outage, the gap
+  // between the latest two ticks was just ~60s of normal polling
+  // and the function returned early - the historical outage gap
+  // stayed invisible. Confirmed against operator's actual DB
+  // (#241): 88h May 29->Jun 1 gap in the data, function logged
+  // "gap 3.0 min < 10 min threshold; nothing to do" because it
+  // only saw the last-tick-pair delta.
+  const gaps = await findAllGaps(db, LOOKBACK_MS, log);
+  if (gaps.length === 0) {
+    log(`[gap-backfill] no gaps > ${MIN_GAP_MS / 60_000} min found in last ${LOOKBACK_MS / (24 * 3_600_000)}d of tick_metrics; nothing to do`);
     return;
   }
 
-  const prevTick = await db
+  log(`[gap-backfill] found ${gaps.length} gap(s) to process: ${gaps.map((g) => `${new Date(g.gapStart).toISOString().slice(0, 16)}+${(g.gapMs / 3_600_000).toFixed(1)}h`).join(', ')}`);
+
+  for (const gap of gaps) {
+    // eslint-disable-next-line no-await-in-loop
+    await processGap({ ...deps, log }, gap);
+  }
+}
+
+interface DetectedGap {
+  readonly gapStart: number;
+  readonly gapEnd: number;
+  readonly gapMs: number;
+  /** Tick at gapStart, full row, for template + difficulty. */
+  readonly prevTick: TickMetricsRow;
+  /** Tick at gapEnd, full row. */
+  readonly lastTick: TickMetricsRow;
+}
+
+async function findAllGaps(
+  db: Kysely<Database>,
+  lookbackMs: number,
+  log: (msg: string) => void,
+): Promise<DetectedGap[]> {
+  // Pull every real (synthetic=0) tick in the lookback window with
+  // non-null difficulty, walk consecutive pairs in JS to find gaps.
+  // Doing the LAG in SQL works for SQLite but Kysely's window-function
+  // typing fights us in places; the JS walk is faster to reason about
+  // and the row count is bounded (one tick per minute × lookback days
+  // = a few hundred K at most, well under the few-second budget).
+  const sinceMs = Date.now() - lookbackMs;
+  const rows = await db
     .selectFrom('tick_metrics')
-    .selectAll()
+    .select(['tick_at', 'network_difficulty'])
     .where('synthetic', '=', 0)
-    .where('tick_at', '<', lastTick.tick_at - 180_000)
+    .where('tick_at', '>=', sinceMs)
     .where('network_difficulty', 'is not', null)
-    .orderBy('tick_at', 'desc')
-    .limit(1)
-    .executeTakeFirst();
-  if (!prevTick || prevTick.network_difficulty == null) {
-    log(`[gap-backfill] no prevTick with non-null difficulty before lastTick=${new Date(lastTick.tick_at).toISOString()}; nothing to do`);
-    return;
+    .orderBy('tick_at', 'asc')
+    .execute();
+
+  const gapPairs: Array<{ prevAt: number; nextAt: number }> = [];
+  for (let i = 1; i < rows.length; i += 1) {
+    const prev = rows[i - 1]!;
+    const next = rows[i]!;
+    if (next.tick_at - prev.tick_at > MIN_GAP_MS) {
+      gapPairs.push({ prevAt: prev.tick_at, nextAt: next.tick_at });
+    }
   }
 
-  const gapStart = prevTick.tick_at;
-  const gapEnd = lastTick.tick_at;
-  const gapMs = gapEnd - gapStart;
-  if (gapMs < MIN_GAP_MS) {
-    log(`[gap-backfill] gap ${(gapMs / 60_000).toFixed(1)} min < ${MIN_GAP_MS / 60_000} min threshold; nothing to do`);
-    return;
+  if (gapPairs.length === 0) return [];
+
+  // Fetch the full rows for each gap boundary (need template fields
+  // for the synthetic insertion).
+  const results: DetectedGap[] = [];
+  for (const pair of gapPairs) {
+    // eslint-disable-next-line no-await-in-loop
+    const prevTick = await db
+      .selectFrom('tick_metrics')
+      .selectAll()
+      .where('synthetic', '=', 0)
+      .where('tick_at', '=', pair.prevAt)
+      .limit(1)
+      .executeTakeFirst();
+    // eslint-disable-next-line no-await-in-loop
+    const lastTick = await db
+      .selectFrom('tick_metrics')
+      .selectAll()
+      .where('synthetic', '=', 0)
+      .where('tick_at', '=', pair.nextAt)
+      .limit(1)
+      .executeTakeFirst();
+    if (!prevTick || !lastTick) {
+      log(`[gap-backfill] WARN: missing boundary tick for gap ${new Date(pair.prevAt).toISOString()}->${new Date(pair.nextAt).toISOString()}, skipping`);
+      continue;
+    }
+    if (prevTick.network_difficulty == null || lastTick.network_difficulty == null) continue;
+    results.push({
+      gapStart: pair.prevAt,
+      gapEnd: pair.nextAt,
+      gapMs: pair.nextAt - pair.prevAt,
+      prevTick,
+      lastTick,
+    });
   }
+  return results;
+}
 
-  log(`[gap-backfill] gap detected: ${new Date(gapStart).toISOString()} -> ${new Date(gapEnd).toISOString()} (${(gapMs / 3_600_000).toFixed(1)}h); prevDiff=${prevTick.network_difficulty.toExponential(3)}, lastDiff=${lastTick.network_difficulty.toExponential(3)}`);
+async function processGap(
+  deps: GapBackfillDeps & { log: (msg: string) => void },
+  gap: DetectedGap,
+): Promise<void> {
+  const { db, log } = deps;
+  const { gapStart, gapEnd, gapMs, prevTick, lastTick } = gap;
 
-  // Always clear any stale synthetic rows in the detected gap before
+  log(`[gap-backfill] processing gap: ${new Date(gapStart).toISOString()} -> ${new Date(gapEnd).toISOString()} (${(gapMs / 3_600_000).toFixed(1)}h); prevDiff=${prevTick.network_difficulty!.toExponential(3)}, lastDiff=${lastTick.network_difficulty!.toExponential(3)}`);
+
+  // Always clear any stale synthetic rows in this gap before
   // re-inserting. Safe because real polled rows can't exist strictly
   // inside an outage - any row in (gapStart, gapEnd) with synthetic=1
   // is a previous run's insertion, possibly at a wrong-time estimate.
@@ -198,15 +276,15 @@ export async function runGapBackfill(deps: GapBackfillDeps): Promise<void> {
     .where('tick_at', '<', gapEnd)
     .executeTakeFirst();
   if (cleared.numDeletedRows > 0n) {
-    log(`[gap-backfill] cleared ${cleared.numDeletedRows} stale synthetic tick(s) in detected gap`);
+    log(`[gap-backfill] cleared ${cleared.numDeletedRows} stale synthetic tick(s) in this gap`);
   }
 
   const retargets = await collectRetargets({
     bitcoindClient: deps.bitcoindClient,
     poolBlocksRepo: deps.poolBlocksRepo,
     db,
-    prevDiff: prevTick.network_difficulty,
-    lastDiff: lastTick.network_difficulty,
+    prevDiff: prevTick.network_difficulty!,
+    lastDiff: lastTick.network_difficulty!,
     gapStart,
     gapEnd,
     log,

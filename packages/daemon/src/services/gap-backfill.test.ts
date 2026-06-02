@@ -262,6 +262,47 @@ describe('runGapBackfill - Taliesin reproduction (no bitcoindClient)', () => {
     expect(detected.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('REPRO Taliesin: post-outage ticks exist so last-pair delta is tiny; gap is HISTORICAL', async () => {
+    // The actual operator-environment shape: daemon was offline,
+    // came back, has been running for hours. The MOST RECENT pair
+    // of ticks has a normal ~60s delta, so the previous
+    // single-gap-only algorithm returned early ("gap N min < 10 min
+    // threshold"). The 88h historical gap stayed invisible to the
+    // function across SIX daemon restarts. findAllGaps fixes this.
+    await handle.db.deleteFrom('tick_metrics').execute();
+    // Pre-gap ticks
+    for (let i = 0; i < 5; i += 1) {
+      await seedTickMetricsBoundary(handle, PREV_TICK_AT - i * MIN, DIFF_BEFORE);
+    }
+    // ...big gap (PREV_TICK_AT to LAST_TICK_AT, 4 days of nothing)...
+    // Post-gap ticks, simulating daemon running for HOURS after the
+    // outage so the last pair of ticks is only ~60s apart and the
+    // OLD algorithm would say "no gap to fill."
+    for (let i = 0; i < 30; i += 1) {
+      await seedTickMetricsBoundary(handle, LAST_TICK_AT + i * MIN, DIFF_AFTER_B);
+    }
+
+    const logs: string[] = [];
+    await runGapBackfill({
+      db: handle.db,
+      poolBlocksRepo: new PoolBlocksRepo(handle.db),
+      log: (m) => logs.push(m),
+    });
+    console.log('Taliesin-shape multi-gap repro log:');
+    for (const line of logs) console.log(`  ${line}`);
+
+    const syntheticRows = await handle.db
+      .selectFrom('tick_metrics')
+      .selectAll()
+      .where('synthetic', '=', 1)
+      .execute();
+    console.log(`synthetics inserted: ${syntheticRows.length}`);
+
+    // Before the fix: 0 synthetics (skipped because last-pair gap was 1 min).
+    // After the fix: ~1100 cadence synthetics + 1 retarget across the 88h gap.
+    expect(syntheticRows.length).toBeGreaterThan(500);
+  });
+
   it('REPRO Taliesin: 30d pool_blocks coverage skips recompute on gap synthetics', async () => {
     // Re-seed pool_blocks so the earliest block lands a TINY bit
     // before PREV_TICK_AT - models the screenshot where Taliesin
