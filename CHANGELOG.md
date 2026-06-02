@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Fix]` Rejection-rate chart carries-forward through batch-update gaps; aligns with card weighted average (#243 follow-up)
+
+Operator: chart looked ~0% across a 15-min window but card said 0.05% — wildly mismatched mental models. Cause: Braiins's counters update in BATCHES (sometimes minutes between bumps); most chart windows had `Δpurchased = 0` and the chart code dropped to 0% on those, which dragged the visual eye toward "rate is near zero" while the card correctly weighted by actually-purchased shares. Treating Δp=0 windows as "0% rate" was misleading: those aren't measurements of "0% rate," they're "we had no measurable activity in this window." Switched the chart to carry-forward semantics: each batch-sync window emits a new measurement, intervening windows hold the previous reading. Line becomes a step function. Chart-eye-average of a step function aligns with the card's weighted average over the same range. Bid-rotation crossing (`Δp < 0 OR Δr < 0`) resets the carry chain so the line goes dark across the reset until the new bid produces its first measurement.
+
 ### `[Fix]` Rejection-rate aggregation skips negative-Δrejected samples (no more -0.16%) (#243 follow-up)
 
 Operator on "All" range: card showed `rejection rate -0.16%`. Cause: on long chart ranges the `/api/metrics` aggregation runs `MAX()` per bucket (1-day buckets at the All preset) on the cumulative counter columns. When a bid rotation happens mid-bucket the next bucket's `MAX(rejected)` can drop below the previous bucket's `MAX(rejected)` (because the new bid hasn't accumulated as many rejections yet) while `MAX(purchased)` still goes up - so Δpurchased is positive but Δrejected is negative. The existing `Δpurchased ≤ 0` guard didn't catch this case; a few rotation crossings pushed the totals negative on a low-rejection-rate range. Added a `Δrejected < 0` skip in both the Braiins card aggregate and the chart's 5-min window.

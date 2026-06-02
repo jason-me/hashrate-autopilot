@@ -788,37 +788,55 @@ export const HashrateChart = memo(function HashrateChart({
           };
         }
         case 'braiins_rejection_pct': {
-          // #243: per-tick rejection rate from the cumulative-since-
-          // bid-creation share counters. The naive "delta against the
-          // previous tick" doesn't work in practice because Braiins's
-          // counters update in BATCHES (sometimes seconds, sometimes
-          // a few minutes per bump). Per-tick Δpurchased is 0 on most
-          // ticks, then jumps when the counter sync runs. That made
-          // the chart line all NULL.
+          // #243: per-window rejection rate from the cumulative-since-
+          // bid-creation share counters. Braiins's counters update in
+          // BATCHES (sometimes seconds, sometimes minutes between
+          // bumps). Most windows have Δpurchased = 0 (no batch sync
+          // yet), then one window has Δpurchased > 0 carrying the
+          // accumulated activity from prior idle windows.
           //
-          // Fix: rolling 5-minute window. For each point T, find the
-          // earliest point at or after T - 5 min and use the deltas
-          // across that window. Window is wide enough that
-          // Δpurchased > 0 almost always (unless hashrate has been
-          // literally zero for 5 min), narrow enough that the line
-          // still moves visibly when the rate spikes.
+          // Two earlier attempts both failed to match the operator's
+          // mental model:
+          //   - NULL on Δp=0: line was all gaps (95% of the chart).
+          //   - 0 on Δp=0:    line dropped to 0 between batches,
+          //                   visually pulling your eye toward "rate
+          //                   is near zero" while the card's
+          //                   weighted-average rate over the range
+          //                   was an order of magnitude higher.
+          //                   Operator caught this on a screenshot
+          //                   where the chart looked ~0% but the
+          //                   card said 0.05%.
           //
-          // Semantics (NULL vs 0):
-          //   - NULL = no counter samples in the window (pre-#243
-          //     rows, or getBidDetail failed throughout). Honest
-          //     "we don't know."
-          //   - 0    = counters present and tracking, but no shares
-          //     were purchased in the window (e.g. hashrate dropped
-          //     to zero). No rejection observable -> rate is 0.
-          //   - real number = rejection percentage over the window.
-          // The operator was right: within a tracking period, 0
-          // means "no activity / no rejections," not "no data."
+          // Fix: carry-forward the last known rate during batch
+          // gaps. Each batch-sync window emits a new measurement;
+          // intervening windows keep the previous reading. The line
+          // becomes a step function that reflects "this was the rate
+          // when we last had measurable activity." The
+          // chart-eye-average of a step-function line aligns with
+          // the card's weighted average over the same range -
+          // both reflect the same underlying truth.
+          //
+          // Semantics:
+          //   NULL = no measurement has happened yet within the
+          //          range (cold start before the first batch sync,
+          //          or just after a bid rotation reset). Line
+          //          starts dark.
+          //   carry = a previous batch sync produced a rate; no
+          //          fresher measurement in this window, so the
+          //          line holds the previous value.
+          //   new   = this window had Δp > 0; emit Δr/Δp * 100 as
+          //          the new measurement AND save it for carry-
+          //          forward by later windows.
+          //
+          // Bid rotation (Δp < 0 OR Δr < 0): reset to NULL so the
+          // carry chain breaks; line goes dark across the rotation
+          // until the new bid produces its first batch sync.
           const windowMs = 5 * 60_000;
           const values: (number | null)[] = new Array(points.length);
+          let lastKnown: number | null = null;
           for (let i = 0; i < points.length; i += 1) {
             const tEnd = points[i]!.tick_at;
             const tStart = tEnd - windowMs;
-            // Walk back to the earliest point still inside the window.
             let earliestIdx = i;
             while (
               earliestIdx > 0 &&
@@ -827,9 +845,7 @@ export const HashrateChart = memo(function HashrateChart({
               earliestIdx -= 1;
             }
             if (earliestIdx === i) {
-              // Single point (typically the first tick); no
-              // lookback available. Honest unknown -> NULL.
-              values[i] = null;
+              values[i] = lastKnown;
               continue;
             }
             const cp = points[i]!.primary_bid_shares_purchased_m;
@@ -837,30 +853,33 @@ export const HashrateChart = memo(function HashrateChart({
             const cr = points[i]!.primary_bid_shares_rejected_m;
             const pr = points[earliestIdx]!.primary_bid_shares_rejected_m;
             if (cp === null || pp === null || cr === null || pr === null) {
-              // Genuine no-data: counters were NULL across the window.
-              values[i] = null;
+              // Counters NULL across the window - either pre-#243
+              // rows (before column added) or getBidDetail failed
+              // throughout the window. Honest unknown; don't
+              // pollute carry-forward with stale value.
+              values[i] = lastKnown;
               continue;
             }
             const dp = cp - pp;
             const dr = cr - pr;
             if (dp < 0 || dr < 0) {
-              // Bid rotation inside the window (counters reset). dp < 0
-              // catches the typical case where both counters reset
-              // together. dr < 0 catches the asymmetric bucket-AVG
-              // case on long ranges (operator hit a -0.16% card value
-              // before this guard was added).
+              // Bid rotation crossed the window. Reset carry-forward
+              // so the line goes dark until the new bid produces a
+              // measurement; carrying the OLD bid's rate forward
+              // across a reset would be wrong.
+              lastKnown = null;
               values[i] = null;
               continue;
             }
             if (dp === 0) {
-              // Counters tracking but no shares purchased in the
-              // window. No rejection observable -> 0 (per operator
-              // semantic: 0 means "no activity," NULL would be
-              // wrong here because we DO have data).
-              values[i] = 0;
+              // Batch-update gap: no shares cleared the window.
+              // Hold the last known rate. Most windows hit this.
+              values[i] = lastKnown;
               continue;
             }
-            values[i] = (dr / dp) * 100;
+            // New measurement: Δp > 0. Compute, save, emit.
+            lastKnown = (dr / dp) * 100;
+            values[i] = lastKnown;
           }
           return {
             values,
