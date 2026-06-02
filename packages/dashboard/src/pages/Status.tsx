@@ -688,7 +688,18 @@ export function Status() {
                 if (pp === null || cp === null || pr === null || cr === null) continue;
                 const localDp = cp - pp;
                 const localDr = cr - pr;
-                if (localDp <= 0) continue;
+                // Skip non-positive Δpurchased (Braiins's batch-update
+                // pauses, plus bid-rotation counter resets) AND any
+                // sample where Δrejected < 0. The second guard handles
+                // the bucket-aggregation case on long ranges: with
+                // bucketMs = 1 day and MAX() per bucket, a bid rotation
+                // mid-bucket leaves MAX(rejected) carrying the OLD bid's
+                // final value while MAX(purchased) might pull from the
+                // NEW bid - so Δpurchased can be positive while
+                // Δrejected is negative. Without this guard a few
+                // rotation crossings can pull the sum negative on a
+                // very-low-rejection-rate range (operator saw -0.16%).
+                if (localDp <= 0 || localDr < 0) continue;
                 dp += localDp;
                 dr += localDr;
               }

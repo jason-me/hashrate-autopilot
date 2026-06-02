@@ -843,9 +843,12 @@ export const HashrateChart = memo(function HashrateChart({
             }
             const dp = cp - pp;
             const dr = cr - pr;
-            if (dp < 0) {
-              // Bid rotation inside the window (counters reset). Skip
-              // this sample; the next window will start fresh.
+            if (dp < 0 || dr < 0) {
+              // Bid rotation inside the window (counters reset). dp < 0
+              // catches the typical case where both counters reset
+              // together. dr < 0 catches the asymmetric bucket-AVG
+              // case on long ranges (operator hit a -0.16% card value
+              // before this guard was added).
               values[i] = null;
               continue;
             }

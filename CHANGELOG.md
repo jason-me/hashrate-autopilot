@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Fix]` Rejection-rate aggregation skips negative-Δrejected samples (no more -0.16%) (#243 follow-up)
+
+Operator on "All" range: card showed `rejection rate -0.16%`. Cause: on long chart ranges the `/api/metrics` aggregation runs `MAX()` per bucket (1-day buckets at the All preset) on the cumulative counter columns. When a bid rotation happens mid-bucket the next bucket's `MAX(rejected)` can drop below the previous bucket's `MAX(rejected)` (because the new bid hasn't accumulated as many rejections yet) while `MAX(purchased)` still goes up - so Δpurchased is positive but Δrejected is negative. The existing `Δpurchased ≤ 0` guard didn't catch this case; a few rotation crossings pushed the totals negative on a low-rejection-rate range. Added a `Δrejected < 0` skip in both the Braiins card aggregate and the chart's 5-min window.
+
 ### `[Fix]` Braiins card "rejection rate" follows the chart range selector (#243 follow-up)
 
 Card was hard-coded to a 10-min rolling window. Operator: "I would think it has to be the average of the selected period. If I select three hours, then that is a three-hour average." Right — same mental model as the AVG Braiins / AVG Datum / AVG Ocean cards. `metricsQuery.data?.points` is already range-scoped by `chartRange`, so the card now just sums Δrejected and Δpurchased over the whole array. Skips samples whose Δpurchased ≤ 0 (Braiins's batch-update gaps and bid-rotation resets) so they don't pollute the divisor or fold counter resets into the rate.
