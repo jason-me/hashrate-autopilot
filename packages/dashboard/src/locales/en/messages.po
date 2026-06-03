@@ -963,8 +963,8 @@ msgid "collected (on-chain)"
 msgstr "collected (on-chain)"
 
 #: src/pages/Status.tsx
-msgid "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit. The percentage in parentheses is net ÷ spent: −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate."
-msgstr "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit. The percentage in parentheses is net ÷ spent: −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate."
+msgid "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
+msgstr "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
 
 #: src/pages/Config.tsx
 msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever."
@@ -2156,6 +2156,10 @@ msgstr "must contain a period - without it shares are uncredited on Ocean"
 msgid "net"
 msgstr "net"
 
+#: src/pages/Status.tsx
+msgid "Net divided by spent, expressed as a percentage. −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate."
+msgstr "Net divided by spent, expressed as a percentage. −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate."
+
 #. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
 #: src/pages/Status.tsx
 msgid "net/day ({0})"
@@ -3021,6 +3025,10 @@ msgstr "Resume last mode"
 #: src/pages/Config.tsx
 msgid "Retry interval"
 msgstr "Retry interval"
+
+#: src/pages/Status.tsx
+msgid "return on spend"
+msgstr "return on spend"
 
 #: src/pages/Config.tsx
 msgid "revert"

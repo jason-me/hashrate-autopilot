@@ -2,9 +2,13 @@
 
 ## 2026-06-03
 
-### `[Feature]` Net P&L now shows return-on-spend percentage next to the absolute figure (#249)
+### `[UI]` "return on spend" percentage on its own row in the lifetime P&L card (#249)
 
-The `= net` row in the Profit & Loss · lifetime card now shows a percentage in parentheses next to the absolute sat figure: net divided by spent. Reads as "how much have we made (or lost) relative to what we paid for hashrate". At the start of a run, when only spend has happened, the number is close to −100%; as Ocean's unpaid earnings climb and on-chain payouts land, it walks toward 0% (broken even) and then positive (earning more than we paid). Hidden when spent is 0 or net is still computing. Per a user request.
+Build 584 added the percentage in parentheses next to the `= net` value. Operator: that pushes the sat-column right-alignment out of whack - all the figures used to line up at the unit symbol, and the trailing `(−7.1%)` breaks that. Moved the percentage to a dedicated row immediately below `= net`, labeled "return on spend", same green/red sentiment colour as the net line above. Empty sign-column slot keeps the label visually aligned under "net". The four sat rows above (spent / unpaid earnings / collected / net) now align cleanly at the unit symbol again.
+
+### `[Feature]` Net P&L now shows return-on-spend percentage in the Lifetime card (#249)
+
+The Profit & Loss · lifetime card has a new row labelled "return on spend" under the `= net` line: net divided by spent, expressed as a percentage. Reads as "how much have we made (or lost) relative to what we paid for hashrate". At the start of a run, when only spend has happened, the number is close to −100%; as Ocean's unpaid earnings climb and on-chain payouts land, it walks toward 0% (broken even) and then positive (earning more than we paid). Hidden when spent is 0 or net is still computing. Per a user request.
 
 ## 2026-06-02
 

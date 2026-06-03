@@ -2911,27 +2911,33 @@ function FinancePanel({
             // digging out of the initial deposit. Keeps the rest of
             // the panel calm so the eye lands on the conclusion.
             valueClass={netColor}
-            // #249: rate of return next to the absolute number. Reads
-            // as "how much have we made relative to what we spent" -
-            // negative until net flips positive, then climbs above
-            // zero as collected + expected outpaces spent. Hidden
-            // when spent is 0 (haven't spent anything yet) or when
-            // net is null (one of the inputs hasn't reported).
-            secondary={
-              data.net_sat !== null && data.spent_sat > 0
-                ? (() => {
-                    const pct = (data.net_sat / data.spent_sat) * 100;
-                    const signStr = pct >= 0 ? '+' : '';
-                    return `${signStr}${formatNumber(
-                      pct,
-                      { minimumFractionDigits: 1, maximumFractionDigits: 1 },
-                      intlLocale,
-                    )}%`;
-                  })()
-                : null
-            }
-            tooltip={t`Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit. The percentage in parentheses is net ÷ spent: −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate.`}
+            tooltip={t`Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit.`}
           />
+          {/* #249: rate of return on its own row so the sat column
+              stays right-aligned across all four lines above. Same
+              green/red sentiment as `= net` since it's the same
+              quantity expressed as a ratio. Empty sign slot keeps the
+              label aligned under "net". */}
+          {data.net_sat !== null && data.spent_sat > 0 && (() => {
+            const pct = (data.net_sat / data.spent_sat) * 100;
+            const signStr = pct >= 0 ? '+' : '';
+            const pctStr = `${signStr}${formatNumber(
+              pct,
+              { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+              intlLocale,
+            )}%`;
+            return (
+              <Tooltip
+                text={t`Net divided by spent, expressed as a percentage. −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate.`}
+              >
+                <div className="cursor-help flex items-baseline text-xs py-0.5 gap-2 text-slate-500">
+                  <span className="font-mono tabular-nums w-3" aria-hidden="true" />
+                  <span className="flex-1">{t`return on spend`}</span>
+                  <span className={`font-mono ${netColor}`}>{pctStr}</span>
+                </div>
+              </Tooltip>
+            );
+          })()}
         </div>
       </div>
     </section>
@@ -2950,7 +2956,6 @@ function FinanceRow({
   valueClass = 'text-slate-100',
   sign,
   status,
-  secondary,
 }: {
   label: string;
   value: number | null;
@@ -2966,14 +2971,6 @@ function FinanceRow({
    * broken". Only the collected (on-chain) row currently passes this.
    */
   status?: 'computing' | 'ready' | 'idle';
-  /**
-   * #249: optional small parenthesised string rendered after the
-   * formatted value in muted slate. Currently used by the lifetime
-   * `= net` row to show net-vs-spent as a percentage so the operator
-   * can read the rate of return alongside the absolute number.
-   * Caller is responsible for formatting (locale, decimals, sign).
-   */
-  secondary?: string | null;
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -3020,9 +3017,6 @@ function FinanceRow({
             </>
           ) : (
             formatted
-          )}
-          {secondary && (
-            <span className="text-slate-500 text-[11px] ml-1">({secondary})</span>
           )}
         </span>
       </div>
