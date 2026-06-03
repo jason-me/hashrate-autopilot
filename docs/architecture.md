@@ -55,6 +55,10 @@
 > ordering, so the dashboard stores the chosen block order in browser localStorage and does not
 > write the column. It is kept in place (cheaper than reverting an already-shipped migration, and
 > avoids schema divergence) with the plumbing ready should cross-device sync be wanted later.
+> Migration 0109 adds the `ip_change_events` table (#250): an append-only log of public-IP
+> rotations written from the public-IP poll's `onIpChange` hook, surfaced as an "IP last changed"
+> line in the DDNS card and router-icon markers on the hashrate / price charts, so the operator can
+> line a public-IP rotation up against a rejection-rate spike.
 
 ## 1. High-level shape
 
@@ -599,6 +603,19 @@ CREATE TABLE bid_events (
   max_overpay_vs_hashprice_sat_per_eh_day INTEGER -- migration 0077; snapshot at write time
 );
 CREATE INDEX idx_bid_events_occurred_at ON bid_events (occurred_at);
+
+-- #250 (migration 0109): append-only log of public-IP rotations. One
+-- row per observed change of the box's public IPv4, written from the
+-- public-IP poll's onIpChange hook. Drives the "IP last changed" line
+-- in the Dynamic DNS card and the router-icon markers on the hashrate /
+-- price charts (to correlate IP rotations against rejection-rate spikes).
+CREATE TABLE ip_change_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  occurred_at INTEGER NOT NULL,
+  old_ip TEXT,                      -- nullable; populated in practice (hook fires only on non-null -> different)
+  new_ip TEXT NOT NULL
+);
+CREATE INDEX idx_ip_change_events_occurred_at ON ip_change_events (occurred_at);
 
 -- Block-header version cache for BIP 110 detection (#94, migration 0058)
 CREATE TABLE block_version_cache (

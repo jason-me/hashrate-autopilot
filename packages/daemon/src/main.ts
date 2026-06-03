@@ -40,6 +40,7 @@ import { DdnsUpdaterService } from './services/ddns-updater.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
 import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
+import { IpChangeEventsRepo } from './state/repos/ip_change_events.js';
 import { BraiinsDepositsRepo } from './state/repos/braiins_deposits.js';
 import { SoloMinersRepo } from './state/repos/solo_miners.js';
 import { AxeOSPoller } from './services/axeos-poller.js';
@@ -89,6 +90,7 @@ interface BootDeps {
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
+  readonly ipChangeEventsRepo: IpChangeEventsRepo;
   readonly alertsRepo: AlertsRepo;
   readonly poolBlocksRepo: PoolBlocksRepo;
   readonly rewardEventsRepo: RewardEventsRepo;
@@ -131,6 +133,7 @@ async function main(): Promise<void> {
     decisionsRepo: new DecisionsRepo(handle.db),
     tickMetricsRepo: new TickMetricsRepo(handle.db),
     bidEventsRepo: new BidEventsRepo(handle.db),
+    ipChangeEventsRepo: new IpChangeEventsRepo(handle.db),
     alertsRepo: new AlertsRepo(handle.db),
     poolBlocksRepo: new PoolBlocksRepo(handle.db),
     rewardEventsRepo: new RewardEventsRepo(handle.db),
@@ -259,6 +262,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    ipChangeEventsRepo,
     alertsRepo,
     poolBlocksRepo,
     rewardEventsRepo,
@@ -905,7 +909,16 @@ async function bootOperational(
   const ddnsUpdaterRef: { value: DdnsUpdaterService | null } = { value: null };
   const publicIpService = new PublicIpService({
     log: (m) => log(m),
-    onIpChange: () => {
+    onIpChange: (newIp, oldIp) => {
+      // #250: persist the rotation as a first-class event so the
+      // dashboard can show "IP last changed" and mark it on the charts
+      // (to correlate with rejection-rate spikes). Fire-and-forget; a
+      // DB hiccup must not break the IP-poll loop.
+      void ipChangeEventsRepo
+        .insert({ occurred_at: Date.now(), old_ip: oldIp, new_ip: newIp })
+        .catch((err) =>
+          log(`[ip-change] failed to record ${oldIp} -> ${newIp}: ${String(err)}`),
+        );
       // Force an immediate DDNS push as soon as we observe an IP
       // rotation - addresses #114 where a real ISP rotation left the
       // old IP live in DNS for ~27 min while two 5-min pollers waited
@@ -950,6 +963,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    ipChangeEventsRepo,
     alertsRepo,
     poolBlocksRepo,
     rewardEventsRepo,

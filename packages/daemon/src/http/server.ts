@@ -24,6 +24,7 @@ import type { BitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 import type { Controller } from '../controller/tick.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
 import type { BidEventsRepo } from '../state/repos/bid_events.js';
+import type { IpChangeEventsRepo } from '../state/repos/ip_change_events.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
@@ -39,6 +40,7 @@ import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerAlertsRoutes } from './routes/alerts.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
+import { registerIpChangesRoute } from './routes/ip-changes.js';
 import { registerBuildRoute } from './routes/build.js';
 import { registerBip110ScanRoute } from './routes/bip110-scan.js';
 import { registerBitcoindTestRoute } from './routes/bitcoind-test.js';
@@ -82,6 +84,8 @@ export interface HttpServerDeps {
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly poolBlocksRepo: import('../state/repos/pool_blocks.js').PoolBlocksRepo;
   readonly bidEventsRepo: BidEventsRepo;
+  /** #250: public-IP change events for the DDNS card + chart markers. */
+  readonly ipChangeEventsRepo: IpChangeEventsRepo;
   readonly alertsRepo: AlertsRepo;
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
@@ -210,6 +214,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerActionRoutes(app, deps);
   await registerMetricsRoute(app, deps);
   await registerBidEventsRoute(app, deps);
+  await registerIpChangesRoute(app, deps);
   await registerBip110ScanRoute(app, { configRepo: deps.configRepo, secrets: deps.secrets });
   await registerBitcoindTestRoute(app);
   await registerElectrsTestRoute(app);
@@ -250,6 +255,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     configRepo: deps.configRepo,
     publicIpService: deps.publicIpService,
     ddnsUpdater: deps.ddnsUpdater,
+    ipChangeEventsRepo: deps.ipChangeEventsRepo,
   });
   await registerDdnsTestRoute(app, {
     ddnsUpdater: deps.ddnsUpdater,

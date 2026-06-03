@@ -26,6 +26,7 @@ import {
 } from '@hashrate-autopilot/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
+import { IpChangeMarkers, type IpChangeMarkerEvent } from './IpChangeMarkers';
 import { getChartColor, parseOverrides } from '../lib/chartColors';
 import {
   formatAgeMinutes,
@@ -342,6 +343,7 @@ export const HashrateChart = memo(function HashrateChart({
   rightAxisSeries = 'none',
   soloSeries = [],
   bestDiffEvents = [],
+  ipChangeEvents = [],
   markersHiddenCount = 0,
   viewportHandlers,
   wheelRef,
@@ -383,6 +385,8 @@ export const HashrateChart = memo(function HashrateChart({
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
   /** #204: record-breaking best difficulty events for trophy markers on the chart. */
   bestDiffEvents?: ReadonlyArray<{ recorded_at: number; difficulty: number }>;
+  /** #250: public-IP change events, drawn as router-icon markers. */
+  ipChangeEvents?: ReadonlyArray<IpChangeMarkerEvent>;
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
   viewportHandlers?: {
@@ -1792,6 +1796,16 @@ export const HashrateChart = memo(function HashrateChart({
               </g>
             );
           })}
+
+        {/* #250: public-IP change markers (router icon). Always shown. */}
+        <IpChangeMarkers
+          events={ipChangeEvents}
+          xScale={xScale}
+          dataMinX={dataMinX}
+          dataMaxX={dataMaxX}
+          topY={PADDING.top}
+          bottomY={chartHeight - PADDING.bottom}
+        />
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">

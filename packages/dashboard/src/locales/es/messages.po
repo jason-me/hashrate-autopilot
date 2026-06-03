@@ -1871,6 +1871,14 @@ msgstr "IP"
 msgid "IP / host"
 msgstr "IP / host"
 
+#: src/components/IpChangeMarkers.tsx
+msgid "IP changed"
+msgstr "IP cambiada"
+
+#: src/pages/Config.tsx
+msgid "IP last changed:"
+msgstr "IP cambiada por última vez:"
+
 #: src/lib/format.ts
 msgid "just now"
 msgstr "ahora mismo"
@@ -2249,6 +2257,10 @@ msgstr "sin ofertas en esta cuenta"
 #: src/pages/Config.tsx
 msgid "no change needed"
 msgstr "sin cambios"
+
+#: src/pages/Config.tsx
+msgid "no change observed yet"
+msgstr "aún no se ha observado ningún cambio"
 
 #: src/pages/Config.tsx
 msgid "No devices yet. Add one below."

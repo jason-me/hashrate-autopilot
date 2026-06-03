@@ -265,6 +265,16 @@ export interface RewardEventsTable {
   reorged: Generated<0 | 1>;
 }
 
+// #250: append-only log of public-IP rotations (old -> new). old_ip is
+// nullable for defensiveness, though the detection hook only fires on a
+// non-null -> different-non-null change so it is populated in practice.
+export interface IpChangeEventsTable {
+  id: Generated<number>;
+  occurred_at: number;
+  old_ip: string | null;
+  new_ip: string;
+}
+
 // ---------------------------------------------------------------------------
 // alerts
 // ---------------------------------------------------------------------------
@@ -650,6 +660,7 @@ export interface Database {
   solo_miners: SoloMinersTable;
   solo_miner_samples: SoloMinerSamplesTable;
   solo_best_difficulty_events: SoloBestDifficultyEventsTable;
+  ip_change_events: IpChangeEventsTable;
   _migrations: MigrationsTable;
 }
 

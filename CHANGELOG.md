@@ -2,6 +2,10 @@
 
 ## 2026-06-03
 
+### `[Feature]` Track public-IP changes and mark them on the charts (#250)
+
+The daemon now records every time your public IP actually rotates (old → new) as a persisted event, and surfaces it two ways. The Dynamic DNS card gains an **"IP last changed"** line - the real answer to "when did my IP change," distinct from the existing "last successful push" (which only reflects the hourly DDNS keep-alive heartbeat, not a change). And the hashrate and price charts now draw a **router-icon marker** at each IP-change time, with a hover tooltip showing the old → new address. This is aimed at the rejection-rate question: a new public IP briefly breaks the connection between Braiins and your pool, so a rejection spike that lines up with a marker has a likely cause you can now see at a glance.
+
 ### `[UI]` Single-character unit symbols (≡, %, ₿) now sit in a fixed-width centered slot so they align across rows
 
 Operator: after the percent-styling change, `0,0107 %` (share log) and `722.513 ≡` (unpaid) right-aligned to the same container edge but the visible glyphs landed at slightly different x-positions because the icon font glyph and the percent character have different intrinsic widths. Now the SatUnit helper wraps single-symbol units in a `w-3 text-center` inline slot so the visible centers align regardless of glyph width. Compound units like `≡/PH/day` skip the fixed slot and render naturally — they're not the alignment-sensitive case.

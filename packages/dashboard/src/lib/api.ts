@@ -529,6 +529,14 @@ export interface DdnsSnapshot {
   last_error: string | null;
 }
 
+// #250: one observed public-IP rotation (old -> new) at a point in time.
+export interface IpChangeEvent {
+  id: number;
+  occurred_at: number;
+  old_ip: string | null;
+  new_ip: string;
+}
+
 export interface DdnsRouteResponse {
   daemon_public_ip: string | null;
   daemon_public_ip_checked_at: number | null;
@@ -537,6 +545,9 @@ export interface DdnsRouteResponse {
   pool_url_resolves_to: string | null;
   pool_url_resolve_error: string | null;
   ddns: DdnsSnapshot;
+  /** #250: last time the public IP actually changed (distinct from the
+   *  DDNS heartbeat push). Null until a rotation has been recorded. */
+  last_ip_change: { occurred_at: number; old_ip: string | null; new_ip: string } | null;
   checked_at: number;
 }
 
@@ -685,6 +696,11 @@ export const api = {
   bidEventsViewport: (since: number, until: number) =>
     request<{ events: BidEventView[] }>(
       `/api/bid-events?since=${since}&until=${until}`,
+    ),
+  // #250: public-IP change markers for the charts.
+  ipChangesViewport: (since: number, until: number) =>
+    request<{ events: IpChangeEvent[] }>(
+      `/api/ip-changes?since=${since}&until=${until}`,
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),

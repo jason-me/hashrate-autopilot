@@ -39,6 +39,7 @@ import {
   inferRetargetBlockHeight,
   projectSoloSeries,
 } from './HashrateChart';
+import { IpChangeMarkers, type IpChangeMarkerEvent } from './IpChangeMarkers';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { getChartColor, parseOverrides } from '../lib/chartColors';
 import { copyToClipboard } from '../lib/clipboard';
@@ -247,6 +248,7 @@ export const PriceChart = memo(function PriceChart({
   rewardEvents = [],
   deposits = [],
   ourBlocks = [],
+  ipChangeEvents = [],
   blockExplorerTemplate,
   txExplorerTemplate,
   shareLogPct = null,
@@ -339,6 +341,8 @@ export const PriceChart = memo(function PriceChart({
    * chart they hovered.
    */
   ourBlocks?: readonly OurBlockMarker[];
+  /** #250: public-IP change events, drawn as router-icon markers. */
+  ipChangeEvents?: ReadonlyArray<IpChangeMarkerEvent>;
   /** Block-explorer URL template for pool-block markers (`{hash}` / `{height}` placeholders). */
   blockExplorerTemplate?: string;
   /** Transaction-explorer URL template for reward-event markers (`{txid}` / `{hash}` placeholders). */
@@ -2535,6 +2539,16 @@ export const PriceChart = memo(function PriceChart({
               </g>
             );
           })}
+
+        {/* #250: public-IP change markers (router icon). Always shown. */}
+        <IpChangeMarkers
+          events={ipChangeEvents}
+          xScale={xScale}
+          dataMinX={dataMinX}
+          dataMaxX={dataMaxX}
+          topY={PADDING.top}
+          bottomY={chartHeight - PADDING.bottom}
+        />
         </g>
 
         {hasRightAxis && rightAxis && (

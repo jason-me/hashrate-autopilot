@@ -70,6 +70,9 @@ const EMPTY_BID_EVENTS: readonly never[] = Object.freeze([]) as readonly never[]
 const EMPTY_REWARD_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_OUR_BLOCKS: readonly never[] = Object.freeze([]) as readonly never[];
 const EMPTY_DEPOSITS: readonly never[] = Object.freeze([]) as readonly never[];
+// #250: frozen sentinel so the IP-change marker prop stays referentially
+// stable until real data arrives (charts are React.memo'd).
+const EMPTY_IP_CHANGES: readonly never[] = Object.freeze([]) as readonly never[];
 
 // #93: per-chart secondary Y-axis selection, persisted per-browser.
 const HASHRATE_RIGHT_AXIS_KEY = 'hashrate-autopilot.hashrateRightAxis';
@@ -240,6 +243,15 @@ export function Status() {
   const bidEventsQuery = useQuery({
     queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms],
     queryFn: () => api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
+  });
+
+  // #250: public-IP change markers, keyed off the same viewport bounds
+  // as the other chart-marker overlays.
+  const ipChangesQuery = useQuery({
+    queryKey: ['ip-changes', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.ipChangesViewport(fetchBounds.since_ms, fetchBounds.until_ms),
     placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
@@ -570,6 +582,7 @@ export function Status() {
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
+          ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
         />
       </div>
     ),
@@ -635,6 +648,7 @@ export function Status() {
           viewportSince={effectiveViewportSince}
           viewportUntil={chartViewport.viewport.until_ms}
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
+          ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
         />
       </div>
     ),

@@ -13,8 +13,9 @@ PAUSED switch on the left; the Next Action panel on the right explaining what th
 do and when. The window-averaged effective rate (derived per-tick from the delta of Braiins's
 `amount_consumed_sat` counter divided by delivered hashrate × elapsed time) lives on the stats bar below
 as **avg cost / PH delivered**, where the post-hoc range-averaged framing makes more sense. Below the
-hero sit range-selectable hashrate and price charts overlayed with bid events, block markers, and
-difficulty-retarget pickaxe icons, and on-chain payout gem markers. The price chart draws your bid (amber), the fillable ask the
+hero sit range-selectable hashrate and price charts overlayed with bid events, block markers,
+difficulty-retarget pickaxe icons, on-chain payout gem markers, and public-IP-change router markers (so a
+rejection-rate spike can be lined up against an ISP IP rotation). The price chart draws your bid (amber), the fillable ask the
 controller tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
 behind a config toggle because it's dramatically more volatile than the tracking lines and hijacks the
 Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source - Braiins / Datum / Ocean

@@ -4998,6 +4998,29 @@ function DdnsSection({
                   )}
                 </span>
               </div>
+              {/* #250: the real "IP last changed" - distinct from the
+                  hourly-heartbeat push above. Only meaningful once a
+                  rotation has been recorded. */}
+              <div className="flex flex-wrap gap-x-4">
+                <span className="text-slate-400 w-44 shrink-0">
+                  <Trans>IP last changed:</Trans>
+                </span>
+                <span className="text-slate-100">
+                  {r?.last_ip_change ? (
+                    <>
+                      {r.last_ip_change.old_ip ? `${r.last_ip_change.old_ip} → ` : ''}
+                      {r.last_ip_change.new_ip}
+                      <span className="text-slate-500 ml-2">
+                        {formatAge(r.last_ip_change.occurred_at)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-slate-500">
+                      <Trans>no change observed yet</Trans>
+                    </span>
+                  )}
+                </span>
+              </div>
               {r?.ddns.last_error && (
                 <div className="flex flex-wrap gap-x-4">
                   <span className="text-slate-400 w-44 shrink-0">
