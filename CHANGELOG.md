@@ -2,6 +2,10 @@
 
 ## 2026-06-03
 
+### `[UI]` Single-character unit symbols (≡, %, ₿) now sit in a fixed-width centered slot so they align across rows
+
+Operator: after the percent-styling change, `0,0107 %` (share log) and `722.513 ≡` (unpaid) right-aligned to the same container edge but the visible glyphs landed at slightly different x-positions because the icon font glyph and the percent character have different intrinsic widths. Now the SatUnit helper wraps single-symbol units in a `w-3 text-center` inline slot so the visible centers align regardless of glyph width. Compound units like `≡/PH/day` skip the fixed slot and render naturally — they're not the alignment-sensitive case.
+
 ### `[UI]` Percent symbol now mirrors the sat symbol's muted styling (small space + slate-500)
 
 Operator: the sat symbol on numeric values has a small space before it and renders in muted slate, but the percent symbol on share log / uptime / return-on-spend / rejection rate had no space and rendered in the main text colour. Inconsistent for no good reason. Extended the value-formatter's unit detection to also recognise a trailing `%`, so every percentage-bearing row inherits the same number-then-muted-unit treatment: small left margin between the number and the symbol, symbol in `text-slate-500` at one font size down. Same change reaches the uptime stat card (the `%` now sits below the big number, matching the other stat cards' unit row), the Ocean panel's share log, the Braiins card's rejection rate row, and the new lifetime P&L "return on spend" row in one pass.

@@ -2941,7 +2941,9 @@ function FinancePanel({
                     {split ? (
                       <>
                         {split.num}
-                        <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+                        <span className="text-slate-500 text-[11px] ml-1">
+                          <SatUnit unit={split.unit} />
+                        </span>
                       </>
                     ) : (
                       pctStr
@@ -3395,6 +3397,15 @@ function FormattedValue({ v, className = '' }: { v: string; className?: string }
  * symbol icon. Handles "sat", "sat/PH/day", "PH/s" (no replacement
  * for non-sat units). Only applies in sats mode - USD values like
  * "$4.75/PH/day" don't match splitUnit so they render as plain text.
+ *
+ * Single-character symbols (≡, %, ₿) get a fixed-width centered slot
+ * (`w-3 text-center`) so their visible centers align across rows
+ * even though their intrinsic glyph widths differ - without this,
+ * a row showing `0,0107 %` and a row showing `722.513 ≡` right-align
+ * the bounding boxes of the unit spans but the visible glyphs drift
+ * a couple of pixels because % is wider than ≡. Compound units like
+ * `≡/PH/day` skip the fixed slot and render naturally - they're not
+ * the alignment-sensitive case.
  */
 function SatUnit({ unit }: { unit: string }) {
   const { i18n } = useLingui();
@@ -3405,6 +3416,16 @@ function SatUnit({ unit }: { unit: string }) {
   // (e.g. "(in this range)") that we don't want to lose.
   const phDayLabel = t`/PH/day`;
   const localized = unit.replace('/PH/day', phDayLabel);
+  if (localized === 'sat' || localized === '₿') {
+    return (
+      <span className="inline-block w-3 text-center">
+        {localized === 'sat' ? <SatSymbol className="opacity-70" /> : localized}
+      </span>
+    );
+  }
+  if (localized === '%') {
+    return <span className="inline-block w-3 text-center">{localized}</span>;
+  }
   if (localized.startsWith('sat')) {
     return (
       <>
