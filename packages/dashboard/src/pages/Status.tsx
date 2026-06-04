@@ -2338,7 +2338,7 @@ function OceanPanel() {
           <Row
             k={t`ocean hashrate`}
             v={denomination.formatHashrate(o.user.hashrate_5m_ph, intlLocale)}
-            tooltip={t`Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline.`}
+            tooltip={t`Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins → Datum → Ocean pipeline.`}
           />
           {o.user.hashprice_sat_per_ph_day != null && (
             <Row

@@ -2,6 +2,10 @@
 
 ## 2026-06-04
 
+### `[UI]` Replaced the last ASCII `->` arrow in a tooltip with the Unicode `→` (U+2192)
+
+Sweep of every user-facing display string in the dashboard found one stray `->`: the AVG OCEAN tooltip's "Braiins -> Datum -> Ocean pipeline" wording. Updated to "Braiins → Datum → Ocean". Translations refreshed for en + nl + es. JSDoc comments, log statements, and the bid-summary parser regex (which intentionally accepts both forms because daemon-emitted strings can use either) were left as-is.
+
 ### `[UI]` 'Solo miners' renamed to 'Bitaxe miners' + chart-colors preview icons now byte-identical to the chart's
 
 The "Solo miners" naming overstated what the integration actually supports — only Bitaxe / AxeOS firmware, not solo mining in general (a Bitaxe can pool-mine too). Renamed across the dashboard card, Config tab and section heading, alert labels (overheating / offline / share-rejection / stratum drift / best-difficulty record), right-axis chart series ("Bitaxe hashrate" / "Bitaxe device count" / "Bitaxe max temp" / "Bitaxe best difficulty" / "Bitaxe power (W)"), and the empty-state copy. Internal code identifiers (`solo_*` field names, repo names) stay unchanged. Translations cover en + nl + es.
