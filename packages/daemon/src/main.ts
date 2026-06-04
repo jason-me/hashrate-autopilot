@@ -100,7 +100,54 @@ interface BootDeps {
   readonly ageKeyPath: string;
 }
 
+// Global crash safety net. The daemon previously had NO
+// uncaughtException / unhandledRejection handler, so a single stray
+// rejection anywhere (a fire-and-forget promise in any service) would
+// terminate the whole process with no log line and no alert - it just
+// vanished, and on a systemd box looked like a mysterious "daemon
+// died" (the operator could only see the deposit alert that happened
+// to fire just before). These handlers log the stack, fire a
+// best-effort Telegram alert, and exit(1) so systemd restarts cleanly.
+//
+// `emergencyNotify` is wired to the live Telegram sink once it exists
+// in bootOperational; before that (early startup) we still log + exit.
+let emergencyNotify: ((msg: string) => Promise<unknown>) | null = null;
+let daemonExiting = false;
+let crashing = false;
+
+function installCrashHandlers(): void {
+  const onFatal = (kind: string, err: unknown): void => {
+    // A late rejection during a clean shutdown is not a crash.
+    if (daemonExiting || crashing) return;
+    crashing = true;
+    const detail = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    console.error(`FATAL ${kind} - daemon will exit for restart:`);
+    console.error(detail);
+    void (async () => {
+      try {
+        if (emergencyNotify) {
+          const short = detail.length > 300 ? `${detail.slice(0, 300)}…` : detail;
+          await Promise.race([
+            emergencyNotify(
+              `🛑 Hashrate Autopilot crashed (${kind}): ${short} — systemd will restart it.`,
+            ),
+            new Promise((r) => setTimeout(r, 4_000)),
+          ]);
+        }
+      } catch {
+        // Best-effort: never let the alert path block the exit.
+      } finally {
+        // exit(1) so a systemd Restart=on-failure/always brings it back.
+        process.exit(1);
+      }
+    })();
+  };
+  process.on('uncaughtException', (err) => onFatal('uncaughtException', err));
+  process.on('unhandledRejection', (reason) => onFatal('unhandledRejection', reason));
+}
+
 async function main(): Promise<void> {
+  installCrashHandlers();
   const projectRoot = process.cwd();
   const secretsPath = process.env['SECRETS_PATH'] ?? resolve(projectRoot, '.env.sops.yaml');
   const dbPath = process.env['DB_PATH'] ?? resolve(projectRoot, 'data/state.db');
@@ -734,6 +781,9 @@ async function bootOperational(
     send: (body: string, opts?: SendOptions) => buildSink().send(body, opts),
     verify: () => buildSink().verify(),
   };
+  // Now that a Telegram sink exists, let the global crash handler send
+  // a last-gasp alert before the process exits for restart.
+  emergencyNotify = (msg: string) => dynamicSink.send(msg);
   const alertManager = new AlertManager({
     alertsRepo,
     sink: dynamicSink,
@@ -1090,6 +1140,9 @@ async function bootOperational(
   const shutdown = async (signal: string): Promise<void> => {
     if (shuttingDown) return;
     shuttingDown = true;
+    // Tell the global crash handler this is an intentional exit, so a
+    // late rejection during drain isn't misreported as a crash.
+    daemonExiting = true;
     log(`received ${signal}; draining loop`);
     // Hard force-exit fence: Docker's default stop grace is 10 s, so
     // if anything (a stuck Braiins API call inside the in-flight

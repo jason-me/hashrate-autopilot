@@ -2,6 +2,10 @@
 
 ## 2026-06-03
 
+### `[Infra]` Daemon crash safety net + `status.sh` now sees the systemd service (#251)
+
+The daemon had no global `uncaughtException`/`unhandledRejection` handler, so a single stray promise rejection anywhere could silently kill the whole process - on a systemd box that just looks like a mysterious restart. It now logs the stack, fires a best-effort Telegram alert ("crashed (...) - systemd will restart it"), and exits cleanly so systemd brings it back, instead of vanishing. Separately, `scripts/status.sh` only ever checked the nohup PID file, so on a systemd box it always reported "not running" no matter how healthy the service was; it now detects the systemd unit first and reports `systemctl is-active` plus recent journal lines, falling back to the PID file only on nohup installs. README C.4/C.5 clarified that the nohup helper scripts don't control a systemd-managed daemon.
+
 ### `[Feature]` Track public-IP changes and mark them on the charts (#250)
 
 The daemon now records every time your public IP actually rotates (old → new) as a persisted event, and surfaces it two ways. The Dynamic DNS card gains an **"IP last changed"** line - the real answer to "when did my IP change," distinct from the existing "last successful push" (which only reflects the hourly DDNS keep-alive heartbeat, not a change). And the hashrate and price charts now draw a **router-icon marker** at each IP-change time, with a hover tooltip showing the old → new address. This is aimed at the rejection-rate question: a new public IP briefly breaks the connection between Braiins and your pool, so a rejection spike that lines up with a marker has a likely cause you can now see at a glance.

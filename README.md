@@ -596,11 +596,13 @@ nc -zv <host>.local 3010    # or the host's LAN IP
 
 ```bash
 ./scripts/logs.sh        # tail data/logs/daemon.log
-./scripts/status.sh      # is the daemon running?
+./scripts/status.sh      # is the daemon running? (auto-detects the systemd unit; see below)
 ./scripts/restart.sh     # bounce
 ./scripts/stop.sh        # stop
 ./scripts/deploy.sh      # one-shot update: git pull, build, test, restart
 ```
+
+On a **systemd box (C.5)** the daemon is not tracked by `data/daemon.pid`, so `restart.sh`/`stop.sh`/`logs.sh` (the nohup/PID-file path) do not control it - use `sudo systemctl restart hashrate-autopilot`, `journalctl -u hashrate-autopilot -f`, and `deploy-systemd.sh` instead. `status.sh` is the exception: it now checks for the systemd unit first and reports `systemctl is-active` + recent journal lines, falling back to the PID file only on nohup installs.
 
 `deploy.sh` is safe to run while the daemon is live - the restart only happens after the build +
 tests succeed, so a broken commit can't take your running autopilot down. Common patterns:
