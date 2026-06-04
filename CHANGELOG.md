@@ -2,6 +2,15 @@
 
 ## 2026-06-04
 
+### `[Fix]` Pool-luck step dots now place at the block's actual timestamp, not by scanning for count changes
+
+Two cases were producing wrong or missing dots on the pool-luck right-axis line:
+
+1. When two block events landed within the same daemon tick (e.g. one block found at 09:04:44, another aged out at 09:04:49, both reflected in the 09:05 tick), the count stayed constant even though luck visibly stepped (the window denominator shifted). Both events failed the `c > baseCount` / `c < baseCount` comparison, so neither dot was placed. The line jumped but no marker explained it.
+2. When two aged-out events happened hours apart on the same chart, the first block's 'out' algorithm scanned forward up to 15 buckets looking for a count drop and bound itself to the *second* block's actual aged-out timestamp - mislabelling the dot's tooltip with the wrong block.
+
+Replaced the count-delta scan with direct timestamp anchoring: the dot for each event sits at the first tick at-or-after the event time, and the tooltip's `luckBefore → luckAfter` reads off the two flanking ticks. Anchors stay attached to the correct block; cancellation cases now show overlapping dots at the same x with each block's tooltip intact.
+
 ### `[UI]` Range-bound values now explain themselves on hover
 
 Several values in the side cards and stat bar update with the chart-range selector at the top of the Status page, but until now there was no way to tell which ones from the labels alone. Affected fields: the Braiins card's `rejection rate` row, the stat bar's `uptime` / `avg braiins` / `avg datum` / `avg ocean` / `avg cost vs hashprice` cards, and the mini `avg overpay (intent / settled)` cards. Tooltips on all of these now explicitly say the value is computed over the selected chart range and updates with the range selector. No visual marker — the discoverable hover pattern already used by every other row stays consistent. Translations cover en + nl + es.
