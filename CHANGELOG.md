@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-05
+
+### `[Fix]` Pool-luck step dots back on the post-step segment (#264)
+
+The pool-luck step-marker rewrite in build 605 anchored the dot's y-position at `points[afterIdx][luckKey]` — the persisted luck reading at the first daemon tick at-or-after the block's on-chain timestamp. Ocean's `/v1/statsnap` refresher only re-polls every ~5 min, so the value at that tick is often still the pre-event baseline, leaving the dot drawn on the lower (pre-step) horizontal segment of the line while the visible step lands a tick or two later. Mirrored PriceChart's already-working scan-forward pattern: after the timestamp-based grouping, scan up to 15 ticks forward for the first tick where the luck value actually steps off the pre-event baseline and anchor the dot's `cx`/`cy` there. Attribution by `afterIdx` (which keeps multi-event in/out cancellations correct) is unchanged.
+
 ## 2026-06-04
 
 ### `[Release]` v1.12.0

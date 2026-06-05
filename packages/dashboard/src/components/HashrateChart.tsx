@@ -1324,12 +1324,38 @@ export const HashrateChart = memo(function HashrateChart({
       arr.push(ev);
       byTick.set(ev.afterIdx, arr);
     }
+    // #264: Ocean's pool-block observations surface on the
+    // ~5-min /v1/statsnap refresh cadence, not on the block's on-chain
+    // timestamp. The tick chronologically at-or-after the block can
+    // still carry the pre-step luck value if Ocean hasn't re-polled
+    // yet, so anchoring the dot's cy at points[afterIdx][luckKey]
+    // drops it on the pre-step horizontal segment of the line. Scan
+    // forward from afterIdx (bounded to MAX_LAG_TICKS ≈ 15 min) for
+    // the first tick whose luck value differs from the pre-event
+    // baseline - that's where the line visibly steps and where the
+    // dot belongs. Same structural fix as PriceChart's
+    // visiblePoolBlockMarkers (#163).
+    const MAX_LAG_TICKS = 15;
     const out: typeof empty = [];
     for (const [afterIdx, events] of byTick) {
-      const after = points[afterIdx]!;
       const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
-      const luckAfter = after[luckKey];
       const luckBefore = before === null ? null : before[luckKey];
+      // Scan forward for the first tick where the persisted luck
+      // value actually steps off the pre-event baseline.
+      let steppedIdx = afterIdx;
+      if (luckBefore !== null) {
+        const scanEnd = Math.min(points.length, afterIdx + MAX_LAG_TICKS);
+        for (let i = afterIdx; i < scanEnd; i += 1) {
+          const v = points[i]![luckKey];
+          if (v === null) continue;
+          if (v !== luckBefore) {
+            steppedIdx = i;
+            break;
+          }
+        }
+      }
+      const stepped = points[steppedIdx]!;
+      const luckAfter = stepped[luckKey];
       if (luckAfter === null) continue;
       // Connector anchor: use the earliest contributing event's
       // timestamp so the dashed line covers the whole group when the
@@ -1345,7 +1371,7 @@ export const HashrateChart = memo(function HashrateChart({
           luckAfter,
           windowMs,
         },
-        cx: xScale(after.tick_at),
+        cx: xScale(stepped.tick_at),
         cy: shareLogYScale(luckAfter),
         blockCx: xScale(earliestT),
       });
