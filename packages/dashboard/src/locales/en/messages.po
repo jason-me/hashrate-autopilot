@@ -81,8 +81,16 @@ msgid "(checked {0})"
 msgstr "(checked {0})"
 
 #: src/components/TilesBar.tsx
-msgid "(in use)"
-msgstr "(in use)"
+msgid "(current)"
+msgstr "(current)"
+
+#: src/components/TilesBar.tsx
+msgid "(in another tile)"
+msgstr "(in another tile)"
+
+#: src/components/TilesBar.tsx
+#~ msgid "(in use)"
+#~ msgstr "(in use)"
 
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
@@ -212,6 +220,7 @@ msgid "{totalSec}s ago"
 msgstr "{totalSec}s ago"
 
 #: src/components/PriceChart.tsx
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
 msgstr "/PH/day"
@@ -900,22 +909,40 @@ msgid "Bitaxe efficiency"
 msgstr "Bitaxe efficiency"
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending - currently in "
 "the Bitaxe miners section. Will populate in a follow-up."
-msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently "
+msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending - currently "
 "in the Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+#~ "the Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently "
+#~ "in the Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-msgstr "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+msgstr "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-msgstr "Bitaxe fleet power draw. Tile data source pending — currently in the "
+msgstr "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
@@ -4088,8 +4115,12 @@ msgid "Remove device"
 msgstr "Remove device"
 
 #: src/components/TilesBar.tsx
-msgid "Remove tile"
-msgstr "Remove tile"
+msgid "Remove this tile"
+msgstr "Remove this tile"
+
+#: src/components/TilesBar.tsx
+#~ msgid "Remove tile"
+#~ msgstr "Remove tile"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -4406,10 +4437,16 @@ msgid "share_log %"
 msgstr "share_log %"
 
 #: src/components/TilesBar.tsx
-msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+msgid "Share-rejection rate. Tile data source pending - currently shown only on "
 "the chart's right axis. Will populate in a follow-up."
-msgstr "Share-rejection rate. Tile data source pending — currently shown only "
+msgstr "Share-rejection rate. Tile data source pending - currently shown only "
 "on the chart's right axis. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+#~ "the chart's right axis. Will populate in a follow-up."
+#~ msgstr "Share-rejection rate. Tile data source pending — currently shown only "
+#~ "on the chart's right axis. Will populate in a follow-up."
 
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
@@ -4564,8 +4601,8 @@ msgstr "Sum of counters_committed.amount_consumed_sat across every bid on "
 "each hourly settlement tick). Switch via Config → P&L panel."
 
 #: src/components/TilesBar.tsx
-msgid "Swap tile"
-msgstr "Swap tile"
+#~ msgid "Swap tile"
+#~ msgstr "Swap tile"
 
 #: src/pages/Config.tsx
 msgid "system default"

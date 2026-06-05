@@ -2,6 +2,12 @@
 
 ## 2026-06-05
 
+### `[Fix]` Configurable tiles: picker now works in rearrange mode + visual styling matches the old StatCard (#266 follow-up)
+
+Two regressions caught immediately on first try: (1) the picker chevron and `+ add` button didn't respond to clicks while the page was in rearrange mode — SortableDashboard wraps block content in `pointer-events-none` while rearranging (intentional per #244 so a stray tap can't fire a button mid-drag), but that also killed the picker since the picker *is* the tile customisation flow. Picker controls now carry `pointer-events-auto` so they're exempt from the block-level inert wrapper while the rest of the content stays inert. (2) The tile rendering didn't match the original StatCard idiom — the value and unit ran together in the same big font. Now matches: centered value (big mono), slim grey unit caption below, sat symbol where appropriate. The whole tile header strip is clickable now (not just the tiny chevron triangle).
+
+Behavioural change: the picker is no longer gated behind rearrange mode at all (per the original design-interview pick "same flow whether in rearrange mode or not"). Click the tile's header anywhere to open the dropdown; pick a different tile to swap, or use "Remove this tile" at the bottom of the dropdown to drop the slot. `+ add` at the row end always shows when count < max.
+
 ### `[Feature]` Configurable StatsBar tiles (#266)
 
 The horizontal six-tile bar at the top of Status is now operator-customisable. Each tile slot has a chevron dropdown (visible in rearrange mode) over a curated catalogue of ~22 entries: the existing 6, the uptime decomposition tiles from #254, hashrate target (#255), avg overpay intent/settled, hashprice now, pool blocks 30d, pool luck 24h/7d/30d, share log %, share rejection, wallet runway, and Bitaxe fleet hashrate / power / J-per-TH. Variable slot count — add up to 24 tiles, remove via the × in rearrange mode, swap by picking a different entry. Choice persists to `config.dashboard_tiles` (daemon-side), so the layout follows the operator across browsers and devices. Defaults to today's six tiles when the field is empty, so existing installs see no change. nl + es translations included. A few tiles (share rejection, Bitaxe fleet) render an em-dash for now and call out "follow-up" in the tooltip — the underlying data sources need additional dashboard plumbing that will land in a separate commit.

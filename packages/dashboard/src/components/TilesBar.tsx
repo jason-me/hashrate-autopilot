@@ -1,23 +1,33 @@
 /**
  * #266: configurable StatsBar - operator-pickable tile slots.
  *
- * Replaces the build-611 hardcoded 6-tile grid. Each slot is a
+ * Replaces the build-611 hardcoded 6-tile grid. Each slot has a
  * dropdown over the catalogue declared in @hashrate-autopilot/shared.
- * Slot count is variable: add tiles up to MAX_DASHBOARD_TILES, remove
- * tiles via the X button in rearrange mode. Order persists to
- * `config.dashboard_tiles` (daemon-side, follows the operator across
- * browsers).
+ * Click anywhere on a tile's header row to open the picker; the
+ * picker is the *single* customisation surface (replace / remove /
+ * add another tile - all from the same dropdown). No separate
+ * "rearrange mode" gate for tiles, because the operator's design-
+ * interview pick was "same flow whether you're in rearrange mode or
+ * not" - matching the cleanest path the question listed.
+ *
+ * Choice persists to `config.dashboard_tiles` (daemon-side, follows
+ * the operator across browsers and devices).
+ *
+ * Pointer-events note: the picker controls (header button + + add)
+ * carry `pointer-events-auto` because the parent SortableDashboard
+ * applies `pointer-events-none` to block content while the operator
+ * is in rearrange mode (#244, intentional - stops a stray tap from
+ * firing a button mid-drag). For tiles we WANT that tap to fire,
+ * because the only way to customise the layout *is* a tap. The
+ * override is local to the picker controls; the rest of the tile
+ * content stays inert during rearrange so the chart-pan-during-drag
+ * problem #244 was protecting against doesn't regress.
  *
  * Data sources are the queries Status already runs (statsQuery,
  * statusQuery, oceanQuery). Tiles whose data isn't loaded yet (or
  * isn't enabled on this install) render an em-dash; they're still
  * pickable so the operator can lay out their dashboard before the
  * underlying integration is configured.
- *
- * Rearrange mode (the X button + add affordance) reuses
- * `cardOrderContext.rearranging` from #244, so one toggle in the
- * header puts the whole Status page into edit mode rather than two
- * separate toggles for blocks vs tiles.
  */
 
 import { Trans } from '@lingui/react/macro';
@@ -32,10 +42,10 @@ import {
   type DashboardTileId,
 } from '@hashrate-autopilot/shared';
 
-import { useCardOrderContext } from '../lib/cardOrderContext';
 import { useDenomination } from '../lib/denomination';
 import { useLocale } from '../lib/locale';
 import { formatNumber } from '../lib/format';
+import { SatSymbol } from './SatSymbol';
 import type { StatsResponse, StatusResponse, OceanResponse } from '../lib/api';
 
 export interface TilesBarProps {
@@ -68,7 +78,6 @@ interface TileCtx {
 const EM_DASH = '—';
 const DASH: TileResult = { value: EM_DASH };
 
-/** Format a 0-100 percentage with N decimals, returning em-dash on null. */
 function fmtPct(v: number | null | undefined, digits = 1, intlLocale = 'en-US'): string {
   if (v === null || v === undefined) return EM_DASH;
   return `${formatNumber(v, { minimumFractionDigits: digits, maximumFractionDigits: digits }, intlLocale)}%`;
@@ -79,7 +88,6 @@ function fmtX(v: number | null | undefined, intlLocale = 'en-US'): string {
   return `${formatNumber(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, intlLocale)}×`;
 }
 
-/** Renderer per tile id. Returns the value + tooltip the StatCard shows. */
 const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
   uptime: ({ stats, intlLocale }) => ({
     value: fmtPct(stats?.uptime_pct ?? null, 1, intlLocale),
@@ -185,7 +193,7 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
   }),
   share_rejection_pct: () => ({
     value: EM_DASH,
-    tooltip: t`Share-rejection rate. Tile data source pending — currently shown only on the chart's right axis. Will populate in a follow-up.`,
+    tooltip: t`Share-rejection rate. Tile data source pending - currently shown only on the chart's right axis. Will populate in a follow-up.`,
   }),
   wallet_runway_days: ({ status, intlLocale }) => {
     const balance = status?.balances?.[0]?.total_balance_sat ?? null;
@@ -205,19 +213,18 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
   },
   bitaxe_fleet_hashrate: () => ({
     value: EM_DASH,
-    tooltip: t`Bitaxe fleet hashrate. Tile data source pending — currently in the Bitaxe miners section. Will populate in a follow-up.`,
+    tooltip: t`Bitaxe fleet hashrate. Tile data source pending - currently in the Bitaxe miners section. Will populate in a follow-up.`,
   }),
   bitaxe_fleet_power: () => ({
     value: EM_DASH,
-    tooltip: t`Bitaxe fleet power draw. Tile data source pending — currently in the Bitaxe miners section. Will populate in a follow-up.`,
+    tooltip: t`Bitaxe fleet power draw. Tile data source pending - currently in the Bitaxe miners section. Will populate in a follow-up.`,
   }),
   bitaxe_fleet_efficiency_j_per_th: () => ({
     value: EM_DASH,
-    tooltip: t`Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in the Bitaxe miners section. Will populate in a follow-up.`,
+    tooltip: t`Bitaxe fleet efficiency in J/TH. Tile data source pending - currently in the Bitaxe miners section. Will populate in a follow-up.`,
   }),
 };
 
-/** Translated label for a catalogue id. Maps to the labelKey verbatim. */
 function labelFor(id: DashboardTileId): string {
   switch (id) {
     case 'uptime': return t`uptime`;
@@ -245,6 +252,54 @@ function labelFor(id: DashboardTileId): string {
   }
 }
 
+/**
+ * Split a formatted value like "46,362 sat/PH/day" or "718 sat/PH/day"
+ * into a big-number half and a small-caption unit half, so the tile
+ * matches the original StatCard idiom: large mono number above, slim
+ * grey unit below. The original implementation lives in Status.tsx;
+ * duplicated here to avoid coupling the TilesBar to a private helper.
+ */
+function splitUnit(v: string): { num: string; unit: string } | null {
+  const spaced = v.match(
+    /^(.+?)\s+((?:sat|₿)\/(?:TH|PH|EH)\/day|(?:TH|PH|EH)\/s|PH·h|sat|₿)(\s*(?:\(.*\))?)$/,
+  );
+  if (spaced?.[1] && spaced[2]) return { num: spaced[1], unit: spaced[2] + (spaced[3] ?? '') };
+  const usdRate = v.match(/^(.+?)(\/(?:TH|PH|EH)\/day)$/);
+  if (usdRate?.[1] && usdRate[2]) return { num: usdRate[1], unit: usdRate[2] };
+  const pct = v.match(/^(.+?)(%)$/);
+  if (pct?.[1] && pct[2]) return { num: pct[1], unit: pct[2] };
+  const dSuffix = v.match(/^(.+?)\s+(d)$/);
+  if (dSuffix?.[1] && dSuffix[2]) return { num: dSuffix[1], unit: dSuffix[2] };
+  return null;
+}
+
+/** Render the unit half with the muted-grey "subtitle" look. */
+function UnitCaption({ unit }: { unit: string }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const phDayLabel = t`/PH/day`;
+  const localized = unit.replace('/PH/day', phDayLabel);
+  if (localized === 'sat' || localized === '₿') {
+    return (
+      <span className="inline-block w-3 text-center">
+        {localized === 'sat' ? <SatSymbol className="opacity-70" /> : localized}
+      </span>
+    );
+  }
+  if (localized === '%') {
+    return <span className="inline-block w-3 text-center">{localized}</span>;
+  }
+  if (localized.startsWith('sat')) {
+    return (
+      <>
+        <SatSymbol className="opacity-70" />
+        {localized.slice(3)}
+      </>
+    );
+  }
+  return <>{localized}</>;
+}
+
 export function TilesBar({
   tileIds,
   statsData,
@@ -256,15 +311,13 @@ export function TilesBar({
   void i18n;
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
-  const cardOrder = useCardOrderContext();
-  const rearranging = cardOrder.rearranging;
 
   // Render the operator's saved tile list, or fall back to defaults
   // when they haven't customised. Empty array doesn't mean "no
   // tiles" - it means "use the defaults" (the dashboard's standing
-  // look). The operator removes tiles in rearrange mode and an empty
-  // dashboard_tiles is interpreted as un-customised, not as "show
-  // nothing." A truly-empty bar would be unusable.
+  // look). The operator removes the last tile by clicking ×; if they
+  // remove all of them the bar reverts to defaults on next render so
+  // the page is never tile-less and unrecoverable.
   const effective = tileIds.length === 0 ? DEFAULT_DASHBOARD_TILES : tileIds;
 
   const ctx: TileCtx = {
@@ -276,16 +329,16 @@ export function TilesBar({
   };
 
   const replaceAt = (idx: number, next: DashboardTileId) => {
-    const arr = [...effective];
+    const arr = [...effective] as DashboardTileId[];
     arr[idx] = next;
-    onTilesChange(arr as DashboardTileId[]);
+    onTilesChange(arr);
   };
   const removeAt = (idx: number) => {
-    const arr = [...effective];
+    const arr = [...effective] as DashboardTileId[];
     arr.splice(idx, 1);
-    onTilesChange(arr as DashboardTileId[]);
+    onTilesChange(arr);
   };
-  const addAt = (id: DashboardTileId) => {
+  const addTile = (id: DashboardTileId) => {
     onTilesChange([...effective, id] as DashboardTileId[]);
   };
 
@@ -295,15 +348,14 @@ export function TilesBar({
         <TileSlot
           key={`${id}-${idx}`}
           id={id}
-          index={idx}
+          inUse={effective}
           result={(TILE_RENDERERS[id] ?? (() => DASH))(ctx)}
-          rearranging={rearranging}
           onReplace={(next) => replaceAt(idx, next)}
-          onRemove={() => removeAt(idx)}
+          onRemove={effective.length > 1 ? () => removeAt(idx) : undefined}
         />
       ))}
-      {rearranging && effective.length < MAX_DASHBOARD_TILES && (
-        <AddTileButton excluded={effective} onAdd={addAt} />
+      {effective.length < MAX_DASHBOARD_TILES && (
+        <AddTileButton excluded={effective} onAdd={addTile} />
       )}
     </section>
   );
@@ -311,59 +363,16 @@ export function TilesBar({
 
 interface TileSlotProps {
   readonly id: DashboardTileId;
-  readonly index: number;
+  readonly inUse: ReadonlyArray<DashboardTileId>;
   readonly result: TileResult;
-  readonly rearranging: boolean;
   readonly onReplace: (id: DashboardTileId) => void;
-  readonly onRemove: () => void;
+  readonly onRemove: (() => void) | undefined;
 }
 
-function TileSlot({ id, result, rearranging, onReplace, onRemove }: TileSlotProps) {
-  const removeLabel = t`Remove tile`;
-  return (
-    <div className="relative bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 group">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5 flex items-center gap-1">
-        <span title={result.tooltip ?? labelFor(id)} className="truncate cursor-help">
-          {labelFor(id)}
-        </span>
-        {rearranging && (
-          <TilePicker currentId={id} onPick={onReplace} />
-        )}
-        {rearranging && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="ml-auto -mr-1 text-slate-500 hover:text-red-400 text-sm leading-none"
-            title={removeLabel}
-            aria-label={removeLabel}
-          >
-            ×
-          </button>
-        )}
-      </div>
-      <div
-        className={`text-lg font-mono leading-tight ${result.color ?? 'text-slate-100'}`}
-      >
-        {result.value}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Click-to-swap dropdown. Lists every catalogue tile grouped by
- * `group`, with the operator's currently-selected `currentId`
- * highlighted. Click an entry to swap; close on outside-click.
- */
-function TilePicker({
-  currentId,
-  onPick,
-}: {
-  currentId: DashboardTileId;
-  onPick: (id: DashboardTileId) => void;
-}) {
+function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const split = splitUnit(result.value);
 
   useEffect(() => {
     if (!open) return;
@@ -374,7 +383,69 @@ function TilePicker({
     return () => window.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
-  // Group catalogue by `.group` for a tidy dropdown.
+  return (
+    <div
+      ref={ref}
+      // `pointer-events-auto` override: when the parent SortableDashboard
+      // wraps the indicators block in pointer-events-none (rearrange
+      // mode, #244), we still want tile clicks to register because
+      // those clicks ARE the customisation flow.
+      className="relative pointer-events-auto"
+    >
+      <button
+        type="button"
+        title={result.tooltip}
+        onClick={() => setOpen((v) => !v)}
+        className="block w-full text-left bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-pointer hover:border-slate-700"
+      >
+        {/* Two-line label header for cross-card baseline alignment. */}
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2 min-h-8 leading-4 flex items-start justify-center gap-1">
+          <span className="truncate">{labelFor(id)}</span>
+          <span className="text-slate-500 text-[10px] leading-none mt-0.5">▾</span>
+        </div>
+        <div
+          className={`text-2xl font-mono tabular-nums text-center ${result.color ?? 'text-slate-100'}`}
+        >
+          {split ? split.num : result.value}
+        </div>
+        {split && (
+          <div className="text-xs text-slate-500 mt-0.5 text-center">
+            <UnitCaption unit={split.unit} />
+          </div>
+        )}
+      </button>
+      {open && (
+        <TilePickerDropdown
+          currentId={id}
+          inUse={inUse}
+          onPick={(next) => {
+            onReplace(next);
+            setOpen(false);
+          }}
+          onRemove={
+            onRemove
+              ? () => {
+                  onRemove();
+                  setOpen(false);
+                }
+              : undefined
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+interface PickerProps {
+  readonly currentId?: DashboardTileId;
+  readonly inUse: ReadonlyArray<DashboardTileId>;
+  readonly onPick: (id: DashboardTileId) => void;
+  readonly onRemove?: () => void;
+}
+
+function TilePickerDropdown({ currentId, inUse, onPick, onRemove }: PickerProps) {
+  const inUseSet = useMemo(() => new Set(inUse), [inUse]);
+
   const grouped = useMemo(() => {
     const m = new Map<string, typeof TILE_CATALOGUE[number][]>();
     for (const meta of TILE_CATALOGUE) {
@@ -386,57 +457,58 @@ function TilePicker({
   }, []);
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="text-slate-500 hover:text-amber-300 text-[10px] leading-none"
-        title={t`Swap tile`}
-        aria-label={t`Swap tile`}
-      >
-        ▾
-      </button>
-      {open && (
-        <div className="absolute z-30 left-0 mt-1 w-64 max-h-72 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl p-2 text-xs">
-          {grouped.map(([group, items]) => (
-            <div key={group} className="mb-2 last:mb-0">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500 px-1 mb-1">
-                {group}
-              </div>
-              <ul className="space-y-px">
-                {items.map((meta) => {
-                  const isCurrent = meta.id === currentId;
-                  return (
-                    <li key={meta.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onPick(meta.id);
-                          setOpen(false);
-                        }}
-                        className={`w-full text-left px-2 py-0.5 rounded hover:bg-slate-800 ${
-                          isCurrent ? 'text-amber-300' : 'text-slate-300'
-                        }`}
-                      >
-                        {labelFor(meta.id)}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+    <div className="absolute z-30 left-0 top-full mt-1 w-72 max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl p-2 text-xs pointer-events-auto">
+      {grouped.map(([group, items]) => (
+        <div key={group} className="mb-2 last:mb-0">
+          <div className="text-[9px] uppercase tracking-wider text-slate-500 px-1 mb-1">
+            {group}
+          </div>
+          <ul className="space-y-px">
+            {items.map((meta) => {
+              const isCurrent = meta.id === currentId;
+              const isElsewhere = !isCurrent && inUseSet.has(meta.id);
+              return (
+                <li key={meta.id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(meta.id)}
+                    className={`w-full text-left px-2 py-0.5 rounded hover:bg-slate-800 ${
+                      isCurrent ? 'text-amber-300 font-medium' : 'text-slate-300'
+                    }`}
+                  >
+                    {labelFor(meta.id)}
+                    {isCurrent && (
+                      <span className="ml-1 text-[9px] text-slate-500">
+                        <Trans>(current)</Trans>
+                      </span>
+                    )}
+                    {isElsewhere && (
+                      <span className="ml-1 text-[9px] text-slate-600">
+                        <Trans>(in another tile)</Trans>
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {onRemove && (
+        <div className="border-t border-slate-800 mt-2 pt-2">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="w-full text-left px-2 py-0.5 rounded text-red-400 hover:bg-red-900/20"
+          >
+            <Trans>Remove this tile</Trans>
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-/**
- * "+ add" affordance shown at the end of the row in rearrange mode.
- * Mirrors the TilePicker's dropdown shape but adds (rather than
- * replaces).
- */
 function AddTileButton({
   excluded,
   onAdd,
@@ -446,6 +518,7 @@ function AddTileButton({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const onClickOutside = (e: MouseEvent) => {
@@ -455,66 +528,24 @@ function AddTileButton({
     return () => window.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
-  const excludedSet = useMemo(() => new Set(excluded), [excluded]);
-  const grouped = useMemo(() => {
-    const m = new Map<string, typeof TILE_CATALOGUE[number][]>();
-    for (const meta of TILE_CATALOGUE) {
-      const arr = m.get(meta.group) ?? [];
-      arr.push(meta);
-      m.set(meta.group, arr);
-    }
-    return [...m.entries()];
-  }, []);
-
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative pointer-events-auto">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full h-full min-h-[3rem] bg-slate-900 border border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-amber-300 hover:border-amber-500/40 text-xs"
+        className="w-full h-full min-h-[6.5rem] bg-slate-900/50 border border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-amber-300 hover:border-amber-500/40 text-xs flex items-center justify-center"
         title={t`Add a tile`}
       >
         + <Trans>add</Trans>
       </button>
       {open && (
-        <div className="absolute z-30 left-0 mt-1 w-64 max-h-72 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl p-2 text-xs">
-          {grouped.map(([group, items]) => (
-            <div key={group} className="mb-2 last:mb-0">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500 px-1 mb-1">
-                {group}
-              </div>
-              <ul className="space-y-px">
-                {items.map((meta) => {
-                  const inUse = excludedSet.has(meta.id);
-                  return (
-                    <li key={meta.id}>
-                      <button
-                        type="button"
-                        disabled={inUse}
-                        onClick={() => {
-                          onAdd(meta.id);
-                          setOpen(false);
-                        }}
-                        className={`w-full text-left px-2 py-0.5 rounded ${
-                          inUse
-                            ? 'text-slate-600 cursor-not-allowed'
-                            : 'text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        {labelFor(meta.id)}
-                        {inUse && (
-                          <span className="ml-1 text-[9px] text-slate-600">
-                            <Trans>(in use)</Trans>
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <TilePickerDropdown
+          inUse={excluded}
+          onPick={(id) => {
+            onAdd(id);
+            setOpen(false);
+          }}
+        />
       )}
     </div>
   );

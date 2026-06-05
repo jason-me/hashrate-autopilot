@@ -83,8 +83,16 @@ msgid "(checked {0})"
 msgstr "(gecontroleerd {0})"
 
 #: src/components/TilesBar.tsx
-msgid "(in use)"
-msgstr "(in gebruik)"
+msgid "(current)"
+msgstr "(huidig)"
+
+#: src/components/TilesBar.tsx
+msgid "(in another tile)"
+msgstr "(in een andere tegel)"
+
+#: src/components/TilesBar.tsx
+#~ msgid "(in use)"
+#~ msgstr "(in gebruik)"
 
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
@@ -214,6 +222,7 @@ msgid "{totalSec}s ago"
 msgstr "{totalSec}s geleden"
 
 #: src/components/PriceChart.tsx
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
 msgstr "/PH/dag"
@@ -909,22 +918,40 @@ msgid "Bitaxe efficiency"
 msgstr "Bitaxe-efficiëntie"
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending - currently in "
 "the Bitaxe miners section. Will populate in a follow-up."
 msgstr "Bitaxe-vlootefficiëntie in J/TH. Datakoppeling voor tegel volgt - "
 "momenteel in de Bitaxe-miners-sectie. Wordt later gevuld."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+#~ "the Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe-vlootefficiëntie in J/TH. Datakoppeling voor tegel volgt - "
+#~ "momenteel in de Bitaxe-miners-sectie. Wordt later gevuld."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-msgstr "Bitaxe-vlootkrachtt. Datakoppeling voor tegel volgt - momenteel in de "
+msgstr "Bitaxe-vloot-hashrate. Datakoppeling voor tegel volgt - momenteel in de "
 "Bitaxe-miners-sectie. Wordt later gevuld."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe-vlootkrachtt. Datakoppeling voor tegel volgt - momenteel in de "
+#~ "Bitaxe-miners-sectie. Wordt later gevuld."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 msgstr "Bitaxe-vlootverbruik. Datakoppeling voor tegel volgt - momenteel in de "
 "Bitaxe-miners-sectie. Wordt later gevuld."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Bitaxe-vlootverbruik. Datakoppeling voor tegel volgt - momenteel in de "
+#~ "Bitaxe-miners-sectie. Wordt later gevuld."
 
 #: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
@@ -4149,8 +4176,12 @@ msgid "Remove device"
 msgstr "Apparaat verwijderen"
 
 #: src/components/TilesBar.tsx
-msgid "Remove tile"
-msgstr "Tegel verwijderen"
+msgid "Remove this tile"
+msgstr "Verwijder deze tegel"
+
+#: src/components/TilesBar.tsx
+#~ msgid "Remove tile"
+#~ msgstr "Tegel verwijderen"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -4471,10 +4502,16 @@ msgid "share_log %"
 msgstr "share_log %"
 
 #: src/components/TilesBar.tsx
-msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+msgid "Share-rejection rate. Tile data source pending - currently shown only on "
 "the chart's right axis. Will populate in a follow-up."
 msgstr "Share-afwijzingspercentage. Datakoppeling voor tegel volgt - momenteel "
 "alleen zichtbaar op de rechter chart-as. Wordt later gevuld."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+#~ "the chart's right axis. Will populate in a follow-up."
+#~ msgstr "Share-afwijzingspercentage. Datakoppeling voor tegel volgt - momenteel "
+#~ "alleen zichtbaar op de rechter chart-as. Wordt later gevuld."
 
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
@@ -4632,8 +4669,8 @@ msgstr "Som van counters_committed.amount_consumed_sat over elk bod op "
 "Schakel via Config → P&L-paneel."
 
 #: src/components/TilesBar.tsx
-msgid "Swap tile"
-msgstr "Tegel wisselen"
+#~ msgid "Swap tile"
+#~ msgstr "Tegel wisselen"
 
 #: src/pages/Config.tsx
 msgid "system default"

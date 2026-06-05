@@ -84,8 +84,16 @@ msgid "(checked {0})"
 msgstr "(comprobado hace {0})"
 
 #: src/components/TilesBar.tsx
-msgid "(in use)"
-msgstr "(en uso)"
+msgid "(current)"
+msgstr "(actual)"
+
+#: src/components/TilesBar.tsx
+msgid "(in another tile)"
+msgstr "(en otro mosaico)"
+
+#: src/components/TilesBar.tsx
+#~ msgid "(in use)"
+#~ msgstr "(en uso)"
 
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
@@ -215,6 +223,7 @@ msgid "{totalSec}s ago"
 msgstr "hace {totalSec}s"
 
 #: src/components/PriceChart.tsx
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
 msgstr "/PH/día"
@@ -918,25 +927,46 @@ msgid "Bitaxe efficiency"
 msgstr "eficiencia Bitaxe"
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending - currently in "
 "the Bitaxe miners section. Will populate in a follow-up."
 msgstr "Eficiencia de la flota Bitaxe en J/TH. Origen de datos del mosaico "
-"pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
+"pendiente - actualmente en la sección de mineros Bitaxe. Se completará "
 "en una entrega posterior."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+#~ "the Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Eficiencia de la flota Bitaxe en J/TH. Origen de datos del mosaico "
+#~ "pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
+#~ "en una entrega posterior."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente — "
+msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente - "
 "actualmente en la sección de mineros Bitaxe. Se completará en una "
 "entrega posterior."
 
 #: src/components/TilesBar.tsx
-msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente — "
+#~ "actualmente en la sección de mineros Bitaxe. Se completará en una "
+#~ "entrega posterior."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-msgstr "Consumo de potencia de la flota Bitaxe. Origen de datos del mosaico "
-"pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
-"en una entrega posterior."
+msgstr "Consumo de la flota Bitaxe. Origen de datos del mosaico pendiente - "
+"actualmente en la sección de mineros Bitaxe. Se completará en una "
+"entrega posterior."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+#~ "Bitaxe miners section. Will populate in a follow-up."
+#~ msgstr "Consumo de potencia de la flota Bitaxe. Origen de datos del mosaico "
+#~ "pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
+#~ "en una entrega posterior."
 
 #: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
@@ -4171,8 +4201,12 @@ msgid "Remove device"
 msgstr "Eliminar dispositivo"
 
 #: src/components/TilesBar.tsx
-msgid "Remove tile"
-msgstr "Quitar mosaico"
+msgid "Remove this tile"
+msgstr "Quitar este mosaico"
+
+#: src/components/TilesBar.tsx
+#~ msgid "Remove tile"
+#~ msgstr "Quitar mosaico"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -4494,11 +4528,18 @@ msgid "share_log %"
 msgstr "share_log %"
 
 #: src/components/TilesBar.tsx
-msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+msgid "Share-rejection rate. Tile data source pending - currently shown only on "
 "the chart's right axis. Will populate in a follow-up."
-msgstr "Tasa de rechazo de shares. Origen de datos del mosaico pendiente — "
+msgstr "Tasa de rechazo de shares. Origen de datos del mosaico pendiente - "
 "actualmente sólo en el eje derecho del gráfico. Se completará en una "
 "entrega posterior."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+#~ "the chart's right axis. Will populate in a follow-up."
+#~ msgstr "Tasa de rechazo de shares. Origen de datos del mosaico pendiente — "
+#~ "actualmente sólo en el eje derecho del gráfico. Se completará en una "
+#~ "entrega posterior."
 
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
@@ -4655,8 +4696,8 @@ msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de "
 "liquidación horario). Cambia en Config → panel P&L."
 
 #: src/components/TilesBar.tsx
-msgid "Swap tile"
-msgstr "Cambiar mosaico"
+#~ msgid "Swap tile"
+#~ msgstr "Cambiar mosaico"
 
 #: src/pages/Config.tsx
 msgid "system default"
