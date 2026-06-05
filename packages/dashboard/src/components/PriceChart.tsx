@@ -2131,6 +2131,15 @@ export const PriceChart = memo(function PriceChart({
           if (e.kind === 'CREATE_BID') {
             return (
               <g key={e.id} {...common}>
+                {/* #265: thin dashed vertical guide from chart top down to the
+                    marker, so the rare-event glyph is findable from across a
+                    dense EDIT_PRICE band. Same idiom as pool-block and
+                    retarget markers on the same chart. */}
+                <line
+                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - 5}
+                  stroke={COLOR_CREATE} strokeWidth="1"
+                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
+                />
                 <line x1={cx - 5} x2={cx + 5} y1={cy} y2={cy} stroke={COLOR_CREATE} strokeWidth="2.2" />
                 <line x1={cx} x2={cx} y1={cy - 5} y2={cy + 5} stroke={COLOR_CREATE} strokeWidth="2.2" />
                 <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />
@@ -2156,6 +2165,12 @@ export const PriceChart = memo(function PriceChart({
             const r = 4.5;
             return (
               <g key={e.id} {...common}>
+                {/* #265: dashed guide line from chart top - see CREATE_BID. */}
+                <line
+                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - r}
+                  stroke={COLOR_EDIT_SPEED} strokeWidth="1"
+                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
+                />
                 <polygon
                   points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
                   fill="none"
@@ -2169,6 +2184,12 @@ export const PriceChart = memo(function PriceChart({
           if (e.kind === 'CANCEL_BID') {
             return (
               <g key={e.id} {...common}>
+                {/* #265: dashed guide line from chart top - see CREATE_BID. */}
+                <line
+                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - 5}
+                  stroke={COLOR_CANCEL} strokeWidth="1"
+                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
+                />
                 <line x1={cx - 5} x2={cx + 5} y1={cy - 5} y2={cy + 5} stroke={COLOR_CANCEL} strokeWidth="2.2" />
                 <line x1={cx - 5} x2={cx + 5} y1={cy + 5} y2={cy - 5} stroke={COLOR_CANCEL} strokeWidth="2.2" />
                 <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />

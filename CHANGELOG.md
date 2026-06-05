@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[UI]` Bid-event rare markers get a vertical guide line so they're findable in dense charts (#265)
+
+CREATE_BID, EDIT_SPEED, and CANCEL_BID glyphs on the Price chart sat at the same y-position as the dense band of EDIT_PRICE yellow circles that ride the our_bid line. At 10×10 SVG units (≈20 screen px) the rare-event markers were effectively impossible to spot among the EDIT_PRICE noise — operator reported being unable to find their bid-creation marker for a known event on the chart. Added a thin dashed vertical guide from the chart top down to each rare-event marker, same colour as the marker glyph, low opacity, pointer-events-none. Same idiom the chart already uses for pool-block and difficulty-retarget markers. EDIT_PRICE keeps its bare circle treatment because individual edits are read as a band, not as discrete events.
+
 ### `[Fix]` Pool-luck step dots back on the post-step segment (#264)
 
 The pool-luck step-marker rewrite in build 605 anchored the dot's y-position at `points[afterIdx][luckKey]` — the persisted luck reading at the first daemon tick at-or-after the block's on-chain timestamp. Ocean's `/v1/statsnap` refresher only re-polls every ~5 min, so the value at that tick is often still the pre-event baseline, leaving the dot drawn on the lower (pre-step) horizontal segment of the line while the visible step lands a tick or two later. Mirrored PriceChart's already-working scan-forward pattern: after the timestamp-based grouping, scan up to 15 ticks forward for the first tick where the luck value actually steps off the pre-event baseline and anchor the dot's `cx`/`cy` there. Attribution by `afterIdx` (which keeps multi-event in/out cancellations correct) is unchanged.
