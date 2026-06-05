@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[Feature]` Configurable StatsBar tiles (#266)
+
+The horizontal six-tile bar at the top of Status is now operator-customisable. Each tile slot has a chevron dropdown (visible in rearrange mode) over a curated catalogue of ~22 entries: the existing 6, the uptime decomposition tiles from #254, hashrate target (#255), avg overpay intent/settled, hashprice now, pool blocks 30d, pool luck 24h/7d/30d, share log %, share rejection, wallet runway, and Bitaxe fleet hashrate / power / J-per-TH. Variable slot count — add up to 24 tiles, remove via the × in rearrange mode, swap by picking a different entry. Choice persists to `config.dashboard_tiles` (daemon-side), so the layout follows the operator across browsers and devices. Defaults to today's six tiles when the field is empty, so existing installs see no change. nl + es translations included. A few tiles (share rejection, Bitaxe fleet) render an em-dash for now and call out "follow-up" in the tooltip — the underlying data sources need additional dashboard plumbing that will land in a separate commit.
+
 ### `[Fix]` Price chart bottom x-axis line no longer overlaps the right-axis labels (#262)
 
 The grey x-axis line at the bottom of the Price chart drew from `PADDING.left` to `WIDTH - PADDING.right` even when a right-axis was rendered. The right-axis labels live further left, in `padRight` instead of `PADDING.right`, so the x-axis line extended into the labels. The Hashrate chart already used `padRight`; the Price chart had drifted. One-character fix on the `x2` attribute.

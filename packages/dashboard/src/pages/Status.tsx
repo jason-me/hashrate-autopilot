@@ -16,6 +16,8 @@ import {
 import { Bip110ScanCard } from '../components/Bip110ScanCard';
 import { SoloMinersCard } from '../components/SoloMinersCard';
 import { OrderHistoryCard } from '../components/OrderHistoryCard';
+import { TilesBar } from '../components/TilesBar';
+import { parseDashboardTiles } from '@hashrate-autopilot/shared';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
@@ -533,7 +535,28 @@ export function Status() {
         onResetToLive={chartViewport.goLive}
       />
     ),
-    indicators: <StatsBar statsData={statsQuery.data} />,
+    indicators: (
+      <TilesBar
+        tileIds={parseDashboardTiles(configQuery.data?.config?.dashboard_tiles)}
+        statsData={statsQuery.data}
+        statusData={query.data}
+        oceanData={oceanQuery.data}
+        onTilesChange={(next) => {
+          // PATCH /api/config with the new tile list. Optimistic
+          // - we don't bounce the cache; React Query will refetch
+          // - on the next interval. Persist failure surfaces in the
+          // - existing config mutation error UI.
+          if (!configQuery.data?.config) return;
+          const cfg = {
+            ...configQuery.data.config,
+            dashboard_tiles: JSON.stringify(next),
+          };
+          void api.updateConfig(cfg).then(() => {
+            qc.invalidateQueries({ queryKey: ['config'] });
+          });
+        }}
+      />
+    ),
     hashrate: (
       <div className="space-y-1">
         <div className="flex justify-end items-center gap-2 text-[11px] text-slate-400">

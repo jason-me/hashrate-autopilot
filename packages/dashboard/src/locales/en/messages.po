@@ -59,6 +59,14 @@ msgstr "(avg cost delivered) minus the delta-weighted average hashprice during "
 "weighting as the avg cost card so the two stay consistent. Updates with "
 "the range selector above."
 
+#: src/components/TilesBar.tsx
+msgid "(avg cost delivered) minus the spend-weighted average hashprice during "
+"periods we were actually billed, computed over the selected range. "
+"Negative = paid below break-even."
+msgstr "(avg cost delivered) minus the spend-weighted average hashprice during "
+"periods we were actually billed, computed over the selected range. "
+"Negative = paid below break-even."
+
 #: src/components/StaleUrlBanner.tsx
 msgid "(Braiins may deduct an exit fee)"
 msgstr "(Braiins may deduct an exit fee)"
@@ -71,6 +79,10 @@ msgstr "(cheap mode)"
 #: src/pages/Config.tsx
 msgid "(checked {0})"
 msgstr "(checked {0})"
+
+#: src/components/TilesBar.tsx
+msgid "(in use)"
+msgstr "(in use)"
 
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
@@ -203,6 +215,22 @@ msgstr "{totalSec}s ago"
 #: src/pages/Status.tsx
 msgid "/PH/day"
 msgstr "/PH/day"
+
+#: src/components/TilesBar.tsx
+msgid "% of the bid-active time that actually delivered hashrate. Low = "
+"hardware / connection / Datum-side failure while a bid was up "
+"(\"unexpected\" downtime)."
+msgstr "% of the bid-active time that actually delivered hashrate. Low = "
+"hardware / connection / Datum-side failure while a bid was up "
+"(\"unexpected\" downtime)."
+
+#: src/components/TilesBar.tsx
+msgid "% of the window with an active Braiins bid. Low = orderbook didn't "
+"cooperate (\"expected\" downtime - nothing matched your criteria), not a "
+"failure on your side."
+msgstr "% of the window with an active Braiins bid. Low = orderbook didn't "
+"cooperate (\"expected\" downtime - nothing matched your criteria), not "
+"a failure on your side."
 
 #: src/pages/Setup.tsx
 msgid "← Back"
@@ -390,6 +418,10 @@ msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses "
 "delivered model. Fallback used when the selected range has fewer than "
 "~5 ticks."
 
+#: src/components/TilesBar.tsx
+msgid "add"
+msgstr "add"
+
 #: src/pages/Config.tsx
 msgid "Add"
 msgstr "Add"
@@ -397,6 +429,10 @@ msgstr "Add"
 #: src/pages/Config.tsx
 msgid "Add {pickedCount} selected"
 msgstr "Add {pickedCount} selected"
+
+#: src/components/TilesBar.tsx
+msgid "Add a tile"
+msgstr "Add a tile"
 
 #: src/pages/Config.tsx
 msgid "Add device"
@@ -645,22 +681,50 @@ msgstr "Average effective rate over the selected chart range - what Braiins "
 "zero delivery contribute zero to both sides and don't skew the result. "
 "For the current bid price see the NEXT ACTION panel."
 
+#: src/components/TilesBar.tsx
+msgid "Average effective rate over the selected range - what Braiins actually "
+"charged per PH/day delivered. Spend-weighted; zero-delivery periods "
+"contribute zero to both sides."
+msgstr "Average effective rate over the selected range - what Braiins actually "
+"charged per PH/day delivered. Spend-weighted; zero-delivery periods "
+"contribute zero to both sides."
+
+#: src/components/TilesBar.tsx
+msgid "Average overpay above the fillable ask on the bid price the controller "
+"actually had live (post-edit-deadband). Measures what the operator paid "
+"for, separate from what the controller intended."
+msgstr "Average overpay above the fillable ask on the bid price the controller "
+"actually had live (post-edit-deadband). Measures what the operator paid "
+"for, separate from what the controller intended."
+
+#: src/components/TilesBar.tsx
+msgid "Average overpay above the fillable ask the controller chose to set as "
+"the bid. Measures how aggressive the autopilot was being, separate from "
+"how much was actually billed."
+msgstr "Average overpay above the fillable ask the controller chose to set as "
+"the bid. Measures how aggressive the autopilot was being, separate from "
+"how much was actually billed."
+
 #: src/components/HashrateChart.tsx
 msgid "avg block time"
 msgstr "avg block time"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg braiins"
 msgstr "avg braiins"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg cost delivered"
 msgstr "avg cost delivered"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg cost vs hashprice"
 msgstr "avg cost vs hashprice"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg datum"
 msgstr "avg datum"
@@ -673,14 +737,17 @@ msgstr "avg delivered ({rangeLabel})"
 msgid "avg hashprice ({rangeLabel})"
 msgstr "avg hashprice ({rangeLabel})"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg ocean"
 msgstr "avg ocean"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg overpay (intent)"
 msgstr "avg overpay (intent)"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "avg overpay (settled)"
 msgstr "avg overpay (settled)"
@@ -743,6 +810,10 @@ msgstr "Bid {0} is {1} - waiting for it to become active."
 #: src/pages/Status.tsx
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bid above target - Braiins price-decrease cooldown active."
+
+#: src/components/TilesBar.tsx
+msgid "bid coverage"
+msgstr "bid coverage"
 
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
@@ -824,6 +895,29 @@ msgstr "Bitaxe best difficulty"
 msgid "Bitaxe device count"
 msgstr "Bitaxe device count"
 
+#: src/components/TilesBar.tsx
+msgid "Bitaxe efficiency"
+msgstr "Bitaxe efficiency"
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
+"the Bitaxe miners section. Will populate in a follow-up."
+msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently "
+"in the Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+"Bitaxe miners section. Will populate in a follow-up."
+msgstr "Bitaxe fleet hashrate. Tile data source pending — currently in the "
+"Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
+"Bitaxe miners section. Will populate in a follow-up."
+msgstr "Bitaxe fleet power draw. Tile data source pending — currently in the "
+"Bitaxe miners section. Will populate in a follow-up."
+
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "Bitaxe hashrate"
 msgstr "Bitaxe hashrate"
@@ -863,6 +957,10 @@ msgstr "Bitaxe miner stratum URL drift"
 #: src/pages/Status.tsx
 msgid "Bitaxe miners"
 msgstr "Bitaxe miners"
+
+#: src/components/TilesBar.tsx
+msgid "Bitaxe power"
+msgstr "Bitaxe power"
 
 #: src/pages/Status.tsx
 msgid "Bitaxe power (W)"
@@ -1496,6 +1594,12 @@ msgstr "Current config:"
 msgid "Current epoch"
 msgstr "Current epoch"
 
+#: src/components/TilesBar.tsx
+msgid "Current Ocean hashprice (sat per PH per day at the pool's most recent "
+"rolling window). The break-even reference the controller bids against."
+msgstr "Current Ocean hashprice (sat per PH per day at the pool's most recent "
+"rolling window). The break-even reference the controller bids against."
+
 #: src/pages/Status.tsx
 msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly "
 "what Braiins charges per delivered EH-day - the live price you're "
@@ -1596,6 +1700,12 @@ msgstr "Datum stratum unreachable for"
 msgid "days"
 msgstr "days"
 
+#: src/components/TilesBar.tsx
+msgid "Days of Braiins wallet runway at the current 3 h average spend rate. = "
+"total balance ÷ daily spend. Doesn't account for upcoming deposits."
+msgstr "Days of Braiins wallet runway at the current 3 h average spend rate. = "
+"total balance ÷ daily spend. Doesn't account for upcoming deposits."
+
 #: src/components/PriceChart.tsx
 msgid "deadband"
 msgstr "deadband"
@@ -1670,6 +1780,10 @@ msgid "Delivered hashrate has been under your floor for at least this many "
 "minutes."
 msgstr "Delivered hashrate has been under your floor for at least this many "
 "minutes."
+
+#: src/components/TilesBar.tsx
+msgid "delivery rate (while bidding)"
+msgstr "delivery rate (while bidding)"
 
 #: src/components/PriceChart.tsx
 msgid "delta"
@@ -1812,6 +1926,24 @@ msgstr "Duration-weighted % of time with delivered hashrate > 0, computed over "
 "(time until the next tick) so gaps after restarts count proportionally. "
 "Updates with the range selector above."
 
+#: src/components/TilesBar.tsx
+msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
+"the selected chart range. Each tick is weighted by its actual duration "
+"so gaps after restarts count proportionally. Updates with the range "
+"selector."
+msgstr "Duration-weighted % of time with delivered hashrate > 0, computed over "
+"the selected chart range. Each tick is weighted by its actual duration "
+"so gaps after restarts count proportionally. Updates with the range "
+"selector."
+
+#: src/components/TilesBar.tsx
+msgid "Duration-weighted average of the hashrate Braiins reports delivering "
+"over the selected range. Includes downtime in the denominator so a bad "
+"stretch shows up here, not just on the live card."
+msgstr "Duration-weighted average of the hashrate Braiins reports delivering "
+"over the selected range. Includes downtime in the denominator so a bad "
+"stretch shows up here, not just on the live card."
+
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Braiins reports delivering, "
 "computed over the selected chart range. Includes downtime (where "
@@ -1822,6 +1954,14 @@ msgstr "Duration-weighted average of the hashrate Braiins reports delivering, "
 "delivered = 0) so a bad stretch shows up in the average, not just the "
 "live card. Updates with the range selector above."
 
+#: src/components/TilesBar.tsx
+msgid "Duration-weighted average of the hashrate Datum measures at the gateway "
+"over the selected range. A sustained gap below Avg Braiins means Braiins "
+"is billing for hashrate Datum never saw arrive."
+msgstr "Duration-weighted average of the hashrate Datum measures at the gateway "
+"over the selected range. A sustained gap below Avg Braiins means "
+"Braiins is billing for hashrate Datum never saw arrive."
+
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Datum measures at the gateway, "
 "computed over the selected chart range. A sustained gap below Avg "
@@ -1831,6 +1971,14 @@ msgstr "Duration-weighted average of the hashrate Datum measures at the "
 "gateway, computed over the selected chart range. A sustained gap below "
 "Avg Braiins means Braiins is billing for hashrate Datum never saw "
 "arrive. Updates with the range selector above."
+
+#: src/components/TilesBar.tsx
+msgid "Duration-weighted average of the hashrate Ocean credits to our payout "
+"address over the selected range. A sustained gap below Avg Braiins / Avg "
+"Datum means the pool isn't crediting work we think we delivered."
+msgstr "Duration-weighted average of the hashrate Ocean credits to our payout "
+"address over the selected range. A sustained gap below Avg Braiins / "
+"Avg Datum means the pool isn't crediting work we think we delivered."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Ocean credits to our payout "
@@ -2270,6 +2418,10 @@ msgstr "hashprice (now)"
 msgid "hashprice + max overpay"
 msgstr "hashprice + max overpay"
 
+#: src/components/TilesBar.tsx
+msgid "hashprice now"
+msgstr "hashprice now"
+
 #: src/components/HashrateChart.tsx
 #: src/components/SoloMinersCard.tsx
 #: src/pages/Config.tsx
@@ -2300,6 +2452,10 @@ msgstr "Hashrate Ocean credits to our payout address (5-min sliding window). "
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
 msgstr "Hashrate right-axis line"
+
+#: src/components/TilesBar.tsx
+msgid "hashrate target"
+msgstr "hashrate target"
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
@@ -2619,6 +2775,12 @@ msgstr "Live"
 #: src/pages/Status.tsx
 msgid "LIVE"
 msgstr "LIVE"
+
+#: src/components/TilesBar.tsx
+msgid "Live effective hashrate target. Steps to cheap_target_hashrate_ph when "
+"cheap-mode engages, back to target_hashrate_ph when it disengages."
+msgstr "Live effective hashrate target. Steps to cheap_target_hashrate_ph when "
+"cheap-mode engages, back to target_hashrate_ph when it disengages."
 
 #: src/pages/Alerts.tsx
 msgid "load older"
@@ -3043,6 +3205,12 @@ msgstr "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool "
 msgid "Ocean"
 msgstr "Ocean"
 
+#: src/components/TilesBar.tsx
+msgid "Ocean blocks found in the past 30 days. Used by the pool-luck "
+"calculation as the numerator."
+msgstr "Ocean blocks found in the past 30 days. Used by the pool-luck "
+"calculation as the numerator."
+
 #: src/components/PriceChart.tsx
 msgid "Ocean debited the unpaid balance. On-chain transaction follows shortly."
 msgstr "Ocean debited the unpaid balance. On-chain transaction follows shortly."
@@ -3077,6 +3245,22 @@ msgstr "Ocean payout confirmed on-chain"
 #: src/pages/Config.tsx
 msgid "Ocean payout initiated"
 msgstr "Ocean payout initiated"
+
+#: src/components/TilesBar.tsx
+msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+msgstr "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+
+#: src/components/TilesBar.tsx
+msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
+msgstr "Ocean pool luck over the past 30 days. Longest-window luck reading."
+
+#: src/components/TilesBar.tsx
+msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
+"window."
+msgstr "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
+"window."
 
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"
@@ -3582,6 +3766,7 @@ msgstr "POOL BLOCK"
 msgid "pool blocks 24h"
 msgstr "pool blocks 24h"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "pool blocks 30d"
 msgstr "pool blocks 30d"
@@ -3634,6 +3819,18 @@ msgstr "pool luck (7d)"
 #: src/components/HashrateChart.tsx
 msgid "POOL LUCK +"
 msgstr "POOL LUCK +"
+
+#: src/components/TilesBar.tsx
+msgid "pool luck 24h"
+msgstr "pool luck 24h"
+
+#: src/components/TilesBar.tsx
+msgid "pool luck 30d"
+msgstr "pool luck 30d"
+
+#: src/components/TilesBar.tsx
+msgid "pool luck 7d"
+msgstr "pool luck 7d"
 
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
@@ -3889,6 +4086,10 @@ msgstr "Remove {0}?"
 #: src/pages/Config.tsx
 msgid "Remove device"
 msgstr "Remove device"
+
+#: src/components/TilesBar.tsx
+msgid "Remove tile"
+msgstr "Remove tile"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -4167,6 +4368,10 @@ msgstr "Setting up…"
 msgid "share log"
 msgstr "share log"
 
+#: src/components/TilesBar.tsx
+msgid "share log %"
+msgstr "share log %"
+
 #: src/pages/Status.tsx
 msgid "Share of Braiins-purchased shares the pool rejected, computed over the "
 "selected chart range. Server-side: (Δrejected_m / Δpurchased_m) × 100 "
@@ -4192,9 +4397,19 @@ msgstr "Share of Braiins-purchased shares the pool rejected, computed over the "
 "paid for under Braiins's terms (the buyer is responsible for "
 "target-pool quality)."
 
+#: src/components/TilesBar.tsx
+msgid "share rejection"
+msgstr "share rejection"
+
 #: src/pages/Status.tsx
 msgid "share_log %"
 msgstr "share_log %"
+
+#: src/components/TilesBar.tsx
+msgid "Share-rejection rate. Tile data source pending — currently shown only on "
+"the chart's right axis. Will populate in a follow-up."
+msgstr "Share-rejection rate. Tile data source pending — currently shown only "
+"on the chart's right axis. Will populate in a follow-up."
 
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
@@ -4347,6 +4562,10 @@ msgstr "Sum of counters_committed.amount_consumed_sat across every bid on "
 "existed before the autopilot was switched on. May lag the latest hour "
 "of active-bid consumption (Braiins only updates committed counters on "
 "each hourly settlement tick). Switch via Config → P&L panel."
+
+#: src/components/TilesBar.tsx
+msgid "Swap tile"
+msgstr "Swap tile"
 
 #: src/pages/Config.tsx
 msgid "system default"
@@ -4664,6 +4883,7 @@ msgstr "Uploaded - now active."
 msgid "Uploading…"
 msgstr "Uploading…"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "uptime"
 msgstr "uptime"
@@ -4735,6 +4955,10 @@ msgid "Waiting for Ocean hashprice - trading is paused until the break-even "
 "reference is available."
 msgstr "Waiting for Ocean hashprice - trading is paused until the break-even "
 "reference is available."
+
+#: src/components/TilesBar.tsx
+msgid "wallet runway"
+msgstr "wallet runway"
 
 #: src/pages/Config.tsx
 msgid "Wallet runway below"
@@ -4938,6 +5162,12 @@ msgstr "Your Bitcoin node supports BIP 110, which is currently in its "
 #: src/pages/Status.tsx
 msgid "Your layout is saved on this device."
 msgstr "Your layout is saved on this device."
+
+#: src/components/TilesBar.tsx
+msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool "
+"hashrate; drives the unpaid-earnings line on the price chart."
+msgstr "Your share of Ocean's reward window. Approximately your hashrate ÷ pool "
+"hashrate; drives the unpaid-earnings line on the price chart."
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

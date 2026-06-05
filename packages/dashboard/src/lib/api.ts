@@ -348,6 +348,10 @@ export interface AppConfig {
    *  `'{}'` means use every series's built-in default. Parsed
    *  defensively via `lib/chartColors.parseOverrides`. */
   chart_color_overrides: string;
+  /** #266: StatsBar tile selection + order as a JSON-encoded array of
+   *  catalogue ids. `'[]'` means "use the dashboard defaults".
+   *  Parsed via `parseDashboardTiles` from `@hashrate-autopilot/shared`. */
+  dashboard_tiles: string;
   /** #244: RESERVED / dormant. Daemon-side card-order column kept for
    *  forward compatibility; the dashboard stores the drag-chosen order
    *  per-device in localStorage (see lib/cardOrder) and does not read or
