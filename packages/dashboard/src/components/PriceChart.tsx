@@ -2128,36 +2128,36 @@ export const PriceChart = memo(function PriceChart({
             onClick: onMarkerClick(e),
             style: { cursor: 'pointer' },
           };
-          // #265 v2: the rare bid-event markers (CREATE / EDIT_SPEED /
-          // CANCEL) are too easy to lose among the dense band of yellow
-          // EDIT_PRICE dots on the our_bid line. Build 607 added a thin
-          // dashed guide line below the chart-top, but at low opacity +
-          // 1px stroke the guide line itself was below the operator's
-          // perception threshold at normal zoom (had to zoom to 400% to
-          // catch the green +). Redesigned to match the pool-block
-          // idiom that already works on this chart: a clear glyph at
-          // the chart's top edge (where pool-block cubes live), a
-          // dashed vertical connector down through the chart, and a
-          // small filled bubble on the our_bid line at the event's
-          // price level. The top glyph carries the type information
-          // (+ create / ◆ edit speed / × cancel); the bubble carries
-          // the price coordinate; the connector carries the visual
-          // anchoring between them. EDIT_PRICE keeps its bare circle
-          // because individual edits are read as a band, and putting
-          // a top glyph + connector on each would clutter the chart
-          // beyond use.
-          const topY = PADDING.top - 1;
-          const lineTopY = topY + 5;
+          // #265 v3: build 608's top-edge glyphs were 8×8 SVG units
+          // and positioned at y = PADDING.top - 1, while the pool-block
+          // cubes next to them are 14×14 at y = PADDING.top - 11.
+          // Result: the bid-event glyphs looked ~75% smaller than the
+          // cubes AND sat ~3 px lower, breaking the "scan along the
+          // top of the chart" pattern they were supposed to slot into.
+          // Re-rendered as inline SVG with viewBox="0 0 24 24", same
+          // 14×14 footprint and same y position as the cubes, using
+          // Lucide-style paths (plus / x / diamond) for visual parity.
+          const GLYPH_W = 14;
+          const GLYPH_X = cx - GLYPH_W / 2;
+          const GLYPH_Y = PADDING.top - 11;            // matches pool-block cube
+          const GLYPH_BOTTOM = GLYPH_Y + GLYPH_W;       // y at which the glyph box ends
+          const lineTopY = GLYPH_BOTTOM + 1;
           const bubbleR = 3.5;
           const lineBottomY = cy - bubbleR;
-          const hitTopY = topY - 7;
-          const hitH = Math.max(16, cy - hitTopY + 8);
+          const hitTopY = GLYPH_Y - 1;
+          const hitH = Math.max(GLYPH_W + 2, cy - hitTopY + bubbleR + 2);
           if (e.kind === 'CREATE_BID') {
             return (
               <g key={e.id} {...common}>
-                {/* top-edge + glyph */}
-                <line x1={cx - 4} x2={cx + 4} y1={topY} y2={topY} stroke={COLOR_CREATE} strokeWidth="2.4" />
-                <line x1={cx} x2={cx} y1={topY - 4} y2={topY + 4} stroke={COLOR_CREATE} strokeWidth="2.4" />
+                <svg
+                  x={GLYPH_X} y={GLYPH_Y}
+                  width={GLYPH_W} height={GLYPH_W} viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_CREATE} strokeWidth="2.6"
+                  strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
                 {lineBottomY > lineTopY + 1 && (
                   <line
                     x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}
@@ -2179,14 +2179,17 @@ export const PriceChart = memo(function PriceChart({
             );
           }
           if (e.kind === 'EDIT_SPEED') {
-            const r = 4;
             return (
               <g key={e.id} {...common}>
-                {/* top-edge hollow diamond */}
-                <polygon
-                  points={`${cx},${topY - r} ${cx + r},${topY} ${cx},${topY + r} ${cx - r},${topY}`}
-                  fill="none" stroke={COLOR_EDIT_SPEED} strokeWidth="1.8"
-                />
+                <svg
+                  x={GLYPH_X} y={GLYPH_Y}
+                  width={GLYPH_W} height={GLYPH_W} viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_EDIT_SPEED} strokeWidth="2.2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                >
+                  {/* Lucide 'diamond' outline. */}
+                  <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z" />
+                </svg>
                 {lineBottomY > lineTopY + 1 && (
                   <line
                     x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}
@@ -2202,9 +2205,15 @@ export const PriceChart = memo(function PriceChart({
           if (e.kind === 'CANCEL_BID') {
             return (
               <g key={e.id} {...common}>
-                {/* top-edge × glyph */}
-                <line x1={cx - 4} x2={cx + 4} y1={topY - 4} y2={topY + 4} stroke={COLOR_CANCEL} strokeWidth="2.4" />
-                <line x1={cx - 4} x2={cx + 4} y1={topY + 4} y2={topY - 4} stroke={COLOR_CANCEL} strokeWidth="2.4" />
+                <svg
+                  x={GLYPH_X} y={GLYPH_Y}
+                  width={GLYPH_W} height={GLYPH_W} viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_CANCEL} strokeWidth="2.6"
+                  strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
                 {lineBottomY > lineTopY + 1 && (
                   <line
                     x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}

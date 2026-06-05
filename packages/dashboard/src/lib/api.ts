@@ -693,9 +693,11 @@ export const api = {
     request<{ events: BidEventView[] }>(
       `/api/bid-events?range=${encodeURIComponent(range)}`,
     ),
-  bidEventsViewport: (since: number, until: number) =>
+  bidEventsViewport: (since: number, until: number, visibleSpan?: number) =>
     request<{ events: BidEventView[] }>(
-      `/api/bid-events?since=${since}&until=${until}`,
+      `/api/bid-events?since=${since}&until=${until}${
+        visibleSpan != null ? `&span=${visibleSpan}` : ''
+      }`,
     ),
   // #250: public-IP change markers for the charts.
   ipChangesViewport: (since: number, until: number) =>

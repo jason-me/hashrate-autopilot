@@ -2,6 +2,12 @@
 
 ## 2026-06-05
 
+### `[UI]` Rare bid-event glyphs match the pool-block cube size and position + visible on zoom-out (#265 follow-up x2)
+
+Two regressions from the build 608 redesign that the operator caught against side-by-side cubes: (1) the +/◆/× glyphs at the chart top were 8×8 SVG units while the pool-block cubes next to them were 14×14, making the rare-event markers look ~75 % smaller; (2) the glyphs sat at `y = PADDING.top - 1` while the cubes sit at `y = PADDING.top - 11`, so the bid-event markers were 3 px lower than the blocks they were supposed to align with. Re-rendered as inline `<svg viewBox="0 0 24 24">` with Lucide-style paths (plus, x, diamond) at the same 14×14 footprint and same y as the cubes — visual parity at any zoom.
+
+Same release: server-side `/api/bid-events` used the fetch span (visible × 3) for the kind filter, while the client expected kinds based on visible span. At 60 h visible the fetch span is 180 h, past the 7-day cutoff in `showEventKindsForSpan`, so the server returned empty even though the client expected to render CREATE / EDIT_SPEED / CANCEL glyphs. Symptom: at any zoom past ~56 h visible the rare markers vanished entirely. Added a `span=<ms>` query parameter so the filter sees the visible span; client passes it; legacy callers (no `span`) keep the old behaviour.
+
 ### `[Infra]` Debug-dump endpoint now covers every diagnosable subsystem
 
 `/api/debug/dump` previously bundled tick_metrics, pool_blocks, alert_events, bid_events, reward_events, app_config, and daemon_info. Added every other table that's actually load-bearing when triaging a bug report: `solo_miners` + the live `solo_miner_snapshot` (what the Status page actually renders), `solo_miner_samples`, `solo_best_diff_events`, `owned_bids` (current Braiins-side bid roster), `braiins_deposits` (settle history), `decisions` (controller per-tick proposals), `ip_change_events`, and `runtime_state`. Time-series tables (samples, decisions, events) honour the existing `hours` window; lookup state (solo_miners, owned_bids, snapshot, runtime_state, deposits) always returns the full current snapshot. Same `debug_api_enabled` gate, same `tables=` filter behaviour. The motivation: solo-mining bug reports (e.g. #260) previously needed an extra round-trip to `/api/solo-miners` because the dump didn't include the device list or snapshot.

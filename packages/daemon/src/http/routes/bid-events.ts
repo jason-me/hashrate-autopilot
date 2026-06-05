@@ -51,19 +51,37 @@ export async function registerBidEventsRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
 ): Promise<void> {
-  app.get<{ Querystring: { range?: string; since?: string; until?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string; span?: string } }>(
     '/api/bid-events',
     async (req) => {
       const parsedSince = Number.parseInt(req.query.since ?? '', 10);
       const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
+      const parsedSpan = Number.parseInt(req.query.span ?? '', 10);
 
-      // #169: arbitrary viewport path: since=<ms>&until=<ms>
+      // #169: arbitrary viewport path: since=<ms>&until=<ms>&span=<ms>
+      //
+      // `since/until` is the FETCH range (visible viewport plus a 100%
+      // buffer on each side for pan-snappiness). `span` is the actual
+      // visible span the client expects to be filtered against. When
+      // omitted (or before the client started sending it), fall back
+      // to `until - since` - the legacy behaviour. The two diverge
+      // because `showEventKindsForSpan` returns RARE_KINDS for
+      // spans <= 7d and [] above, and fetch span is ~3x visible span:
+      // a 60h visible window has fetch span 180h, which the legacy
+      // filter dropped to empty even though the client (filtering by
+      // visible) still expected RARE_KINDS. Symptom was CREATE / EDIT
+      // SPEED / CANCEL glyphs vanishing on any zoom past 56h visible
+      // (#265 v3 follow-up).
       if (
         !req.query.range &&
         Number.isFinite(parsedSince) && parsedSince > 0 &&
         Number.isFinite(parsedUntil) && parsedUntil > parsedSince
       ) {
-        const kinds = showEventKindsForSpan(parsedUntil - parsedSince);
+        const visibleSpan =
+          Number.isFinite(parsedSpan) && parsedSpan > 0
+            ? parsedSpan
+            : parsedUntil - parsedSince;
+        const kinds = showEventKindsForSpan(visibleSpan);
         if (kinds.length === 0) return { events: [] };
         const allowedKinds = new Set(kinds);
         const rows = await deps.bidEventsRepo.listSince(parsedSince, parsedUntil);

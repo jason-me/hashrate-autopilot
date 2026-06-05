@@ -241,8 +241,9 @@ export function Status() {
   }, [dataStartMs, chartViewport.viewport.since_ms, chartViewport.viewport.until_ms]);
 
   const bidEventsQuery = useQuery({
-    queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms],
-    queryFn: () => api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan],
+    queryFn: () =>
+      api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan),
     placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
