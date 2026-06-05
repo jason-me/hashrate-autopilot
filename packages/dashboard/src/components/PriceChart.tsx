@@ -2128,21 +2128,45 @@ export const PriceChart = memo(function PriceChart({
             onClick: onMarkerClick(e),
             style: { cursor: 'pointer' },
           };
+          // #265 v2: the rare bid-event markers (CREATE / EDIT_SPEED /
+          // CANCEL) are too easy to lose among the dense band of yellow
+          // EDIT_PRICE dots on the our_bid line. Build 607 added a thin
+          // dashed guide line below the chart-top, but at low opacity +
+          // 1px stroke the guide line itself was below the operator's
+          // perception threshold at normal zoom (had to zoom to 400% to
+          // catch the green +). Redesigned to match the pool-block
+          // idiom that already works on this chart: a clear glyph at
+          // the chart's top edge (where pool-block cubes live), a
+          // dashed vertical connector down through the chart, and a
+          // small filled bubble on the our_bid line at the event's
+          // price level. The top glyph carries the type information
+          // (+ create / ◆ edit speed / × cancel); the bubble carries
+          // the price coordinate; the connector carries the visual
+          // anchoring between them. EDIT_PRICE keeps its bare circle
+          // because individual edits are read as a band, and putting
+          // a top glyph + connector on each would clutter the chart
+          // beyond use.
+          const topY = PADDING.top - 1;
+          const lineTopY = topY + 5;
+          const bubbleR = 3.5;
+          const lineBottomY = cy - bubbleR;
+          const hitTopY = topY - 7;
+          const hitH = Math.max(16, cy - hitTopY + 8);
           if (e.kind === 'CREATE_BID') {
             return (
               <g key={e.id} {...common}>
-                {/* #265: thin dashed vertical guide from chart top down to the
-                    marker, so the rare-event glyph is findable from across a
-                    dense EDIT_PRICE band. Same idiom as pool-block and
-                    retarget markers on the same chart. */}
-                <line
-                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - 5}
-                  stroke={COLOR_CREATE} strokeWidth="1"
-                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
-                />
-                <line x1={cx - 5} x2={cx + 5} y1={cy} y2={cy} stroke={COLOR_CREATE} strokeWidth="2.2" />
-                <line x1={cx} x2={cx} y1={cy - 5} y2={cy + 5} stroke={COLOR_CREATE} strokeWidth="2.2" />
-                <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />
+                {/* top-edge + glyph */}
+                <line x1={cx - 4} x2={cx + 4} y1={topY} y2={topY} stroke={COLOR_CREATE} strokeWidth="2.4" />
+                <line x1={cx} x2={cx} y1={topY - 4} y2={topY + 4} stroke={COLOR_CREATE} strokeWidth="2.4" />
+                {lineBottomY > lineTopY + 1 && (
+                  <line
+                    x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}
+                    stroke={COLOR_CREATE} strokeWidth="1.3"
+                    strokeDasharray="3 3" opacity="0.7" pointerEvents="none"
+                  />
+                )}
+                <circle cx={cx} cy={cy} r={bubbleR} fill={COLOR_CREATE} stroke="#0f172a" strokeWidth="1" />
+                <rect x={cx - 8} y={hitTopY} width="16" height={hitH} fill="transparent" />
               </g>
             );
           }
@@ -2155,44 +2179,41 @@ export const PriceChart = memo(function PriceChart({
             );
           }
           if (e.kind === 'EDIT_SPEED') {
-            // Speed-edit marker: hollow blue diamond on the price line at
-            // the event time. Earlier I parked it at chart-top reasoning
-            // that a speed change has no inherent price coordinate - but
-            // operator pointed out (correctly) that anchoring it to the
-            // price line is what makes it readable: you see *at what
-            // price* the capacity got resized, lined up with the rest of
-            // the events.
-            const r = 4.5;
+            const r = 4;
             return (
               <g key={e.id} {...common}>
-                {/* #265: dashed guide line from chart top - see CREATE_BID. */}
-                <line
-                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - r}
-                  stroke={COLOR_EDIT_SPEED} strokeWidth="1"
-                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
-                />
+                {/* top-edge hollow diamond */}
                 <polygon
-                  points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
-                  fill="none"
-                  stroke={COLOR_EDIT_SPEED}
-                  strokeWidth="1.6"
+                  points={`${cx},${topY - r} ${cx + r},${topY} ${cx},${topY + r} ${cx - r},${topY}`}
+                  fill="none" stroke={COLOR_EDIT_SPEED} strokeWidth="1.8"
                 />
-                <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />
+                {lineBottomY > lineTopY + 1 && (
+                  <line
+                    x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}
+                    stroke={COLOR_EDIT_SPEED} strokeWidth="1.3"
+                    strokeDasharray="3 3" opacity="0.7" pointerEvents="none"
+                  />
+                )}
+                <circle cx={cx} cy={cy} r={bubbleR} fill={COLOR_EDIT_SPEED} stroke="#0f172a" strokeWidth="1" />
+                <rect x={cx - 8} y={hitTopY} width="16" height={hitH} fill="transparent" />
               </g>
             );
           }
           if (e.kind === 'CANCEL_BID') {
             return (
               <g key={e.id} {...common}>
-                {/* #265: dashed guide line from chart top - see CREATE_BID. */}
-                <line
-                  x1={cx} x2={cx} y1={PADDING.top} y2={cy - 5}
-                  stroke={COLOR_CANCEL} strokeWidth="1"
-                  strokeDasharray="2 3" opacity="0.5" pointerEvents="none"
-                />
-                <line x1={cx - 5} x2={cx + 5} y1={cy - 5} y2={cy + 5} stroke={COLOR_CANCEL} strokeWidth="2.2" />
-                <line x1={cx - 5} x2={cx + 5} y1={cy + 5} y2={cy - 5} stroke={COLOR_CANCEL} strokeWidth="2.2" />
-                <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />
+                {/* top-edge × glyph */}
+                <line x1={cx - 4} x2={cx + 4} y1={topY - 4} y2={topY + 4} stroke={COLOR_CANCEL} strokeWidth="2.4" />
+                <line x1={cx - 4} x2={cx + 4} y1={topY + 4} y2={topY - 4} stroke={COLOR_CANCEL} strokeWidth="2.4" />
+                {lineBottomY > lineTopY + 1 && (
+                  <line
+                    x1={cx} x2={cx} y1={lineTopY} y2={lineBottomY}
+                    stroke={COLOR_CANCEL} strokeWidth="1.3"
+                    strokeDasharray="3 3" opacity="0.7" pointerEvents="none"
+                  />
+                )}
+                <circle cx={cx} cy={cy} r={bubbleR} fill={COLOR_CANCEL} stroke="#0f172a" strokeWidth="1" />
+                <rect x={cx - 8} y={hitTopY} width="16" height={hitH} fill="transparent" />
               </g>
             );
           }

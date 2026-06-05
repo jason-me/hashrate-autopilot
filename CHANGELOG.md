@@ -2,9 +2,9 @@
 
 ## 2026-06-05
 
-### `[UI]` Bid-event rare markers get a vertical guide line so they're findable in dense charts (#265)
+### `[UI]` Rare bid-event markers move to the top of the price chart (#265 follow-up)
 
-CREATE_BID, EDIT_SPEED, and CANCEL_BID glyphs on the Price chart sat at the same y-position as the dense band of EDIT_PRICE yellow circles that ride the our_bid line. At 10×10 SVG units (≈20 screen px) the rare-event markers were effectively impossible to spot among the EDIT_PRICE noise — operator reported being unable to find their bid-creation marker for a known event on the chart. Added a thin dashed vertical guide from the chart top down to each rare-event marker, same colour as the marker glyph, low opacity, pointer-events-none. Same idiom the chart already uses for pool-block and difficulty-retarget markers. EDIT_PRICE keeps its bare circle treatment because individual edits are read as a band, not as discrete events.
+Build 607's "thin dashed guide line from chart top" wasn't bold enough — operator still had to zoom to 400 % to spot the green +. Redesigned the rare markers to match the pool-block idiom that already works on this chart: the CREATE / EDIT_SPEED / CANCEL glyph sits at the chart's top edge (next to where the pool-block cubes live), a dashed vertical connector runs down through the chart, and a small filled bubble lands on the our_bid line at the event's price level. The top glyph gives you something to scan along the top of the chart for; the bubble gives you the price coordinate; the connector ties them together. EDIT_PRICE still sits as a plain yellow circle on the line — individual edits are read as a band, and a top glyph per edit would clutter the chart beyond use.
 
 ### `[Fix]` Pool-luck step dots back on the post-step segment (#264)
 
