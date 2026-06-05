@@ -56,6 +56,7 @@ import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { localizedRangeLabel } from '../lib/range-label';
 import { useChartViewport } from '../lib/useChartViewport';
+import { useSharedCrosshair } from '../lib/chartCrosshair';
 import { useCardOrderContext } from '../lib/cardOrderContext';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
@@ -144,6 +145,9 @@ export function Status() {
   void i18n;
 
   const chartViewport = useChartViewport();
+  // #257: one crosshair position shared by both charts - hover/pin on
+  // either draws the synced marker line + per-chart readout on both.
+  const chartCrosshair = useSharedCrosshair();
   const chartRange = chartViewport.viewport.activePreset ?? DEFAULT_CHART_RANGE;
   const setChartRange = chartViewport.setPreset;
   const vp = chartViewport.settledViewport;
@@ -607,6 +611,7 @@ export function Status() {
           viewportUntil={chartViewport.viewport.until_ms}
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
+          crosshair={chartCrosshair}
         />
       </div>
     ),
@@ -673,6 +678,7 @@ export function Status() {
           viewportUntil={chartViewport.viewport.until_ms}
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
+          crosshair={chartCrosshair}
         />
       </div>
     ),

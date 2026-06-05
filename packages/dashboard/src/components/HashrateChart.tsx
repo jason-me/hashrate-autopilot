@@ -27,6 +27,14 @@ import {
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import {
+  clientXToTickAt,
+  CrosshairReadout,
+  nearestTickIndex,
+  useCrosshairPointer,
+  type CrosshairReadoutRow,
+  type SharedCrosshair,
+} from '../lib/chartCrosshair';
+import {
   IpChangeMarkers,
   IpChangeTooltip,
   type IpChangeMarkerEvent,
@@ -353,6 +361,7 @@ export const HashrateChart = memo(function HashrateChart({
   viewportSince,
   viewportUntil,
   chartColorOverrides,
+  crosshair,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -406,6 +415,9 @@ export const HashrateChart = memo(function HashrateChart({
    *  `config.chart_color_overrides`. Empty `'{}'` (or undefined)
    *  resolves every series to its built-in default. */
   chartColorOverrides?: string;
+  /** #257: shared crosshair state (synced with PriceChart). When
+   *  undefined the crosshair is disabled entirely. */
+  crosshair?: SharedCrosshair;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1146,6 +1158,14 @@ export const HashrateChart = memo(function HashrateChart({
       yMin,
       xScale,
       yScale,
+      // #257: per-tick series values, exposed for the crosshair
+      // readout. `ys` is the smoothed delivered series the chart
+      // actually draws; datum/ocean keep their null gaps.
+      ys,
+      datumYs,
+      oceanYs,
+      targets,
+      floors,
       deliveredPath,
       datumPath,
       hasDatum,
@@ -1379,6 +1399,82 @@ export const HashrateChart = memo(function HashrateChart({
     return out;
   }, [chartData, ourBlocks, points, rightAxisSeries]);
 
+  // #257: crosshair wiring. The svg ref is shared with the wheel-zoom
+  // ref callback; pointer handlers compose the viewport pan/zoom with
+  // crosshair hover / click-to-pin / touch long-press scrub.
+  const svgElRef = useRef<SVGSVGElement | null>(null);
+  const svgRefCb = useCallback((node: SVGSVGElement | null) => {
+    svgElRef.current = node;
+    wheelRef?.(node);
+  }, [wheelRef]);
+
+  const clientToTick = useCallback((svg: SVGSVGElement, clientX: number): number | null => {
+    if (!chartData) return null;
+    return clientXToTickAt(svg, clientX, {
+      width: WIDTH,
+      padLeft: PADDING.left,
+      padRight: chartData.padRight,
+      minX: chartData.minX,
+      maxX: chartData.maxX,
+      xs: chartData.xs,
+    });
+  }, [chartData]);
+
+  const crosshairHandlers = useCrosshairPointer({
+    chartId: 'hashrate',
+    crosshair,
+    viewportHandlers,
+    clientToTick,
+  });
+
+  // Marker line position + readout rows at the snapped tick. Values
+  // mirror what the chart draws: smoothed delivered, null-gapped
+  // datum/ocean, and the active right-axis series via its own
+  // formatter. Hidden while panning.
+  const crosshairView = useMemo(() => {
+    const cs = crosshair?.state;
+    if (!cs || !chartData || isDragging) return null;
+    if (cs.tickAt < chartData.minX || cs.tickAt > chartData.maxX) return null;
+    const i = nearestTickIndex(chartData.xs, cs.tickAt);
+    if (i < 0) return null;
+    const { xScale, yScale, shareLogYScale, ys, datumYs, oceanYs, targets, floors, hasDatum, hasOcean, hasShareLog, rightAxis } = chartData;
+    const rows: CrosshairReadoutRow[] = [];
+    const dots: Array<{ cy: number; color: string }> = [];
+    const fmtHr = (v: number) => denomination.formatHashrate(v, intlLocale);
+    const delivered = ys[i];
+    if (delivered !== undefined) {
+      rows.push({ color: COLOR_DELIVERED, label: t`delivered (Braiins)`, value: fmtHr(delivered) });
+      dots.push({ cy: yScale(delivered), color: COLOR_DELIVERED });
+    }
+    const datum = hasDatum ? datumYs[i] ?? null : null;
+    if (datum !== null) {
+      rows.push({ color: COLOR_DATUM, label: t`received (Datum)`, value: fmtHr(datum) });
+      dots.push({ cy: yScale(datum), color: COLOR_DATUM });
+    }
+    const ocean = hasOcean ? oceanYs[i] ?? null : null;
+    if (ocean !== null) {
+      rows.push({ color: COLOR_OCEAN, label: t`received (Ocean)`, value: fmtHr(ocean) });
+      dots.push({ cy: yScale(ocean), color: COLOR_OCEAN });
+    }
+    const target = targets[i];
+    if (target !== undefined) {
+      rows.push({ color: COLOR_TARGET, label: t`target`, value: fmtHr(target), dashed: true });
+    }
+    const floor = floors[i];
+    if (floor !== undefined) {
+      rows.push({ color: COLOR_FLOOR, label: t`floor`, value: fmtHr(floor), dashed: true });
+    }
+    if (hasShareLog && rightAxis) {
+      const v = rightAxis.values[i];
+      if (v !== null && v !== undefined && Number.isFinite(v)) {
+        rows.push({ color: rightAxis.stroke, label: rightAxis.axisLabel, value: rightAxis.formatTick(v) });
+        dots.push({ cy: shareLogYScale(v), color: rightAxis.stroke });
+      }
+    }
+    const x = xScale(cs.tickAt);
+    return { state: cs, x, lineXFrac: x / WIDTH, rows, dots };
+  }, [crosshair?.state, chartData, isDragging, denomination, intlLocale, _colorOverrides]);
+
   if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -1397,7 +1493,7 @@ export const HashrateChart = memo(function HashrateChart({
   const { minX, maxX, dataMinX, dataMaxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals } = chartData;
 
   return (
-    <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
+    <div className="bg-slate-900 border rounded-lg p-4 border-slate-800" data-chart-crosshair>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
@@ -1448,7 +1544,7 @@ export const HashrateChart = memo(function HashrateChart({
         </div>
       </div>
       <svg
-        ref={wheelRef}
+        ref={svgRefCb}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
@@ -1459,7 +1555,7 @@ export const HashrateChart = memo(function HashrateChart({
           outlineOffset: '2px',
           borderRadius: '8px',
         }}
-        {...viewportHandlers}
+        {...crosshairHandlers}
       >
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
@@ -1880,6 +1976,34 @@ export const HashrateChart = memo(function HashrateChart({
             <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
           </linearGradient>
         </defs>
+
+        {/* #257: crosshair marker line + per-series dots. Pinned
+            renders solid; transient hover renders dashed. */}
+        {crosshairView && (
+          <g pointerEvents="none">
+            <line
+              x1={crosshairView.x}
+              x2={crosshairView.x}
+              y1={PADDING.top}
+              y2={chartHeight - PADDING.bottom}
+              stroke="#94a3b8"
+              strokeWidth="1"
+              strokeDasharray={crosshairView.state.pinned ? undefined : '3 3'}
+              opacity={crosshairView.state.pinned ? 0.9 : 0.6}
+            />
+            {crosshairView.dots.map((d, di) => (
+              <circle
+                key={`xh-dot-${di}`}
+                cx={crosshairView.x}
+                cy={d.cy}
+                r="3"
+                fill={d.color}
+                stroke="#0f172a"
+                strokeWidth="1"
+              />
+            ))}
+          </g>
+        )}
         </g>
 
         <line
@@ -1984,6 +2108,24 @@ export const HashrateChart = memo(function HashrateChart({
           })}
 
       </svg>
+      {/* #257: per-chart value readout for the crosshair. Suppressed
+          while a marker hover-tooltip is open - markers win on direct
+          hover (pinned marker tooltips coexist fine). */}
+      {crosshairView && !(
+        (blockTip !== null && !blockTip.pinned) ||
+        (retargetTip !== null && !retargetTip.pinned) ||
+        (stepTip !== null && !stepTip.pinned) ||
+        (ipChangeTip !== null && !ipChangeTip.pinned)
+      ) && (
+        <CrosshairReadout
+          chartId="hashrate"
+          state={crosshairView.state}
+          svgEl={svgElRef.current}
+          lineXFrac={crosshairView.lineXFrac}
+          rows={crosshairView.rows}
+          onClose={() => crosshair?.clear()}
+        />
+      )}
       {blockTip && (
         <PoolBlockTooltip
           tip={blockTip}

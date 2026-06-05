@@ -88,10 +88,6 @@ msgstr "(current)"
 msgid "(in another tile)"
 msgstr "(in another tile)"
 
-#: src/components/TilesBar.tsx
-#~ msgid "(in use)"
-#~ msgstr "(in use)"
-
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
 msgstr "(no push attempted yet)"
@@ -426,10 +422,6 @@ msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses "
 "Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × "
 "delivered model. Fallback used when the selected range has fewer than "
 "~5 ticks."
-
-#: src/components/TilesBar.tsx
-msgid "add"
-msgstr "add"
 
 #: src/pages/Config.tsx
 msgid "Add"
@@ -915,34 +907,16 @@ msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending - currently "
 "in the Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
-#~ "the Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently "
-#~ "in the Bitaxe miners section. Will populate in a follow-up."
-
-#: src/components/TilesBar.tsx
 msgid "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 msgstr "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Bitaxe fleet hashrate. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
-
-#: src/components/TilesBar.tsx
 msgid "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 msgstr "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
-
-#: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Bitaxe fleet power draw. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
 
 #: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
@@ -1373,10 +1347,6 @@ msgstr "Celsius (°C)"
 msgid "change"
 msgstr "change"
 
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Change"
-#~ msgstr "Change"
-
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "changelog"
@@ -1433,6 +1403,7 @@ msgstr "Click to expand"
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
+#: src/lib/chartCrosshair.tsx
 msgid "close"
 msgstr "close"
 
@@ -3155,12 +3126,6 @@ msgstr "No auto-prune; growing ~ {dailyStr}/day"
 msgid "No AxeOS devices found on the local subnet."
 msgstr "No AxeOS devices found on the local subnet."
 
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "No bid events in the selected range. Widen the chart range above to see "
-#~ "older events."
-#~ msgstr "No bid events in the selected range. Widen the chart range above to see "
-#~ "older events."
-
 #: src/pages/Status.tsx
 msgid "no bids on this account"
 msgstr "no bids on this account"
@@ -3548,10 +3513,6 @@ msgstr "Optional. When set, every Telegram message from this daemon is prefixed 
 "with `[label] ` so you can tell which instance fired the alert if you "
 "run more than one daemon against the same bot/chat. Leave empty to send "
 "messages without a prefix."
-
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Order"
-#~ msgstr "Order"
 
 #: src/pages/History.tsx
 msgid "Order history"
@@ -4157,10 +4118,6 @@ msgstr "Remove device"
 msgid "Remove this tile"
 msgstr "Remove this tile"
 
-#: src/components/TilesBar.tsx
-#~ msgid "Remove tile"
-#~ msgstr "Remove tile"
-
 #: src/pages/Config.tsx
 msgid "Replace file…"
 msgstr "Replace file…"
@@ -4481,12 +4438,6 @@ msgid "Share-rejection rate. Tile data source pending - currently shown only on 
 msgstr "Share-rejection rate. Tile data source pending - currently shown only "
 "on the chart's right axis. Will populate in a follow-up."
 
-#: src/components/TilesBar.tsx
-#~ msgid "Share-rejection rate. Tile data source pending — currently shown only on "
-#~ "the chart's right axis. Will populate in a follow-up."
-#~ msgstr "Share-rejection rate. Tile data source pending — currently shown only "
-#~ "on the chart's right axis. Will populate in a follow-up."
-
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
 msgstr "Share-rejection threshold (%)"
@@ -4507,10 +4458,6 @@ msgstr "Show value"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "showing {0} of {totalCount}"
-
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Showing the most recent {MAX_ROWS} events for this range."
-#~ msgstr "Showing the most recent {MAX_ROWS} events for this range."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -4638,10 +4585,6 @@ msgstr "Sum of counters_committed.amount_consumed_sat across every bid on "
 "existed before the autopilot was switched on. May lag the latest hour "
 "of active-bid consumption (Braiins only updates committed counters on "
 "each hourly settlement tick). Switch via Config → P&L panel."
-
-#: src/components/TilesBar.tsx
-#~ msgid "Swap tile"
-#~ msgstr "Swap tile"
 
 #: src/pages/Config.tsx
 msgid "system default"

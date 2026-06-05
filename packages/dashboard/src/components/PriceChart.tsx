@@ -41,6 +41,14 @@ import {
 } from './HashrateChart';
 import { type IpChangeMarkerEvent } from './IpChangeMarkers';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
+import {
+  clientXToTickAt,
+  CrosshairReadout,
+  nearestTickIndex,
+  useCrosshairPointer,
+  type CrosshairReadoutRow,
+  type SharedCrosshair,
+} from '../lib/chartCrosshair';
 import { getChartColor, parseOverrides } from '../lib/chartColors';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
@@ -262,6 +270,7 @@ export const PriceChart = memo(function PriceChart({
   viewportSince,
   viewportUntil,
   chartColorOverrides,
+  crosshair,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -376,6 +385,9 @@ export const PriceChart = memo(function PriceChart({
   /** #238: per-series chart color overrides as a JSON string from
    *  `config.chart_color_overrides`. */
   chartColorOverrides?: string;
+  /** #257: shared crosshair state (synced with HashrateChart). When
+   *  undefined the crosshair is disabled entirely. */
+  crosshair?: SharedCrosshair;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1249,7 +1261,10 @@ export const PriceChart = memo(function PriceChart({
       }
     }
 
-    return { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
+    // xs / smoothedPriceByTick / capByTick exposed for the #257
+    // crosshair readout - the bid row mirrors the smoothed line the
+    // chart draws, the cap row mirrors the per-tick effective cap.
+    return { pricePoints, xs, smoothedPriceByTick, capByTick, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
   }, [points, events, showEventKinds, priceSmoothingMinutes, historicalPayoutsOffsetSat, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale, viewportSince, viewportUntil]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -1765,6 +1780,83 @@ export const PriceChart = memo(function PriceChart({
     return out;
   }, [points, ourBlocks]);
 
+  // #257: crosshair wiring - mirror of the HashrateChart block. The
+  // svg ref is shared with the wheel-zoom ref callback; pointer
+  // handlers compose viewport pan/zoom with crosshair hover /
+  // click-to-pin / touch long-press scrub.
+  const svgElRef = useRef<SVGSVGElement | null>(null);
+  const svgRefCb = useCallback((node: SVGSVGElement | null) => {
+    svgElRef.current = node;
+    wheelRef?.(node);
+  }, [wheelRef]);
+
+  const clientToTick = useCallback((svg: SVGSVGElement, clientX: number): number | null => {
+    if (!chartData) return null;
+    return clientXToTickAt(svg, clientX, {
+      width: WIDTH,
+      padLeft: PADDING.left,
+      padRight: chartData.padRight,
+      minX: chartData.minX,
+      maxX: chartData.maxX,
+      xs: chartData.xs,
+    });
+  }, [chartData]);
+
+  const crosshairHandlers = useCrosshairPointer({
+    chartId: 'price',
+    crosshair,
+    viewportHandlers,
+    clientToTick,
+  });
+
+  // Marker line position + readout rows at the snapped tick. Bid uses
+  // the smoothed series the chart draws; fillable / hashprice come
+  // straight off the tick; cap is the per-tick effective cap; the
+  // right-axis series formats through its own axis formatter.
+  const crosshairView = useMemo(() => {
+    const cs = crosshair?.state;
+    if (!cs || !chartData || isDragging) return null;
+    if (cs.tickAt < chartData.minX || cs.tickAt > chartData.maxX) return null;
+    const i = nearestTickIndex(chartData.xs, cs.tickAt);
+    if (i < 0) return null;
+    const { xScale, yScale, rightYScale, rightYTicks, smoothedPriceByTick, capByTick, hasRightAxis, rightAxis } = chartData;
+    const p = points[i]!;
+    const rows: CrosshairReadoutRow[] = [];
+    const dots: Array<{ cy: number; color: string }> = [];
+    const fmtRate = (v: number) => denomination.formatSatPerPhDay(v, intlLocale);
+    const bid = smoothedPriceByTick.get(p.tick_at) ?? null;
+    if (bid !== null) {
+      rows.push({ color: COLOR_PRICE, label: t`our bid`, value: fmtRate(bid) });
+      dots.push({ cy: yScale(bid), color: COLOR_PRICE });
+    }
+    const fillable = p.fillable_ask_sat_per_ph_day;
+    if (fillable !== null && Number.isFinite(fillable)) {
+      rows.push({ color: COLOR_FILLABLE, label: t`fillable`, value: fmtRate(fillable) });
+      dots.push({ cy: yScale(fillable), color: COLOR_FILLABLE });
+    }
+    const hashprice = p.hashprice_sat_per_ph_day;
+    if (hashprice !== null && Number.isFinite(hashprice)) {
+      rows.push({ color: COLOR_HASHPRICE, label: t`hashprice`, value: fmtRate(hashprice), dashed: true });
+      dots.push({ cy: yScale(hashprice), color: COLOR_HASHPRICE });
+    }
+    const cap = capByTick.get(p.tick_at) ?? null;
+    if (cap !== null) {
+      // No dot: the cap usually sits far above the auto-ranged
+      // viewport, so a dot would render off-plot most of the time.
+      rows.push({ color: COLOR_MAXBID, label: t`max bid`, value: fmtRate(cap) });
+    }
+    if (hasRightAxis && rightAxis) {
+      const v = rightAxis.values[i];
+      if (v !== null && v !== undefined && Number.isFinite(v)) {
+        const span = (rightYTicks[rightYTicks.length - 1] ?? 1) - (rightYTicks[0] ?? 0);
+        rows.push({ color: rightAxis.stroke, label: rightAxis.axisLabel, value: rightAxis.formatTick(v, span) });
+        dots.push({ cy: rightYScale(v), color: rightAxis.stroke });
+      }
+    }
+    const x = xScale(cs.tickAt);
+    return { state: cs, x, lineXFrac: x / WIDTH, rows, dots };
+  }, [crosshair?.state, chartData, isDragging, points, denomination, intlLocale, _colorOverrides]);
+
   if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -1826,7 +1918,7 @@ export const PriceChart = memo(function PriceChart({
   };
 
   return (
-    <div ref={containerRef} className="bg-slate-900 border rounded-lg p-4 relative border-slate-800">
+    <div ref={containerRef} className="bg-slate-900 border rounded-lg p-4 relative border-slate-800" data-chart-crosshair>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <h3 className="text-xs uppercase tracking-wider text-slate-100"><Trans>Price</Trans></h3>
@@ -1868,7 +1960,7 @@ export const PriceChart = memo(function PriceChart({
         </div>
       </div>
       <svg
-        ref={wheelRef}
+        ref={svgRefCb}
         viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
@@ -1879,7 +1971,7 @@ export const PriceChart = memo(function PriceChart({
           outlineOffset: '2px',
           borderRadius: '8px',
         }}
-        {...viewportHandlers}
+        {...crosshairHandlers}
       >
         <defs>
           <clipPath id="px-data-clip">
@@ -2610,6 +2702,34 @@ export const PriceChart = memo(function PriceChart({
             only - they correlate with delivered-vs-received hashrate
             (Datum/Braiins re-establishing connections after a router
             IP rotation), not with the price-axis content. */}
+
+        {/* #257: crosshair marker line + per-series dots. Pinned
+            renders solid; transient hover renders dashed. */}
+        {crosshairView && (
+          <g pointerEvents="none">
+            <line
+              x1={crosshairView.x}
+              x2={crosshairView.x}
+              y1={PADDING.top}
+              y2={chartHeight - PADDING.bottom}
+              stroke="#94a3b8"
+              strokeWidth="1"
+              strokeDasharray={crosshairView.state.pinned ? undefined : '3 3'}
+              opacity={crosshairView.state.pinned ? 0.9 : 0.6}
+            />
+            {crosshairView.dots.map((d, di) => (
+              <circle
+                key={`xh-dot-${di}`}
+                cx={crosshairView.x}
+                cy={d.cy}
+                r="3"
+                fill={d.color}
+                stroke="#0f172a"
+                strokeWidth="1"
+              />
+            ))}
+          </g>
+        )}
         </g>
 
         {hasRightAxis && rightAxis && (
@@ -2626,6 +2746,27 @@ export const PriceChart = memo(function PriceChart({
           </text>
         )}
       </svg>
+
+      {/* #257: per-chart value readout for the crosshair. Suppressed
+          while a marker hover-tooltip is open - markers win on direct
+          hover (pinned marker tooltips coexist fine). */}
+      {crosshairView && !(
+        (tooltip !== null && !tooltip.pinned) ||
+        (poolBlockTip !== null && !poolBlockTip.pinned) ||
+        (rewardTip !== null && !rewardTip.pinned) ||
+        (depositTip !== null && !depositTip.pinned) ||
+        (retargetTip !== null && !retargetTip.pinned) ||
+        (unpaidDropTip !== null && !unpaidDropTip.pinned)
+      ) && (
+        <CrosshairReadout
+          chartId="price"
+          state={crosshairView.state}
+          svgEl={svgElRef.current}
+          lineXFrac={crosshairView.lineXFrac}
+          rows={crosshairView.rows}
+          onClose={() => crosshair?.clear()}
+        />
+      )}
 
       {poolBlockTip && (
         <PoolBlockTooltip

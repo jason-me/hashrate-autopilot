@@ -91,10 +91,6 @@ msgstr "(actual)"
 msgid "(in another tile)"
 msgstr "(en otro mosaico)"
 
-#: src/components/TilesBar.tsx
-#~ msgid "(in use)"
-#~ msgstr "(en uso)"
-
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
 msgstr "(no se ha intentado enviar nada todavía)"
@@ -432,10 +428,6 @@ msgstr "Sats realmente consumidos en las últimas 3 h, escalado a una tasa de "
 "24h. Usa el contador autoritativo primary_bid_consumed_sat de Braiins, "
 "no un modelo bid × entregado. Se usa como respaldo cuando el rango "
 "seleccionado tiene menos de ~5 ticks."
-
-#: src/components/TilesBar.tsx
-msgid "add"
-msgstr "añadir"
 
 #: src/pages/Config.tsx
 msgid "Add"
@@ -934,13 +926,6 @@ msgstr "Eficiencia de la flota Bitaxe en J/TH. Origen de datos del mosaico "
 "en una entrega posterior."
 
 #: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet efficiency in J/TH. Tile data source pending — currently in "
-#~ "the Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Eficiencia de la flota Bitaxe en J/TH. Origen de datos del mosaico "
-#~ "pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
-#~ "en una entrega posterior."
-
-#: src/components/TilesBar.tsx
 msgid "Bitaxe fleet hashrate. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente - "
@@ -948,25 +933,11 @@ msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente - "
 "entrega posterior."
 
 #: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet hashrate. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Hashrate de la flota Bitaxe. Origen de datos del mosaico pendiente — "
-#~ "actualmente en la sección de mineros Bitaxe. Se completará en una "
-#~ "entrega posterior."
-
-#: src/components/TilesBar.tsx
 msgid "Bitaxe fleet power draw. Tile data source pending - currently in the "
 "Bitaxe miners section. Will populate in a follow-up."
 msgstr "Consumo de la flota Bitaxe. Origen de datos del mosaico pendiente - "
 "actualmente en la sección de mineros Bitaxe. Se completará en una "
 "entrega posterior."
-
-#: src/components/TilesBar.tsx
-#~ msgid "Bitaxe fleet power draw. Tile data source pending — currently in the "
-#~ "Bitaxe miners section. Will populate in a follow-up."
-#~ msgstr "Consumo de potencia de la flota Bitaxe. Origen de datos del mosaico "
-#~ "pendiente — actualmente en la sección de mineros Bitaxe. Se completará "
-#~ "en una entrega posterior."
 
 #: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
@@ -1405,10 +1376,6 @@ msgstr "Celsius (°C)"
 msgid "change"
 msgstr "cambio"
 
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Change"
-#~ msgstr "Cambio"
-
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "registro de cambios"
@@ -1465,6 +1432,7 @@ msgstr "Clic para expandir"
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
+#: src/lib/chartCrosshair.tsx
 msgid "close"
 msgstr "cerrar"
 
@@ -3223,12 +3191,6 @@ msgstr "Sin auto-purga; creciendo ~ {dailyStr}/día"
 msgid "No AxeOS devices found on the local subnet."
 msgstr "No se encontraron dispositivos AxeOS en la subred local."
 
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "No bid events in the selected range. Widen the chart range above to see "
-#~ "older events."
-#~ msgstr "No hay eventos de oferta en el rango seleccionado. Amplía el rango "
-#~ "arriba para ver eventos más antiguos."
-
 #: src/pages/Status.tsx
 msgid "no bids on this account"
 msgstr "sin ofertas en esta cuenta"
@@ -3236,7 +3198,8 @@ msgstr "sin ofertas en esta cuenta"
 #: src/pages/History.tsx
 msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
 "show up here."
-msgstr "Aún no se registraron ofertas. En cuanto el controlador envíe su primera oferta, aparecerá aquí."
+msgstr "Aún no se registraron ofertas. En cuanto el controlador envíe su "
+"primera oferta, aparecerá aquí."
 
 #: src/pages/Config.tsx
 msgid "no change needed"
@@ -3625,10 +3588,6 @@ msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon "
 "se antepone con `[etiqueta] ` para que puedas saber qué instancia "
 "disparó la alerta si ejecutas más de un daemon contra el mismo "
 "bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
-
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Order"
-#~ msgstr "Orden"
 
 #: src/pages/History.tsx
 msgid "Order history"
@@ -4242,10 +4201,6 @@ msgstr "Eliminar dispositivo"
 msgid "Remove this tile"
 msgstr "Quitar este mosaico"
 
-#: src/components/TilesBar.tsx
-#~ msgid "Remove tile"
-#~ msgstr "Quitar mosaico"
-
 #: src/pages/Config.tsx
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
@@ -4572,13 +4527,6 @@ msgstr "Tasa de rechazo de shares. Origen de datos del mosaico pendiente - "
 "actualmente sólo en el eje derecho del gráfico. Se completará en una "
 "entrega posterior."
 
-#: src/components/TilesBar.tsx
-#~ msgid "Share-rejection rate. Tile data source pending — currently shown only on "
-#~ "the chart's right axis. Will populate in a follow-up."
-#~ msgstr "Tasa de rechazo de shares. Origen de datos del mosaico pendiente — "
-#~ "actualmente sólo en el eje derecho del gráfico. Se completará en una "
-#~ "entrega posterior."
-
 #: src/pages/Config.tsx
 msgid "Share-rejection threshold (%)"
 msgstr "Umbral de rechazo de shares (%)"
@@ -4599,10 +4547,6 @@ msgstr "Mostrar valor"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "mostrando {0} de {totalCount}"
-
-#: src/components/OrderHistoryCard.tsx
-#~ msgid "Showing the most recent {MAX_ROWS} events for this range."
-#~ msgstr "Mostrando los {MAX_ROWS} eventos más recientes para este rango."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -4732,10 +4676,6 @@ msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de "
 "retrasarse respecto a la última hora de consumo de ofertas activas "
 "(Braiins solo actualiza los contadores comprometidos en cada tick de "
 "liquidación horario). Cambia en Config → panel P&L."
-
-#: src/components/TilesBar.tsx
-#~ msgid "Swap tile"
-#~ msgstr "Cambiar mosaico"
 
 #: src/pages/Config.tsx
 msgid "system default"

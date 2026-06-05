@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[Feature]` Chart crosshair: hover or place a marker to read every series at a point (#257)
+
+NerdAxe-style crosshair on the Status charts. Hovering either chart draws a vertical marker line through both (they share a time axis) and shows a per-chart floating readout of every visible series at the snapped tick — delivered/Datum/Ocean/target/floor on the Hashrate chart, bid/fillable/hashprice/max-bid on the Price chart, plus whichever right-axis series is selected, all in the global sats/BTC/USD and TH/PH/EH units. Click pins the marker so it survives moving away (Esc or a click outside dismisses); on touch, press-and-hold ~300 ms then scrub to move the marker, lift to pin — a quick drag still pans as before. Hovering a block/retarget/IP marker icon shows its rich tooltip instead, as today.
+
 ### `[Feature]` Standalone /history page with bid-grouped event log (#256 follow-up)
 
 Replaces the bottom-of-Status `OrderHistoryCard` from build 612 with a dedicated `/history` route (new "History" tab between Alerts and Config). Each bid renders as a collapsible parent row with summary stats (created → last event, first price → last price, event count, status badge); click to expand the bid and load every event for that order, oldest first. Modification table columns are `When | Action | Delta | Reason` (matches what Braiins's own Buy Order History tab shows). Bid headers paginate with a "Load older bids" button at the bottom — no more 200-row cap. Server-side: new `GET /api/bid-history?limit=N&before_ms=cursor` for the paginated bid summaries, `GET /api/bid-history/:order_id/events` for one bid's full event list. nl + es translations included.
