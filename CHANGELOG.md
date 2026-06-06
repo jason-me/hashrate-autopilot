@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[Fix]` NerdAxe miners never appeared on the Status page (#260)
+
+NerdAxe / NerdQAxe firmware (shufps/ESP-Miner-NerdQAxePlus family) reports `bestDiff` / `bestSessionDiff` as raw numbers where stock Bitaxe firmware reports magnitude-suffixed strings ("4.29G"). The daemon's difficulty parser crashed on the numeric form, killing the poll tick *after* a successful fetch but *before* the snapshot update - so every successful poll was silently discarded while failed polls rendered, freezing the Bitaxe Miners card on the last failure (or showing nothing at all). Numeric difficulty values are now accepted natively (same unit - share difficulty - just unformatted), formatted for display the way AxeOS itself does, and stored at full precision for best-difficulty records. One device's malformed payload can no longer take down the whole fleet's poll, and unreachable-device errors now include the underlying network error code instead of a bare "fetch failed".
+
 ### `[Fix]` Stats tiles empty + chart-marker tooltip overflow (#266 follow-up x2)
 
 (1) **`/api/stats` was returning 500**, breaking every stats-derived tile (uptime, delivery rate, avg Braiins / Datum / Ocean, etc.) — fields rendered as em-dash. Build 622 added `avg_share_rejection_pct` referencing `primary_bid_shares_purchased_m` / `_rejected_m` in the outer aggregate, but didn't carry those columns through the inner subquery's SELECT list. The whole query errored out; Fastify returned the error to the dashboard which silently fell back to "no data". Bitaxe tiles (different data source) were unaffected. (2) **Chart-marker tooltips no longer overflow into the neighbouring chart.** New `sideTooltipPosition` helper opens marker tooltips to the LEFT of the marker (RIGHT if no room left), vertically centred on the marker. Pool-block / retarget / luck-step / bid-event / deposit / payout-initiated tooltips now stay beside the data point instead of extending downward into the next chart's territory.

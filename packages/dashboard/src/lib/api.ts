@@ -494,6 +494,8 @@ export interface SoloMinerSnapshotEntry {
   stratum_user: string | null;
   best_diff_text: string | null;
   best_session_diff_text: string | null;
+  /** Exact numeric best difficulty (#260); text fields are display-formatted. */
+  best_diff_numeric: number | null;
   error: string | null;
 }
 

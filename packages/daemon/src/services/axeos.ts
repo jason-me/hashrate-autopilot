@@ -45,8 +45,17 @@ export interface AxeOSSystemInfo {
   stratumURL?: string;
   stratumPort?: number;
   stratumUser?: string;
-  bestDiff?: string;
-  bestSessionDiff?: string;
+  /**
+   * Best share difficulty (lifetime / since-boot). Stock Bitaxe
+   * ESP-Miner serialises these as magnitude-suffixed strings
+   * ("4.29G"); the NerdAxe / NerdQAxe firmware family
+   * (shufps/ESP-Miner-NerdQAxePlus) deliberately switched them to
+   * raw numbers (#260). Both express the same unit - share
+   * difficulty relative to difficulty 1, the value both firmwares
+   * feed through cgminer's `suffixString()` for display.
+   */
+  bestDiff?: string | number;
+  bestSessionDiff?: string | number;
   poolDifficulty?: number;
   errorPercentage?: number;
   isUsingFallbackStratum?: number | boolean;
@@ -96,7 +105,15 @@ export class AxeOSClient {
       const body = (await resp.json()) as AxeOSSystemInfo;
       return { reachable: true, info: body, error: null };
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      // undici wraps every connection-level failure in a generic
+      // `TypeError: fetch failed` and hides the real code
+      // (ECONNREFUSED / EHOSTUNREACH / ...) in `cause`. Surface it -
+      // a bare "fetch failed" in the snapshot cost a day of
+      // diagnosis on #260.
+      let message = e instanceof Error ? e.message : String(e);
+      if (e instanceof Error && e.cause instanceof Error && e.cause.message) {
+        message = `${message}: ${e.cause.message}`;
+      }
       return { reachable: false, info: null, error: message };
     } finally {
       clearTimeout(timer);
