@@ -92,11 +92,24 @@ export class AxeOSClient {
    * structured `{ reachable, info, error }` so callers can persist
    * the unreachable case as a sample row without try/catch
    * pollution.
+   *
+   * `externalSignal` (#259 follow-up) - optional caller-provided
+   * abort signal. When the scanner cancels mid-sweep we abort all
+   * in-flight probes immediately rather than waiting up to
+   * `timeoutMs` for each to time out naturally.
    */
-  async getSystemInfo(ip: string): Promise<AxeOSFetchResult> {
+  async getSystemInfo(
+    ip: string,
+    externalSignal?: AbortSignal,
+  ): Promise<AxeOSFetchResult> {
     const url = `http://${ip}/api/system/info`;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    const onExternalAbort = () => ctrl.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) ctrl.abort();
+      else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    }
     try {
       const resp = await this.fetchImpl(url, { signal: ctrl.signal });
       if (!resp.ok) {
@@ -117,6 +130,7 @@ export class AxeOSClient {
       return { reachable: false, info: null, error: message };
     } finally {
       clearTimeout(timer);
+      externalSignal?.removeEventListener('abort', onExternalAbort);
     }
   }
 }

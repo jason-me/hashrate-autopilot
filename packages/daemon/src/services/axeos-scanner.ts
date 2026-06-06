@@ -112,6 +112,17 @@ export class AxeOSScanner {
    */
   private cancelRequested = false;
 
+  /**
+   * #259 follow-up v2: abort controller plumbed through to every
+   * in-flight probe's fetch. Build 605's cancel only set the
+   * cancelRequested flag, which workers checked between probes - so
+   * an 8-worker sweep with the 1.5 s probe timeout took up to 1.5 s
+   * to actually wind down per worker. With the signal forwarded into
+   * `getSystemInfo`, cancel aborts every fetch in-flight immediately;
+   * workers see the rejection and bail on the next loop tick.
+   */
+  private currentAbort: AbortController | null = null;
+
   private status: ScanStatus = {
     state: 'idle',
     cidr: '',
@@ -186,6 +197,7 @@ export class AxeOSScanner {
 
     const ips = expandSlash24(cidr);
     this.cancelRequested = false;
+    this.currentAbort = new AbortController();
     this.status = {
       state: 'running',
       cidr,
@@ -198,7 +210,7 @@ export class AxeOSScanner {
     };
 
     // Fire-and-forget. Status updates land on this.status as it runs.
-    void this.run(cidr, ips).catch((e) => {
+    void this.run(cidr, ips, this.currentAbort.signal).catch((e) => {
       this.status = {
         ...this.status,
         state: 'error',
@@ -210,7 +222,11 @@ export class AxeOSScanner {
     return { ok: true, error: null, status: this.status };
   }
 
-  private async run(cidr: string, ips: ReadonlyArray<string>): Promise<void> {
+  private async run(
+    cidr: string,
+    ips: ReadonlyArray<string>,
+    signal: AbortSignal,
+  ): Promise<void> {
     const existing = new Set((await this.repo.list()).map((r) => r.ip));
     const found: ScanCandidate[] = [];
     let cursor = 0;
@@ -218,7 +234,7 @@ export class AxeOSScanner {
 
     const probe = async (ip: string): Promise<void> => {
       try {
-        const r = await this.client.getSystemInfo(ip);
+        const r = await this.client.getSystemInfo(ip, signal);
         if (r.reachable && r.info) {
           const info = r.info;
           const looksLikeBitaxe =
@@ -245,6 +261,7 @@ export class AxeOSScanner {
         // Per-IP probe failure is expected for the vast majority of
         // IPs on a normal /24 (no host there). Swallow and keep going.
       }
+      if (signal.aborted) return;
       completed += 1;
       // Snapshot the latest state into a fresh object so the route
       // hand-out is immutable from the consumer's perspective.
@@ -260,12 +277,11 @@ export class AxeOSScanner {
       workers.push(
         (async () => {
           while (cursor < ips.length) {
-            // #259 follow-up: bail out at the top of every iteration
-            // when the operator has hit the dialog's X. The probe
-            // itself runs to completion (1.5s timeout) but we don't
-            // start any new ones, so the run finalises within one
-            // probe's worth of latency.
-            if (this.cancelRequested) break;
+            // #259 follow-up v2: check both the in-process flag AND
+            // the abort signal. The signal is what makes cancel
+            // near-instant: in-flight probes abort immediately
+            // instead of running out their 1.5 s timeout.
+            if (this.cancelRequested || signal.aborted) break;
             const i = cursor++;
             const ip = ips[i];
             if (ip === undefined) break;
@@ -303,10 +319,16 @@ export class AxeOSScanner {
    * #259 follow-up: ask the in-flight worker loop to stop. Idempotent;
    * harmless when no scan is running. Returns the status snapshot so
    * the caller can echo it back to the client.
+   *
+   * v2: also aborts the per-scan AbortController so every fetch in
+   * flight unwinds immediately instead of running out its 1.5 s
+   * timeout - worst-case latency from cancel POST to state ===
+   * 'cancelled' drops from ~1.5 s to a few ms.
    */
   cancel(): ScanStatus {
     if (this.status.state === 'running') {
       this.cancelRequested = true;
+      this.currentAbort?.abort();
     }
     return this.status;
   }

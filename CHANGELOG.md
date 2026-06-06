@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Fix]` Scan-local-network cancel actually stops the scan (#259 v2)
+
+Closing the scan dialog with `X` while a sweep was in flight didn't actually stop the scan, despite build 605's "cancel" handling. Two bugs compounded: (1) **daemon side**, cancel only set a `cancelRequested` flag the workers checked between probes — so each of the 8 workers ran out its current 1.5 s probe timeout before bailing, and to a watching operator the scan looked like it kept hitting hosts. (2) **dashboard side**, the status query was gated on the dialog being open, so the moment the operator closed it polling stopped — the trigger button then stayed stuck on `scanning…` indefinitely because the dashboard never observed the state transition to `cancelled`. v2 plumbs an `AbortController` signal into the per-probe fetch so cancel aborts every in-flight request immediately (cancel-to-`cancelled` latency drops from ~1.5 s to a few ms), and the dashboard keeps polling whenever the last known state was `running` regardless of dialog visibility, so the trigger button reverts to `Scan local network` on its own.
+
 ### `[Feature]` Drag tiles left/right to reorder (#266 follow-up)
 
 Each tile in the stats bar now carries a grip handle in the top-left corner that's invisible by default and fades in on hover. Drag from the grip to slide the tile left/right; siblings shift to make room. No global rearrange-mode gate — the operator doesn't have to toggle anything to start reordering. Touch-friendly press-and-hold (180 ms) so vertical page scrolling on mobile isn't hijacked, and a 6 px distance gate on desktop so a click in the grip's vicinity doesn't accidentally start a drag. Order persists through `config.dashboard_tiles` the same way the picker does.

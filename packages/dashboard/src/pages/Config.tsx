@@ -24,6 +24,7 @@ import {
   type DatumTestResponse,
   type DdnsTestResponse,
   type PoolUrlTestResponse,
+  type SoloScanState,
   type StorageEstimateBucket,
   type StorageEstimateResponse,
 } from '../lib/api';
@@ -2651,12 +2652,27 @@ function ScanLocalNetworkButton() {
     }
   };
 
+  // #259 follow-up v2: the polling enable gate used to be just `open`,
+  // which meant the moment the operator closed the dialog the
+  // dashboard stopped checking for scan progress. The trigger button
+  // would then stay stuck on "scanning…" indefinitely because we
+  // never re-saw the state transition to 'cancelled' / 'done'. The
+  // `lastKnownState` mirror keeps us polling whenever the latest
+  // status we've seen says 'running', regardless of whether the
+  // modal is open.
+  const [lastKnownState, setLastKnownState] = useState<SoloScanState | undefined>(
+    undefined,
+  );
   const statusQuery = useQuery({
     queryKey: ['solo-miners-scan-status'],
-    queryFn: () => api.soloMinersScanStatus(),
-    enabled: open,
+    queryFn: async () => {
+      const s = await api.soloMinersScanStatus();
+      setLastKnownState(s.state);
+      return s;
+    },
+    enabled: open || lastKnownState === 'running',
     // Fast poll while the sweep is in flight; stop once we've reached
-    // a terminal state so the modal isn't generating idle traffic.
+    // a terminal state so the dashboard isn't generating idle traffic.
     refetchInterval: (q) => {
       const s = q.state.data?.state;
       return s === 'running' ? 400 : false;
