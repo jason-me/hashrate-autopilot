@@ -5321,17 +5321,22 @@ function DdnsSection({
  * can SEE the bundle is safe to paste.
  */
 function DiagnosticsSection() {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'md' | 'json' | null>(null);
   const diag = useMutation<DiagnosticsResponse, Error, void>({
     mutationFn: () => api.diagnostics(),
-    onSuccess: () => setCopied(false),
+    onSuccess: () => setCopied(null),
   });
   const d = diag.data;
 
   const onCopy = async () => {
     if (!d) return;
     await copyToClipboard(diagnosticsToMarkdown(d));
-    setCopied(true);
+    setCopied('md');
+  };
+  const onCopyJson = async () => {
+    if (!d) return;
+    await copyToClipboard(JSON.stringify(d.config, null, 2));
+    setCopied('json');
   };
 
   return (
@@ -5364,7 +5369,7 @@ function DiagnosticsSection() {
             onClick={() => void onCopy()}
             className="px-3 py-1.5 text-sm rounded border border-slate-700 text-slate-300 hover:bg-slate-800 whitespace-nowrap"
           >
-            {copied ? <Trans>Copied</Trans> : <Trans>Copy as Markdown</Trans>}
+            {copied === 'md' ? <Trans>Copied</Trans> : <Trans>Copy as Markdown</Trans>}
           </button>
         )}
       </div>
@@ -5419,6 +5424,13 @@ function DiagnosticsSection() {
             <summary className="cursor-pointer text-slate-400">
               <Trans>Configuration snapshot (secrets stripped)</Trans>
             </summary>
+            <button
+              type="button"
+              onClick={() => void onCopyJson()}
+              className="mt-2 px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              {copied === 'json' ? <Trans>Copied</Trans> : <Trans>Copy JSON</Trans>}
+            </button>
             <pre className="mt-2 bg-slate-950 border border-slate-800 rounded p-2 overflow-x-auto text-[11px] leading-snug">
               {JSON.stringify(d.config, null, 2)}
             </pre>

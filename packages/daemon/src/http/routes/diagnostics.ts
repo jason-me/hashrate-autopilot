@@ -44,22 +44,64 @@ export const REDACTED = '********** [redacted]';
 /**
  * Config keys whose values are secrets. Pattern catches future fields
  * by name (token / password / credential / secret / api_key); the
- * explicit list covers the ones the pattern can't see.
+ * explicit list covers the ones the pattern can't see. Operator
+ * review of the first real bundle (#272) widened the set: payout
+ * address, DDNS identity, and the Telegram instance label are
+ * personal even though they aren't credentials.
  */
 const SECRET_KEY_RE = /token|password|credential|secret|api_key|apikey/i;
-const SECRET_KEYS_EXPLICIT = new Set(['bitcoind_rpc_user']);
+const SECRET_KEYS_EXPLICIT = new Set([
+  'bitcoind_rpc_user',
+  'btc_payout_address',
+  'ddns_hostname',
+  'ddns_username',
+  'telegram_instance_label',
+]);
+
+/**
+ * Structured partial redaction: keep the diagnostic shape (scheme,
+ * port, worker label) while stripping the identifying part.
+ *   stratum+tcp://my.host:23334       -> stratum+tcp://**********[redacted]:23334
+ *   bc1qabc...xyz.autopilot (worker)  -> ********** [redacted].autopilot
+ */
+function redactUrlHost(v: string): string {
+  const m = v.match(/^([a-z0-9+.-]+:\/\/)([^/:]+)(.*)$/i);
+  if (!m) return REDACTED;
+  return `${m[1]}${REDACTED}${m[3]}`;
+}
+
+function redactWorkerName(v: string): string {
+  const i = v.indexOf('.');
+  return i > 0 ? `${REDACTED}${v.slice(i)}` : REDACTED;
+}
 
 export function redactConfig(config: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(config)) {
-    const isSecretKey = SECRET_KEY_RE.test(key) || SECRET_KEYS_EXPLICIT.has(key);
-    if (isSecretKey && typeof value === 'string' && value.length > 0) {
+    if (typeof value !== 'string' || value.length === 0) {
+      out[key] = value;
+      continue;
+    }
+    if (SECRET_KEY_RE.test(key) || SECRET_KEYS_EXPLICIT.has(key)) {
       out[key] = REDACTED;
+    } else if (key === 'destination_pool_url') {
+      out[key] = redactUrlHost(value);
+    } else if (key === 'destination_pool_worker_name') {
+      out[key] = redactWorkerName(value);
     } else {
       out[key] = value;
     }
   }
   return out;
+}
+
+/**
+ * Public IPv4 in probe output: first octet survives (enough to spot
+ * CGNAT / wrong-interface cases), the rest is visibly stripped.
+ */
+export function maskPublicIpv4(ip: string): string {
+  const m = ip.match(/^(\d{1,3})\.\d{1,3}\.\d{1,3}\.\d{1,3}$/);
+  return m ? `${m[1]}.*.*.* [redacted]` : REDACTED;
 }
 
 export interface ConnectivityProbe {
@@ -262,7 +304,7 @@ async function probeConnectivity(
       const res = await fetch('https://api.ipify.org?format=json', fetchOpts());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = (await res.json()) as { ip?: string };
-      return body.ip ? `IPv4 obtained (${body.ip})` : 'IPv4 obtained';
+      return body.ip ? `IPv4 obtained (${maskPublicIpv4(body.ip)})` : 'IPv4 obtained';
     }),
   );
 

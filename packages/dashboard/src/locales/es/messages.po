@@ -1454,6 +1454,10 @@ msgstr "Copiar hex al portapapeles"
 msgid "copy JSON"
 msgstr "copiar JSON"
 
+#: src/pages/Config.tsx
+msgid "Copy JSON"
+msgstr "Copiar JSON"
+
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "copiar URL"
@@ -3242,7 +3246,11 @@ msgid "One-click support bundle: probes every external service the daemon talks 
 "to (marketplace, pool, node, price providers) and snapshots the "
 "configuration with all secrets stripped. Use \"Copy as Markdown\" to "
 "paste the result into a bug report."
-msgstr "Paquete de soporte con un clic: prueba cada servicio externo con el que se comunica el daemon (mercado, pool, nodo, fuentes de precio) y captura la configuración con todos los secretos eliminados. Usa \"Copiar como Markdown\" para pegar el resultado en un informe de error."
+msgstr "Paquete de soporte con un clic: prueba cada servicio externo con el que "
+"se comunica el daemon (mercado, pool, nodo, fuentes de precio) y "
+"captura la configuración con todos los secretos eliminados. Usa "
+"\"Copiar como Markdown\" para pegar el resultado en un informe de "
+"error."
 
 #: src/pages/Config.tsx
 msgid "One-shot offset for earnings the on-chain payout observer can't see - "

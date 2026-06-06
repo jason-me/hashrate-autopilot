@@ -1430,6 +1430,10 @@ msgstr "Copy hex to clipboard"
 msgid "copy JSON"
 msgstr "copy JSON"
 
+#: src/pages/Config.tsx
+msgid "Copy JSON"
+msgstr "Copy JSON"
+
 #: src/pages/Status.tsx
 msgid "copy URL"
 msgstr "copy URL"
