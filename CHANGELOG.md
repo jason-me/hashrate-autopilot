@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-05
+
+### `[Fix]` NerdAxe miners never appeared on the Status page (#260)
+
+NerdAxe / NerdQAxe firmware (shufps/ESP-Miner-NerdQAxePlus family) reports `bestDiff` / `bestSessionDiff` as raw numbers where stock Bitaxe firmware reports magnitude-suffixed strings ("4.29G"). The daemon's difficulty parser crashed on the numeric form, killing the poll tick *after* a successful fetch but *before* the snapshot update - so every successful poll was silently discarded while failed polls rendered, freezing the Bitaxe Miners card on the last failure (or showing nothing at all). Numeric difficulty values are now accepted natively (same unit - share difficulty - just unformatted), formatted for display the way AxeOS itself does, and stored at full precision for best-difficulty records. One device's malformed payload can no longer take down the whole fleet's poll, and unreachable-device errors now include the underlying network error code instead of a bare "fetch failed".
+
 ## 2026-06-04
 
 ### `[Release]` v1.12.0

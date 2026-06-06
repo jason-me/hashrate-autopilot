@@ -210,7 +210,9 @@ function aggregateFleet(entries: ReadonlyArray<SoloMinerSnapshotEntry>): FleetTo
       powerSeen = true;
     }
     if (e.best_diff_text !== null) {
-      const parsed = parseMagnitudeSuffixed(e.best_diff_text);
+      // Exact numeric when the daemon provides it (#260); fall back
+      // to parsing the display text for older snapshots.
+      const parsed = e.best_diff_numeric ?? parseMagnitudeSuffixed(e.best_diff_text);
       if (parsed !== null && parsed > bestDiffNum) {
         bestDiffNum = parsed;
         bestDiffText = e.best_diff_text;
@@ -240,7 +242,13 @@ function aggregateFleet(entries: ReadonlyArray<SoloMinerSnapshotEntry>): FleetTo
  * malformed inputs so the caller can decide whether to surface
  * "-" or skip the device.
  */
-function parseMagnitudeSuffixed(s: string): number | null {
+function parseMagnitudeSuffixed(s: string | number): number | null {
+  // NerdAxe-style firmwares report best difficulty as a raw number
+  // (#260). The daemon normalises to a suffixed string before it
+  // reaches us, but tolerate the numeric form at this JSON boundary
+  // too - a crash here blanks the whole card.
+  if (typeof s === 'number') return Number.isFinite(s) ? s : null;
+  if (typeof s !== 'string') return null;
   const m = s.match(/^([\d.]+)([KMGTPE]?)$/i);
   if (!m) return null;
   const n = Number(m[1]);

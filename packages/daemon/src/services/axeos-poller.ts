@@ -46,6 +46,12 @@ export interface SoloMinerSnapshotEntry {
   readonly best_diff_text: string | null;
   /** Since-current-boot best share difficulty. */
   readonly best_session_diff_text: string | null;
+  /**
+   * Lifetime best share difficulty as a raw number. Exact when the
+   * firmware reports a number (NerdAxe, #260); parsed from the
+   * suffixed string (3 significant digits) on stock Bitaxe.
+   */
+  readonly best_diff_numeric: number | null;
   readonly error: string | null;
 }
 
@@ -77,7 +83,11 @@ const MAGNITUDE_MAP: Record<string, number> = {
   '': 1, K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15, E: 1e18,
 };
 
-export function parseMagnitudeSuffixed(s: string | null | undefined): number | null {
+export function parseMagnitudeSuffixed(s: string | number | null | undefined): number | null {
+  // NerdAxe / NerdQAxe firmware reports best difficulty as a raw
+  // number rather than Bitaxe's suffixed string (#260) - same unit
+  // (share difficulty vs diff 1), no parsing needed.
+  if (typeof s === 'number') return Number.isFinite(s) ? s : null;
   if (!s) return null;
   const m = MAGNITUDE_RE.exec(s.trim());
   if (!m) return null;
@@ -85,6 +95,38 @@ export function parseMagnitudeSuffixed(s: string | null | undefined): number | n
   if (!Number.isFinite(base)) return null;
   const multiplier = MAGNITUDE_MAP[m[2]!.toUpperCase()] ?? 1;
   return base * multiplier;
+}
+
+const MAGNITUDE_STEPS: ReadonlyArray<readonly [string, number]> = [
+  ['E', 1e18], ['P', 1e15], ['T', 1e12], ['G', 1e9], ['M', 1e6], ['K', 1e3],
+];
+
+/**
+ * Inverse of parseMagnitudeSuffixed: render a raw difficulty number
+ * the way AxeOS renders it ("58.39M", "4.29G") so numeric-reporting
+ * firmwares (NerdAxe, #260) display consistently with Bitaxes in
+ * the same fleet.
+ */
+export function formatMagnitudeSuffixed(n: number): string {
+  if (!Number.isFinite(n)) return String(n);
+  for (const [suffix, mult] of MAGNITUDE_STEPS) {
+    if (Math.abs(n) >= mult) {
+      const scaled = n / mult;
+      const text = scaled >= 100 ? scaled.toFixed(1) : scaled.toFixed(2);
+      return `${text.replace(/\.?0+$/, '')}${suffix}`;
+    }
+  }
+  return String(n);
+}
+
+/**
+ * Normalise AxeOS best-difficulty values to display text. Bitaxe
+ * sends a pre-formatted string - pass through. NerdAxe sends a raw
+ * number - format it ourselves (#260).
+ */
+function bestDiffDisplayText(v: string | number | null | undefined): string | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? formatMagnitudeSuffixed(v) : null;
+  return v ?? null;
 }
 
 export class AxeOSPoller {
@@ -160,33 +202,74 @@ export class AxeOSPoller {
         };
       }
       const info = fetched.info ?? null;
-      const entry: SoloMinerSnapshotEntry = {
-        device,
-        last_polled_at: tickAt,
-        reachable: fetched.reachable,
-        hashrate_instant_ghs: info?.hashRate ?? null,
-        hashrate_1m_ghs: info?.hashRate_1m ?? null,
-        hashrate_10m_ghs: info?.hashRate_10m ?? null,
-        hashrate_1h_ghs: info?.hashRate_1h ?? null,
-        expected_hashrate_ghs: info?.expectedHashrate ?? null,
-        temp_c: info?.temp ?? null,
-        vr_temp_c: info?.vrTemp ?? null,
-        power_w: info?.power ?? null,
-        voltage_v: info?.voltage ?? null,
-        current_a: info?.current ?? null,
-        shares_accepted: info?.sharesAccepted ?? null,
-        shares_rejected: info?.sharesRejected ?? null,
-        uptime_seconds: info?.uptimeSeconds ?? null,
-        asic_model: info?.ASICModel ?? null,
-        version: info?.version ?? null,
-        stratum_url: info?.stratumURL ?? null,
-        stratum_port: info?.stratumPort ?? null,
-        stratum_user: info?.stratumUser ?? null,
-        best_diff_text: info?.bestDiff ?? null,
-        best_session_diff_text: info?.bestSessionDiff ?? null,
-        error: fetched.error,
-      };
-      const bestDiffNumeric = parseMagnitudeSuffixed(entry.best_diff_text);
+      let entry: SoloMinerSnapshotEntry;
+      try {
+        entry = {
+          device,
+          last_polled_at: tickAt,
+          reachable: fetched.reachable,
+          hashrate_instant_ghs: info?.hashRate ?? null,
+          hashrate_1m_ghs: info?.hashRate_1m ?? null,
+          hashrate_10m_ghs: info?.hashRate_10m ?? null,
+          hashrate_1h_ghs: info?.hashRate_1h ?? null,
+          expected_hashrate_ghs: info?.expectedHashrate ?? null,
+          temp_c: info?.temp ?? null,
+          vr_temp_c: info?.vrTemp ?? null,
+          power_w: info?.power ?? null,
+          voltage_v: info?.voltage ?? null,
+          current_a: info?.current ?? null,
+          shares_accepted: info?.sharesAccepted ?? null,
+          shares_rejected: info?.sharesRejected ?? null,
+          uptime_seconds: info?.uptimeSeconds ?? null,
+          asic_model: info?.ASICModel ?? null,
+          version: info?.version ?? null,
+          stratum_url: info?.stratumURL ?? null,
+          stratum_port: info?.stratumPort ?? null,
+          stratum_user: info?.stratumUser ?? null,
+          best_diff_text: bestDiffDisplayText(info?.bestDiff),
+          best_session_diff_text: bestDiffDisplayText(info?.bestSessionDiff),
+          best_diff_numeric: parseMagnitudeSuffixed(info?.bestDiff),
+          error: fetched.error,
+        };
+      } catch (e) {
+        // #260 post-mortem: a payload-shape surprise (NerdAxe's
+        // numeric bestDiff crashing the string parser) threw out of
+        // tick() *before* the snapshot assignment below - so every
+        // successful poll was discarded while failed polls rendered,
+        // freezing the Status card on the last failure forever. One
+        // device's odd payload must never take down the fleet tick:
+        // degrade that device to an error entry and keep going.
+        const message = e instanceof Error ? e.message : String(e);
+        this.log(`[axeos-poller] payload mapping failed for ${device.ip}: ${message}`);
+        entry = {
+          device,
+          last_polled_at: tickAt,
+          reachable: false,
+          hashrate_instant_ghs: null,
+          hashrate_1m_ghs: null,
+          hashrate_10m_ghs: null,
+          hashrate_1h_ghs: null,
+          expected_hashrate_ghs: null,
+          temp_c: null,
+          vr_temp_c: null,
+          power_w: null,
+          voltage_v: null,
+          current_a: null,
+          shares_accepted: null,
+          shares_rejected: null,
+          uptime_seconds: null,
+          asic_model: null,
+          version: null,
+          stratum_url: null,
+          stratum_port: null,
+          stratum_user: null,
+          best_diff_text: null,
+          best_session_diff_text: null,
+          best_diff_numeric: null,
+          error: `payload mapping failed: ${message}`,
+        };
+      }
+      const bestDiffNumeric = entry.best_diff_numeric;
       entries.push(entry);
       sampleInserts.push({
         device_id: device.id,
@@ -236,7 +319,10 @@ export class AxeOSPoller {
     let bestIp: string | null = null;
     for (const e of entries) {
       if (!e.reachable) continue;
-      const val = parseMagnitudeSuffixed(e.best_diff_text);
+      // Prefer the exact numeric (lossless for NerdAxe-style numeric
+      // firmwares, #260) over re-parsing the 3-significant-digit
+      // display text.
+      const val = e.best_diff_numeric ?? parseMagnitudeSuffixed(e.best_diff_text);
       if (val !== null && (fleetMax === null || val > fleetMax)) {
         fleetMax = val;
         bestLabel = e.device.label;
