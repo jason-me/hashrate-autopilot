@@ -184,12 +184,10 @@ export function Status() {
     window.localStorage.setItem(PRICE_RIGHT_AXIS_KEY, priceRightAxis);
   }, [priceRightAxis]);
 
-  // #244: operator-defined dashboard block order (drag to reorder),
-  // stored per-device in localStorage. The order + the "Rearrange"
-  // edit-mode flag live in CardOrderProvider (mounted in Layout) so the
-  // toggle can sit in the global header instead of costing page height.
+  // #244 v2: operator-defined dashboard block order (drag to reorder),
+  // stored per-device in localStorage. Always-on drag via per-card
+  // grip handles; the explicit Rearrange mode is gone.
   const cardOrder = useCardOrderContext();
-  const rearranging = cardOrder.rearranging;
 
   const query = useQuery({
     queryKey: ['status'],
@@ -1015,42 +1013,9 @@ export function Status() {
       {/* #113: stale-URL banner. Renders only when there's a real
           mismatch between config and an active bid - silent otherwise. */}
       <StaleUrlBanner />
-      {/* #244: the Rearrange toggle lives in the global header (zero
-          page height when idle). While editing, this one-line bar
-          carries the hint plus an always-visible Done (and reset), so
-          on mobile the operator doesn't have to reopen the hamburger
-          to confirm - the header toggle and this Done are deliberately
-          redundant. The order is saved on every drag, so Done just
-          exits edit mode; nothing is persisted on click. */}
-      {rearranging && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-slate-500">
-          <span>
-            <Trans>Drag the cards by their title bar to reorder.</Trans>{' '}
-            <Trans>Your layout is saved on this device.</Trans>
-          </span>
-          {cardOrder.isCustomized && (
-            <button
-              type="button"
-              onClick={cardOrder.reset}
-              className="text-slate-400 underline underline-offset-2 hover:text-slate-200"
-            >
-              <Trans>Reset to default order</Trans>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => cardOrder.setRearranging(false)}
-            className="ml-auto inline-flex items-center gap-1.5 rounded border border-emerald-600 bg-emerald-600/20 px-2.5 py-1 font-medium text-emerald-300 hover:bg-emerald-600/30"
-          >
-            <Trans>Done rearranging</Trans>
-          </button>
-        </div>
-      )}
       <SortableDashboard
         blocks={orderedBlocks}
-        editing={rearranging}
         onReorder={cardOrder.setOrder}
-        dragHint={t`Drag to reorder`}
       />
     </div>
   );

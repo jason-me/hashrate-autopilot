@@ -1,12 +1,12 @@
-// #244: shared dashboard card-order + rearrange-mode state.
+// #244 v2: shared dashboard card-order state.
 //
-// The order itself is consumed by the Status page (to render blocks in
-// the saved sequence) but the "Rearrange" toggle lives in the global
-// header (Layout), so the edit-mode flag and the order controls have to
-// be reachable from both. This context, mounted above both the header
-// and the routed page, is that shared home.
+// v1 also tracked a "rearranging" toggle - the dashboard had a
+// separate edit mode. v2's drag-to-reorder is always on (small grip
+// handles on each card fade in on hover), so the mode flag is gone.
+// `isCustomized` + `reset()` are kept so the operator can revert to
+// the default order; the affordance lives in the header / hamburger.
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { useCardOrder, type CardOrderControls } from './cardOrder';
 
 // Built-in top-level dashboard block order. Each ID is a draggable
@@ -28,21 +28,15 @@ export const DEFAULT_BLOCK_ORDER = [
   'solo',
 ] as const;
 
-interface CardOrderContextValue extends CardOrderControls {
-  /** Whether the dashboard is in drag-to-reorder mode. */
-  rearranging: boolean;
-  setRearranging: (v: boolean) => void;
-}
+type CardOrderContextValue = CardOrderControls;
 
 const CardOrderContext = createContext<CardOrderContextValue | null>(null);
 
 export function CardOrderProvider({ children }: { children: ReactNode }) {
   const controls = useCardOrder(DEFAULT_BLOCK_ORDER);
-  const [rearranging, setRearranging] = useState(false);
-  // Recomputed only when the provider re-renders (i.e. on an actual
-  // order or rearranging change), so consumers don't churn per frame.
-  const value: CardOrderContextValue = { ...controls, rearranging, setRearranging };
-  return <CardOrderContext.Provider value={value}>{children}</CardOrderContext.Provider>;
+  return (
+    <CardOrderContext.Provider value={controls}>{children}</CardOrderContext.Provider>
+  );
 }
 
 export function useCardOrderContext(): CardOrderContextValue {
