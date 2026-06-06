@@ -13,6 +13,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { sideTooltipPosition } from '../lib/tooltipPosition';
 import type React from 'react';
 
 import {
@@ -2209,13 +2210,9 @@ export function PoolBlockTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    // #266 follow-up: side-positioned so the tooltip doesn't reach
+    // into the neighbouring chart (price chart sits below hashrate).
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, block.block_hash]);
 
@@ -2371,13 +2368,7 @@ export function RetargetTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, event.tick_at]);
 
@@ -2669,13 +2660,7 @@ function PoolLuckStepTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, events.length, events[0]?.block.height]);
 

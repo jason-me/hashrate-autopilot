@@ -439,6 +439,8 @@ async function computeMetrics(
         fillable_ask,
         delta,
         dur,
+        primary_bid_shares_purchased_m,
+        primary_bid_shares_rejected_m,
         (delta IS NOT NULL
           AND delta >= 0
           AND delivered_ph > 0.05
@@ -452,6 +454,8 @@ async function computeMetrics(
           hashprice_sat_per_eh_day AS hashprice,
           fillable_ask_sat_per_eh_day AS fillable_ask,
           our_primary_price_sat_per_eh_day AS our_bid,
+          primary_bid_shares_purchased_m,
+          primary_bid_shares_rejected_m,
           CASE
             WHEN primary_bid_consumed_sat IS NOT NULL
               AND primary_bid_consumed_sat > 0

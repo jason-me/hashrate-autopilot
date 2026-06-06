@@ -15,6 +15,7 @@ import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 import type React from 'react';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { sideTooltipPosition } from '../lib/tooltipPosition';
 
 import {
   formatTimeTick,
@@ -2901,13 +2902,9 @@ function RewardEventTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    // #266 follow-up: side-positioned so the tooltip doesn't
+    // reach into the neighbouring (hashrate) chart above.
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, reward.id]);
 
@@ -3011,13 +3008,7 @@ function DepositTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, deposit.tx_id]);
 
@@ -3236,25 +3227,9 @@ function EventTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 12;
-    const safeEdge = 8;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    let left = tip.x + margin;
-    if (left + rect.width > vw - safeEdge) {
-      // Flip to the left side of the cursor.
-      left = tip.x - rect.width - margin;
-    }
-    if (left < safeEdge) left = safeEdge;
-
-    let top = tip.y + margin;
-    if (top + rect.height > vh - safeEdge) {
-      // Flip above the cursor.
-      top = tip.y - rect.height - margin;
-    }
-    if (top < safeEdge) top = safeEdge;
-
+    // #266 follow-up: side-positioned so the bid-event tooltip
+    // doesn't reach into the hashrate chart above.
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, tip.event.id]);
 
@@ -3660,13 +3635,7 @@ function UnpaidDropTooltip({
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const margin = 8;
-    let left = tip.x + 12;
-    let top = tip.y + 12;
-    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
-    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
-    if (left < margin) left = margin;
-    if (top < margin) top = margin;
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
     setPos({ left, top, ready: true });
   }, [tip.x, tip.y, tip.tick_at]);
 
