@@ -5320,6 +5320,33 @@ function DdnsSection({
  * server-side and render as a loud asterisk marker so the operator
  * can SEE the bundle is safe to paste.
  */
+/** Lucide `copy` / `check`, inlined per the house icon rule. */
+function CopyIcon({ done }: { done: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="inline-block mr-1 -mt-px"
+      aria-hidden
+    >
+      {done ? (
+        <path d="M20 6 9 17l-5-5" />
+      ) : (
+        <>
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function DiagnosticsSection() {
   const [copied, setCopied] = useState<'md' | 'json' | null>(null);
   const diag = useMutation<DiagnosticsResponse, Error, void>({
@@ -5369,6 +5396,7 @@ function DiagnosticsSection() {
             onClick={() => void onCopy()}
             className="px-3 py-1.5 text-sm rounded border border-slate-700 text-slate-300 hover:bg-slate-800 whitespace-nowrap"
           >
+            <CopyIcon done={copied === 'md'} />
             {copied === 'md' ? <Trans>Copied</Trans> : <Trans>Copy as Markdown</Trans>}
           </button>
         )}
@@ -5381,7 +5409,7 @@ function DiagnosticsSection() {
       {d && (
         <div className="mt-4 space-y-4 text-xs">
           <div className="font-mono text-slate-400">
-            v{d.identity.version} · build {d.identity.build} · {d.identity.hash} ·{' '}
+            v{d.identity.version} · build {d.identity.build} · {d.identity.hash} · node{' '}
             {d.identity.node} · {d.identity.platform} · {d.identity.run_mode ?? '?'} ·{' '}
             <Trans>uptime</Trans> {formatUptime(d.identity.uptime_seconds)}
           </div>
@@ -5429,6 +5457,7 @@ function DiagnosticsSection() {
               onClick={() => void onCopyJson()}
               className="mt-2 px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
             >
+              <CopyIcon done={copied === 'json'} />
               {copied === 'json' ? <Trans>Copied</Trans> : <Trans>Copy JSON</Trans>}
             </button>
             <pre className="mt-2 bg-slate-950 border border-slate-800 rounded p-2 overflow-x-auto text-[11px] leading-snug">
@@ -5453,7 +5482,7 @@ function diagnosticsToMarkdown(d: DiagnosticsResponse): string {
   lines.push('### Hashrate Autopilot support bundle');
   lines.push('');
   lines.push(
-    `v${d.identity.version} · build ${d.identity.build} · ${d.identity.hash} · ${d.identity.node} · ${d.identity.platform} · ${d.identity.run_mode ?? '?'} · uptime ${formatUptime(d.identity.uptime_seconds)} · tick ${Math.round(d.identity.tick_interval_ms / 1000)}s`,
+    `v${d.identity.version} · build ${d.identity.build} · ${d.identity.hash} · node ${d.identity.node} · ${d.identity.platform} · ${d.identity.run_mode ?? '?'} · uptime ${formatUptime(d.identity.uptime_seconds)} · tick ${Math.round(d.identity.tick_interval_ms / 1000)}s`,
   );
   lines.push('');
   lines.push('| target | status | latency | detail |');
