@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Release]` v1.12.2
+
+Patch release: "Test connection" button for the BTC price oracle (#270) and the one-click Diagnostics support bundle with connectivity matrix + sanitized config snapshot (#272). Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.
+
 ### `[Feature]` Diagnostics support bundle: one-click connectivity matrix + sanitized config (#272)
 
 New Config → Display & Logging → Diagnostics panel. "Run diagnostics" probes every external service the daemon talks to in parallel - Braiins API, Ocean API, Datum gateway, bitcoind RPC, electrs, Telegram, all four BTC price providers, public-IP service, plus a DNS-sanity check - each reporting latency or the concrete error (HTTP status, `ENOTFOUND`, timeout). "Copy as Markdown" produces a paste-ready block for bug reports: identity (version/build/node/uptime/run mode), the connectivity table, last-tick freshness per integration, and the full configuration with every sensitive field rendered as a loud `********** [redacted]` marker so it's visibly safe to paste - credentials, payout address, pool/DDNS hostnames and the public IP are all stripped (LAN addresses stay, they're what support needs); a separate Copy JSON button copies just the config snapshot. The bug-report template now asks for it. Born out of #267, where diagnosing a failing price oracle took days of back-and-forth curls.
