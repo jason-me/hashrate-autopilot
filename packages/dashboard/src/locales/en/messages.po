@@ -4080,6 +4080,10 @@ msgstr "Search settings..."
 msgid "Search titles + bodies..."
 msgstr "Search titles + bodies..."
 
+#: src/pages/Config.tsx
+msgid "Select a price source to test."
+msgstr "Select a price source to test."
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Select display currency"

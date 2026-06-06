@@ -21,6 +21,7 @@ import {
   UnauthorizedError,
   type AlertSeverity,
   type AppConfig,
+  type BtcPriceTestResponse,
   type DatumTestResponse,
   type DdnsTestResponse,
   type PoolUrlTestResponse,
@@ -1337,7 +1338,75 @@ function SectionCard({
       {section.id === 'block-found-sound' && (
         <BlockFoundSoundExtras draft={draft} onChange={onChange} />
       )}
+      {section.id === 'btc-price-oracle' && (
+        <BtcOracleTestExtras draft={draft} locale={locale} />
+      )}
     </section>
+  );
+}
+
+/**
+ * #270: "Test connection" button for the BTC price oracle section.
+ * Probes the provider currently selected in the form (saved or not)
+ * via POST /api/btc-price/test and reports the live price or the
+ * concrete failure (HTTP status / network error code) inline. Born
+ * out of #267, where the only observable signal for a failing oracle
+ * was the USD toggle silently not appearing.
+ *
+ * A successful probe warms the daemon's price cache, so invalidating
+ * the ['btc-price'] query right after makes the header's USD toggle
+ * light up immediately.
+ */
+function BtcOracleTestExtras({
+  draft,
+  locale,
+}: {
+  draft: AppConfig;
+  locale: string | undefined;
+}) {
+  const qc = useQueryClient();
+  const test = useMutation<BtcPriceTestResponse, Error, void>({
+    mutationFn: () => api.btcPriceTest(draft.btc_price_source),
+    onSuccess: (res) => {
+      if (res.ok) qc.invalidateQueries({ queryKey: ['btc-price'] });
+    },
+  });
+  const disabled = draft.btc_price_source === 'none' || test.isPending;
+  const priceStr =
+    test.data?.ok && test.data.usd_per_btc !== null
+      ? test.data.usd_per_btc.toLocaleString(locale, { maximumFractionDigits: 0 })
+      : null;
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => test.mutate()}
+        disabled={disabled}
+        className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+      >
+        {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
+      </button>
+      {draft.btc_price_source === 'none' && (
+        <span className="ml-3 text-xs text-slate-500">
+          <Trans>Select a price source to test.</Trans>
+        </span>
+      )}
+      {test.data && test.data.ok && priceStr !== null && (
+        <div className="mt-2 text-xs text-emerald-300 font-mono">
+          OK · ${priceStr} · {test.data.source}
+        </div>
+      )}
+      {test.data && !test.data.ok && (
+        <div className="mt-2 text-xs text-red-400 font-mono break-words">
+          {test.data.error}
+        </div>
+      )}
+      {test.isError && (
+        <div className="mt-2 text-xs text-red-400 font-mono break-words">
+          {test.error.message}
+        </div>
+      )}
+    </div>
   );
 }
 

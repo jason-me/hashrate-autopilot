@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Feature]` "Test connection" button for the BTC price oracle (#270)
+
+One click in Config → Pool & Payout → BTC price oracle now performs a live fetch against the selected provider (saved or not) and reports the result inline: the current BTC/USD price on success, or the concrete failure on error - the HTTP status (e.g. `429` rate-limited) or the underlying network error code (`ENOTFOUND`, `ECONNREFUSED`), instead of the USD toggle just silently not appearing (#267). A successful test warms the daemon's price cache so the header's USD toggle lights up immediately. Price fetches now also send an explicit User-Agent (bot-sensitive CDN endpoints reject anonymous requests) and daemon logs include the real network error instead of a bare "fetch failed".
+
 ### `[Release]` v1.12.1
 
 Hotfix release carrying only the NerdAxe fix (#260): NerdAxe / NerdQAxe miners now appear on the Status page, numeric best-difficulty values are handled natively, one misbehaving device can no longer freeze the whole miners card, and unreachable-device errors include the underlying network error code. Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.

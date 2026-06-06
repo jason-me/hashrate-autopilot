@@ -2283,8 +2283,7 @@ msgid "Hashrate Ocean credits to our payout address (5-min sliding window). "
 "AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean "
 "shares are getting lost somewhere in the Braiins → Datum → Ocean "
 "pipeline."
-msgstr ""
-"Hashrate die Ocean toeschrijft aan ons uitbetaaladres (5-min schuivend "
+msgstr "Hashrate die Ocean toeschrijft aan ons uitbetaaladres (5-min schuivend "
 "venster). Per tick opgehaald uit /v1/user_hashrate.hashrate_300s. "
 "Vergelijk met AVG BRAIINS / AVG DATUM bovenaan; aanhoudende verschillen "
 "betekenen dat shares onderweg verloren gaan in de Braiins → Datum → "
@@ -4135,6 +4134,10 @@ msgstr "Zoek instellingen..."
 #: src/pages/Alerts.tsx
 msgid "Search titles + bodies..."
 msgstr "Zoek in titels + bodies..."
+
+#: src/pages/Config.tsx
+msgid "Select a price source to test."
+msgstr "Selecteer een prijsbron om te testen."
 
 #: src/components/Layout.tsx
 msgid "Select display currency"

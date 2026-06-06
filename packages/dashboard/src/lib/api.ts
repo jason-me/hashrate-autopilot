@@ -763,6 +763,12 @@ export const api = {
     return URL.createObjectURL(blob);
   },
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
+  /** #270: live oracle probe for the Config panel's Test connection button. */
+  btcPriceTest: (source: string) =>
+    request<BtcPriceTestResponse>('/api/btc-price/test', {
+      method: 'POST',
+      body: JSON.stringify({ source }),
+    }),
   ddns: () => request<DdnsRouteResponse>('/api/ddns'),
   // #149: solo-mining device list + live AxeOS snapshot.
   soloMiners: () => request<SoloMinersResponse>('/api/solo-miners'),
@@ -963,6 +969,14 @@ export interface BtcPriceResponse {
   usd_per_btc: number | null;
   source: string;
   fetched_at_ms: number | null;
+}
+
+/** #270: response of POST /api/btc-price/test. */
+export interface BtcPriceTestResponse {
+  ok: boolean;
+  usd_per_btc: number | null;
+  source: string;
+  error: string | null;
 }
 
 export interface Bip110ScanSignalingBlock {
