@@ -240,6 +240,11 @@ export async function registerBidEventsRoute(
     return {
       events: rows.map((r) => ({
         ...toView(r),
+        // #256 v2 follow-up: prefer the SQL-coalesced effective IDs
+        // and speed so the table never shows an em-dash for a row
+        // that's provably tied to a known bid.
+        braiins_order_id: r.effective_braiins_order_id ?? r.braiins_order_id,
+        speed_limit_ph: r.effective_speed_limit_ph ?? r.speed_limit_ph,
         fillable_at_event_sat_per_ph_day:
           r.fillable_at_event_sat !== null
             ? r.fillable_at_event_sat / EH_PER_PH

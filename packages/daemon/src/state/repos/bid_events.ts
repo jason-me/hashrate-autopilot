@@ -187,6 +187,8 @@ export class BidEventsRepo {
     Array<
       BidEventRow & {
         fillable_at_event_sat: number | null;
+        effective_braiins_order_id: string | null;
+        effective_speed_limit_ph: number | null;
       }
     >
   > {
@@ -226,19 +228,60 @@ export class BidEventsRepo {
     }
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
 
-    // The fillable_at_event subquery picks the most recent tick at-
-    // or-before the event with a non-null fillable reading. Rows
-    // with no qualifying tick (e.g. event predates the daemon's
-    // first tick) come back null and the dashboard renders an em-dash.
+    // - fillable_at_event: nearest tick at-or-before the event with
+    //   a non-null fillable reading.
+    // - effective_braiins_order_id: CREATE_BID events sometimes
+    //   land with order_id=NULL because the daemon emits them before
+    //   Braiins echoes back the assigned ID. The next event on the
+    //   same logical bid (within ~5 min) has the ID. Coalesce so the
+    //   table never shows an em-dash bid column for a row that's
+    //   provably the create of an identifiable bid.
+    // - effective_speed_limit_ph: most events don't carry the bid's
+    //   speed in their row (only CREATE_BID + EDIT_SPEED do). For
+    //   every other event, surface the most recent CREATE_BID or
+    //   EDIT_SPEED's speed_limit_ph for the SAME bid, so the column
+    //   is never empty as long as the bid is identifiable.
     const sqlText = `
       SELECT
         e.*,
+        COALESCE(
+          e.braiins_order_id,
+          (SELECT e2.braiins_order_id
+             FROM bid_events e2
+            WHERE e2.occurred_at >= e.occurred_at
+              AND e2.occurred_at <= e.occurred_at + 300000
+              AND e2.braiins_order_id IS NOT NULL
+            ORDER BY e2.occurred_at ASC
+            LIMIT 1)
+        ) AS effective_braiins_order_id,
         (SELECT t.fillable_ask_sat_per_eh_day
            FROM tick_metrics t
           WHERE t.tick_at <= e.occurred_at
             AND t.fillable_ask_sat_per_eh_day IS NOT NULL
           ORDER BY t.tick_at DESC
-          LIMIT 1) AS fillable_at_event_sat
+          LIMIT 1) AS fillable_at_event_sat,
+        COALESCE(
+          e.speed_limit_ph,
+          (SELECT e3.speed_limit_ph
+             FROM bid_events e3
+            WHERE e3.braiins_order_id = (
+                    COALESCE(
+                      e.braiins_order_id,
+                      (SELECT e2.braiins_order_id
+                         FROM bid_events e2
+                        WHERE e2.occurred_at >= e.occurred_at
+                          AND e2.occurred_at <= e.occurred_at + 300000
+                          AND e2.braiins_order_id IS NOT NULL
+                        ORDER BY e2.occurred_at ASC
+                        LIMIT 1)
+                    )
+                  )
+              AND e3.speed_limit_ph IS NOT NULL
+              AND e3.occurred_at <= e.occurred_at
+              AND e3.kind IN ('CREATE_BID', 'EDIT_SPEED')
+            ORDER BY e3.occurred_at DESC
+            LIMIT 1)
+        ) AS effective_speed_limit_ph
         FROM bid_events e
         ${whereClause}
         ORDER BY e.id DESC
@@ -250,7 +293,11 @@ export class BidEventsRepo {
       parameters: [],
       query: { kind: 'RawNode' as never },
     } as never);
-    type Row = BidEventRow & { fillable_at_event_sat: number | null };
+    type Row = BidEventRow & {
+      fillable_at_event_sat: number | null;
+      effective_braiins_order_id: string | null;
+      effective_speed_limit_ph: number | null;
+    };
     const rows = (result as unknown as { rows: Row[] }).rows ?? [];
     return rows;
   }

@@ -284,8 +284,12 @@ msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met "
 "automatisch."
 
 #: src/pages/History.tsx
-msgid "|Δ price| ≥ (sat/PH/day)"
-msgstr "|Δ prijs| ≥ (sat/PH/dag)"
+msgid "|Δ price| ≥ (sat/{unitLabel}/day)"
+msgstr "|Δ prijs| ≥ (sat/{unitLabel}/dag)"
+
+#: src/pages/History.tsx
+#~ msgid "|Δ price| ≥ (sat/PH/day)"
+#~ msgstr "|Δ prijs| ≥ (sat/PH/dag)"
 
 #: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
@@ -491,6 +495,10 @@ msgstr "Alarmdrempels"
 msgid "Alerts"
 msgstr "Meldingen"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "alle"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "Alles"
@@ -512,8 +520,8 @@ msgid "amount"
 msgstr "bedrag"
 
 #: src/pages/History.tsx
-msgid "any"
-msgstr "alle"
+#~ msgid "any"
+#~ msgstr "alle"
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -666,6 +674,11 @@ msgstr "automatisch"
 #: src/pages/Status.tsx
 msgid "autopilot"
 msgstr "autopilot"
+
+#: src/pages/History.tsx
+msgid "AUTOPILOT = the controller emitted the event on its own; MANUAL = an "
+"operator action via the API or UI overrode the controller."
+msgstr "AUTOPILOT = de controller heeft de wijziging zelf doorgevoerd; MANUAL = een operator-actie via de API of UI heeft de controller overruled."
 
 #: src/pages/Config.tsx
 msgid "Autopilot only (autopilot-tagged bids)"
@@ -1435,8 +1448,8 @@ msgid "Choose file…"
 msgstr "Kies bestand…"
 
 #: src/pages/History.tsx
-msgid "Clear all"
-msgstr "Alles wissen"
+#~ msgid "Clear all"
+#~ msgstr "Alles wissen"
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -4253,9 +4266,17 @@ msgstr "Verwijder deze tegel"
 msgid "Replace file…"
 msgstr "Bestand vervangen…"
 
+#: src/pages/History.tsx
+msgid "reset"
+msgstr "herstellen"
+
 #: src/components/Layout.tsx
 msgid "Reset"
 msgstr "Herstellen"
+
+#: src/pages/History.tsx
+msgid "Reset all filters"
+msgstr "Alle filters herstellen"
 
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"

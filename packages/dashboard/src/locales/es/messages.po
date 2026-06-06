@@ -285,8 +285,12 @@ msgstr "<0>Discordancia:</0> la identidad del worker debe empezar con "
 "campo la sigue automáticamente."
 
 #: src/pages/History.tsx
-msgid "|Δ price| ≥ (sat/PH/day)"
-msgstr "|Δ precio| ≥ (sat/PH/día)"
+msgid "|Δ price| ≥ (sat/{unitLabel}/day)"
+msgstr "|Δ precio| ≥ (sat/{unitLabel}/día)"
+
+#: src/pages/History.tsx
+#~ msgid "|Δ price| ≥ (sat/PH/day)"
+#~ msgstr "|Δ precio| ≥ (sat/PH/día)"
 
 #: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
@@ -493,6 +497,10 @@ msgstr "Umbrales de alerta"
 msgid "Alerts"
 msgstr "Alertas"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "todos"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "Todo"
@@ -514,8 +522,8 @@ msgid "amount"
 msgstr "monto"
 
 #: src/pages/History.tsx
-msgid "any"
-msgstr "cualquiera"
+#~ msgid "any"
+#~ msgstr "cualquiera"
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -672,6 +680,11 @@ msgstr "automático"
 #: src/pages/Status.tsx
 msgid "autopilot"
 msgstr "autopilot"
+
+#: src/pages/History.tsx
+msgid "AUTOPILOT = the controller emitted the event on its own; MANUAL = an "
+"operator action via the API or UI overrode the controller."
+msgstr "AUTOPILOT = el controlador emitió el evento por sí mismo; MANUAL = una acción del operador vía API o UI anuló al controlador."
 
 #: src/pages/Config.tsx
 msgid "Autopilot only (autopilot-tagged bids)"
@@ -1446,8 +1459,8 @@ msgid "Choose file…"
 msgstr "Elegir archivo…"
 
 #: src/pages/History.tsx
-msgid "Clear all"
-msgstr "Limpiar todo"
+#~ msgid "Clear all"
+#~ msgstr "Limpiar todo"
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -4275,9 +4288,17 @@ msgstr "Quitar este mosaico"
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
 
+#: src/pages/History.tsx
+msgid "reset"
+msgstr "restablecer"
+
 #: src/components/Layout.tsx
 msgid "Reset"
 msgstr "Restablecer"
+
+#: src/pages/History.tsx
+msgid "Reset all filters"
+msgstr "Restablecer todos los filtros"
 
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"

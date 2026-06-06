@@ -280,8 +280,12 @@ msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - "
 "the BTC payout address above; this field follows it automatically."
 
 #: src/pages/History.tsx
-msgid "|Δ price| ≥ (sat/PH/day)"
-msgstr "|Δ price| ≥ (sat/PH/day)"
+msgid "|Δ price| ≥ (sat/{unitLabel}/day)"
+msgstr "|Δ price| ≥ (sat/{unitLabel}/day)"
+
+#: src/pages/History.tsx
+#~ msgid "|Δ price| ≥ (sat/PH/day)"
+#~ msgstr "|Δ price| ≥ (sat/PH/day)"
 
 #: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
@@ -487,6 +491,10 @@ msgstr "Alert thresholds"
 msgid "Alerts"
 msgstr "Alerts"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "all"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "All"
@@ -508,8 +516,8 @@ msgid "amount"
 msgstr "amount"
 
 #: src/pages/History.tsx
-msgid "any"
-msgstr "any"
+#~ msgid "any"
+#~ msgstr "any"
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -658,6 +666,12 @@ msgstr "automatic"
 #: src/pages/Status.tsx
 msgid "autopilot"
 msgstr "autopilot"
+
+#: src/pages/History.tsx
+msgid "AUTOPILOT = the controller emitted the event on its own; MANUAL = an "
+"operator action via the API or UI overrode the controller."
+msgstr "AUTOPILOT = the controller emitted the event on its own; MANUAL = an "
+"operator action via the API or UI overrode the controller."
 
 #: src/pages/Config.tsx
 msgid "Autopilot only (autopilot-tagged bids)"
@@ -1417,8 +1431,8 @@ msgid "Choose file…"
 msgstr "Choose file…"
 
 #: src/pages/History.tsx
-msgid "Clear all"
-msgstr "Clear all"
+#~ msgid "Clear all"
+#~ msgstr "Clear all"
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -4192,9 +4206,17 @@ msgstr "Remove this tile"
 msgid "Replace file…"
 msgstr "Replace file…"
 
+#: src/pages/History.tsx
+msgid "reset"
+msgstr "reset"
+
 #: src/components/Layout.tsx
 msgid "Reset"
 msgstr "Reset"
+
+#: src/pages/History.tsx
+msgid "Reset all filters"
+msgstr "Reset all filters"
 
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"

@@ -1,16 +1,23 @@
 /**
  * #256 v2: flat-table /history page.
  *
- * Replaces the build-616 collapsible per-bid view. Operator feedback
- * was clear: "when did the last edit_speed happen?" is the question,
- * and that's a flat-table-with-filters question, not a per-bid
- * grouping one.
+ * Replaces the per-bid collapsible view. Toolbar of filters at top +
+ * flat table + infinite scroll. Server pages 100 events at a time
+ * via a `before_id` cursor.
  *
- * Layout: toolbar of filters at top + flat table + infinite scroll.
- * Server pages 100 events at a time using a `before_id` cursor.
- * Per-bid grouping retired; bid renders as a column with truncated
- * id + hover-for-full. Reason column dropped; the action + price +
- * fillable columns carry the meaningful change information.
+ * Columns: When | Bid (full id) | Action | Fillable | Price before
+ *          | Price after | Δ price | Speed | Source. Δ price colour-
+ * coded green=down/red=up. Speed/bid id are server-side coalesced
+ * across events on the same bid so the column is never empty when
+ * the row is provably tied to a known order.
+ *
+ * Toolbar filters: action kind (chips with Lucide glyphs), bid id
+ * substring, date range (browser native date picker, parsed in local
+ * time to avoid the off-by-one timezone shift), source (dropdown with
+ * a help tooltip explaining what AUTOPILOT vs MANUAL means), and
+ * |Δ price| ≥ N in the currently-selected hashrate denomination
+ * (TH/PH/EH) - converts to the daemon's sat/EH/day internal unit on
+ * the wire. Reset button on the right with a Lucide rotate-ccw icon.
  */
 
 import { Trans } from '@lingui/react/macro';
@@ -28,6 +35,7 @@ import {
 import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber } from '../lib/format';
+import { Tooltip } from '../components/Tooltip';
 
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
@@ -53,7 +61,6 @@ export function History() {
     [query.data],
   );
 
-  // Auto-load next page when the sentinel near the bottom enters view.
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = sentinelRef.current;
@@ -80,10 +87,10 @@ export function History() {
               <th className="text-left font-normal py-1.5 px-3 whitespace-nowrap"><Trans>When</Trans></th>
               <th className="text-left font-normal py-1.5 px-3"><Trans>Bid</Trans></th>
               <th className="text-left font-normal py-1.5 px-3"><Trans>Action</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Fillable</Trans></th>
               <th className="text-right font-normal py-1.5 px-3"><Trans>Price before</Trans></th>
               <th className="text-right font-normal py-1.5 px-3"><Trans>Price after</Trans></th>
               <th className="text-right font-normal py-1.5 px-3"><Trans>Δ price</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3"><Trans>Fillable</Trans></th>
               <th className="text-right font-normal py-1.5 px-3"><Trans>Speed</Trans></th>
               <th className="text-left font-normal py-1.5 px-3"><Trans>Source</Trans></th>
             </tr>
@@ -102,7 +109,6 @@ export function History() {
           </tbody>
         </table>
       </div>
-      {/* Sentinel + manual fallback button. */}
       <div ref={sentinelRef} />
       {query.hasNextPage && (
         <div className="flex justify-center pt-2">
@@ -133,6 +139,7 @@ function Toolbar({
 }) {
   const { i18n } = useLingui();
   void i18n;
+  const denomination = useDenomination();
   const kinds: Kind[] = filters.kinds ? [...filters.kinds] : [];
 
   const toggleKind = (k: Kind) => {
@@ -142,11 +149,10 @@ function Toolbar({
     onChange({ ...filters, kinds: set.size > 0 ? Array.from(set) : undefined });
   };
 
-  const updateNum = (key: 'sinceMs' | 'untilMs' | 'minAbsPriceDelta', v: string) => {
-    const n = v ? Number(v) : undefined;
-    onChange({ ...filters, [key]: n !== undefined && Number.isFinite(n) ? n : undefined });
-  };
-
+  // #256 v2 follow-up: parse the date input value as LOCAL time so
+  // clicking "2 June" sets 2 June at 00:00:00 local rather than UTC
+  // midnight (which becomes 1 June 21:00 in UTC-3 and was the cause
+  // of the off-by-one operator caught).
   const updateDate = (key: 'sinceMs' | 'untilMs', v: string) => {
     if (!v) {
       const next = { ...filters };
@@ -154,10 +160,19 @@ function Toolbar({
       onChange(next);
       return;
     }
-    const d = new Date(v);
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return;
+    const [, ys, ms, ds] = m;
+    const year = Number(ys);
+    const month = Number(ms);
+    const day = Number(ds);
+    const d = new Date(year, month - 1, day);
     onChange({
       ...filters,
-      [key]: key === 'sinceMs' ? d.setHours(0, 0, 0, 0) : d.setHours(23, 59, 59, 999),
+      [key]:
+        key === 'sinceMs'
+          ? d.setHours(0, 0, 0, 0)
+          : d.setHours(23, 59, 59, 999),
     });
   };
 
@@ -168,24 +183,46 @@ function Toolbar({
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   };
 
+  // #256 v2 follow-up: the Δ price filter input and the |Δ price|
+  // value in `filters` are both in the operator's currently-selected
+  // hashrate denomination (TH/PH/EH/day). Convert to sat/PH/day for
+  // the API on read, which then converts to sat/EH/day for storage.
+  // PH is the canonical "internal" unit on the dashboard side; EH/TH
+  // come and go via the `denomination` toggle.
+  const unitLabel = denomination.hashrateUnit; // 'TH' | 'PH' | 'EH'
+  const deltaInPhDay = filters.minAbsPriceDelta ?? null;
+  const deltaInUnit = (() => {
+    if (deltaInPhDay === null) return '';
+    if (unitLabel === 'TH') return String(Math.round(deltaInPhDay / 1000));
+    if (unitLabel === 'EH') return String(Math.round(deltaInPhDay * 1000));
+    return String(Math.round(deltaInPhDay));
+  })();
+  const updateDelta = (v: string) => {
+    const raw = v ? Number(v) : NaN;
+    if (!Number.isFinite(raw) || raw <= 0) {
+      const next = { ...filters };
+      delete next.minAbsPriceDelta;
+      onChange(next);
+      return;
+    }
+    let phDay = raw;
+    if (unitLabel === 'TH') phDay = raw * 1000;
+    else if (unitLabel === 'EH') phDay = raw / 1000;
+    onChange({ ...filters, minAbsPriceDelta: phDay });
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-wrap items-end gap-x-4 gap-y-2 text-xs">
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Action</Trans></label>
         <div className="flex gap-1">
           {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID'] as Kind[]).map((k) => (
-            <button
+            <ActionChip
               key={k}
-              type="button"
+              kind={k}
+              active={kinds.includes(k)}
               onClick={() => toggleKind(k)}
-              className={`px-1.5 py-0.5 rounded border text-[11px] ${
-                kinds.includes(k)
-                  ? 'border-amber-700 text-amber-300 bg-amber-500/10'
-                  : 'border-slate-700 text-slate-400 hover:border-slate-500'
-              }`}
-            >
-              {labelForKindShort(k)}
-            </button>
+            />
           ))}
         </div>
       </div>
@@ -221,7 +258,16 @@ function Toolbar({
         />
       </div>
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Source</Trans></label>
+        <label className="text-[10px] uppercase tracking-wider text-slate-500 flex items-center gap-1">
+          <Trans>Source</Trans>
+          <Tooltip text={t`AUTOPILOT = the controller emitted the event on its own; MANUAL = an operator action via the API or UI overrode the controller.`}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 hover:text-slate-400 cursor-help">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <path d="M12 17h.01" />
+            </svg>
+          </Tooltip>
+        </label>
         <select
           value={filters.source ?? ''}
           onChange={(e) =>
@@ -232,31 +278,71 @@ function Toolbar({
           }
           className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
         >
-          <option value="">{t`any`}</option>
+          <option value="">{t`all`}</option>
           <option value="AUTOPILOT">{t`autopilot`}</option>
           <option value="OPERATOR">{t`manual`}</option>
         </select>
       </div>
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>|Δ price| ≥ (sat/PH/day)</Trans></label>
+        <label className="text-[10px] uppercase tracking-wider text-slate-500">
+          {t`|Δ price| ≥ (sat/${unitLabel}/day)`}
+        </label>
         <input
           type="number"
           min={0}
-          step={100}
-          value={filters.minAbsPriceDelta ?? ''}
-          onChange={(e) => updateNum('minAbsPriceDelta', e.target.value)}
+          step={unitLabel === 'TH' ? 1 : unitLabel === 'EH' ? 1000 : 100}
+          value={deltaInUnit}
+          onChange={(e) => updateDelta(e.target.value)}
           placeholder="0"
-          className="w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+          className="no-spinner w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
         />
       </div>
+      {/* #256 v2 follow-up: Reset button on the RIGHT side with a
+          Lucide rotate-ccw icon, labelled "reset" rather than "clear
+          all". */}
       <button
         type="button"
         onClick={() => onChange({})}
-        className="text-[11px] text-slate-500 hover:text-amber-300 underline self-end"
+        className="ml-auto flex items-center gap-1 text-[11px] text-slate-500 hover:text-amber-300 self-end"
+        title={t`Reset all filters`}
       >
-        <Trans>Clear all</Trans>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+        <Trans>reset</Trans>
       </button>
     </div>
+  );
+}
+
+/**
+ * Filter chip for the Action toolbar. Carries the same Lucide glyph
+ * as the row's Action column so the toolbar reads as a visual map of
+ * what's available in the table.
+ */
+function ActionChip({
+  kind,
+  active,
+  onClick,
+}: {
+  kind: Kind;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px] ${
+        active
+          ? 'border-amber-700 text-amber-300 bg-amber-500/10'
+          : 'border-slate-700 text-slate-400 hover:border-slate-500'
+      }`}
+    >
+      <ActionGlyph kind={kind} />
+      {labelForKindShort(kind)}
+    </button>
   );
 }
 
@@ -276,11 +362,12 @@ function EventRow({
   const newPrice = event.new_price_sat_per_ph_day;
   const delta =
     oldPrice !== null && newPrice !== null ? newPrice - oldPrice : null;
-  const orderShort = event.braiins_order_id
-    ? `${event.braiins_order_id.slice(0, 6)}…${event.braiins_order_id.slice(-4)}`
-    : '—';
+  // #256 v2 follow-up: full bid id, not truncated.
+  const bidId = event.braiins_order_id ?? '—';
   const speedText =
-    event.speed_limit_ph !== null ? denomination.formatHashrate(event.speed_limit_ph) : '—';
+    event.speed_limit_ph !== null
+      ? denomination.formatHashrate(event.speed_limit_ph)
+      : '—';
 
   return (
     <tr className="border-t border-slate-800/70 hover:bg-slate-800/30 align-top">
@@ -288,11 +375,16 @@ function EventRow({
         {fmt.timestamp(event.occurred_at)}
       </td>
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
-        <span title={event.braiins_order_id ?? ''}>{orderShort}</span>
+        {bidId}
       </td>
       <td className="py-1 px-3 whitespace-nowrap">
         <ActionGlyph kind={event.kind} />
         <span className="ml-1.5 text-slate-200">{labels[event.kind]}</span>
+      </td>
+      <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
+        {event.fillable_at_event_sat_per_ph_day !== null
+          ? formatNumber(Math.round(event.fillable_at_event_sat_per_ph_day), {})
+          : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
         {oldPrice !== null ? formatNumber(Math.round(oldPrice), {}) : '—'}
@@ -311,11 +403,6 @@ function EventRow({
       }`}>
         {delta !== null
           ? `${delta >= 0 ? '+' : ''}${formatNumber(Math.round(delta), {})}`
-          : '—'}
-      </td>
-      <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
-        {event.fillable_at_event_sat_per_ph_day !== null
-          ? formatNumber(Math.round(event.fillable_at_event_sat_per_ph_day), {})
           : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
