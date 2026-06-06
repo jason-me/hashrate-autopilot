@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Release]` v1.12.1
+
+Hotfix release carrying only the NerdAxe fix (#260): NerdAxe / NerdQAxe miners now appear on the Status page, numeric best-difficulty values are handled natively, one misbehaving device can no longer freeze the whole miners card, and unreachable-device errors include the underlying network error code. Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.
+
 ### `[Fix]` Scan-local-network cancel actually stops the scan (#259 v2)
 
 Closing the scan dialog with `X` while a sweep was in flight didn't actually stop the scan, despite build 605's "cancel" handling. Two bugs compounded: (1) **daemon side**, cancel only set a `cancelRequested` flag the workers checked between probes — so each of the 8 workers ran out its current 1.5 s probe timeout before bailing, and to a watching operator the scan looked like it kept hitting hosts. (2) **dashboard side**, the status query was gated on the dialog being open, so the moment the operator closed it polling stopped — the trigger button then stayed stuck on `scanning…` indefinitely because the dashboard never observed the state transition to `cancelled`. v2 plumbs an `AbortController` signal into the per-probe fetch so cancel aborts every in-flight request immediately (cancel-to-`cancelled` latency drops from ~1.5 s to a few ms), and the dashboard keeps polling whenever the last known state was `running` regardless of dialog visibility, so the trigger button reverts to `Scan local network` on its own.
