@@ -283,6 +283,10 @@ msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met "
 "(of niemand). Pas hierboven het BTC-uitbetaaladres aan; dit veld volgt "
 "automatisch."
 
+#: src/pages/History.tsx
+msgid "|Δ price| ≥ (sat/PH/day)"
+msgstr "|Δ prijs| ≥ (sat/PH/dag)"
+
 #: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/dag · ~ {totalStr} bij {daysStr} dagen"
@@ -507,6 +511,10 @@ msgstr "Altijd live (voor vertrouwde installaties)"
 msgid "amount"
 msgstr "bedrag"
 
+#: src/pages/History.tsx
+msgid "any"
+msgstr "alle"
+
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
@@ -632,6 +640,10 @@ msgstr "Audit-spoor van elke notificatie die de daemon heeft vastgelegd - "
 "verzonden, mislukt, gedempt, of opgegeven. Configureer de "
 "Telegram-bestemming op Config → Notificaties."
 
+#: src/pages/History.tsx
+msgid "auto"
+msgstr "auto"
+
 #: src/pages/Config.tsx
 msgid "auto-save"
 msgstr "automatisch opslaan"
@@ -650,6 +662,7 @@ msgstr "Automatisch opslaan staat aan. Wijzigingen worden ongeveer een seconde "
 msgid "automatic"
 msgstr "automatisch"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "autopilot"
 msgstr "autopilot"
@@ -820,6 +833,10 @@ msgstr "Beste diff"
 msgid "Beta-exit detected"
 msgstr "Beta-exit gedetecteerd"
 
+#: src/pages/History.tsx
+msgid "Bid"
+msgstr "Bod"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -837,6 +854,10 @@ msgstr "order-dekking"
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bod vult op {speed}."
+
+#: src/pages/History.tsx
+msgid "Bid id contains"
+msgstr "Bod-id bevat"
 
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
@@ -1349,8 +1370,8 @@ msgid "cancel event marker"
 msgstr "annuleer-markering"
 
 #: src/pages/History.tsx
-msgid "cancelled"
-msgstr "geannuleerd"
+#~ msgid "cancelled"
+#~ msgstr "geannuleerd"
 
 #: src/lib/labels.ts
 msgid "Cancelled"
@@ -1413,6 +1434,10 @@ msgstr "Goedkoop-modus doel"
 msgid "Choose file…"
 msgstr "Kies bestand…"
 
+#: src/pages/History.tsx
+msgid "Clear all"
+msgstr "Alles wissen"
+
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
@@ -1434,8 +1459,8 @@ msgid "close"
 msgstr "sluiten"
 
 #: src/pages/History.tsx
-msgid "closed / active"
-msgstr "gesloten / actief"
+#~ msgid "closed / active"
+#~ msgstr "gesloten / actief"
 
 #: src/pages/Status.tsx
 msgid "closed bids"
@@ -1580,7 +1605,6 @@ msgstr "Bod aanmaken"
 msgid "create event marker"
 msgstr "create-markering"
 
-#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "created"
 msgstr "aangemaakt"
@@ -1829,8 +1853,8 @@ msgid "delta"
 msgstr "delta"
 
 #: src/pages/History.tsx
-msgid "Delta"
-msgstr "Delta"
+#~ msgid "Delta"
+#~ msgstr "Delta"
 
 #: src/pages/Status.tsx
 msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) "
@@ -2218,8 +2242,16 @@ msgstr "Hoewel de endpoint <0>/umbrel-api</0> heet, zit hij in Datum Gateway "
 "elke Datum-build met die vlag gezet, ongeacht het hostplatform."
 
 #: src/pages/History.tsx
-msgid "events"
-msgstr "wijzigingen"
+#~ msgid "events"
+#~ msgstr "wijzigingen"
+
+#: src/pages/History.tsx
+msgid "events (end of history)"
+msgstr "wijzigingen (einde geschiedenis)"
+
+#: src/pages/History.tsx
+msgid "events loaded; scroll for more"
+msgstr "wijzigingen geladen; scroll voor meer"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the "
@@ -2299,6 +2331,10 @@ msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt "
 #: src/pages/Config.tsx
 msgid "fillable"
 msgstr "vulbaar"
+
+#: src/pages/History.tsx
+msgid "Fillable"
+msgstr "Invulbaar"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -2415,6 +2451,10 @@ msgstr "door ons gevonden"
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
 msgstr "DOOR ONS GEVONDEN"
+
+#: src/pages/History.tsx
+msgid "From"
+msgstr "Vanaf"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
@@ -2850,21 +2890,25 @@ msgstr "Live effectief hashrate-doel. Springt naar cheap_target_hashrate_ph als 
 "cheap-modus aanslaat, terug naar target_hashrate_ph als die "
 "uitschakelt."
 
+#: src/pages/History.tsx
+msgid "Load more"
+msgstr "Meer laden"
+
 #: src/pages/Alerts.tsx
 msgid "load older"
 msgstr "oudere laden"
 
 #: src/pages/History.tsx
-msgid "Load older bids"
-msgstr "Oudere biedingen laden"
+#~ msgid "Load older bids"
+#~ msgstr "Oudere biedingen laden"
 
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "beslissing laden…"
 
 #: src/pages/History.tsx
-msgid "Loading events…"
-msgstr "Wijzigingen laden…"
+#~ msgid "Loading events…"
+#~ msgstr "Wijzigingen laden…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
@@ -3185,10 +3229,10 @@ msgid "no bids on this account"
 msgstr "geen biedingen op deze account"
 
 #: src/pages/History.tsx
-msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
-"show up here."
-msgstr "Nog geen biedingen geregistreerd. Zodra de controller zijn eerste bod "
-"plaatst, verschijnt het hier."
+#~ msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
+#~ "show up here."
+#~ msgstr "Nog geen biedingen geregistreerd. Zodra de controller zijn eerste bod "
+#~ "plaatst, verschijnt het hier."
 
 #: src/pages/Config.tsx
 msgid "no change needed"
@@ -3203,8 +3247,12 @@ msgid "No devices yet. Add one below."
 msgstr "Nog geen apparaten. Voeg er hieronder een toe."
 
 #: src/pages/History.tsx
-msgid "No events recorded for this bid."
-msgstr "Geen wijzigingen vastgelegd voor dit bod."
+msgid "No events match the current filters."
+msgstr "Geen wijzigingen voldoen aan de huidige filters."
+
+#: src/pages/History.tsx
+#~ msgid "No events recorded for this bid."
+#~ msgstr "Geen wijzigingen vastgelegd voor dit bod."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -3977,6 +4025,7 @@ msgid "previous"
 msgstr "vorige"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "price"
 msgstr "prijs"
@@ -3984,6 +4033,14 @@ msgstr "prijs"
 #: src/components/PriceChart.tsx
 msgid "Price"
 msgstr "Prijs"
+
+#: src/pages/History.tsx
+msgid "Price after"
+msgstr "Prijs na"
+
+#: src/pages/History.tsx
+msgid "Price before"
+msgstr "Prijs voor"
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -4121,8 +4178,8 @@ msgid "Rearrange cards"
 msgstr "Kaarten herschikken"
 
 #: src/pages/History.tsx
-msgid "Reason"
-msgstr "Reden"
+#~ msgid "Reason"
+#~ msgstr "Reden"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -4565,9 +4622,18 @@ msgstr "grootte"
 msgid "Sound"
 msgstr "Geluid"
 
+#: src/pages/History.tsx
+msgid "Source"
+msgstr "Bron"
+
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "speed"
 msgstr "snelheid"
+
+#: src/pages/History.tsx
+msgid "Speed"
+msgstr "Snelheid"
 
 #: src/pages/Config.tsx
 msgid "Spend scope"
@@ -4863,6 +4929,10 @@ msgstr "Tijds-gewogen gemiddelde van (ons bod - fillable ask) per tick over het 
 #: src/components/Bip110ScanCard.tsx
 msgid "tip"
 msgstr "tip"
+
+#: src/pages/History.tsx
+msgid "To"
+msgstr "Tot"
 
 #: src/pages/Status.tsx
 msgid "total"
@@ -5278,3 +5348,7 @@ msgstr "Geen hashrate gedurende"
 #: src/pages/Config.tsx
 msgid "Zero-hashrate alert after (minutes)"
 msgstr "Nul-hashrate-alarm na (minuten)"
+
+#: src/pages/History.tsx
+msgid "Δ price"
+msgstr "Δ prijs"

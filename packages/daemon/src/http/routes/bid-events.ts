@@ -176,6 +176,78 @@ export async function registerBidEventsRoute(
       return { events: rows.map(toView) };
     },
   );
+
+  // #256 v2: flat-table /history endpoint with toolbar filters.
+  //   Cursor: before_id from the LAST row of the previous page.
+  //   Filters: kinds (csv), source, order_id, since_ms, until_ms,
+  //            min_abs_price_delta_sat_per_ph_day.
+  app.get<{
+    Querystring: {
+      limit?: string;
+      before_id?: string;
+      kinds?: string;
+      source?: string;
+      order_id?: string;
+      since_ms?: string;
+      until_ms?: string;
+      min_abs_price_delta?: string;
+    };
+  }>('/api/bid-history-events', async (req) => {
+    const limit = Math.max(
+      1,
+      Math.min(500, parseInt(req.query.limit ?? '100', 10) || 100),
+    );
+    const beforeId = req.query.before_id
+      ? Number.parseInt(req.query.before_id, 10)
+      : undefined;
+    const kinds = req.query.kinds
+      ? (req.query.kinds.split(',').filter((s) =>
+          ['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID'].includes(s),
+        ) as Array<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'>)
+      : undefined;
+    const source =
+      req.query.source === 'AUTOPILOT' || req.query.source === 'OPERATOR'
+        ? (req.query.source as 'AUTOPILOT' | 'OPERATOR')
+        : undefined;
+    const orderIdContains = req.query.order_id?.trim() || undefined;
+    const sinceMs = req.query.since_ms
+      ? Number.parseInt(req.query.since_ms, 10)
+      : undefined;
+    const untilMs = req.query.until_ms
+      ? Number.parseInt(req.query.until_ms, 10)
+      : undefined;
+    // Filter is in sat/PH/day on the wire; internal storage is sat/EH/day.
+    const minAbsPriceDeltaPhDay = req.query.min_abs_price_delta
+      ? Number.parseInt(req.query.min_abs_price_delta, 10)
+      : undefined;
+    const minAbsPriceDeltaSat =
+      minAbsPriceDeltaPhDay && minAbsPriceDeltaPhDay > 0
+        ? minAbsPriceDeltaPhDay * EH_PER_PH
+        : undefined;
+
+    const args: Parameters<typeof deps.bidEventsRepo.listEventsForHistory>[0] = {
+      limit,
+    };
+    if (beforeId && Number.isFinite(beforeId)) args.beforeId = beforeId;
+    if (kinds && kinds.length > 0) args.kinds = kinds;
+    if (source) args.source = source;
+    if (orderIdContains) args.orderIdContains = orderIdContains;
+    if (sinceMs && Number.isFinite(sinceMs)) args.sinceMs = sinceMs;
+    if (untilMs && Number.isFinite(untilMs)) args.untilMs = untilMs;
+    if (minAbsPriceDeltaSat) args.minAbsPriceDeltaSat = minAbsPriceDeltaSat;
+
+    const rows = await deps.bidEventsRepo.listEventsForHistory(args);
+    return {
+      events: rows.map((r) => ({
+        ...toView(r),
+        fillable_at_event_sat_per_ph_day:
+          r.fillable_at_event_sat !== null
+            ? r.fillable_at_event_sat / EH_PER_PH
+            : null,
+      })),
+      next_cursor_id: rows.length === limit ? rows[rows.length - 1]!.id : null,
+    };
+  });
 }
 
 function toView(r: {

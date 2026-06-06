@@ -1,308 +1,335 @@
 /**
- * #256 follow-up: standalone /history page.
+ * #256 v2: flat-table /history page.
  *
- * Replaces the bottom-of-Status OrderHistoryCard. Shows every bid the
- * controller has ever created as a collapsible header; click a bid
- * to expand its modification log inline. Pagination over bid headers
- * (newest first, "load older bids" button at the bottom) so a busy
- * setup doesn't choke on first paint; per-bid modifications load
- * fully on expand, so an active bid with hundreds of EDIT_PRICE
- * events shows the whole life of the bid at once.
+ * Replaces the build-616 collapsible per-bid view. Operator feedback
+ * was clear: "when did the last edit_speed happen?" is the question,
+ * and that's a flat-table-with-filters question, not a per-bid
+ * grouping one.
  *
- * Column layout mirrors Braiins's own Buy Order History tab:
- * When | Action | Delta | Reason. Delta carries the per-event price
- * delta at a glance; Reason carries the controller's full
- * explanation. The bid header carries summary stats (created → last
- * event, first price → last price, mod count, status badge) so the
- * operator can scan the bid list without expanding.
+ * Layout: toolbar of filters at top + flat table + infinite scroll.
+ * Server pages 100 events at a time using a `before_id` cursor.
+ * Per-bid grouping retired; bid renders as a column with truncated
+ * id + hover-for-full. Reason column dropped; the action + price +
+ * fillable columns carry the meaningful change information.
  */
 
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   api,
+  type BidHistoryFilters,
+  type BidHistoryFlatEvent,
   type BidEventView,
-  type BidHistorySummary,
 } from '../lib/api';
-import { getChartColor, parseOverrides } from '../lib/chartColors';
 import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber } from '../lib/format';
 
-const PAGE_SIZE = 20;
-const POLL_INTERVAL_MS = 60_000;
+const PAGE_SIZE = 100;
+type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 
 export function History() {
   const { i18n } = useLingui();
   void i18n;
+  const fmt = useFormatters();
+  const denomination = useDenomination();
+  const [filters, setFilters] = useState<BidHistoryFilters>({});
 
-  // Bid-summary pagination - "load older bids" appends another page.
-  const summariesQuery = useInfiniteQuery({
-    queryKey: ['bid-history-summaries'],
+  const query = useInfiniteQuery({
+    queryKey: ['bid-history-flat', filters],
     initialPageParam: undefined as number | undefined,
-    queryFn: ({ pageParam }) => api.bidHistorySummaries(PAGE_SIZE, pageParam),
-    getNextPageParam: (last) => last.next_cursor_ms ?? undefined,
-    // Refresh the first page periodically so a new bid landing while
-    // the operator is on the page surfaces without a manual refresh.
-    refetchInterval: POLL_INTERVAL_MS,
+    queryFn: ({ pageParam }) =>
+      api.bidHistoryFlatEvents(filters, pageParam, PAGE_SIZE),
+    getNextPageParam: (last) => last.next_cursor_id ?? undefined,
+    refetchInterval: 60_000,
   });
 
-  const configQuery = useQuery({
-    queryKey: ['config'],
-    queryFn: api.config,
-    staleTime: 60_000,
-  });
-  const overrides = useMemo(
-    () => parseOverrides(configQuery.data?.config?.chart_color_overrides),
-    [configQuery.data?.config?.chart_color_overrides],
+  const events: BidHistoryFlatEvent[] = useMemo(
+    () => query.data?.pages.flatMap((p) => p.events) ?? [],
+    [query.data],
   );
 
-  const allBids: BidHistorySummary[] = useMemo(
-    () => summariesQuery.data?.pages.flatMap((p) => p.bids) ?? [],
-    [summariesQuery.data],
-  );
+  // Auto-load next page when the sentinel near the bottom enters view.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && query.hasNextPage && !query.isFetchingNextPage) {
+        void query.fetchNextPage();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [query]);
 
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
         <Trans>Order history</Trans>
       </h2>
-      {summariesQuery.isPending ? (
-        <div className="text-xs text-slate-500 italic px-3 py-2">
-          <Trans>Loading…</Trans>
-        </div>
-      ) : allBids.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-500 italic">
-          <Trans>No bids recorded yet. Once the controller submits its first bid, it'll show up here.</Trans>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {allBids.map((bid) => (
-            <BidRow key={bid.braiins_order_id} bid={bid} overrides={overrides} />
-          ))}
-        </ul>
-      )}
-      {summariesQuery.hasNextPage && (
+      <Toolbar filters={filters} onChange={setFilters} />
+      <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-slate-500 uppercase tracking-wider bg-slate-950/40">
+            <tr>
+              <th className="text-left font-normal py-1.5 px-3 whitespace-nowrap"><Trans>When</Trans></th>
+              <th className="text-left font-normal py-1.5 px-3"><Trans>Bid</Trans></th>
+              <th className="text-left font-normal py-1.5 px-3"><Trans>Action</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Price before</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Price after</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Δ price</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Fillable</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3"><Trans>Speed</Trans></th>
+              <th className="text-left font-normal py-1.5 px-3"><Trans>Source</Trans></th>
+            </tr>
+          </thead>
+          <tbody className="text-slate-200">
+            {events.map((e) => (
+              <EventRow key={e.id} event={e} fmt={fmt} denomination={denomination} />
+            ))}
+            {events.length === 0 && !query.isPending && (
+              <tr>
+                <td colSpan={9} className="px-3 py-4 text-center text-xs text-slate-500 italic">
+                  <Trans>No events match the current filters.</Trans>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* Sentinel + manual fallback button. */}
+      <div ref={sentinelRef} />
+      {query.hasNextPage && (
         <div className="flex justify-center pt-2">
           <button
             type="button"
-            onClick={() => summariesQuery.fetchNextPage()}
-            disabled={summariesQuery.isFetchingNextPage}
+            onClick={() => query.fetchNextPage()}
+            disabled={query.isFetchingNextPage}
             className="text-xs text-amber-300 border border-amber-700 rounded px-3 py-1 hover:bg-amber-500/10 disabled:opacity-40"
           >
-            {summariesQuery.isFetchingNextPage ? (
-              <Trans>Loading…</Trans>
-            ) : (
-              <Trans>Load older bids</Trans>
-            )}
+            {query.isFetchingNextPage ? <Trans>Loading…</Trans> : <Trans>Load more</Trans>}
           </button>
         </div>
       )}
+      <div className="text-[10px] text-slate-600 text-center pt-1">
+        {events.length}{' '}
+        {query.hasNextPage ? <Trans>events loaded; scroll for more</Trans> : <Trans>events (end of history)</Trans>}
+      </div>
     </div>
   );
 }
 
-function BidRow({
-  bid,
-  overrides,
+function Toolbar({
+  filters,
+  onChange,
 }: {
-  bid: BidHistorySummary;
-  overrides: Partial<Record<string, string>>;
+  filters: BidHistoryFilters;
+  onChange: (next: BidHistoryFilters) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const fmt = useFormatters();
-  const denomination = useDenomination();
   const { i18n } = useLingui();
   void i18n;
+  const kinds: Kind[] = filters.kinds ? [...filters.kinds] : [];
 
-  const eventsQuery = useQuery({
-    queryKey: ['bid-history-events', bid.braiins_order_id],
-    queryFn: () => api.bidHistoryEvents(bid.braiins_order_id),
-    enabled: open,
-    refetchInterval: open ? POLL_INTERVAL_MS : false,
-    staleTime: 30_000,
-  });
+  const toggleKind = (k: Kind) => {
+    const set = new Set(kinds);
+    if (set.has(k)) set.delete(k);
+    else set.add(k);
+    onChange({ ...filters, kinds: set.size > 0 ? Array.from(set) : undefined });
+  };
 
-  const statusBadge = (() => {
-    if (bid.status === 'cancelled') {
-      return (
-        <span className="ml-2 inline-block border border-red-500/50 bg-red-500/10 text-red-400 rounded px-1.5 py-px text-[10px] leading-tight">
-          <Trans>cancelled</Trans>
-        </span>
-      );
+  const updateNum = (key: 'sinceMs' | 'untilMs' | 'minAbsPriceDelta', v: string) => {
+    const n = v ? Number(v) : undefined;
+    onChange({ ...filters, [key]: n !== undefined && Number.isFinite(n) ? n : undefined });
+  };
+
+  const updateDate = (key: 'sinceMs' | 'untilMs', v: string) => {
+    if (!v) {
+      const next = { ...filters };
+      delete next[key];
+      onChange(next);
+      return;
     }
-    return (
-      <span className="ml-2 inline-block border border-slate-500/50 bg-slate-500/10 text-slate-400 rounded px-1.5 py-px text-[10px] leading-tight">
-        <Trans>closed / active</Trans>
-      </span>
-    );
-  })();
+    const d = new Date(v);
+    onChange({
+      ...filters,
+      [key]: key === 'sinceMs' ? d.setHours(0, 0, 0, 0) : d.setHours(23, 59, 59, 999),
+    });
+  };
+
+  const isoDateValue = (ms: number | undefined): string => {
+    if (ms === undefined) return '';
+    const d = new Date(ms);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
 
   return (
-    <li className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-wrap items-end gap-x-4 gap-y-2 text-xs">
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Action</Trans></label>
+        <div className="flex gap-1">
+          {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID'] as Kind[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => toggleKind(k)}
+              className={`px-1.5 py-0.5 rounded border text-[11px] ${
+                kinds.includes(k)
+                  ? 'border-amber-700 text-amber-300 bg-amber-500/10'
+                  : 'border-slate-700 text-slate-400 hover:border-slate-500'
+              }`}
+            >
+              {labelForKindShort(k)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Bid id contains</Trans></label>
+        <input
+          type="text"
+          value={filters.orderIdContains ?? ''}
+          onChange={(e) => onChange({ ...filters, orderIdContains: e.target.value || undefined })}
+          placeholder="B866…"
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>From</Trans></label>
+        <input
+          type="date"
+          value={isoDateValue(filters.sinceMs)}
+          onChange={(e) => updateDate('sinceMs', e.target.value)}
+          className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>To</Trans></label>
+        <input
+          type="date"
+          value={isoDateValue(filters.untilMs)}
+          onChange={(e) => updateDate('untilMs', e.target.value)}
+          className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Source</Trans></label>
+        <select
+          value={filters.source ?? ''}
+          onChange={(e) =>
+            onChange({
+              ...filters,
+              source: e.target.value === '' ? undefined : (e.target.value as 'AUTOPILOT' | 'OPERATOR'),
+            })
+          }
+          className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        >
+          <option value="">{t`any`}</option>
+          <option value="AUTOPILOT">{t`autopilot`}</option>
+          <option value="OPERATOR">{t`manual`}</option>
+        </select>
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>|Δ price| ≥ (sat/PH/day)</Trans></label>
+        <input
+          type="number"
+          min={0}
+          step={100}
+          value={filters.minAbsPriceDelta ?? ''}
+          onChange={(e) => updateNum('minAbsPriceDelta', e.target.value)}
+          placeholder="0"
+          className="w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        />
+      </div>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full text-left px-3 py-2 hover:bg-slate-800/40 flex items-start gap-2"
+        onClick={() => onChange({})}
+        className="text-[11px] text-slate-500 hover:text-amber-300 underline self-end"
       >
-        <span className="text-slate-400 mt-1 shrink-0" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            {open ? <path d="m6 9 6 6 6-6" /> : <path d="m9 18 6-6-6-6" />}
-          </svg>
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="font-mono text-xs text-slate-300 break-all">
-            {bid.braiins_order_id}
-            {statusBadge}
-          </div>
-          <div className="mt-1 text-[11px] text-slate-500 flex flex-wrap gap-x-4 gap-y-0.5">
-            <span>
-              <Trans>created</Trans> {fmt.timestamp(bid.first_event_at_ms)}{' '}
-              <span className="text-slate-600">→</span>{' '}
-              {fmt.timestamp(bid.last_event_at_ms)}
-            </span>
-            <span>
-              {bid.first_price_sat_per_ph_day !== null
-                ? denomination.formatSatPerPhDay(Math.round(bid.first_price_sat_per_ph_day))
-                : '—'}{' '}
-              <span className="text-slate-600">→</span>{' '}
-              {bid.last_price_sat_per_ph_day !== null
-                ? denomination.formatSatPerPhDay(Math.round(bid.last_price_sat_per_ph_day))
-                : '—'}
-            </span>
-            <span>
-              {bid.event_count} <Trans>events</Trans>
-            </span>
-          </div>
-        </div>
+        <Trans>Clear all</Trans>
       </button>
-      {open && (
-        <div className="border-t border-slate-800">
-          {eventsQuery.isPending ? (
-            <div className="px-3 py-2 text-xs text-slate-500 italic">
-              <Trans>Loading events…</Trans>
-            </div>
-          ) : (
-            <EventsTable
-              events={eventsQuery.data?.events ?? []}
-              overrides={overrides}
-            />
-          )}
-        </div>
-      )}
-    </li>
+    </div>
   );
-}
-
-function EventsTable({
-  events,
-  overrides,
-}: {
-  events: ReadonlyArray<BidEventView>;
-  overrides: Partial<Record<string, string>>;
-}) {
-  const fmt = useFormatters();
-  const denomination = useDenomination();
-  const { i18n } = useLingui();
-  void i18n;
-  const cCreate = getChartColor('events.create', overrides);
-  const cEdit = getChartColor('events.edit_price', overrides);
-  const cSpeed = getChartColor('events.edit_speed', overrides);
-  const cCancel = getChartColor('events.cancel', overrides);
-
-  if (events.length === 0) {
-    return (
-      <div className="px-3 py-2 text-xs text-slate-500 italic">
-        <Trans>No events recorded for this bid.</Trans>
-      </div>
-    );
-  }
-
-  return (
-    <table className="w-full text-xs">
-      <thead className="text-slate-500 uppercase tracking-wider bg-slate-950/40">
-        <tr>
-          <th className="text-left font-normal py-1.5 px-3 w-32"><Trans>When</Trans></th>
-          <th className="text-left font-normal py-1.5 px-3 w-32"><Trans>Action</Trans></th>
-          <th className="text-right font-normal py-1.5 px-3 w-28"><Trans>Delta</Trans></th>
-          <th className="text-left font-normal py-1.5 px-3"><Trans>Reason</Trans></th>
-        </tr>
-      </thead>
-      <tbody className="text-slate-200">
-        {events.map((e) => (
-          <EventRow
-            key={e.id}
-            event={e}
-            fmt={fmt}
-            denomination={denomination}
-            colors={{ create: cCreate, edit: cEdit, speed: cSpeed, cancel: cCancel }}
-          />
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-interface Colors {
-  readonly create: string;
-  readonly edit: string;
-  readonly speed: string;
-  readonly cancel: string;
 }
 
 function EventRow({
   event,
   fmt,
   denomination,
-  colors,
 }: {
-  event: BidEventView;
+  event: BidHistoryFlatEvent;
   fmt: ReturnType<typeof useFormatters>;
   denomination: ReturnType<typeof useDenomination>;
-  colors: Colors;
 }) {
   const { i18n } = useLingui();
   void i18n;
   const labels = useActionLabels();
-  const intlLocale = 'en-US';
-  void intlLocale;
-  const deltaText = (() => {
-    if (event.kind === 'EDIT_PRICE') {
-      if (event.old_price_sat_per_ph_day === null || event.new_price_sat_per_ph_day === null) {
-        return '—';
-      }
-      const delta = event.new_price_sat_per_ph_day - event.old_price_sat_per_ph_day;
-      const sign = delta >= 0 ? '+' : '';
-      return `${sign}${formatNumber(Math.round(delta), {})}`;
-    }
-    if (event.kind === 'EDIT_SPEED' && event.speed_limit_ph !== null) {
-      return denomination.formatHashrate(event.speed_limit_ph);
-    }
-    return '';
-  })();
+  const oldPrice = event.old_price_sat_per_ph_day;
+  const newPrice = event.new_price_sat_per_ph_day;
+  const delta =
+    oldPrice !== null && newPrice !== null ? newPrice - oldPrice : null;
+  const orderShort = event.braiins_order_id
+    ? `${event.braiins_order_id.slice(0, 6)}…${event.braiins_order_id.slice(-4)}`
+    : '—';
+  const speedText =
+    event.speed_limit_ph !== null ? denomination.formatHashrate(event.speed_limit_ph) : '—';
 
   return (
     <tr className="border-t border-slate-800/70 hover:bg-slate-800/30 align-top">
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(event.occurred_at)}
       </td>
+      <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
+        <span title={event.braiins_order_id ?? ''}>{orderShort}</span>
+      </td>
       <td className="py-1 px-3 whitespace-nowrap">
-        <ActionGlyph kind={event.kind} colors={colors} />
+        <ActionGlyph kind={event.kind} />
         <span className="ml-1.5 text-slate-200">{labels[event.kind]}</span>
-        {event.source === 'OPERATOR' && (
-          <span className="ml-1 text-[10px] text-slate-500">
-            (<Trans>manual</Trans>)
-          </span>
-        )}
+      </td>
+      <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
+        {oldPrice !== null ? formatNumber(Math.round(oldPrice), {}) : '—'}
+      </td>
+      <td className="py-1 px-3 text-right font-mono text-slate-200 whitespace-nowrap">
+        {newPrice !== null ? formatNumber(Math.round(newPrice), {}) : '—'}
+      </td>
+      <td className={`py-1 px-3 text-right font-mono whitespace-nowrap ${
+        delta === null
+          ? 'text-slate-500'
+          : delta > 0
+            ? 'text-red-300'
+            : delta < 0
+              ? 'text-emerald-300'
+              : 'text-slate-500'
+      }`}>
+        {delta !== null
+          ? `${delta >= 0 ? '+' : ''}${formatNumber(Math.round(delta), {})}`
+          : '—'}
+      </td>
+      <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
+        {event.fillable_at_event_sat_per_ph_day !== null
+          ? formatNumber(Math.round(event.fillable_at_event_sat_per_ph_day), {})
+          : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
-        {deltaText}
+        {speedText}
       </td>
-      <td className="py-1 px-3 text-slate-400">{event.reason ?? '—'}</td>
+      <td className="py-1 px-3 whitespace-nowrap">
+        <span className={
+          event.source === 'OPERATOR'
+            ? 'text-amber-300 text-[10px] uppercase tracking-wider'
+            : 'text-slate-500 text-[10px] uppercase tracking-wider'
+        }>
+          {event.source === 'OPERATOR' ? <Trans>manual</Trans> : <Trans>auto</Trans>}
+        </span>
+      </td>
     </tr>
   );
 }
@@ -316,13 +343,16 @@ function useActionLabels(): Record<BidEventView['kind'], string> {
   };
 }
 
-function ActionGlyph({
-  kind,
-  colors,
-}: {
-  kind: BidEventView['kind'];
-  colors: Colors;
-}) {
+function labelForKindShort(kind: Kind): string {
+  switch (kind) {
+    case 'CREATE_BID': return t`create`;
+    case 'EDIT_PRICE': return t`price`;
+    case 'EDIT_SPEED': return t`speed`;
+    case 'CANCEL_BID': return t`cancel`;
+  }
+}
+
+function ActionGlyph({ kind }: { kind: BidEventView['kind'] }) {
   const base = {
     width: 12,
     height: 12,
@@ -335,7 +365,7 @@ function ActionGlyph({
   };
   if (kind === 'CREATE_BID') {
     return (
-      <svg {...base} stroke={colors.create}>
+      <svg {...base} stroke="#34d399">
         <circle cx="12" cy="12" r="10" />
         <path d="M8 12h8" />
         <path d="M12 8v8" />
@@ -345,20 +375,20 @@ function ActionGlyph({
   if (kind === 'EDIT_PRICE') {
     return (
       <svg width="12" height="12" viewBox="0 0 14 14" className="inline-block align-middle">
-        <circle cx="7" cy="7" r="4.5" fill={colors.edit} stroke="#0f172a" strokeWidth="1.5" />
+        <circle cx="7" cy="7" r="4.5" fill="#facc15" stroke="#0f172a" strokeWidth="1.5" />
       </svg>
     );
   }
   if (kind === 'EDIT_SPEED') {
     return (
-      <svg {...base} stroke={colors.speed}>
+      <svg {...base} stroke="#38bdf8">
         <path d="m12 14 4-4" />
         <path d="M3.34 19a10 10 0 1 1 17.32 0" />
       </svg>
     );
   }
   return (
-    <svg {...base} stroke={colors.cancel}>
+    <svg {...base} stroke="#f87171">
       <circle cx="12" cy="12" r="10" />
       <path d="m4.9 4.9 14.2 14.2" />
     </svg>

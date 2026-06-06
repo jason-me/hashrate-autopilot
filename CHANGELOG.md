@@ -2,6 +2,20 @@
 
 ## 2026-06-05
 
+### `[Feature]` History page rewritten as a flat filterable table (#256 v2)
+
+Operator feedback on build 617: "when did the last edit_speed happen?" is a flat-table-with-filters question, not a per-bid grouping question. Retired the collapsible-by-bid view from build 615 entirely.
+
+New layout: toolbar of filters at the top + flat table + infinite scroll. Columns are `When | Bid | Action | Price before | Price after | Δ price | Fillable | Speed | Source`. Bid id stays a column (truncated `B866…04234`, hover for full) rather than the row group. Δ price colour-coded — green = price went down, red = up. Reason column dropped (the action + numeric columns carry the meaningful info; the free-text Reason mostly repeated the numbers).
+
+Toolbar filters: action kind (toggle chips for create/price/speed/cancel), bid id text contains, date range (from/to), source (autopilot/manual), `|Δ price| ≥ N sat/PH/day`. All filters apply server-side so they work over the full dataset, not just the loaded page. "Clear all" link at the end.
+
+Server: new `GET /api/bid-history-events` endpoint with cursor pagination (100 events per page), all filters supported. Each row also includes `fillable_at_event_sat_per_ph_day` — the dashboard joins-via-subquery to find the most recent tick at-or-before each event with a non-null fillable reading. Auto-loads the next page via IntersectionObserver when the sentinel near the bottom enters view; a "Load more" button is the manual fallback.
+
+Note: the design interview picked "three fillable columns (before / after / Δ)". v2 ships a single `Fillable` column showing the value at the event time; computing meaningful before / after / Δ values per row across pagination boundaries needs more work and ships in a v3 follow-up.
+
+nl + es translations included.
+
 ### `[UI]` Tiles + history disclosure: a sweep of small fixes (#266 follow-up x3, #256 polish)
 
 Tiles bar (#266 follow-up x3): (1) `auto-rows-fr` so every tile matches the row's tallest — pool-luck (no unit caption) and uptime (with caption) line up at the same baseline. Caption slot is always reserved (non-breaking space when no unit) so two tiles next to each other don't end up at different heights. (2) Chevron moved out of the label row into a proper 14×14 Lucide `chevron-down` glyph in the top-right corner of each tile. The label now allowed to wrap to two lines instead of being clipped (so "AVG COST VS HASHPRICE" doesn't become "AVG COST VS HA…"). (3) The "+ add" tile no longer sits in the grid eating a panel width — moved to a small icon button anchored above the section's top-right corner. (4) Picking a tile that's already in another slot used to silently duplicate it, making the source slot look like it had disappeared. Now disabled in the picker with "(already in use)" hint — operator removes the other slot first if they want to move it. (5) Wallet runway reads "17 days" instead of "17 d".

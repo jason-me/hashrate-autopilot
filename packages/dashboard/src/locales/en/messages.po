@@ -279,6 +279,10 @@ msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - "
 "otherwise Ocean credits shares to a different address (or nobody). Edit "
 "the BTC payout address above; this field follows it automatically."
 
+#: src/pages/History.tsx
+msgid "|Δ price| ≥ (sat/PH/day)"
+msgstr "|Δ price| ≥ (sat/PH/day)"
+
 #: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
@@ -503,6 +507,10 @@ msgstr "Always live (for trusted deployments)"
 msgid "amount"
 msgstr "amount"
 
+#: src/pages/History.tsx
+msgid "any"
+msgstr "any"
+
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Any active owned bid reports fee_rate_pct > 0."
@@ -626,6 +634,10 @@ msgstr "Audit trail for every notification the daemon recorded - sent, failed, "
 "muted, or given-up. Configure the Telegram destination on Config → "
 "Notifications."
 
+#: src/pages/History.tsx
+msgid "auto"
+msgstr "auto"
+
 #: src/pages/Config.tsx
 msgid "auto-save"
 msgstr "auto-save"
@@ -642,6 +654,7 @@ msgstr "Auto-save on. Edits persist about a second after you stop typing."
 msgid "automatic"
 msgstr "automatic"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "autopilot"
 msgstr "autopilot"
@@ -810,6 +823,10 @@ msgstr "Best diff"
 msgid "Beta-exit detected"
 msgstr "Beta-exit detected"
 
+#: src/pages/History.tsx
+msgid "Bid"
+msgstr "Bid"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -827,6 +844,10 @@ msgstr "bid coverage"
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bid filling at {speed}."
+
+#: src/pages/History.tsx
+msgid "Bid id contains"
+msgstr "Bid id contains"
 
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
@@ -1331,8 +1352,8 @@ msgid "cancel event marker"
 msgstr "cancel event marker"
 
 #: src/pages/History.tsx
-msgid "cancelled"
-msgstr "cancelled"
+#~ msgid "cancelled"
+#~ msgstr "cancelled"
 
 #: src/lib/labels.ts
 msgid "Cancelled"
@@ -1395,6 +1416,10 @@ msgstr "Cheap-mode target"
 msgid "Choose file…"
 msgstr "Choose file…"
 
+#: src/pages/History.tsx
+msgid "Clear all"
+msgstr "Clear all"
+
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
@@ -1416,8 +1441,8 @@ msgid "close"
 msgstr "close"
 
 #: src/pages/History.tsx
-msgid "closed / active"
-msgstr "closed / active"
+#~ msgid "closed / active"
+#~ msgstr "closed / active"
 
 #: src/pages/Status.tsx
 msgid "closed bids"
@@ -1561,7 +1586,6 @@ msgstr "Create bid"
 msgid "create event marker"
 msgstr "create event marker"
 
-#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "created"
 msgstr "created"
@@ -1806,8 +1830,8 @@ msgid "delta"
 msgstr "delta"
 
 #: src/pages/History.tsx
-msgid "Delta"
-msgstr "Delta"
+#~ msgid "Delta"
+#~ msgstr "Delta"
 
 #: src/pages/Status.tsx
 msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) "
@@ -2190,8 +2214,16 @@ msgstr "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside "
 "set, regardless of host platform."
 
 #: src/pages/History.tsx
-msgid "events"
-msgstr "events"
+#~ msgid "events"
+#~ msgstr "events"
+
+#: src/pages/History.tsx
+msgid "events (end of history)"
+msgstr "events (end of history)"
+
+#: src/pages/History.tsx
+msgid "events loaded; scroll for more"
+msgstr "events loaded; scroll for more"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the "
@@ -2271,6 +2303,10 @@ msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a "
 #: src/pages/Config.tsx
 msgid "fillable"
 msgstr "fillable"
+
+#: src/pages/History.tsx
+msgid "Fillable"
+msgstr "Fillable"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -2384,6 +2420,10 @@ msgstr "found by us"
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
 msgstr "FOUND BY US"
+
+#: src/pages/History.tsx
+msgid "From"
+msgstr "From"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
@@ -2810,21 +2850,25 @@ msgid "Live effective hashrate target. Steps to cheap_target_hashrate_ph when "
 msgstr "Live effective hashrate target. Steps to cheap_target_hashrate_ph when "
 "cheap-mode engages, back to target_hashrate_ph when it disengages."
 
+#: src/pages/History.tsx
+msgid "Load more"
+msgstr "Load more"
+
 #: src/pages/Alerts.tsx
 msgid "load older"
 msgstr "load older"
 
 #: src/pages/History.tsx
-msgid "Load older bids"
-msgstr "Load older bids"
+#~ msgid "Load older bids"
+#~ msgstr "Load older bids"
 
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "loading decision…"
 
 #: src/pages/History.tsx
-msgid "Loading events…"
-msgstr "Loading events…"
+#~ msgid "Loading events…"
+#~ msgstr "Loading events…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
@@ -3140,10 +3184,10 @@ msgid "no bids on this account"
 msgstr "no bids on this account"
 
 #: src/pages/History.tsx
-msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
-"show up here."
-msgstr "No bids recorded yet. Once the controller submits its first bid, it'll "
-"show up here."
+#~ msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
+#~ "show up here."
+#~ msgstr "No bids recorded yet. Once the controller submits its first bid, it'll "
+#~ "show up here."
 
 #: src/pages/Config.tsx
 msgid "no change needed"
@@ -3158,8 +3202,12 @@ msgid "No devices yet. Add one below."
 msgstr "No devices yet. Add one below."
 
 #: src/pages/History.tsx
-msgid "No events recorded for this bid."
-msgstr "No events recorded for this bid."
+msgid "No events match the current filters."
+msgstr "No events match the current filters."
+
+#: src/pages/History.tsx
+#~ msgid "No events recorded for this bid."
+#~ msgstr "No events recorded for this bid."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -3919,6 +3967,7 @@ msgid "previous"
 msgstr "previous"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "price"
 msgstr "price"
@@ -3926,6 +3975,14 @@ msgstr "price"
 #: src/components/PriceChart.tsx
 msgid "Price"
 msgstr "Price"
+
+#: src/pages/History.tsx
+msgid "Price after"
+msgstr "Price after"
+
+#: src/pages/History.tsx
+msgid "Price before"
+msgstr "Price before"
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -4060,8 +4117,8 @@ msgid "Rearrange cards"
 msgstr "Rearrange cards"
 
 #: src/pages/History.tsx
-msgid "Reason"
-msgstr "Reason"
+#~ msgid "Reason"
+#~ msgstr "Reason"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -4500,9 +4557,18 @@ msgstr "size"
 msgid "Sound"
 msgstr "Sound"
 
+#: src/pages/History.tsx
+msgid "Source"
+msgstr "Source"
+
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "speed"
 msgstr "speed"
+
+#: src/pages/History.tsx
+msgid "Speed"
+msgstr "Speed"
 
 #: src/pages/Config.tsx
 msgid "Spend scope"
@@ -4794,6 +4860,10 @@ msgstr "Time-weighted average of (our bid - fillable ask) per tick over the "
 #: src/components/Bip110ScanCard.tsx
 msgid "tip"
 msgstr "tip"
+
+#: src/pages/History.tsx
+msgid "To"
+msgstr "To"
 
 #: src/pages/Status.tsx
 msgid "total"
@@ -5204,3 +5274,7 @@ msgstr "Zero hashrate for"
 #: src/pages/Config.tsx
 msgid "Zero-hashrate alert after (minutes)"
 msgstr "Zero-hashrate alert after (minutes)"
+
+#: src/pages/History.tsx
+msgid "Δ price"
+msgstr "Δ price"

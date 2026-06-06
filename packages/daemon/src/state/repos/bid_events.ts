@@ -159,4 +159,99 @@ export class BidEventsRepo {
       .orderBy('occurred_at', 'asc')
       .execute();
   }
+
+  /**
+   * #256 v2: flat-table History page query. Cursor pagination
+   * (`beforeId` from the oldest row on the previous page), full
+   * filter surface from the toolbar.
+   *
+   * `kinds`, `source`, `orderIdContains`, `sinceMs`, `untilMs`, and
+   * `minAbsPriceDeltaSat` all filter independently. Empty means
+   * "no constraint on this axis". The query is hand-written rather
+   * than going through Kysely's filter builder because we want a
+   * single SQL hop that also pulls each event's fillable_ask
+   * snapshot - the closest tick at-or-before `occurred_at` - so the
+   * dashboard doesn't have to round-trip per row.
+   */
+  async listEventsForHistory(args: {
+    limit: number;
+    beforeId?: number;
+    kinds?: ReadonlyArray<BidEventKind>;
+    source?: BidEventSource;
+    orderIdContains?: string;
+    sinceMs?: number;
+    untilMs?: number;
+    /** Absolute |new_price_sat - old_price_sat| in sat/EH/day. EDIT_PRICE only. */
+    minAbsPriceDeltaSat?: number;
+  }): Promise<
+    Array<
+      BidEventRow & {
+        fillable_at_event_sat: number | null;
+      }
+    >
+  > {
+    const where: string[] = [];
+    if (args.beforeId !== undefined && Number.isFinite(args.beforeId)) {
+      where.push(`e.id < ${Math.floor(args.beforeId)}`);
+    }
+    if (args.kinds && args.kinds.length > 0) {
+      const list = args.kinds.map((k) => `'${k}'`).join(',');
+      where.push(`e.kind IN (${list})`);
+    }
+    if (args.source) {
+      where.push(`e.source = '${args.source}'`);
+    }
+    if (args.orderIdContains && /^[A-Za-z0-9._-]+$/.test(args.orderIdContains)) {
+      where.push(`e.braiins_order_id LIKE '%${args.orderIdContains}%'`);
+    }
+    if (args.sinceMs !== undefined && Number.isFinite(args.sinceMs)) {
+      where.push(`e.occurred_at >= ${Math.floor(args.sinceMs)}`);
+    }
+    if (args.untilMs !== undefined && Number.isFinite(args.untilMs)) {
+      where.push(`e.occurred_at <= ${Math.floor(args.untilMs)}`);
+    }
+    if (
+      args.minAbsPriceDeltaSat !== undefined &&
+      Number.isFinite(args.minAbsPriceDeltaSat) &&
+      args.minAbsPriceDeltaSat > 0
+    ) {
+      const v = Math.floor(args.minAbsPriceDeltaSat);
+      // Only meaningful for EDIT_PRICE (the only kind with both
+      // old_price_sat and new_price_sat populated and meaningfully
+      // diffable). Other kinds bypass this filter entirely so a
+      // CREATE/CANCEL doesn't get hidden by a |Δ| threshold.
+      where.push(
+        `(e.kind != 'EDIT_PRICE' OR ABS(COALESCE(e.new_price_sat,0) - COALESCE(e.old_price_sat,0)) >= ${v})`,
+      );
+    }
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+
+    // The fillable_at_event subquery picks the most recent tick at-
+    // or-before the event with a non-null fillable reading. Rows
+    // with no qualifying tick (e.g. event predates the daemon's
+    // first tick) come back null and the dashboard renders an em-dash.
+    const sqlText = `
+      SELECT
+        e.*,
+        (SELECT t.fillable_ask_sat_per_eh_day
+           FROM tick_metrics t
+          WHERE t.tick_at <= e.occurred_at
+            AND t.fillable_ask_sat_per_eh_day IS NOT NULL
+          ORDER BY t.tick_at DESC
+          LIMIT 1) AS fillable_at_event_sat
+        FROM bid_events e
+        ${whereClause}
+        ORDER BY e.id DESC
+        LIMIT ${Math.floor(args.limit)}
+    `;
+    // Kysely raw passthrough.
+    const result = await this.db.executeQuery({
+      sql: sqlText,
+      parameters: [],
+      query: { kind: 'RawNode' as never },
+    } as never);
+    type Row = BidEventRow & { fillable_at_event_sat: number | null };
+    const rows = (result as unknown as { rows: Row[] }).rows ?? [];
+    return rows;
+  }
 }

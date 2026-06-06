@@ -207,6 +207,28 @@ export interface BidHistoryPage {
   next_cursor_ms: number | null;
 }
 
+/** #256 v2: flat-table toolbar filter shape. */
+export interface BidHistoryFilters {
+  kinds?: ReadonlyArray<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'>;
+  source?: 'AUTOPILOT' | 'OPERATOR';
+  orderIdContains?: string;
+  sinceMs?: number;
+  untilMs?: number;
+  /** In sat/PH/day. EDIT_PRICE events with |Δ| < this are hidden. */
+  minAbsPriceDelta?: number;
+}
+
+/** #256 v2: one row on the flat /history table. */
+export interface BidHistoryFlatEvent extends BidEventView {
+  /** Fillable ask at the moment of the event, sat/PH/day. Null when no qualifying tick. */
+  fillable_at_event_sat_per_ph_day: number | null;
+}
+
+export interface BidHistoryFlatPage {
+  events: BidHistoryFlatEvent[];
+  next_cursor_id: number | null;
+}
+
 export interface BidEventView {
   id: number;
   occurred_at: number;
@@ -729,6 +751,21 @@ export const api = {
     request<{ events: BidEventView[] }>(
       `/api/bid-history/${encodeURIComponent(orderId)}/events`,
     ),
+  // #256 v2: flat-table page endpoint.
+  bidHistoryFlatEvents: (filters: BidHistoryFilters, beforeId?: number, limit = 100) => {
+    const qs = new URLSearchParams();
+    qs.set('limit', String(limit));
+    if (beforeId !== undefined) qs.set('before_id', String(beforeId));
+    if (filters.kinds && filters.kinds.length > 0) qs.set('kinds', filters.kinds.join(','));
+    if (filters.source) qs.set('source', filters.source);
+    if (filters.orderIdContains) qs.set('order_id', filters.orderIdContains);
+    if (filters.sinceMs != null) qs.set('since_ms', String(filters.sinceMs));
+    if (filters.untilMs != null) qs.set('until_ms', String(filters.untilMs));
+    if (filters.minAbsPriceDelta != null && filters.minAbsPriceDelta > 0) {
+      qs.set('min_abs_price_delta', String(filters.minAbsPriceDelta));
+    }
+    return request<BidHistoryFlatPage>(`/api/bid-history-events?${qs.toString()}`);
+  },
   // #250: public-IP change markers for the charts.
   ipChangesViewport: (since: number, until: number) =>
     request<{ events: IpChangeEvent[] }>(
