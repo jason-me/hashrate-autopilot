@@ -33,7 +33,8 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { Tooltip } from './Tooltip';
 
 import {
   DEFAULT_DASHBOARD_TILES,
@@ -402,23 +403,38 @@ function FloatingAddButton({
     return () => window.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
+  // #266 follow-up: restyled to mirror the "right axis [select]"
+  // affordance used elsewhere on the page - inline label + chevron
+  // sitting on the same row as a select-style trigger. Anchored
+  // below the period-selector row (which moved left to clear this
+  // space) at the top-right of the indicators block.
   return (
-    <div ref={ref} className="absolute -top-7 right-0 pointer-events-auto">
+    <div ref={ref} className="absolute -top-7 right-0 flex items-center gap-2 pointer-events-auto">
+      <span className="text-xs text-slate-400 uppercase tracking-wider">
+        <Trans>add tile</Trans>
+      </span>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-slate-500 hover:text-amber-300"
-        title={t`Add a tile`}
         aria-label={t`Add a tile`}
+        className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-1 min-w-[5rem]"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14" />
           <path d="M12 5v14" />
         </svg>
-        <Trans>add tile</Trans>
+        <span className="flex-1 text-left text-slate-400">
+          <Trans>pick…</Trans>
+        </span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
       {open && (
-        <div className="absolute z-30 right-0 top-full mt-1">
+        // Picker dropdown opens BELOW the button and anchored to the
+        // RIGHT edge (right-0) so it grows leftward into the page
+        // rather than rightward off the screen.
+        <div className="absolute z-30 right-0 top-full mt-1 pointer-events-auto">
           <TilePickerDropdown
             inUse={excluded}
             onPick={(id) => {
@@ -454,57 +470,58 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
     return () => window.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
+  const chevronRef = useRef<HTMLButtonElement>(null);
+
+  // #266 follow-up: styled <Tooltip> for the label hover instead of
+  // the browser's default `title=` chrome. Question-mark icon next
+  // to the label signals hoverable detail without taking width.
+  const titleContent = result.tooltip ? (
+    <Tooltip text={result.tooltip}>
+      <span className="text-xs uppercase tracking-wider text-slate-100 break-words cursor-help inline-flex items-baseline gap-1">
+        <span>{labelFor(id)}</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0 self-center" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </svg>
+      </span>
+    </Tooltip>
+  ) : (
+    <span className="text-xs uppercase tracking-wider text-slate-100 break-words">
+      {labelFor(id)}
+    </span>
+  );
+
   return (
     <div
       ref={ref}
-      // `pointer-events-auto` override for SortableDashboard's
-      // rearrange-inert layer (#244, #266 follow-up).
-      className="relative pointer-events-auto"
+      className="relative pointer-events-auto group bg-slate-900 border border-slate-800 rounded-lg p-4 hover:border-slate-700"
     >
-      <button
-        type="button"
-        title={result.tooltip}
-        onClick={() => setOpen((v) => !v)}
-        // `h-full` so the auto-rows-fr grid stretches every tile to
-        // the row's tallest. `flex-col` + `justify-center` keeps the
-        // big number visually centered within the available height
-        // regardless of whether the label wraps onto two lines.
-        className="group flex flex-col w-full h-full text-left bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-pointer hover:border-slate-700"
-      >
-        {/* Label header. Allowed to wrap to 2 lines (no truncate), so
-            "AVG COST VS HASHPRICE" doesn't get clipped to
-            "AVG COST VS HA…". Chevron is now a proper Lucide
-            chevron-down at 14px in the corner, no longer wedged into
-            the label row. */}
-        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2 min-h-8 leading-4 text-center break-words pr-4">
-          {labelFor(id)}
-        </div>
-        <div
-          className={`text-2xl font-mono tabular-nums text-center ${result.color ?? 'text-slate-100'}`}
-        >
+      <div className="flex flex-col h-full">
+        <div className="mb-2 min-h-8 leading-4 text-center pr-5">{titleContent}</div>
+        <div className={`text-2xl font-mono tabular-nums text-center ${result.color ?? 'text-slate-100'}`}>
           {split ? split.num : result.value}
         </div>
-        {/* Caption slot always reserved with a non-breaking space so
-            tiles WITHOUT a unit ("1.06×") line up with tiles that DO
-            have one ("17 days", "46,363 sat/PH/day"). */}
         <div className="text-xs text-slate-500 mt-0.5 text-center min-h-[1.25rem]">
-          {split ? <UnitCaption unit={split.unit} /> : ' '}
+          {split ? <UnitCaption unit={split.unit} /> : ' '}
         </div>
-      </button>
-      {/* Chevron in the corner. Bigger, in a fixed top-right slot,
-          not competing with the label for space. */}
-      <span
-        className="pointer-events-none absolute top-2.5 right-2.5 text-slate-500 group-hover:text-slate-300"
-        aria-hidden="true"
+      </div>
+      <button
+        type="button"
+        ref={chevronRef}
+        onClick={() => setOpen((v) => !v)}
+        aria-label={t`Swap tile`}
+        className="absolute top-2.5 right-2.5 text-slate-500 hover:text-amber-300 leading-none"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="m6 9 6 6 6-6" />
         </svg>
-      </span>
+      </button>
       {open && (
         <TilePickerDropdown
           currentId={id}
           inUse={inUse}
+          anchorRef={chevronRef}
           onPick={(next) => {
             onReplace(next);
             setOpen(false);
@@ -528,10 +545,47 @@ interface PickerProps {
   readonly inUse: ReadonlyArray<DashboardTileId>;
   readonly onPick: (id: DashboardTileId) => void;
   readonly onRemove?: () => void;
+  /**
+   * #266 follow-up: anchor element to position the dropdown next to
+   * (the tile's chevron button). Without this the dropdown opened
+   * from the tile's left edge and could overflow the viewport when
+   * the tile sat near the right edge. The dropdown now opens from
+   * the anchor's top-right and gets clamped to fit the viewport.
+   */
+  readonly anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
-function TilePickerDropdown({ currentId, inUse, onPick, onRemove }: PickerProps) {
+function TilePickerDropdown({ currentId, inUse, onPick, onRemove, anchorRef }: PickerProps) {
   const inUseSet = useMemo(() => new Set(inUse), [inUse]);
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: 0,
+    top: 0,
+    ready: anchorRef === undefined,
+  });
+
+  useLayoutEffect(() => {
+    if (!anchorRef?.current || !ref.current) return;
+    const anchorRect = anchorRef.current.getBoundingClientRect();
+    const tipRect = ref.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+    // Default placement: below the anchor, right-aligned so the
+    // dropdown grows leftward into the page rather than rightward off
+    // the screen.
+    let left = anchorRect.right - tipRect.width;
+    let top = anchorRect.bottom + 4;
+    if (left < margin) left = margin;
+    if (left + tipRect.width > vw - margin) left = vw - tipRect.width - margin;
+    if (top + tipRect.height > vh - margin) {
+      // Not enough room below; flip above the anchor.
+      const above = anchorRect.top - tipRect.height - 4;
+      if (above >= margin) top = above;
+    }
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [anchorRef]);
 
   const grouped = useMemo(() => {
     const m = new Map<string, typeof TILE_CATALOGUE[number][]>();
@@ -543,8 +597,20 @@ function TilePickerDropdown({ currentId, inUse, onPick, onRemove }: PickerProps)
     return [...m.entries()];
   }, []);
 
+  // When `anchorRef` is supplied the dropdown is fixed-positioned and
+  // viewport-clamped; otherwise (legacy FloatingAddButton path) it
+  // falls back to `absolute left-0 top-full mt-1` relative to its
+  // parent.
+  const positioned = anchorRef !== undefined;
+
   return (
-    <div className="absolute z-30 left-0 top-full mt-1 w-72 max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl p-2 text-xs pointer-events-auto">
+    <div
+      ref={ref}
+      className={`${
+        positioned ? 'fixed' : 'absolute left-0 top-full mt-1'
+      } z-30 w-72 max-h-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl p-2 text-xs pointer-events-auto tile-picker-scroll ${pos.ready ? '' : 'invisible'}`}
+      style={positioned ? { left: pos.left, top: pos.top } : undefined}
+    >
       {grouped.map(([group, items]) => (
         <div key={group} className="mb-2 last:mb-0">
           <div className="text-[9px] uppercase tracking-wider text-slate-500 px-1 mb-1">

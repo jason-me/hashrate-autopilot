@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[UI]` Tiles bar polish: time selectors moved, picker anchored at chevron, styled tooltips (#266 follow-up x4)
+
+(1) The `+ add tile` affordance lived directly under the period block's time-range buttons (3h/6h/…/All) on the right and overlapped them on narrow viewports — couldn't be clicked. Moved the time-range buttons to the LEFT side of the period row so the right side of both rows is clear for the tile UI. (2) Re-styled the `+ add tile` as an inline label + select-style button (`add tile [pick… ▾]`) to match the `right axis [▾]` idiom used elsewhere on the page. (3) Tile tooltips now use the styled `<Tooltip>` component (portal-positioned, viewport-aware, matches the rest of the dashboard) instead of the browser's default `title=` chrome; a small question-mark icon next to each label signals hoverable detail. (4) The tile-picker dropdown was anchored to the tile's left edge and could overflow the viewport when the tile sat near the right. Now positions itself relative to the chevron the operator clicked, opens with right-edge alignment so it grows leftward into the page, and clamps to the viewport on both axes (flips above if no room below). Custom-styled scrollbar inside the dropdown so it doesn't look like a 17 px-wide raw browser track.
+
 ### `[Fix]` Crosshair tooltip clamps to its own chart (#257 follow-up)
 
 The crosshair tooltip's flip / shift logic used `window.innerWidth` / `window.innerHeight` as the fence. On the Hashrate chart that meant a bottom-anchored tooltip could overflow into the Price chart's area below, and vice versa. Now clamps to the SVG's own bounding rect so each chart's tooltip stays within its own chart's box. Last-resort clamp pushes the tooltip up against the chart edge if it's taller than the chart so spill never reaches the neighbouring chart.

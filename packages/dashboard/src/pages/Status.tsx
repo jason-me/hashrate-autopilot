@@ -1791,7 +1791,12 @@ function FilterBar({
   const { i18n } = useLingui();
   void i18n;
   return (
-    <section className="flex items-center justify-end flex-wrap gap-2">
+    // #266 follow-up: moved the time-range buttons to the LEFT side
+    // of the period block so the tiles bar's "+ add tile" affordance
+    // (anchored at the top-right of the indicators block right below
+    // this one) doesn't overlap with them. The right side of this row
+    // is now empty real estate the tile UI can use.
+    <section className="flex items-center justify-start flex-wrap gap-2">
       {!isLiveEdge && (
         <button
           onClick={onResetToLive}

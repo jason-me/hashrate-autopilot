@@ -3860,6 +3860,10 @@ msgstr "Percentage van overpay waaronder de autopilot GEEN EDIT_PRICE uitvoert. 
 msgid "Period selector"
 msgstr "Periodekiezer"
 
+#: src/components/TilesBar.tsx
+msgid "pick…"
+msgstr "kiezen…"
+
 #: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Pijplijn"
@@ -4727,6 +4731,10 @@ msgstr "Som van counters_committed.amount_consumed_sat over elk bod op "
 "achterlopen op het laatste uur van actief-bod verbruik (Braiins werkt "
 "committed counters alleen bij op elke uurlijkse settlement-tick). "
 "Schakel via Config → P&L-paneel."
+
+#: src/components/TilesBar.tsx
+msgid "Swap tile"
+msgstr "Tegel wisselen"
 
 #: src/pages/Config.tsx
 msgid "system default"

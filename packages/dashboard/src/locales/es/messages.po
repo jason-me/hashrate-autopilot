@@ -3881,6 +3881,10 @@ msgstr "Porcentaje de overpay por debajo del cual el autopiloto NO ejecuta un "
 msgid "Period selector"
 msgstr "Selector de período"
 
+#: src/components/TilesBar.tsx
+msgid "pick…"
+msgstr "elegir…"
+
 #: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Flujo"
@@ -4751,6 +4755,10 @@ msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de "
 "retrasarse respecto a la última hora de consumo de ofertas activas "
 "(Braiins solo actualiza los contadores comprometidos en cada tick de "
 "liquidación horario). Cambia en Config → panel P&L."
+
+#: src/components/TilesBar.tsx
+msgid "Swap tile"
+msgstr "Cambiar mosaico"
 
 #: src/pages/Config.tsx
 msgid "system default"

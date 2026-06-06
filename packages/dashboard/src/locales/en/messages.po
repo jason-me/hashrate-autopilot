@@ -3802,6 +3802,10 @@ msgstr "Percentage of overpay below which the autopilot does NOT issue an "
 msgid "Period selector"
 msgstr "Period selector"
 
+#: src/components/TilesBar.tsx
+msgid "pick…"
+msgstr "pick…"
+
 #: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Pipeline"
@@ -4660,6 +4664,10 @@ msgstr "Sum of counters_committed.amount_consumed_sat across every bid on "
 "existed before the autopilot was switched on. May lag the latest hour "
 "of active-bid consumption (Braiins only updates committed counters on "
 "each hourly settlement tick). Switch via Config → P&L panel."
+
+#: src/components/TilesBar.tsx
+msgid "Swap tile"
+msgstr "Swap tile"
 
 #: src/pages/Config.tsx
 msgid "system default"
