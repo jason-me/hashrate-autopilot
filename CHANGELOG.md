@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Fix]` Price chart Y-axis scales to visible data only (#275 follow-up)
+
+Audit follow-up to the stat-tile fix: the Price chart's left Y-axis auto-range sampled every fetched point - including the off-screen prefetch buffer extending one window-width past each viewport edge - plus the prices on off-screen bid-event markers. An off-screen price spike could stretch the visible axis with nothing on the chart explaining it. The axis now samples only points inside the visible window (the Hashrate chart and both right axes already did this). Line paths still cover the full buffer, clipped at the plot edge, so panning stays seamless.
+
 ### `[Fix]` Stat tiles now aggregate over the visible chart window, not the hidden prefetch buffer (#275)
 
 The KPI tiles (uptime, bid coverage, delivery while bidding, avg hashrate, avg cost, P&L per-day) were computed over the chart's data-fetch window, which pads the visible viewport by one full window-width on each side for smooth panning. Zoomed into a clean-looking hour, an off-screen no-bid tick from over an hour earlier could move BID COVERAGE between 99.5% and 100.0% as you panned, with nothing visible on the chart explaining it. The tiles now use exactly the visible window the tooltips promise, and live presets (3h/24h/…) hit the server's cached per-range path.

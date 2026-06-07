@@ -686,7 +686,17 @@ export const PriceChart = memo(function PriceChart({
     const minX = viewportSince ?? dataMinX;
     const maxX = viewportUntil ?? dataMaxX;
 
+    // #275 follow-up: Y-axis auto-range samples ONLY the visible
+    // window. The fetched data extends one window-width past each
+    // viewport edge (prefetch buffer for smooth panning), and sampling
+    // that buffer let an off-screen price spike stretch the visible
+    // Y-axis with nothing on the chart explaining it - the same
+    // hidden-buffer surprise as the stat tiles in #275. The line
+    // paths still cover the full buffer (clipped at the plot edge)
+    // so panning stays seamless; only the scale is viewport-true.
+    const inView = (t: number): boolean => t >= minX && t <= maxX;
     const eventPrices = events
+      .filter((e) => inView(e.occurred_at))
       .flatMap((e) => [e.old_price_sat_per_ph_day, e.new_price_sat_per_ph_day])
       .filter((p): p is number => p !== null && Number.isFinite(p));
     // Deliberately exclude capPoints from Y-axis auto-scaling. The cap
@@ -710,12 +720,22 @@ export const PriceChart = memo(function PriceChart({
     // excluded - the whole point of the toggle is that the flatter
     // bid/fillable/hashprice detail is crushed when the volatile
     // effective line drags the Y-axis range down.
-    const priceSample = [
-      ...pricePoints.map((p) => p.v),
-      ...hashpricePoints.map((p) => p.v),
-      ...fillablePoints.map((p) => p.v),
+    let priceSample = [
+      ...pricePoints.filter((p) => inView(p.t)).map((p) => p.v),
+      ...hashpricePoints.filter((p) => inView(p.t)).map((p) => p.v),
+      ...fillablePoints.filter((p) => inView(p.t)).map((p) => p.v),
       ...eventPrices,
     ];
+    if (priceSample.length === 0) {
+      // Degenerate viewport with no points in view (panned past the
+      // data, or mid-fetch). Fall back to the full fetched sample so
+      // the axis holds a sane scale instead of snapping to 0..1.
+      priceSample = [
+        ...pricePoints.map((p) => p.v),
+        ...hashpricePoints.map((p) => p.v),
+        ...fillablePoints.map((p) => p.v),
+      ];
+    }
     const hasPrice = priceSample.length > 0;
     let priceMinRaw = hasPrice ? Infinity : 0;
     let priceMaxRaw = hasPrice ? -Infinity : 1;
