@@ -480,12 +480,30 @@ function DenominationToggle() {
   const { i18n } = useLingui();
   void i18n;
 
+  // #274: distinguish "USD deliberately disabled" (price source =
+  // 'none' → hide the button entirely; this isn't a feature on this
+  // install) from "USD configured but not currently reachable" (any
+  // other source + btcPrice null → render the button disabled with a
+  // tooltip explaining why, so the operator can act on the cause
+  // instead of wondering whether the option was removed). React Query
+  // dedupes against Layout's existing config query, so no extra
+  // network hop.
+  const configQuery = useQuery({
+    queryKey: ['config'],
+    queryFn: api.config,
+  });
+  const priceSource = configQuery.data?.config?.btc_price_source ?? null;
+  const usdConfigured = priceSource !== null && priceSource !== 'none';
+  const usdReachable = btcPrice !== null;
+  const usdDisabled = usdConfigured && !usdReachable;
+
   const priceStr = btcPrice
     ? btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
     : null;
   const titleText = priceStr
     ? t`BTC/USD: $${priceStr} - select display currency`
     : t`Select display currency`;
+  const usdDisabledTooltip = t`USD unavailable: BTC/USD oracle is not responding right now. Check Config → Pool & Payout → BTC Price Oracle (use the Test connection button).`;
 
   return (
     <div
@@ -514,14 +532,20 @@ function DenominationToggle() {
       >
         <BtcSymbol /> BTC
       </button>
-      {btcPrice !== null && (
+      {usdConfigured && (
         <button
-          onClick={() => setMode('usd')}
+          onClick={() => {
+            if (!usdDisabled) setMode('usd');
+          }}
+          disabled={usdDisabled}
+          title={usdDisabled ? usdDisabledTooltip : undefined}
           className={
             'px-2 py-1 transition border-l border-slate-700 ' +
-            (mode === 'usd'
-              ? 'bg-amber-400 text-slate-900 font-medium'
-              : 'text-slate-400 hover:bg-slate-800')
+            (usdDisabled
+              ? 'text-slate-600 cursor-not-allowed'
+              : mode === 'usd'
+                ? 'bg-amber-400 text-slate-900 font-medium'
+                : 'text-slate-400 hover:bg-slate-800')
           }
         >
           USD

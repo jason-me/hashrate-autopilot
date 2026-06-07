@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[UI]` USD denomination button greys out instead of disappearing when oracle is unreachable (#274)
+
+The denomination toggle (sats / BTC / USD) used to drop the USD option entirely whenever `btcPrice` was `null`, conflating two very different cases: oracle deliberately turned off (`btc_price_source = 'none'`) and oracle transiently unreachable (API down, DNS hiccup, rate-limited). The former is "USD isn't a feature on this install" — hide it; the latter is "USD should work, something's broken right now" — say so. The button now stays visible but renders disabled with `cursor-not-allowed` and a hover tooltip pointing the operator at Config → Pool & Payout → BTC Price Oracle / Test connection. The "deliberately disabled" case still hides the button, since the operator opted out.
+
 ### `[Fix]` Hero price card no longer overflows on mobile in BTC mode (#268)
 
 In BTC denomination mode the current-bid price renders as e.g. `0,00046582` — about 10 characters at `text-4xl`. Inside the hero card's `grid-cols-2` layout, each column was ~150 px on iPhone, so the big number plus the absolute-positioned ± delta badge crashed into the DELIVERED column to its right. v2 stacks the PRICE / DELIVERED columns vertically on `< sm` viewports (full card width each), drops the big-number size to `text-3xl` on mobile, and moves the ± delta badge from absolute-right to inline-below the number so the centered layout stays clean. Desktop layout is unchanged.

@@ -3560,7 +3560,11 @@ msgid "One-click support bundle: probes every external service the daemon talks 
 "to (marketplace, pool, node, price providers) and snapshots the "
 "configuration with all secrets stripped. Use \"Copy as Markdown\" to "
 "paste the result into a bug report."
-msgstr "Paquete de soporte con un clic: prueba cada servicio externo con el que se comunica el daemon (mercado, pool, nodo, fuentes de precio) y captura la configuración con todos los secretos eliminados. Usa \"Copiar como Markdown\" para pegar el resultado en un informe de error."
+msgstr "Paquete de soporte con un clic: prueba cada servicio externo con el que "
+"se comunica el daemon (mercado, pool, nodo, fuentes de precio) y "
+"captura la configuración con todos los secretos eliminados. Usa "
+"\"Copiar como Markdown\" para pegar el resultado en un informe de "
+"error."
 
 #: src/pages/Config.tsx
 msgid "One-shot offset for earnings the on-chain payout observer can't see - "
@@ -5187,6 +5191,12 @@ msgstr "uptime"
 #: src/components/SoloMinersCard.tsx
 msgid "Uptime"
 msgstr "Tiempo activo"
+
+#: src/components/Layout.tsx
+msgid "USD unavailable: BTC/USD oracle is not responding right now. Check "
+"Config → Pool & Payout → BTC Price Oracle (use the Test connection "
+"button)."
+msgstr "USD no disponible: el oráculo BTC/USD no responde ahora mismo. Revisa Config → Pool & Payout → BTC Price Oracle (usa el botón Test connection)."
 
 #: src/pages/Config.tsx
 msgid "Used by the on-chain payout balance check (when \"Bitcoin Knots RPC\" is "

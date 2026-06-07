@@ -5096,6 +5096,14 @@ msgstr "uptime"
 msgid "Uptime"
 msgstr "Uptime"
 
+#: src/components/Layout.tsx
+msgid "USD unavailable: BTC/USD oracle is not responding right now. Check "
+"Config → Pool & Payout → BTC Price Oracle (use the Test connection "
+"button)."
+msgstr "USD unavailable: BTC/USD oracle is not responding right now. Check "
+"Config → Pool & Payout → BTC Price Oracle (use the Test connection "
+"button)."
+
 #: src/pages/Config.tsx
 msgid "Used by the on-chain payout balance check (when \"Bitcoin Knots RPC\" is "
 "selected as the backend above), AND by the <0>BIP 110</0> yellow-cube "
