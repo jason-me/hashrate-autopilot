@@ -1133,15 +1133,25 @@ function OperationsCard({
       className={`bg-gradient-to-br ${heroColors[s.run_mode]} border rounded-xl p-5 h-full flex flex-col justify-center items-center text-center`}
     >
       {currentPricePH !== null ? (
-        <div className="grid grid-cols-2 gap-6 w-full">
+        // #268: stacks vertically on mobile so the BTC-denomination
+        // price (e.g. "0,00046582" - much longer than the sat
+        // equivalent "46.582") has the full card width and doesn't
+        // collide with the DELIVERED column on iPhone.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
           <Tooltip text={t`Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card.`}>
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>price</Trans></div>
-              {/* relative wrapper so the ±delta can be position:absolute
-                  outside the flow - that way the big number stays centered
-                  regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
-              <div className="relative leading-none">
-                <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
+              {/* #268: number + delta badge.
+                  - On sm+ (>=640px): the wrapper is `relative` and the
+                    badge is position:absolute outside the flow so the
+                    big number stays centered regardless of badge width.
+                  - On mobile (<sm): the wrapper is a flex-col so the
+                    badge falls BELOW the number. The absolute path
+                    overflowed the card on iPhone in BTC mode, where
+                    the longer number (10 chars vs ~6 in sat mode)
+                    pushed the badge past the right edge. */}
+              <div className="leading-none flex flex-col items-center sm:block sm:relative">
+                <span className="text-3xl sm:text-4xl font-mono font-semibold text-slate-100 tabular-nums">
                   {(() => {
                     // Route through the same formatter the muted subtitle
                     // uses, then drop the unit. The full formatter returns
@@ -1159,7 +1169,7 @@ function OperationsCard({
                     return m?.[1] ?? full;
                   })()}
                 </span>
-                <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
+                <span className="mt-1 sm:mt-0 sm:absolute sm:left-full sm:top-1/2 sm:-translate-y-1/2 sm:ml-1.5 whitespace-nowrap">
                   <PriceDeltaVsHashprice
                     currentPH={currentPricePH}
                     hashpricePH={hashpricePH}
@@ -1199,7 +1209,7 @@ function OperationsCard({
           >
             <div className="flex flex-col items-center">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>delivered</Trans></div>
-              <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
+              <div className={`text-3xl sm:text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
                 {(() => {
                   const hr = denomination.formatHashrate(s.actual_hashrate_ph, intlLocale);
                   const split = splitUnit(hr);

@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Fix]` Hero price card no longer overflows on mobile in BTC mode (#268)
+
+In BTC denomination mode the current-bid price renders as e.g. `0,00046582` — about 10 characters at `text-4xl`. Inside the hero card's `grid-cols-2` layout, each column was ~150 px on iPhone, so the big number plus the absolute-positioned ± delta badge crashed into the DELIVERED column to its right. v2 stacks the PRICE / DELIVERED columns vertically on `< sm` viewports (full card width each), drops the big-number size to `text-3xl` on mobile, and moves the ± delta badge from absolute-right to inline-below the number so the centered layout stays clean. Desktop layout is unchanged.
+
 ### `[UI]` BTC oracle Test button inline + telegram_chat_id redacted in diagnostics
 
 (1) **BTC price oracle Test button** is now inline to the right of the Price source dropdown, same `flex gap-2` row, matching the Pool URL / Datum / Telegram / bitcoind / electrs Test-connection idiom across the rest of Config. Was previously below the helper text, reading as a tacked-on extra. (2) **`telegram_chat_id` is now redacted** in `/api/debug/dump`. The chat id pairs with a stolen `bot_token` to message-spam the operator's private chat; treating it as personal-but-not-credential alongside `telegram_instance_label` and the DDNS fields.
