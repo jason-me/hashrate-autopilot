@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[UI]` BTC oracle Test button inline + telegram_chat_id redacted in diagnostics
+
+(1) **BTC price oracle Test button** is now inline to the right of the Price source dropdown, same `flex gap-2` row, matching the Pool URL / Datum / Telegram / bitcoind / electrs Test-connection idiom across the rest of Config. Was previously below the helper text, reading as a tacked-on extra. (2) **`telegram_chat_id` is now redacted** in `/api/debug/dump`. The chat id pairs with a stolen `bot_token` to message-spam the operator's private chat; treating it as personal-but-not-credential alongside `telegram_instance_label` and the DDNS fields.
+
 ### `[Release]` v1.12.2
 
 Patch release: "Test connection" button for the BTC price oracle (#270) and the one-click Diagnostics support bundle with connectivity matrix + sanitized config snapshot (#272). Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.

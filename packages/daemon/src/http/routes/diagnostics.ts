@@ -56,6 +56,12 @@ const SECRET_KEYS_EXPLICIT = new Set([
   'ddns_hostname',
   'ddns_username',
   'telegram_instance_label',
+  // #267 follow-up: the Telegram chat id is the only thing a stranger
+  // with a stolen bot_token would need to message-spam an operator's
+  // private chat - personal even though it's not a credential per se.
+  // Was leaking in the first real diagnostics bundle the operator
+  // pasted (regenerous, 2026-06-06).
+  'telegram_chat_id',
 ]);
 
 /**

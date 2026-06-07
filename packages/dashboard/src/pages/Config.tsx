@@ -1334,6 +1334,14 @@ function SectionCard({
           onChange={onChange}
           gridCls={gridCls}
         />
+      ) : section.id === 'btc-price-oracle' ? (
+        <BtcOracleSectionBody
+          section={section}
+          draft={draft}
+          locale={locale}
+          onChange={onChange}
+          gridCls={gridCls}
+        />
       ) : (
         <div className={gridCls}>
           {section.fields.map((f) => (
@@ -1355,31 +1363,40 @@ function SectionCard({
       {section.id === 'block-found-sound' && (
         <BlockFoundSoundExtras draft={draft} onChange={onChange} />
       )}
-      {section.id === 'btc-price-oracle' && (
-        <BtcOracleTestExtras draft={draft} locale={locale} />
-      )}
     </section>
   );
 }
 
 /**
- * #270: "Test connection" button for the BTC price oracle section.
- * Probes the provider currently selected in the form (saved or not)
- * via POST /api/btc-price/test and reports the live price or the
- * concrete failure (HTTP status / network error code) inline. Born
- * out of #267, where the only observable signal for a failing oracle
- * was the USD toggle silently not appearing.
+ * #270: BTC price oracle section body. Renders the Price source
+ * dropdown with the "Test connection" button INLINE to its right (same
+ * `flex gap-2` pattern as Pool URL / Datum stats API / Telegram /
+ * bitcoind / electrs - the established idiom). The test result or
+ * concrete error (HTTP status / network error code) renders below.
  *
- * A successful probe warms the daemon's price cache, so invalidating
- * the ['btc-price'] query right after makes the header's USD toggle
+ * Born out of #267, where the only observable signal for a failing
+ * oracle was the USD toggle silently not appearing. A successful
+ * probe warms the daemon's price cache, so invalidating the
+ * ['btc-price'] query right after makes the header's USD toggle
  * light up immediately.
+ *
+ * The inline button was originally placed below the helper text
+ * (#270 v1) which read as a tacked-on extra rather than belonging to
+ * the field; the operator caught the inconsistency vs the other
+ * Test-connection fields and the v2 layout matches them.
  */
-function BtcOracleTestExtras({
+function BtcOracleSectionBody({
+  section,
   draft,
   locale,
+  onChange,
+  gridCls,
 }: {
+  section: Section;
   draft: AppConfig;
   locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+  gridCls: string;
 }) {
   const qc = useQueryClient();
   const test = useMutation<BtcPriceTestResponse, Error, void>({
@@ -1388,42 +1405,77 @@ function BtcOracleTestExtras({
       if (res.ok) qc.invalidateQueries({ queryKey: ['btc-price'] });
     },
   });
-  const disabled = draft.btc_price_source === 'none' || test.isPending;
+  const testDisabled = draft.btc_price_source === 'none' || test.isPending;
   const priceStr =
     test.data?.ok && test.data.usd_per_btc !== null
       ? test.data.usd_per_btc.toLocaleString(locale, { maximumFractionDigits: 0 })
       : null;
   return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => test.mutate()}
-        disabled={disabled}
-        className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
-      >
-        {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
-      </button>
-      {draft.btc_price_source === 'none' && (
-        <span className="ml-3 text-xs text-slate-500">
-          <Trans>Select a price source to test.</Trans>
-        </span>
-      )}
-      {test.data && test.data.ok && priceStr !== null && (
-        <div className="mt-2 text-xs text-emerald-300 font-mono">
-          OK · ${priceStr} · {test.data.source}
+    <>
+      <div className={gridCls}>
+        {section.fields.map((f) => (
+          <div key={f.key as string}>
+            {f.key === 'btc_price_source' && f.kind === 'select' ? (
+              <label className="block">
+                <span className="block text-sm text-slate-300 mb-1">{f.label}</span>
+                <div className="flex gap-2 items-stretch">
+                  <select
+                    value={draft.btc_price_source as string}
+                    onChange={(e) =>
+                      onChange('btc_price_source', e.target.value as never)
+                    }
+                    className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm"
+                  >
+                    {f.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => test.mutate()}
+                    disabled={testDisabled}
+                    className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
+                  </button>
+                </div>
+                {f.help && (
+                  <span className="block text-xs text-slate-500 mt-1">{f.help}</span>
+                )}
+              </label>
+            ) : (
+              <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
+            )}
+          </div>
+        ))}
+      </div>
+      {(draft.btc_price_source === 'none' || test.data || test.isError) && (
+        <div className="mt-2">
+          {draft.btc_price_source === 'none' && !test.data && !test.isError && (
+            <span className="text-xs text-slate-500">
+              <Trans>Select a price source to test.</Trans>
+            </span>
+          )}
+          {test.data && test.data.ok && priceStr !== null && (
+            <div className="text-xs text-emerald-300 font-mono">
+              OK · ${priceStr} · {test.data.source}
+            </div>
+          )}
+          {test.data && !test.data.ok && (
+            <div className="text-xs text-red-400 font-mono break-words">
+              {test.data.error}
+            </div>
+          )}
+          {test.isError && (
+            <div className="text-xs text-red-400 font-mono break-words">
+              {test.error.message}
+            </div>
+          )}
         </div>
       )}
-      {test.data && !test.data.ok && (
-        <div className="mt-2 text-xs text-red-400 font-mono break-words">
-          {test.data.error}
-        </div>
-      )}
-      {test.isError && (
-        <div className="mt-2 text-xs text-red-400 font-mono break-words">
-          {test.error.message}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 

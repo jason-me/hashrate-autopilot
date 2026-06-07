@@ -38,7 +38,6 @@ describe('redactConfig', () => {
       solo_mining_enabled: true,
       electrs_port: null,
       ddns_update_url: 'https://update.dedyn.io/',
-      telegram_chat_id: '942606673',
     });
     expect(out['datum_api_url']).toBe('http://192.168.1.121:7152');
     expect(out['electrs_host']).toBe('10.21.21.5');
@@ -48,7 +47,6 @@ describe('redactConfig', () => {
     expect(out['electrs_port']).toBeNull();
     // Explicitly NOT private per operator review (#272).
     expect(out['ddns_update_url']).toBe('https://update.dedyn.io/');
-    expect(out['telegram_chat_id']).toBe('942606673');
   });
 
   it('redacts personal-but-not-credential fields (operator review of the first real bundle)', () => {
@@ -57,11 +55,16 @@ describe('redactConfig', () => {
       ddns_hostname: 'myhost.dedyn.io',
       ddns_username: 'myhost.dedyn.io',
       telegram_instance_label: 'taliesin',
+      // #267 follow-up: chat id pairs with bot_token to message-spam
+      // an operator's private chat; redacted alongside the rest of the
+      // Telegram pair.
+      telegram_chat_id: '942606673',
     });
     expect(out['btc_payout_address']).toBe(REDACTED);
     expect(out['ddns_hostname']).toBe(REDACTED);
     expect(out['ddns_username']).toBe(REDACTED);
     expect(out['telegram_instance_label']).toBe(REDACTED);
+    expect(out['telegram_chat_id']).toBe(REDACTED);
   });
 
   it('partially redacts the pool URL and worker name, keeping the diagnostic shape', () => {
