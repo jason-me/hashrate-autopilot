@@ -173,19 +173,38 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   `effective` - fillable / hashprice / max bid stay raw), **offline-period reconstruction** - daemon-offline
   gaps render as a hatched band, and a boot-time backfill walks the gap inserting synthetic ticks every
   5 min plus one at each detected difficulty retarget so the pool-luck line step-changes through the gap
-  and retarget markers land at (close to) canonical time even after long outages, stats bar (uptime, three
-  side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
-  a runway forecast AND a Braiins share-rejection ratio on the Braiins card (computed server-side from
-  raw `tick_metrics` rows over the selected chart range; also available as a chart right-axis series so
-  the operator can see when the ratio spiked - #243), split P&L panels (period and lifetime - "collected
+  and retarget markers land at (close to) canonical time even after long outages, **configurable stats bar** -
+  the operator picks which tiles appear (#266); a catalogue of ~22 tiles covers uptime decomposition (bid coverage
+  vs delivery while bidding), avg-hashrate cards (Braiins / Datum / Ocean), avg cost vs hashprice + overpay
+  intent/settled, hashprice, pool blocks (30d), three pool-luck tiles (24h/7d/30d, window-aware emerald/amber/red
+  bands), share log %, share rejection, wallet runway, hashrate target, and Bitaxe fleet tiles (hashrate always
+  in TH/s, power in W, J/TH efficiency, best-difficulty record). Picker dropdown on each slot, drag-to-reorder
+  inside the bar via hover-revealed grip handles, up to 24 tiles, persists daemon-side so the choice follows
+  the operator across browsers. Defaults to the original six when empty so existing installs see no change.
+  **Synced crosshair across both charts** - hovering either chart draws a vertical guide on both with a
+  floating readout of every visible series at the snapped tick; click to pin; Esc or click outside dismisses;
+  press-and-hold on touch then scrub.
+  Service panels include a runway forecast AND a Braiins share-rejection ratio on the Braiins card (computed
+  server-side from raw `tick_metrics` rows over the selected chart range; also available as a chart right-axis
+  series so the operator can see when the ratio spiked - #243), split P&L panels (period and lifetime - "collected
   (on-chain)" reads lifetime received from `reward_events`, not current UTXO balance, so a payout that's
   been spent still counts; the lifetime panel also carries a dedicated **return on spend** row showing
   `net / spent` as a percentage so the operator can read the rate of return alongside the absolute net
   figure - #249), live bid table with full IDs, and a full config editor with live reload.
+- **History page** - dedicated `/history` route (#256 v2) with a flat filterable table of every bid event
+  (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) the autopilot or operator emitted, replacing the older per-bid
+  collapsible view. Filter chips with action glyphs, full bid ID, denomination-aware `|Δ price| ≥ N` filter
+  (input units track the active TH/PH/EH toggle), locale-aware custom date picker, server-side infinite-scroll
+  pagination. Columns: when, bid id, action, fillable-at-event, price before / after, Δ price (green
+  down / red up), speed. SQL coalesces orphan-CREATE rows whose `braiins_order_id` lands a few ticks later,
+  and carries speed / last-price forward so cells aren't blank for an order that demonstrably had values.
 - **Unit toggles in the header** - hashrate displays as TH/s, PH/s, or EH/s and prices as sat, ₿ (BTC), or
   USD. Both pickers persist per browser. The USD path uses a live BTC oracle (CoinGecko, Coinbase, Bitstamp,
   or Kraken; pick one) refreshed daemon-side every 4 minutes so it stays current even when the dashboard tab
-  is closed.
+  is closed. Config -> Pool & Payout -> BTC price oracle has an inline **Test connection** button (#270)
+  that probes the selected provider and reports the live BTC/USD price (or a concrete error - HTTP status,
+  timeout, etc.) without saving. When the oracle is configured but transiently unreachable, the USD button
+  in the header greys out with a tooltip explaining the cause rather than silently disappearing (#274).
 - **Pool-luck plot** - the Hashrate chart's right-axis dropdown can render a pool-luck multiplier
   (`observed / Poisson-expected`) over a 24h, 7d, or 30d trailing window. Decays continuously between finds, jumps
   on each new pool block. The OCEAN panel shows the same number as a "X.XX× expected" annotation next to
@@ -254,7 +273,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 Every notification the daemon records - sent, failed, muted, given-up - lands in an append-only audit
 trail at `/alerts`.
 
-![Alerts page - audit trail of every notification](docs/images/alerts.jpg)
+![Alerts page - audit trail of every notification](docs/images/alerts.png)
 
 Events render as collapsible cards grouped into two sections: **OPEN** (firing, not yet seen) and
 **Acknowledged and resolved** (one chronological bucket for both acked-not-recovered events and
