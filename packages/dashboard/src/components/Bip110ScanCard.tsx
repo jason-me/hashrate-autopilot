@@ -143,17 +143,22 @@ function minerColor(tag: string): string {
 
 function MinerBadge({ tag }: { tag: string }): React.JSX.Element {
   const initial = tag.replace(/^[^a-zA-Z0-9]*/, '').charAt(0).toUpperCase() || '?';
+  // #278: switched from `inline-flex` + fixed `max-w-[180px]` to
+  // `flex` + `min-w-0 max-w-full` so the badge cooperates with its
+  // parent column's width instead of holding an absolute size.
+  // Without this, a long miner tag (e.g. `ckpool$/Block Mined by …`)
+  // on a narrow iPhone viewport pushed the SignalingBlockCard
+  // header's height number and badge column out of band.
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-300 truncate max-w-[180px]" title={tag}>
+    <span className="flex items-center gap-1.5 text-xs text-slate-300 max-w-full min-w-0" title={tag}>
       {/* shrink-0 keeps the letter square w-5 h-5 even when the tag
           is long enough to push the flex children to compete for
-          space (e.g. "ckpool$/Block Mined by ...") - without it the
-          letter was getting squashed narrower than the matching
-          icons on shorter tags. */}
+          space - without it the letter was getting squashed
+          narrower than the matching icons on shorter tags. */}
       <span className={`shrink-0 inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${minerColor(tag)}`}>
         {initial}
       </span>
-      <span className="truncate">{tag}</span>
+      <span className="truncate min-w-0">{tag}</span>
     </span>
   );
 }
@@ -204,16 +209,23 @@ function SignalingBlockCard({
 
   return (
     <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-lg font-semibold text-amber-400 font-mono">
+      {/* #278: items-start instead of items-baseline so a tall or
+          wrapping badge column doesn't drag the height number's
+          baseline; gap-3 (instead of gap-2) keeps a visible breathing
+          space between the height and a truncated badge. */}
+      <div className="flex items-start justify-between gap-3">
+        <span className="shrink-0 text-lg font-semibold text-amber-400 font-mono">
           {formatNumber(block.height, {}, intlLocale)}
         </span>
         {/* #237: pool and miner badges stack vertically in the top-right
             so both identities are visible on mobile without a horizontal
             scroll. Pool on top (more identity-stable across blocks);
             miner below. When miner is null (non-Ocean blocks) only the
-            pool badge renders. */}
-        <div className="flex flex-col items-end gap-1">
+            pool badge renders. #278: `min-w-0` on the column lets the
+            badges' truncate take effect when a tag is long - without
+            it the column took its intrinsic width and pushed the row
+            out of band on iPhone. */}
+        <div className="min-w-0 flex flex-col items-end gap-1">
           {block.pool_tag && <MinerBadge tag={block.pool_tag} />}
           {block.miner_tag && <MinerBadge tag={block.miner_tag} />}
         </div>
