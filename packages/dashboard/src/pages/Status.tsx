@@ -238,9 +238,14 @@ export function Status() {
     }
   }, [firstPointAt, chartViewport.setDataStart]);
 
+  // #285 follow-up: id of the bid event being focused after a
+  // History → chart jump. PriceChart pulses an amber ring around the
+  // matching marker for ~5 s, then this clears back to null.
+  const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
+
   // #285: ?focus_event=<id>&at=<ms> handoff from History → chart. We
   // pass the timestamp directly so Status doesn't need a round-trip
-  // to look the event up; the id is along for future use. Pan the
+  // to look the event up; the id drives the marker pulse. Pan the
   // price chart to the event's timestamp, then strip the params
   // (replaceState so the back button doesn't re-trigger the jump).
   // The viewport jump preserves the operator's current zoom width
@@ -259,10 +264,22 @@ export function Status() {
     const DAY_MS = 24 * HOUR_MS;
     const width = currentWidth > DAY_MS ? HOUR_MS : currentWidth;
     chartViewport.jumpToWindow(at, width);
+    const idRaw = params.get('focus_event');
+    let timer: number | null = null;
+    if (idRaw) {
+      const id = Number.parseInt(idRaw, 10);
+      if (Number.isFinite(id)) {
+        setFocusedEventId(id);
+        timer = window.setTimeout(() => setFocusedEventId(null), 5_000);
+      }
+    }
     params.delete('focus_event');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+    };
     // location-driven effect; depend only on the URL string.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
@@ -749,6 +766,7 @@ export function Status() {
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
           crosshair={chartCrosshair}
+          focusEventId={focusedEventId}
         />
       </div>
     ),

@@ -274,6 +274,7 @@ export const PriceChart = memo(function PriceChart({
   viewportUntil,
   chartColorOverrides,
   crosshair,
+  focusEventId = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -391,6 +392,13 @@ export const PriceChart = memo(function PriceChart({
   /** #257: shared crosshair state (synced with HashrateChart). When
    *  undefined the crosshair is disabled entirely. */
   crosshair?: SharedCrosshair;
+  /** #285 follow-up: bid_events.id from the URL `focus_event` handoff.
+   *  The matching marker renders a pulsing amber ring on top of its
+   *  glyph so the operator can spot which event they jumped to. The
+   *  ring is purely visual; clicking it still routes through the
+   *  normal onMarkerClick path. Status clears this back to null after
+   *  ~5 s so the highlight doesn't linger. */
+  focusEventId?: number | null;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -2382,6 +2390,47 @@ export const PriceChart = memo(function PriceChart({
           }
           return null;
         })}
+        {/* #285 follow-up: focus pulse for the marker the operator
+            jumped to from /history. Draws an expanding amber ring
+            anchored on the price-line bubble. Pure visual cue; no
+            pointer events so the underlying marker's hit-rect still
+            receives the click. Status clears focusEventId after ~5 s
+            so the ring doesn't linger. */}
+        {focusEventId !== null && (() => {
+          const focus = visibleEvents.find((e) => e.id === focusEventId);
+          if (!focus) return null;
+          const cx = xScale(focus.occurred_at);
+          const priceAtEvent = eventPriceAt(focus);
+          const cy = priceAtEvent !== null ? yScale(priceAtEvent) : PADDING.top - 2;
+          return (
+            <g pointerEvents="none">
+              <style>{`
+                @keyframes priceChartFocusPulse {
+                  0%   { r: 5;  opacity: 0.95; }
+                  100% { r: 22; opacity: 0;    }
+                }
+                @keyframes priceChartFocusGlow {
+                  0%, 100% { r: 7; opacity: 0.85; }
+                  50%      { r: 9; opacity: 1;    }
+                }
+                .price-chart-focus-pulse {
+                  animation: priceChartFocusPulse 1.5s ease-out infinite;
+                  fill: none;
+                  stroke: #fbbf24;
+                  stroke-width: 2;
+                }
+                .price-chart-focus-glow {
+                  animation: priceChartFocusGlow 1.5s ease-in-out infinite;
+                  fill: none;
+                  stroke: #fde68a;
+                  stroke-width: 1.5;
+                }
+              `}</style>
+              <circle cx={cx} cy={cy} className="price-chart-focus-pulse" />
+              <circle cx={cx} cy={cy} className="price-chart-focus-glow" />
+            </g>
+          );
+        })()}
         </g>
 
         {/* #262: bottom x-axis line stops at the data-area edge

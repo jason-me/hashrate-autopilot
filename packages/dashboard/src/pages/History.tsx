@@ -42,12 +42,79 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 
+/**
+ * #285 follow-up: persist History filters across navigation. Operator
+ * was navigating History → drawer → "View on chart" → back to History
+ * and finding the filter chips reset. localStorage survives full page
+ * reloads too (not just in-app nav), so the saved filter set follows
+ * the operator next session as well. Date range is stored as ms so
+ * round-tripping doesn't lose precision.
+ */
+const FILTERS_STORAGE_KEY = 'hashrate-autopilot.history-filters';
+
+function readStoredFilters(): BidHistoryFilters {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Partial<BidHistoryFilters>;
+    // Be defensive: drop anything that doesn't fit the schema (an old
+    // build may have written a field we no longer carry). Validators
+    // here are intentionally loose - drop on mismatch, never throw.
+    const out: BidHistoryFilters = {};
+    if (Array.isArray(parsed.kinds)) {
+      const valid = parsed.kinds.filter((k): k is Kind =>
+        k === 'CREATE_BID' || k === 'EDIT_PRICE' || k === 'EDIT_SPEED' || k === 'CANCEL_BID',
+      );
+      if (valid.length > 0) out.kinds = valid;
+    }
+    if (typeof parsed.orderIdContains === 'string' && parsed.orderIdContains.length > 0) {
+      out.orderIdContains = parsed.orderIdContains;
+    }
+    if (typeof parsed.sinceMs === 'number' && Number.isFinite(parsed.sinceMs)) {
+      out.sinceMs = parsed.sinceMs;
+    }
+    if (typeof parsed.untilMs === 'number' && Number.isFinite(parsed.untilMs)) {
+      out.untilMs = parsed.untilMs;
+    }
+    if (typeof parsed.minAbsPriceDelta === 'number' && Number.isFinite(parsed.minAbsPriceDelta)) {
+      out.minAbsPriceDelta = parsed.minAbsPriceDelta;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function persistFilters(filters: BidHistoryFilters): void {
+  if (typeof window === 'undefined') return;
+  try {
+    // Empty object is the "no filters" state; clear the slot instead
+    // of writing `{}` so a future readStoredFilters returns the
+    // default without parsing.
+    if (Object.keys(filters).length === 0) {
+      window.localStorage.removeItem(FILTERS_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    }
+  } catch {
+    // localStorage unavailable (private mode etc.). Ignore.
+  }
+}
+
 export function History() {
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
   const denomination = useDenomination();
-  const [filters, setFilters] = useState<BidHistoryFilters>({});
+  const [filters, setFiltersState] = useState<BidHistoryFilters>(readStoredFilters);
+  const setFilters = (next: BidHistoryFilters | ((prev: BidHistoryFilters) => BidHistoryFilters)) => {
+    setFiltersState((prev) => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      persistFilters(value);
+      return value;
+    });
+  };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
   const location = useLocation();

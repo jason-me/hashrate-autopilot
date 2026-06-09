@@ -2,6 +2,10 @@
 
 ## 2026-06-08
 
+### `[UI]` History → chart jump now pulses the marker; History filters sticky (#285 follow-up)
+
+(1) When "View on chart →" pans the chart to a jumped-from event, the matching marker now pulses an expanding amber ring + a steadier glow for ~5 s so the operator can spot it immediately instead of hunting along the time axis. Pure visual cue; clicks still pass through to the marker's own hit-rect underneath. (2) History filter chips, bid-id substring, date range, and `|Δ price| ≥ N` threshold are now persisted to localStorage on every change, so a Chart-and-back round-trip preserves the operator's filter set — and the saved set carries across page reloads and sessions. Clearing all filters (or hitting Reset) wipes the storage slot so the next read returns the empty default.
+
 ### `[Feature]` History page: reason column + click-row detail drawer + bidirectional chart links (#285)
 
 Per discussion #284, where a user looked at an unexpected CANCEL→CREATE pair in History, was confused, then resolved it themselves by zooming into the chart and hovering the marker (the bid-event tooltip carries the reason; History didn't). Three changes:
