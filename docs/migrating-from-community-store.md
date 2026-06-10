@@ -46,7 +46,7 @@ so the only thing that has to move between the two on-host directories is the SQ
 
 ## Step by step
 
-> **Back up `state.db` first if you have anything more than a few weeks of history.** Nothing in these steps is destructive, but a copy onto your laptop or a USB drive is cheap insurance. From your laptop: `scp umbrel@umbrel.local:~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db ~/state.db.backup`
+> **Back up `state.db` first if you have anything more than a few weeks of history.** Nothing in these steps is destructive, but a copy is cheap insurance. The easiest way: open the **Files** app on your umbrelOS home screen, navigate to the `rdouma-hashrate-autopilot` app-data folder, and copy `data/state.db` into your Home folder (or download it to your computer from there). From a laptop, `scp umbrel@umbrel.local:~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db ~/state.db.backup` works too.
 
 ### 1. Stop the community version
 
@@ -77,12 +77,20 @@ SQLite likes the database file not to be open by another process when copied. St
 
 ### 4. Copy `state.db` over
 
+Two ways to do this; pick whichever you prefer. Both require the apps to be stopped (steps 1 and 3).
+
+**Option A - umbrelOS Files app (no extra terminal command).** Open **Files** on your umbrelOS home screen, navigate into the app-data folder for `rdouma-hashrate-autopilot`, open its `data` folder, and copy `state.db`. Then navigate to the `hashrate-autopilot` app-data folder, open its `data` folder, and paste (replacing the empty `state.db` the official version created on first boot). The Files app runs with the right permissions, so there is no ownership issue to think about.
+
+**Option B - terminal:**
+
 ```bash
 sudo cp ~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db \
         ~/umbrel/app-data/hashrate-autopilot/data/state.db
 ```
 
-`sudo` is required because the daemon container runs as root, so the on-host data directory and its files are root-owned. The new file ends up root-owned too, which is exactly what the next container start expects.
+`sudo` is required here because the daemon container runs as root, so the on-host data directory and its files are root-owned. The new file ends up root-owned too, which is exactly what the next container start expects.
+
+> **Why both apps must be stopped for the copy, whichever option you use:** the daemon keeps its SQLite database in WAL mode, which means the most recent writes live in a separate `state.db-wal` file until a checkpoint folds them in. Copying `state.db` while the community version is running can silently miss those writes, and pasting over a `state.db` that the official version has open is worse. Stopping an app checkpoints everything into the single `state.db` file and closes it cleanly - after a stop, that one file is the complete database. (This is also why the stop/start steps use the terminal: umbrelOS's right-click menu on an app offers Restart but not Stop.)
 
 ### 5. Start the official version
 
