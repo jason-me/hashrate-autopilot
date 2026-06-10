@@ -14,6 +14,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { sideTooltipPosition } from '../lib/tooltipPosition';
+import { pickLuckStepDot } from '../lib/luckStepDot';
 import type React from 'react';
 
 import {
@@ -1407,62 +1408,73 @@ export const HashrateChart = memo(function HashrateChart({
       arr.push(ev);
       byTick.set(ev.afterIdx, arr);
     }
-    // #264: Ocean's pool-block observations surface on the
-    // ~5-min /v1/statsnap refresh cadence, not on the block's on-chain
-    // timestamp. The tick chronologically at-or-after the block can
-    // still carry the pre-step luck value if Ocean hasn't re-polled
-    // yet, so anchoring the dot's cy at points[afterIdx][luckKey]
-    // drops it on the pre-step horizontal segment of the line. Scan
-    // forward from afterIdx (bounded to MAX_LAG_TICKS ≈ 15 min) for
-    // the first tick whose luck value differs from the pre-event
-    // baseline - that's where the line visibly steps and where the
-    // dot belongs. Same structural fix as PriceChart's
-    // visiblePoolBlockMarkers (#163).
-    const MAX_LAG_TICKS = 15;
+    // #264 / #266 follow-up / 4th-time-of-asking: Ocean's pool-block
+    // observations surface on its /v1/statsnap snapshot cadence
+    // (~5 min nominal, occasionally minutes more). The tick at-or-
+    // immediately-after the block's on-chain timestamp can carry the
+    // pre-step luck value for an indeterminate span while Ocean is
+    // still publishing the post-step value. Earlier passes scanned
+    // forward MAX_LAG_TICKS ≈ 15 min for "first tick whose value
+    // differs from luckBefore" - which silently fell back to the
+    // pre-step value whenever Ocean took longer than 15 min, leaving
+    // the FOUND dot stuck on the lower segment as the line stepped
+    // up just to its right.
+    //
+    // Operator's invariant (stated four ways now): FOUND ⇒ dot at the
+    // highest the line reaches post-event; AGED OUT ⇒ dot at the
+    // lowest. Encode that directly. For each event group:
+    //
+    //   1. Bound the scan by the NEXT group's afterIdx (so a later
+    //      block's step doesn't get misattributed to this one) and
+    //      by SCAN_WINDOW_TICKS as a sanity ceiling.
+    //   2. Walk the window picking the directional extremum:
+    //        - 'in' only          ⇒ first tick reaching the MAX
+    //        - 'out' only         ⇒ first tick reaching the MIN
+    //        - mixed in/out       ⇒ first tick that differs from
+    //                                luckBefore (legacy semantic;
+    //                                neither direction is unambiguous)
+    //   3. If the window contains no usable luck values at all,
+    //      fall back to luckBefore at afterIdx — meaning "we know the
+    //      event landed but haven't observed its effect yet." That's
+    //      an honest signal, not a marker error.
+    //
+    // The scan window is generous (1 h at 60s ticks) but bounded by
+    // the next event so adjacent events don't pollute each other.
+    const SCAN_WINDOW_TICKS = 60;
+    const groupAfterIdxs = [...byTick.keys()].sort((a, b) => a - b);
     const out: typeof empty = [];
     for (const [afterIdx, events] of byTick) {
+      const groupPos = groupAfterIdxs.indexOf(afterIdx);
+      const nextGroupAfterIdx =
+        groupPos < groupAfterIdxs.length - 1
+          ? groupAfterIdxs[groupPos + 1]!
+          : points.length;
+      const scanEnd = Math.min(
+        points.length,
+        nextGroupAfterIdx,
+        afterIdx + SCAN_WINDOW_TICKS,
+      );
+
       const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
       const luckBefore = before === null ? null : before[luckKey];
-      // Scan forward for the first tick where the persisted luck
-      // value actually steps off the pre-event baseline.
-      let steppedIdx = afterIdx;
-      if (luckBefore !== null) {
-        const scanEnd = Math.min(points.length, afterIdx + MAX_LAG_TICKS);
-        for (let i = afterIdx; i < scanEnd; i += 1) {
-          const v = points[i]![luckKey];
-          if (v === null) continue;
-          if (v !== luckBefore) {
-            steppedIdx = i;
-            break;
-          }
-        }
+
+      // Collect window values, then delegate the directional pick to
+      // pickLuckStepDot (covered by lib/luckStepDot.test.ts). Keeping
+      // the dot-positioning rule in a pure helper is what stops this
+      // logic from regressing each time we tweak the marker layer.
+      const windowValues: (number | null)[] = [];
+      for (let i = afterIdx; i < scanEnd; i += 1) {
+        windowValues.push(points[i]![luckKey]);
       }
-      const stepped = points[steppedIdx]!;
-      const luckAfter = stepped[luckKey];
-      if (luckAfter === null) continue;
-      // #266 follow-up: dot Y reflects the event KIND, not the
-      // post-step luck value. The operator's mental model is "FOUND
-      // makes luck go UP, AGED OUT makes it go DOWN" - so the FOUND
-      // dot anchors to the higher of the two flanking line segments,
-      // the AGED OUT dot to the lower. This is robust against
-      // mismatches between the tooltip's luckBefore→luckAfter pair
-      // and the line's visible step, which happens because Ocean's
-      // pool_luck is a snapshot of the whole 30d window (not just
-      // our block) and other simultaneous events can mute or invert
-      // the per-block direction.
-      const hasIn = events.some((e) => e.kind === 'in');
-      const hasOut = events.some((e) => e.kind === 'out');
-      const dotLuckY =
-        luckBefore === null
-          ? luckAfter
-          : hasIn && !hasOut
-            ? Math.max(luckBefore, luckAfter)
-            : hasOut && !hasIn
-              ? Math.min(luckBefore, luckAfter)
-              : luckAfter;
+      const pick = pickLuckStepDot(events, luckBefore, windowValues);
+      if (pick === null) continue;
+      const dotIdx = afterIdx + pick.offset;
+      const dotLuck = pick.luck;
+
+      const stepped = points[dotIdx]!;
       // Connector anchor: use the earliest contributing event's
-      // timestamp so the dashed line covers the whole group when the
-      // block icons sit before the resolved tick.
+      // timestamp so the dashed line covers the whole region the
+      // group covers.
       const earliestT = events.reduce(
         (m, e) => (e.t < m ? e.t : m),
         events[0]!.t,
@@ -1471,11 +1483,11 @@ export const HashrateChart = memo(function HashrateChart({
         group: {
           events: events.map(({ kind, t, block }) => ({ kind, t, block })),
           luckBefore,
-          luckAfter,
+          luckAfter: dotLuck,
           windowMs,
         },
         cx: xScale(stepped.tick_at),
-        cy: shareLogYScale(dotLuckY),
+        cy: shareLogYScale(dotLuck),
         blockCx: xScale(earliestT),
       });
     }

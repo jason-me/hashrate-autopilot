@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-10
+
+### `[Fix]` Pool-luck step marker placement, locked in with a vitest
+
+The dot on the pool-luck overlay still landed on the pre-step segment when Ocean's snapshot took more than ~15 min to publish the post-step value (operator has flagged this four-plus times across #264, #266 follow-ups, and the screenshots after that). Root cause was a 15-tick scan window that fell through to `luckBefore` when Ocean's lag exceeded it, while the directional Math.max/Math.min logic on top of that lost its grip because `luckAfter` had silently collapsed to `luckBefore`. Real fix: the dot-positioning rule is now a pure function (`packages/dashboard/src/lib/luckStepDot.ts`) that takes the events, `luckBefore`, and a window of post-event luck values, and returns the directional extremum offset+value: FOUND dot goes to the highest value the line reaches in window, AGED OUT to the lowest, mixed to first-different (legacy). Window is bounded by the next event group's `afterIdx` so adjacent events can't pollute each other, and by a generous 60-tick (~1 h) ceiling. Falls back to `luckBefore` at `afterIdx` when the window has no usable samples (honest "we know the event landed, haven't observed its effect yet" rather than a wrong placement). Hard clamp: FOUND dot is never below `luckBefore`, AGED OUT never above — so when Ocean's window-aggregate snapshot briefly moves against the per-event direction (a co-occurring AGED OUT cancelling a FOUND, etc.) the dot doesn't flip sides. Seventeen vitest cases cover Ocean updating fast, Ocean lagging beyond the legacy fence, intermediate noise, no update at all, anti-direction data, null-laced windows, mixed kinds, and edge cases (null `luckBefore`, empty window). HashrateChart.tsx now delegates to the helper instead of duplicating the rule.
+
 ## 2026-06-08
 
 ### `[UI]` History → chart jump now pulses the marker; History filters sticky (#285 follow-up)
