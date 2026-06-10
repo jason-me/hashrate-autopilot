@@ -6,27 +6,13 @@
 
 ## TL;DR
 
-```bash
-# Stop the community version (preserves data)
-umbreld client apps.stop.mutate --appId rdouma-hashrate-autopilot
+1. **Stop** the community version.
+2. **Install** the official version from the App Store, then **stop** it too.
+3. **Copy** `state.db` from the community version's data folder to the official version's data folder.
+4. **Start** the official version. Your full history is there.
+5. Once verified, **uninstall** the community version.
 
-# Install Hashrate Autopilot from the official App Store via the Umbrel UI.
-# It creates an empty fresh data dir.
-
-# Stop the newly installed official version so the database isn't in use
-umbreld client apps.stop.mutate --appId hashrate-autopilot
-
-# Copy your live state.db over
-sudo cp ~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db \
-        ~/umbrel/app-data/hashrate-autopilot/data/state.db
-
-# Start the official version against your migrated data
-umbreld client apps.start.mutate --appId hashrate-autopilot
-
-# Once the dashboard reads your history, free the disk (optional)
-umbreld client apps.uninstall.mutate --appId rdouma-hashrate-autopilot
-```
-
+Every step can be done from the umbrelOS UI: right-click an app icon on the home screen for **Stop** / **Start** / **Uninstall**, and use the built-in **Files** app for the copy. If you prefer a terminal, every step also has an SSH one-liner - both variants are spelled out below.
 
 ## Why is this even necessary?
 
@@ -50,7 +36,9 @@ so the only thing that has to move between the two on-host directories is the SQ
 
 ### 1. Stop the community version
 
-SSH into your Umbrel and run:
+Right-click the Hashrate Autopilot icon (the community-store one) on your umbrelOS home screen and choose **Stop**.
+
+Terminal alternative:
 
 ```bash
 umbreld client apps.stop.mutate --appId rdouma-hashrate-autopilot
@@ -61,13 +49,15 @@ This brings the container down cleanly. Your data stays put under `~/umbrel/app-
 
 ### 2. Install the official version
 
-Open Umbrel's App Store in your browser, find **Hashrate Autopilot**, and install it. Wait for the install to complete and the app to boot once. This is what creates the fresh `~/umbrel/app-data/hashrate-autopilot/data/` directory with the correct ownership for the daemon to write to.
+Open Umbrel's App Store, find **Hashrate Autopilot**, and install it. Wait for the install to complete and the app to boot once. This is what creates the fresh `~/umbrel/app-data/hashrate-autopilot/data/` directory with the correct ownership for the daemon to write to.
 
 You will see the setup wizard instead of the dashboard if you open it. That's expected, since you haven't migrated yet.
 
 ### 3. Stop the official version
 
-Back in the SSH session:
+Right-click the newly installed icon and choose **Stop**.
+
+Terminal alternative:
 
 ```bash
 umbreld client apps.stop.mutate --appId hashrate-autopilot
@@ -79,7 +69,7 @@ SQLite likes the database file not to be open by another process when copied. St
 
 Two ways to do this; pick whichever you prefer. Both require the apps to be stopped (steps 1 and 3).
 
-**Option A - umbrelOS Files app (no extra terminal command).** Open **Files** on your umbrelOS home screen, navigate into the app-data folder for `rdouma-hashrate-autopilot`, open its `data` folder, and copy `state.db`. Then navigate to the `hashrate-autopilot` app-data folder, open its `data` folder, and paste (replacing the empty `state.db` the official version created on first boot). The Files app runs with the right permissions, so there is no ownership issue to think about.
+**Option A - umbrelOS Files app.** Open **Files** on your umbrelOS home screen, navigate into the app-data folder for `rdouma-hashrate-autopilot`, open its `data` folder, and copy `state.db`. Then navigate to the `hashrate-autopilot` app-data folder, open its `data` folder, and paste (replacing the empty `state.db` the official version created on first boot). The Files app runs with the right permissions, so there is no ownership issue to think about.
 
 **Option B - terminal:**
 
@@ -90,9 +80,13 @@ sudo cp ~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db \
 
 `sudo` is required here because the daemon container runs as root, so the on-host data directory and its files are root-owned. The new file ends up root-owned too, which is exactly what the next container start expects.
 
-> **Why both apps must be stopped for the copy, whichever option you use:** the daemon keeps its SQLite database in WAL mode, which means the most recent writes live in a separate `state.db-wal` file until a checkpoint folds them in. Copying `state.db` while the community version is running can silently miss those writes, and pasting over a `state.db` that the official version has open is worse. Stopping an app checkpoints everything into the single `state.db` file and closes it cleanly - after a stop, that one file is the complete database. (This is also why the stop/start steps use the terminal: umbrelOS's right-click menu on an app offers Restart but not Stop.)
+> **Why both apps must be stopped for the copy, whichever option you use:** the daemon keeps its SQLite database in WAL mode, which means the most recent writes live in a separate `state.db-wal` file until a checkpoint folds them in. Copying `state.db` while the community version is running can silently miss those writes, and pasting over a `state.db` that the official version has open is worse. Stopping an app checkpoints everything into the single `state.db` file and closes it cleanly - after a stop, that one file is the complete database.
 
 ### 5. Start the official version
+
+Right-click the official version's icon and choose **Start**.
+
+Terminal alternative:
 
 ```bash
 umbreld client apps.start.mutate --appId hashrate-autopilot
@@ -103,7 +97,7 @@ Open the dashboard. You should see your full history - bids, ticks, alerts, conf
 ### 6. Verify, then uninstall the community version (optional)
 
 Spend a few minutes on the dashboard confirming everything is there. Once you're satisfied all went well, the community 
-version is just taking up disk space and can be uninstalled:
+version is just taking up disk space and can be uninstalled: right-click its icon and choose **Uninstall**, or:
 
 ```bash
 umbreld client apps.uninstall.mutate --appId rdouma-hashrate-autopilot
@@ -113,13 +107,8 @@ This wipes `~/umbrel/app-data/rdouma-hashrate-autopilot/` and removes the commun
 
 ## If something goes wrong
 
-The community version's data stays where it was throughout this whole flow. Even if step 4 or 5 fails for any reason, you can always go back:
-
-```bash
-umbreld client apps.start.mutate --appId rdouma-hashrate-autopilot
-```
-
-…and you're back where you started, on the community version, with all your data intact. The official version's empty data dir under `~/umbrel/app-data/hashrate-autopilot/data/` is harmless; you can uninstall the official version through the Umbrel UI if you want a clean slate before trying again.
+The community version's data stays where it was throughout this whole flow. Even if step 4 or 5 fails for any reason, you can always go back: right-click the community version's icon and choose **Start** (or `umbreld client apps.start.mutate --appId rdouma-hashrate-autopilot`),
+and you're back where you started, on the community version, with all your data intact. The official version's empty data dir under `~/umbrel/app-data/hashrate-autopilot/data/` is harmless; you can uninstall the official version through the Umbrel UI if you want a clean slate before trying again.
 
 If you run into issues, the [Migration discussion thread](https://github.com/rdouma/hashrate-autopilot/discussions/286)
 is the place to post what you ran and what you saw. 
