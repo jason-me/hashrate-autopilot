@@ -82,7 +82,7 @@ export const CHART_COLOR_DEFAULTS: Record<ChartColorKey, string> = {
   'events.cancel': '#f87171',               // rose-400 — ×
   // #287 follow-up
   'events.mode_change': '#c4b5fd',          // violet-300 — power glyph + DRY_RUN/PAUSED bands
-  'events.bid_paused': '#fbbf24',           // amber-400 — pause glyph + Braiins-pause bands
+  'events.bid_paused': '#f43f5e',           // rose-500 — pause glyph + Braiins-pause bands (operator pick: a pause is bad news, so it reads as a warning, not amber info)
   'events.bid_resumed': '#34d399',          // emerald-400 — play glyph
 };
 

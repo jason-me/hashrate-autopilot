@@ -2,6 +2,10 @@
 
 ## 2026-06-11
 
+### `[UI]` Bid-paused marker defaults to rose (#287 follow-up)
+
+The `bid paused` marker and its background band now default to rose `#f43f5e` instead of amber - a Braiins-side pause is bad news, so it should read as a warning. Existing color overrides are untouched.
+
 ### `[UI]` Run-mode band edges snap to the mode-change markers (#287 follow-up)
 
 The bid-pause band's edges are the pause/resume event timestamps, so its icons sit exactly on the band edges - but the run-mode band was derived from the per-tick `run_mode` samples (1-minute resolution), so its edges landed on tick boundaries and visibly missed the power markers. The band edges now snap to the MODE_CHANGE event timestamps (the exact moment the button was pressed) whenever one exists in the bracketing tick gap, falling back to the tick midpoint for history without events. Both charts share one computation now.

@@ -75,6 +75,15 @@
 > chart, so the operator can line a public-IP rotation up against a rejection-rate spike. The same
 > release renames every user-facing "Solo miners" string to "Bitaxe miners" (the integration only
 > ever supported AxeOS firmware); internal table/field names retain the `solo_*` prefix.
+> Migration 0110 adds `config.dashboard_tiles` (#266, configurable StatsBar tiles - JSON id array,
+> `'[]'` = default set). Migration 0111 rebuilds `bid_events` to widen the `kind` CHECK with three
+> lifecycle kinds (#287): `MODE_CHANGE` (operator/boot run-mode switches), `BID_PAUSED` and
+> `BID_RESUMED` (Braiins-side bid status flips observed per tick, with Braiins'
+> `last_pause_reason` in `reason`). The three are excluded from the Stats page `mutation_count`
+> and never inherit a bid id from the orphan-CREATE coalesce; they render as History rows,
+> always-visible price-chart markers, and feed the idle-state background bands on both charts
+> (run-mode bands from per-tick `tick_metrics.run_mode`, now exposed raw + worst-in-bucket via
+> `/api/metrics`; bid-pause bands from BID_PAUSED→BID_RESUMED event pairs).
 > Chart bucket scaling was rewritten from a 4-tier ladder to a continuous formula
 > (`bucketMs = ceil(spanMs / 1440)` clamped to the 60 s tick floor) to remove the 30× cliff when a
 > chart viewport span crossed 24 h. Five new `chart_color_overrides` keys cover BIP-110-signalling,
@@ -355,6 +364,11 @@ CREATE TABLE config (
   -- write this column (it stays at `'[]'`). Kept in place for forward
   -- compatibility / optional cross-device sync later.
   dashboard_card_order TEXT NOT NULL DEFAULT '[]',
+  -- Configurable StatsBar tiles (#266, migration 0110). JSON array of
+  -- catalogue ids; '[]' means "use the default set". Unknown ids are
+  -- dropped at parse time on the dashboard so stale blobs degrade
+  -- cleanly.
+  dashboard_tiles TEXT NOT NULL DEFAULT '[]',
   -- Dynamic DNS (#111, migrations 0067-0068)
   ddns_provider TEXT NOT NULL DEFAULT '',                            -- '' | 'noip' | 'duckdns' | 'dyndns2'
   ddns_hostname TEXT NOT NULL DEFAULT '',
@@ -615,7 +629,11 @@ CREATE TABLE bid_events (
   occurred_at INTEGER NOT NULL,
   source TEXT NOT NULL CHECK (source IN ('AUTOPILOT', 'OPERATOR')),
   kind TEXT NOT NULL CHECK (
-    kind IN ('CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID')
+    -- 4 bid-mutation kinds + 3 lifecycle kinds (#287, migration 0111):
+    -- MODE_CHANGE logs operator/boot run-mode switches, BID_PAUSED /
+    -- BID_RESUMED log Braiins-side bid status flips observed per tick.
+    kind IN ('CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID',
+             'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED')
   ),
   braiins_order_id TEXT,
   old_price_sat INTEGER,
