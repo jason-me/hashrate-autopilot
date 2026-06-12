@@ -2,6 +2,10 @@
 
 ## 2026-06-11
 
+### `[Release]` v1.14.0
+
+Run-mode and bid-pause history (#287): History events, always-visible price-chart markers, and retroactive idle-state background bands on both charts with three new configurable color slots. History detail drawer with Reason column and bidirectional chart links (#285), sticky filters. Legend click-to-hide (#280), speed-edit markers on the hashrate chart (#281), crosshair tooltip dodging, test-locked pool-luck marker placement, and inclusive "Electrum server" labeling (#273). Migration 0111.
+
 ### `[UI]` Bid-paused marker defaults to rose (#287 follow-up)
 
 The `bid paused` marker and its background band now default to rose `#f43f5e` instead of amber - a Braiins-side pause is bad news, so it should read as a warning. Existing color overrides are untouched.

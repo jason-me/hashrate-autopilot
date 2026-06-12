@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.13.0"
+version: "1.14.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -53,6 +53,25 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.14.0 - run-mode and bid-pause history with chart markers and idle bands, History detail drawer, legend toggles.
+
+  NEW
+  - Run-mode switches and Braiins bid pause/resume are logged as History events (#287): filterable rows with their own icons; bid-paused rows carry Braiins' own pause reason. Boot-time mode transitions are logged too, so an overnight restart that drops the controller out of LIVE can't hide.
+  - The same events render as price-chart markers - violet power icon for mode changes, rose pause / emerald play for the Braiins transitions - always visible at every zoom level.
+  - Idle-state background bands on both charts: a violet hatch over every DRY RUN / PAUSED span (retroactive over your full history) and a rose hatch while Braiins had the bid paused. Hovering a band names the state and its duration. All three marker colors are configurable under Config -> chart colors.
+  - History detail drawer (#285): click any row for full details, including the new Reason column; "View on chart" jumps to the price chart, scrolls it into view, and pulses a ring around the exact marker. History filters now stick per browser.
+  - Click a chart legend entry to show or hide that series, persisted per device (#280).
+  - Speed-edit markers mirror onto the hashrate chart, where a speed change actually shows (#281).
+
+  IMPROVEMENTS
+  - Payout tracking works with any Electrum-protocol server - electrs, Fulcrum, ElectrumX - and the UI now says so (#273). Confirmed working against Fulcrum on Umbrel.
+  - The chart crosshair readout dodges pinned tooltips instead of sliding underneath them.
+  - Pool-luck step markers sit exactly on their steps; the placement rule is now a pure, test-locked function.
+
+  FIXES
+  - BIP 110 block cards no longer overflow on mobile.
+  - Phantom pool-block dot at the chart edge is gone, and focus-clicks no longer pin the crosshair.
+
   v1.13.0 - configurable stats bar, dedicated History page, synced chart crosshair, and a sweep of mobile and oracle polish.
 
   NEW
