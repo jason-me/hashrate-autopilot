@@ -158,6 +158,23 @@ export function parseOverrides(json: string | null | undefined): Partial<Record<
 }
 
 /**
+ * Darken a `#RRGGBB` color by multiplying each channel by `factor`
+ * (0..1). Used to derive background-band fill bases from the
+ * configurable marker colors: light slot colors at low opacity read
+ * as a milky veil over the dark chart, so band fills use a darkened
+ * variant of the slot color while the hatch lines keep the full one.
+ */
+export function darkenHex(hex: string, factor: number): string {
+  if (!HEX_PATTERN.test(hex)) return hex;
+  const n = Number.parseInt(hex.slice(1), 16);
+  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(v * factor)));
+  const r = ch((n >> 16) & 0xff);
+  const g = ch((n >> 8) & 0xff);
+  const b = ch(n & 0xff);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+/**
  * Resolve a series's color: operator override if present, else the
  * documented default. The lookup is cheap (object access twice) — safe
  * to call on every render inside chart components.

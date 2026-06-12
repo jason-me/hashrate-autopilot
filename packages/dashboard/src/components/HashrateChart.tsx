@@ -48,7 +48,7 @@ import {
   type SpeedEditMarkerEvent,
   type SpeedEditTooltipState,
 } from './SpeedEditMarkers';
-import { getChartColor, parseOverrides } from '../lib/chartColors';
+import { darkenHex, getChartColor, parseOverrides } from '../lib/chartColors';
 import { useSeriesVisibility } from '../lib/seriesVisibility';
 import {
   formatAgeMinutes,
@@ -1300,23 +1300,28 @@ export const HashrateChart = memo(function HashrateChart({
 
         // #287 follow-up: contiguous non-LIVE run_mode spans →
         // "autopilot idle" background bands, mirroring the price
-        // chart's computation so both charts band identically.
+        // chart's computation so both charts band identically. Band
+        // edges sit at the midpoint between the bracketing ticks so
+        // the band doesn't lag the transition by a full tick.
         const idleModeIntervals: Array<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }> = [];
         {
           let idleStart: number | null = null;
           let idleMode: 'DRY_RUN' | 'PAUSED' | null = null;
+          let prevT: number | null = null;
           for (const p of points) {
             const m = p.run_mode === 'DRY_RUN' || p.run_mode === 'PAUSED' ? p.run_mode : null;
             if (m !== idleMode) {
+              const edge = prevT !== null ? (prevT + p.tick_at) / 2 : p.tick_at;
               if (idleStart !== null && idleMode !== null) {
-                idleModeIntervals.push({ x0: idleStart, x1: p.tick_at, mode: idleMode });
+                idleModeIntervals.push({ x0: idleStart, x1: edge, mode: idleMode });
               }
-              idleStart = m !== null ? p.tick_at : null;
+              idleStart = m !== null ? edge : null;
               idleMode = m;
             }
+            prevT = p.tick_at;
           }
           if (idleStart !== null && idleMode !== null) {
-            idleModeIntervals.push({ x0: idleStart, x1: lastT ?? idleStart, mode: idleMode });
+            idleModeIntervals.push({ x0: idleStart, x1: prevT ?? idleStart, mode: idleMode });
           }
         }
         return { marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals, idleModeIntervals };
@@ -1872,8 +1877,11 @@ export const HashrateChart = memo(function HashrateChart({
               height="10"
               patternTransform="rotate(45)"
             >
-              <rect width="10" height="10" fill={COLOR_MODE_CHANGE} fillOpacity="0.08" />
-              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.3" />
+              {/* Dark base + saturated lines, matching the unreachable
+                  band's visual language - the slot color itself at low
+                  opacity reads as a milky veil on the dark chart. */}
+              <rect width="10" height="10" fill={darkenHex(COLOR_MODE_CHANGE, 0.45)} fillOpacity="0.2" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.45" />
             </pattern>
           </defs>
         )}
@@ -1905,8 +1913,8 @@ export const HashrateChart = memo(function HashrateChart({
               height="10"
               patternTransform="rotate(-45)"
             >
-              <rect width="10" height="10" fill={COLOR_BID_PAUSED} fillOpacity="0.08" />
-              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.3" />
+              <rect width="10" height="10" fill={darkenHex(COLOR_BID_PAUSED, 0.45)} fillOpacity="0.2" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.45" />
             </pattern>
           </defs>
         )}

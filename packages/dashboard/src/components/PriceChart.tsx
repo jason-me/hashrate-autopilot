@@ -51,7 +51,7 @@ import {
   type CrosshairReadoutRow,
   type SharedCrosshair,
 } from '../lib/chartCrosshair';
-import { getChartColor, parseOverrides } from '../lib/chartColors';
+import { darkenHex, getChartColor, parseOverrides } from '../lib/chartColors';
 import { useSeriesVisibility } from '../lib/seriesVisibility';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
@@ -89,11 +89,6 @@ const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
 const COLOR_DEPOSIT = '#c084fc';
-// #287 follow-up defaults (legend chips; the in-chart markers resolve
-// the override-aware values via getChartColor inside the component).
-const COLOR_MODE_CHANGE_DEFAULT = '#c4b5fd';
-const COLOR_BID_PAUSED_DEFAULT = '#fbbf24';
-const COLOR_BID_RESUMED_DEFAULT = '#34d399';
 
 interface TooltipState {
   event: BidEventView;
@@ -1330,23 +1325,28 @@ export const PriceChart = memo(function PriceChart({
     // #287 follow-up: contiguous non-LIVE run_mode spans → "autopilot
     // idle" background bands. Derived from the per-tick run_mode
     // column, so the bands are retroactive over all stored history.
+    // Band edges sit at the midpoint between the two ticks that
+    // bracket the transition - snapping to the first tick *after* it
+    // made the band visibly lag the mode-change marker by a full tick.
     const idleModeIntervals: Array<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }> = [];
     {
       let idleStart: number | null = null;
       let idleMode: 'DRY_RUN' | 'PAUSED' | null = null;
+      let prevT: number | null = null;
       for (const p of points) {
         const m = p.run_mode === 'DRY_RUN' || p.run_mode === 'PAUSED' ? p.run_mode : null;
         if (m !== idleMode) {
+          const edge = prevT !== null ? (prevT + p.tick_at) / 2 : p.tick_at;
           if (idleStart !== null && idleMode !== null) {
-            idleModeIntervals.push({ x0: idleStart, x1: p.tick_at, mode: idleMode });
+            idleModeIntervals.push({ x0: idleStart, x1: edge, mode: idleMode });
           }
-          idleStart = m !== null ? p.tick_at : null;
+          idleStart = m !== null ? edge : null;
           idleMode = m;
         }
+        prevT = p.tick_at;
       }
       if (idleStart !== null && idleMode !== null) {
-        const lastT = points[points.length - 1]?.tick_at ?? idleStart;
-        idleModeIntervals.push({ x0: idleStart, x1: lastT, mode: idleMode });
+        idleModeIntervals.push({ x0: idleStart, x1: prevT ?? idleStart, mode: idleMode });
       }
     }
 
@@ -2074,7 +2074,19 @@ export const PriceChart = memo(function PriceChart({
               (k) => present.has(k),
             );
             const legendKinds = [...showEventKinds, ...extraKinds];
-            return legendKinds.length > 0 ? <EventLegend kinds={legendKinds} /> : null;
+            // Pass the override-resolved colors so a recolored marker
+            // matches its legend chip (the legend previously used the
+            // hardcoded defaults).
+            const legendColors = {
+              CREATE_BID: COLOR_CREATE,
+              EDIT_PRICE: COLOR_EDIT,
+              EDIT_SPEED: COLOR_EDIT_SPEED,
+              CANCEL_BID: COLOR_CANCEL,
+              MODE_CHANGE: COLOR_MODE_CHANGE,
+              BID_PAUSED: COLOR_BID_PAUSED,
+              BID_RESUMED: COLOR_BID_RESUMED,
+            } as const;
+            return legendKinds.length > 0 ? <EventLegend kinds={legendKinds} colors={legendColors} /> : null;
           })()}
           {markersHiddenKind != null && markersHiddenCount > 0 && (
             <span
@@ -2305,8 +2317,11 @@ export const PriceChart = memo(function PriceChart({
               height="10"
               patternTransform="rotate(45)"
             >
-              <rect width="10" height="10" fill={COLOR_MODE_CHANGE} fillOpacity="0.08" />
-              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.3" />
+              {/* Dark base + saturated lines, matching the unreachable
+                  band's visual language - the slot color itself at low
+                  opacity reads as a milky veil on the dark chart. */}
+              <rect width="10" height="10" fill={darkenHex(COLOR_MODE_CHANGE, 0.45)} fillOpacity="0.2" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.45" />
             </pattern>
           </defs>
         )}
@@ -2338,8 +2353,8 @@ export const PriceChart = memo(function PriceChart({
               height="10"
               patternTransform="rotate(-45)"
             >
-              <rect width="10" height="10" fill={COLOR_BID_PAUSED} fillOpacity="0.08" />
-              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.3" />
+              <rect width="10" height="10" fill={darkenHex(COLOR_BID_PAUSED, 0.45)} fillOpacity="0.2" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.45" />
             </pattern>
           </defs>
         )}
@@ -3904,7 +3919,7 @@ function Legend({
   );
 }
 
-function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
+function EventLegend({ kinds, colors }: { kinds: readonly BidEventKind[]; colors: Record<BidEventKind, string> }) {
   const has = (k: BidEventKind) => kinds.includes(k);
   // #265 v4: legend icons mirror the chart-top glyphs so the
   // operator's mental "+ create" / "gauge edit speed" / "ban cancel"
@@ -3924,7 +3939,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
     <span className="flex items-center gap-2 text-slate-400 pl-2 border-l border-slate-700 flex-wrap">
       {has('CREATE_BID') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_CREATE}>
+          <svg {...iconProps} stroke={colors.CREATE_BID}>
             <circle cx="12" cy="12" r="10" />
             <path d="M8 12h8" />
             <path d="M12 8v8" />
@@ -3935,14 +3950,14 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       {has('EDIT_PRICE') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
           <svg width="10" height="10">
-            <circle cx="5" cy="5" r="3.5" fill={COLOR_EDIT} />
+            <circle cx="5" cy="5" r="3.5" fill={colors.EDIT_PRICE} />
           </svg>
           <Trans>edit price</Trans>
         </span>
       )}
       {has('EDIT_SPEED') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_EDIT_SPEED}>
+          <svg {...iconProps} stroke={colors.EDIT_SPEED}>
             <path d="m12 14 4-4" />
             <path d="M3.34 19a10 10 0 1 1 17.32 0" />
           </svg>
@@ -3951,7 +3966,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('CANCEL_BID') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_CANCEL}>
+          <svg {...iconProps} stroke={colors.CANCEL_BID}>
             <circle cx="12" cy="12" r="10" />
             <path d="m4.9 4.9 14.2 14.2" />
           </svg>
@@ -3960,7 +3975,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('MODE_CHANGE') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_MODE_CHANGE_DEFAULT}>
+          <svg {...iconProps} stroke={colors.MODE_CHANGE}>
             <path d="M12 2v10" />
             <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
           </svg>
@@ -3969,7 +3984,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('BID_PAUSED') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_BID_PAUSED_DEFAULT}>
+          <svg {...iconProps} stroke={colors.BID_PAUSED}>
             <circle cx="12" cy="12" r="10" />
             <line x1="10" x2="10" y1="15" y2="9" />
             <line x1="14" x2="14" y1="15" y2="9" />
@@ -3979,7 +3994,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('BID_RESUMED') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke={COLOR_BID_RESUMED_DEFAULT}>
+          <svg {...iconProps} stroke={colors.BID_RESUMED}>
             <circle cx="12" cy="12" r="10" />
             <polygon points="10 8 16 12 10 16 10 8" />
           </svg>

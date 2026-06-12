@@ -2,6 +2,10 @@
 
 ## 2026-06-11
 
+### `[UI]` Idle-band hatching: crisper styling, edges aligned to the transition (#287 follow-up)
+
+Operator feedback on the first build: the light tint at low opacity read as a milky frosted-glass block instead of hatching. Bands now use a darkened variant of the slot color as the base with more saturated diagonal lines - the same visual language as the existing red "Braiins unreachable" band. Band edges also moved from "first tick after the transition" to the midpoint between the bracketing ticks, so the band no longer lags the mode-change markers by a full tick. Legend chips now follow the operator's color overrides too, instead of always showing the default colors.
+
 ### `[Feature]` Idle-state background bands + configurable marker colors (#287 follow-up)
 
 Both charts now shade the spans where the autopilot wasn't actively trading: a violet diagonal hatch while the run mode was DRY RUN or PAUSED (derived from the per-tick `run_mode` column, so the bands are retroactive over all stored history), and an amber counter-diagonal hatch while Braiins had the bid paused (from the `bid paused` → `bid resumed` event pairs). Hovering a band names the state and its duration. The three new marker colors - mode change, bid paused, bid resumed - join Config → chart colors under "Bid-event markers" with their own glyph previews; the mode-change and bid-paused colors also tint the matching bands.
