@@ -2,6 +2,10 @@
 
 ## 2026-06-13
 
+### `[Fix]` Dashboard updates no longer get stuck behind a year-long browser cache
+
+The daemon served `index.html` with `Cache-Control: max-age=31536000, immutable` - a browser that loaded the dashboard once cached the entry point for a year, so it kept requesting the old hashed JS bundle and silently ran stale code after every deploy. Shipped fixes appeared to "do nothing" until a manual hard-refresh. The intended per-file override was being overridden by `@fastify/static`'s `immutable` flag; an `onSend` hook now authoritatively forces `no-cache` on every HTML document while leaving the content-hashed `/assets/*` immutable. Note: a browser that already cached the old `index.html` still needs one hard-refresh to pick up the fixed headers; after that, updates land automatically.
+
 ### `[Infra]` Deploy no longer leaves the daemon unrunnable if a build or test fails
 
 `deploy.sh` / `deploy-systemd.sh` used to `rm -rf packages/*/dist` before building. The daemon runs from source via tsx but resolves its sibling workspace packages through their built `dist/`, so a build or test failure after that clean left every `dist/` deleted - and a `Restart=always` systemd unit then flapped the daemon forever on `ERR_MODULE_NOT_FOUND`. The deploy now clears only the incremental build cache (`tsbuildinfo`) and lets `tsc` overwrite `dist/` in place, so a failed deploy leaves the previously running daemon intact instead of bringing it down.

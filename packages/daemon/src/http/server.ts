@@ -320,8 +320,27 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
           }
         },
       });
+      // @fastify/static's `immutable: true` wins over the per-file
+      // `setHeaders` override above (and over the explicit header on
+      // the SPA fallback below): empirically every HTML response still
+      // went out as `max-age=31536000, immutable`. A browser that
+      // loaded the dashboard once then cached index.html for a YEAR
+      // never sees a new build - it keeps requesting the old hashed
+      // bundle and silently runs stale code, so shipped fixes look
+      // like they "did nothing" until a manual hard-refresh. onSend is
+      // the last hook before the response flushes, so it's the
+      // authoritative override: force-revalidate every HTML document
+      // while leaving the content-hashed /assets/* immutable.
+      app.addHook('onSend', (_req, reply, payload, done) => {
+        const ct = reply.getHeader('content-type');
+        if (typeof ct === 'string' && ct.includes('text/html')) {
+          reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+        done(null, payload);
+      });
       app.setNotFoundHandler((_req, reply) => {
-        // SPA fallback: any unknown path returns index.html, uncached.
+        // SPA fallback: any unknown path returns index.html, uncached
+        // (the onSend hook above enforces the no-cache on the way out).
         reply
           .type('text/html')
           .header('Cache-Control', 'no-cache, no-store, must-revalidate')
