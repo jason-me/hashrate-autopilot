@@ -18,6 +18,7 @@ import type { AppConfig } from '../config/schema.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { SoloMinerRow, SoloMinersRepo } from '../state/repos/solo_miners.js';
 import { AxeOSClient, type AxeOSFetchResult } from './axeos.js';
+import { assessSoloHashing, type SoloHaltReason } from './solo-hashing.js';
 
 export interface SoloMinerSnapshotEntry {
   readonly device: SoloMinerRow;
@@ -32,6 +33,19 @@ export interface SoloMinerSnapshotEntry {
   readonly temp_c: number | null;
   readonly vr_temp_c: number | null;
   readonly power_w: number | null;
+  /** #291: stock-Bitaxe `overheat_mode` normalised to a boolean. */
+  readonly overheat_mode: boolean | null;
+  /** #291: NerdQAxe `shutdown` flag. */
+  readonly shutdown: boolean | null;
+  /** #291: ASIC frequency (MHz), corroborates a halt. */
+  readonly frequency_mhz: number | null;
+  /** #291: reachable but provably not producing the hashrate it
+   *  reports (overheated / shut down / stale frozen reading). When
+   *  true the card and fleet tiles treat hashrate as 0 and the
+   *  zero-hashrate alert must not "recover". */
+  readonly halted: boolean;
+  /** Why we think it's halted, for the alert/card copy. */
+  readonly halted_reason: SoloHaltReason | null;
   readonly voltage_v: number | null;
   readonly current_a: number | null;
   readonly shares_accepted: number | null;
@@ -204,6 +218,34 @@ export class AxeOSPoller {
       const info = fetched.info ?? null;
       let entry: SoloMinerSnapshotEntry;
       try {
+        // #291: normalise the firmware halt flags (stock Bitaxe sends
+        // overheat_mode as 0/1, NerdQAxe sends shutdown as a bool;
+        // NerdAxe sends neither) and derive the "actually hashing"
+        // verdict from flags + a hashrate-per-watt sanity check.
+        const overheatRaw = info?.overheat_mode;
+        const overheat_mode =
+          overheatRaw === undefined || overheatRaw === null
+            ? null
+            : overheatRaw === 1 || overheatRaw === true;
+        const shutdown = typeof info?.shutdown === 'boolean' ? info.shutdown : null;
+        const frequency_mhz = info?.frequency ?? null;
+        const liveHashrate =
+          (info?.hashRate_10m ?? 0) > 0
+            ? info!.hashRate_10m!
+            : (info?.hashRate_1m ?? 0) > 0
+              ? info!.hashRate_1m!
+              : (info?.hashRate_1h ?? 0) > 0
+                ? info!.hashRate_1h!
+                : (info?.hashRate ?? 0) > 0
+                  ? info!.hashRate!
+                  : null;
+        const hashing = assessSoloHashing({
+          reachable: fetched.reachable,
+          live_hashrate_ghs: liveHashrate,
+          power_w: info?.power ?? null,
+          overheat_mode,
+          shutdown,
+        });
         entry = {
           device,
           last_polled_at: tickAt,
@@ -216,6 +258,11 @@ export class AxeOSPoller {
           temp_c: info?.temp ?? null,
           vr_temp_c: info?.vrTemp ?? null,
           power_w: info?.power ?? null,
+          overheat_mode,
+          shutdown,
+          frequency_mhz,
+          halted: hashing.halted,
+          halted_reason: hashing.reason,
           voltage_v: info?.voltage ?? null,
           current_a: info?.current ?? null,
           shares_accepted: info?.sharesAccepted ?? null,
@@ -253,6 +300,11 @@ export class AxeOSPoller {
           temp_c: null,
           vr_temp_c: null,
           power_w: null,
+          overheat_mode: null,
+          shutdown: null,
+          frequency_mhz: null,
+          halted: false,
+          halted_reason: null,
           voltage_v: null,
           current_a: null,
           shares_accepted: null,

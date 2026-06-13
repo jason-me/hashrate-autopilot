@@ -484,6 +484,17 @@ export interface SoloMinerSnapshotEntry {
   temp_c: number | null;
   vr_temp_c: number | null;
   power_w: number | null;
+  /** #291: stock-Bitaxe `overheat_mode` flag, normalised to a boolean. */
+  overheat_mode: boolean | null;
+  /** #291: NerdQAxe `shutdown` flag. */
+  shutdown: boolean | null;
+  /** #291: ASIC frequency (MHz). */
+  frequency_mhz: number | null;
+  /** #291: reachable but provably not producing the hashrate it
+   *  reports (overheated / shut down / stale frozen reading). Treat
+   *  hashrate as 0 and show a "not hashing" badge when true. */
+  halted: boolean;
+  halted_reason: 'overheat' | 'shutdown' | 'stale_hashrate' | null;
   voltage_v: number | null;
   current_a: number | null;
   shares_accepted: number | null;

@@ -1303,7 +1303,21 @@ export class AlertEvaluator {
     entry: SoloMinerSnapshotEntry,
   ): Promise<void> {
     const live = pickLiveHashrate(entry);
-    const isBad = !entry.reachable || live === null || live <= 0;
+    // #291: a reachable miner that reports a hashrate but is provably
+    // not producing it (overheated / shut down / a frozen stale
+    // reading) is still "bad". Without this, a board that thermally
+    // halts but keeps publishing its last hashrate looked recovered -
+    // the operator got a false "back online" while nothing was hashing.
+    const isBad = !entry.reachable || entry.halted || live === null || live <= 0;
+    const reason = !entry.reachable
+      ? 'unreachable'
+      : entry.halted_reason === 'overheat'
+        ? 'overheated (reboot needed)'
+        : entry.halted_reason === 'shutdown'
+          ? 'shut down (reboot needed)'
+          : entry.halted_reason === 'stale_hashrate'
+            ? 'not hashing (reboot needed)'
+            : 'reporting 0 H/s';
     const thresholdMs = state.config.solo_zero_hashrate_alert_after_minutes * 60_000;
     const current = this.soloZeroHashrate.get(entry.device.id) ?? INITIAL;
     const next = await this.runTransition({
@@ -1320,7 +1334,7 @@ export class AlertEvaluator {
       bodyForFiring: (durMs) =>
         copyFor(state).solo_zero_hashrate_body({
           label: entry.device.label,
-          reason: !entry.reachable ? 'unreachable' : 'reporting 0 H/s',
+          reason,
           duration: formatDuration(durMs),
         }),
       bodyForRecovery: (durMs) =>

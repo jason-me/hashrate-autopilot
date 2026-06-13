@@ -3472,6 +3472,10 @@ msgstr "Niet geconfigureerd. Ga naar Config → On-chain-uitbetalingen en kies "
 msgid "Not enough data in this range yet."
 msgstr "Nog niet genoeg data in dit bereik."
 
+#: src/components/SoloMinersCard.tsx
+msgid "not hashing, reboot needed"
+msgstr "hasht niet, herstart nodig"
+
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "niet in LIVE-modus"
@@ -3905,6 +3909,10 @@ msgstr "Totaal-% van het geselecteerde bereik waarin hashrate werd geleverd. "
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
 msgstr "{overdueFormatted} te laat"
+
+#: src/components/SoloMinersCard.tsx
+msgid "overheated, reboot needed"
+msgstr "oververhit, herstart nodig"
 
 #: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
@@ -4851,6 +4859,10 @@ msgstr "Toon waarde"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "toont {0} van {totalCount}"
+
+#: src/components/SoloMinersCard.tsx
+msgid "shut down, reboot needed"
+msgstr "uitgeschakeld, herstart nodig"
 
 #: src/pages/Login.tsx
 msgid "sign in"

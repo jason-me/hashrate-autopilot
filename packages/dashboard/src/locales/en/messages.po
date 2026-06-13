@@ -3425,6 +3425,10 @@ msgstr "Not configured. Go to Config → On-chain payouts and select Electrum "
 msgid "Not enough data in this range yet."
 msgstr "Not enough data in this range yet."
 
+#: src/components/SoloMinersCard.tsx
+msgid "not hashing, reboot needed"
+msgstr "not hashing, reboot needed"
+
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "not in LIVE mode"
@@ -3851,6 +3855,10 @@ msgstr "Overall % of the selected chart range that hashrate was being "
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
 msgstr "overdue {overdueFormatted}"
+
+#: src/components/SoloMinersCard.tsx
+msgid "overheated, reboot needed"
+msgstr "overheated, reboot needed"
 
 #: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
@@ -4788,6 +4796,10 @@ msgstr "Show value"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "showing {0} of {totalCount}"
+
+#: src/components/SoloMinersCard.tsx
+msgid "shut down, reboot needed"
+msgstr "shut down, reboot needed"
 
 #: src/pages/Login.tsx
 msgid "sign in"

@@ -2,6 +2,10 @@
 
 ## 2026-06-13
 
+### `[Fix]` Solo miners no longer show phantom hashrate after a halt; no false "back online" (#291)
+
+A Bitaxe-family miner that thermally halts but stays reachable keeps publishing its last hashrate - the NerdAxe firmware exposes no halt flag and does not zero the reading - so the Bitaxe miners card looked healthy and a false "miner back online" alert fired while nothing was hashing. HA now detects a reachable-but-not-hashing miner: it reads the explicit `overheat_mode` (stock Bitaxe) and `shutdown` (NerdQAxe) flags where the firmware provides them, and otherwise catches a physically impossible hashrate-per-watt reading. A halted miner now shows 0 with a "reboot needed" badge, drops out of the fleet hashrate total, and the zero-hashrate alert keeps firing (no false recovery) until it is genuinely hashing again.
+
 ### `[Fix]` Bid-pause bands no longer falsely shade long spans as paused (#292)
 
 Large red hatched "Bid paused by Braiins" bands were shading long stretches (e.g. "1d 15h") where the bid was clearly delivering hashrate. Cause: when the bid was paused while the daemon was down or restarting, the daemon re-baselined as paused without recording the pause, then emitted a lone `BID_RESUMED` on resume - and the dashboard rendered that orphan resume as "paused since the beginning of time", shading the whole history. Now the daemon only emits a resume when it logged the matching pause, and the dashboard draws no band for an orphan resume it can't place on a timeline. The genuine pauses still shade correctly.

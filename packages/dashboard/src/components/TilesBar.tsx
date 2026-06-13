@@ -307,6 +307,13 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
     let any = false;
     for (const e of entries) {
       if (!e.reachable) continue;
+      // #291: a halted miner (overheated / shut down / frozen reading)
+      // isn't producing hashrate even if its firmware still reports a
+      // number - exclude it from the fleet total.
+      if (e.halted) {
+        any = true;
+        continue;
+      }
       const v = e.hashrate_1m_ghs ?? e.hashrate_10m_ghs ?? e.hashrate_instant_ghs;
       if (v !== null && Number.isFinite(v)) {
         totalGhs += v;

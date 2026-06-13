@@ -59,6 +59,16 @@ export interface AxeOSSystemInfo {
   poolDifficulty?: number;
   errorPercentage?: number;
   isUsingFallbackStratum?: number | boolean;
+  /** Stock Bitaxe (bitaxeorg) thermal-shutdown flag: 0 = normal, 1 =
+   *  overheated and throttled/halted until reboot (#291). NerdAxe does
+   *  not report this; NerdQAxe uses `shutdown` instead. */
+  overheat_mode?: number | boolean;
+  /** NerdQAxe (shufps) power-shutdown flag. When true the firmware
+   *  halts the ASIC and already reports hashRate as 0 (#291). */
+  shutdown?: boolean;
+  /** Configured/active ASIC frequency (MHz). Collapses to a minimum on
+   *  a NerdQAxe overheat; a useful halt corroborator. */
+  frequency?: number;
   // Catch-all so future firmware additions don't get type-erased by
   // an aggressive `unknown`. We accept any extra fields the API
   // returns; the daemon ignores what it doesn't recognise.

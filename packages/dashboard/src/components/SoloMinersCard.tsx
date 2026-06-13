@@ -181,6 +181,11 @@ interface FleetTotals {
  * three healthy units reporting null hashrate).
  */
 export function liveHashrateGhs(entry: SoloMinerSnapshotEntry): number | null {
+  // #291: a halted miner (overheated / shut down / a frozen stale
+  // reading) is not producing hashrate, whatever number its firmware
+  // keeps publishing. Report 0 so the row reads honestly and the
+  // fleet sum / active count exclude it.
+  if (entry.halted) return 0;
   if (entry.hashrate_10m_ghs !== null && entry.hashrate_10m_ghs > 0) return entry.hashrate_10m_ghs;
   if (entry.hashrate_1m_ghs !== null && entry.hashrate_1m_ghs > 0) return entry.hashrate_1m_ghs;
   if (entry.hashrate_1h_ghs !== null && entry.hashrate_1h_ghs > 0) return entry.hashrate_1h_ghs;
@@ -310,8 +315,23 @@ function DeviceRow({
           {entry.device.ip}
           <AsicChipBadge model={entry.asic_model} />
         </div>
+        {/* #291: reachable but not actually hashing. The firmware may
+            still report a (frozen) hashrate, so flag it explicitly. */}
+        {entry.halted && (
+          <div className="mt-0.5">
+            <span className="inline-block rounded px-1 py-px text-[10px] font-medium bg-rose-500/15 text-rose-300 border border-rose-500/30">
+              {entry.halted_reason === 'overheat' ? (
+                <Trans>overheated, reboot needed</Trans>
+              ) : entry.halted_reason === 'shutdown' ? (
+                <Trans>shut down, reboot needed</Trans>
+              ) : (
+                <Trans>not hashing, reboot needed</Trans>
+              )}
+            </span>
+          </div>
+        )}
       </td>
-      <td className="py-1.5 px-3 text-right font-mono">
+      <td className={`py-1.5 px-3 text-right font-mono ${entry.halted ? 'text-rose-300' : ''}`}>
         {(() => {
           const v = liveHashrateGhs(entry);
           return v !== null ? formatGhs(v) : '-';
@@ -484,6 +504,19 @@ function DeviceMobileCard({
         </div>
       ) : (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+          {entry.halted && (
+            <div className="col-span-2 mb-1">
+              <span className="inline-block rounded px-1 py-px text-[10px] font-medium bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                {entry.halted_reason === 'overheat' ? (
+                  <Trans>overheated, reboot needed</Trans>
+                ) : entry.halted_reason === 'shutdown' ? (
+                  <Trans>shut down, reboot needed</Trans>
+                ) : (
+                  <Trans>not hashing, reboot needed</Trans>
+                )}
+              </span>
+            </div>
+          )}
           <MobileStat
             label={t`Hashrate`}
             value={liveGhs !== null ? formatGhs(liveGhs) : '-'}

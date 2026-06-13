@@ -3490,6 +3490,10 @@ msgstr "No configurado. Ve a Config → Pagos on-chain y selecciona Servidor "
 msgid "Not enough data in this range yet."
 msgstr "Aún no hay suficientes datos en este rango."
 
+#: src/components/SoloMinersCard.tsx
+msgid "not hashing, reboot needed"
+msgstr "sin hashear, reiniciar"
+
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "no está en modo LIVE"
@@ -3930,6 +3934,10 @@ msgstr "% global del rango seleccionado en el que se estaba entregando "
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
 msgstr "atrasado {overdueFormatted}"
+
+#: src/components/SoloMinersCard.tsx
+msgid "overheated, reboot needed"
+msgstr "sobrecalentado, reiniciar"
 
 #: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
@@ -4878,6 +4886,10 @@ msgstr "Mostrar valor"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "mostrando {0} de {totalCount}"
+
+#: src/components/SoloMinersCard.tsx
+msgid "shut down, reboot needed"
+msgstr "apagado, reiniciar"
 
 #: src/pages/Login.tsx
 msgid "sign in"
