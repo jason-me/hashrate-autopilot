@@ -99,6 +99,11 @@ interface TileResult {
   readonly value: string;
   readonly tooltip?: string;
   readonly color?: string;
+  /** #293: explicit grey caption under the value. When set, the value
+   *  is rendered whole (no unit-splitting) and this string is the
+   *  caption - lets a tile show a dynamic status line (e.g. cheap
+   *  threshold / sustained-window progress) instead of just a unit. */
+  readonly caption?: string;
 }
 
 interface TileCtx {
@@ -203,6 +208,38 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
         : EM_DASH,
     tooltip: t`Average overpay above the fillable ask on the bid price the controller actually had live (post-edit-deadband). Measures what the operator paid for, separate from what the controller intended.`,
   }),
+  bid_vs_hashprice: ({ status, intlLocale }) => {
+    const cs = status?.cheap_status;
+    if (!cs || cs.bid_vs_hashprice_pct === null) return DASH;
+    const pct = cs.bid_vs_hashprice_pct;
+    const threshold = cs.threshold_pct;
+    const value = fmtPct(pct, 1, intlLocale);
+    let caption: string;
+    let color: string;
+    if (!cs.enabled) {
+      // Cheap mode not configured - the ratio is still informative.
+      caption = t`of hashprice`;
+      color = 'text-slate-100';
+    } else if (cs.engaged) {
+      // → is intentional (Unicode arrow, per display-string convention).
+      caption = t`cheap on → ${cs.cheap_target_hashrate_ph} PH/s`;
+      color = 'text-emerald-300';
+    } else if (cs.window && pct < threshold) {
+      // Sustained-window progress: how many of the required minutes
+      // have been below threshold so far.
+      caption = t`${cs.window.ticks_below}/${cs.window.ticks_required} min < ${threshold}%`;
+      color = 'text-amber-300';
+    } else {
+      caption = t`cheap < ${threshold}%`;
+      color = pct < threshold ? 'text-amber-300' : 'text-slate-100';
+    }
+    return {
+      value,
+      caption,
+      color,
+      tooltip: t`The price the controller would post (fillable ask + overpay) as a percent of Ocean hashprice. Cheap mode steps the hashrate target up to ${cs.cheap_target_hashrate_ph} PH/s when this stays below the ${threshold}% threshold. Lower is cheaper.`,
+    };
+  },
   hashprice_now: ({ ocean, intlLocale, denomination }) => ({
     value:
       ocean?.user?.hashprice_sat_per_ph_day != null
@@ -426,6 +463,7 @@ function labelFor(id: DashboardTileId): string {
     case 'hashrate_target': return t`hashrate target`;
     case 'avg_overpay_intent': return t`avg overpay (intent)`;
     case 'avg_overpay_settled': return t`avg overpay (settled)`;
+    case 'bid_vs_hashprice': return t`bid vs hashprice`;
     case 'hashprice_now': return t`hashprice now`;
     case 'pool_blocks_30d': return t`pool blocks 30d`;
     case 'pool_luck_24h': return t`pool luck 24h`;
@@ -680,7 +718,10 @@ interface TileSlotProps {
 
 function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
   const [open, setOpen] = useState(false);
-  const split = splitUnit(result.value);
+  // #293: an explicit caption suppresses unit-splitting so the full
+  // value (e.g. "96,2%") stays in the big number and the caption
+  // carries the dynamic status line.
+  const split = result.caption !== undefined ? null : splitUnit(result.value);
 
   // #266 follow-up: outside-click detection moved into
   // TilePickerDropdown (where it can see the portal). Local
@@ -716,7 +757,7 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
         {split ? split.num : result.value}
       </div>
       <div className="text-xs text-slate-500 mt-0.5 text-center min-h-[1.25rem]">
-        {split ? <UnitCaption unit={split.unit} /> : ' '}
+        {result.caption !== undefined ? result.caption : split ? <UnitCaption unit={split.unit} /> : ' '}
       </div>
     </div>
   );

@@ -327,6 +327,20 @@ export interface StatusResponse {
     effective_target_hashrate_ph: number;
     cheap_mode_active: boolean;
   };
+  /** #293: live bid-vs-hashprice snapshot for the tile. */
+  cheap_status: {
+    enabled: boolean;
+    bid_vs_hashprice_pct: number | null;
+    threshold_pct: number;
+    engaged: boolean;
+    target_hashrate_ph: number;
+    cheap_target_hashrate_ph: number;
+    window: {
+      ticks_below: number;
+      ticks_required: number;
+      minutes: number;
+    } | null;
+  } | null;
 }
 
 export interface DecisionSummary {

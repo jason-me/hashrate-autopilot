@@ -44,6 +44,7 @@ export type DashboardTileId =
   | 'share_rejection_pct'
   | 'avg_overpay_intent'
   | 'avg_overpay_settled'
+  | 'bid_vs_hashprice'
   | 'bitaxe_fleet_hashrate'
   | 'bitaxe_fleet_power'
   | 'bitaxe_fleet_efficiency_j_per_th'
@@ -91,6 +92,7 @@ export const TILE_CATALOGUE: ReadonlyArray<DashboardTileMeta> = [
   { id: 'hashprice_now', group: 'Pricing', labelKey: 'hashprice now' },
   { id: 'avg_overpay_intent', group: 'Pricing', labelKey: 'avg overpay (intent)' },
   { id: 'avg_overpay_settled', group: 'Pricing', labelKey: 'avg overpay (settled)' },
+  { id: 'bid_vs_hashprice', group: 'Pricing', labelKey: 'bid vs hashprice' },
 
   // Pool metrics.
   { id: 'pool_blocks_30d', group: 'Pool', labelKey: 'pool blocks 30d' },

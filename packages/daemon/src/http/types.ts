@@ -210,6 +210,28 @@ export interface StatusResponse {
     readonly effective_target_hashrate_ph: number;
     readonly cheap_mode_active: boolean;
   };
+
+  /**
+   * #293: live snapshot for the bid-vs-hashprice tile.
+   * `bid_vs_hashprice_pct` is `(fillable + overpay) / hashprice` as a
+   * percent - the exact quantity cheap mode checks against
+   * `threshold_pct`. `window` carries sustained-window progress when
+   * `cheap_sustained_window_minutes > 0`. null when cheap mode isn't
+   * configured or hashprice/fillable is unavailable this tick.
+   */
+  readonly cheap_status: {
+    readonly enabled: boolean;
+    readonly bid_vs_hashprice_pct: number | null;
+    readonly threshold_pct: number;
+    readonly engaged: boolean;
+    readonly target_hashrate_ph: number;
+    readonly cheap_target_hashrate_ph: number;
+    readonly window: {
+      readonly ticks_below: number;
+      readonly ticks_required: number;
+      readonly minutes: number;
+    } | null;
+  } | null;
 }
 
 export interface ProposalView {

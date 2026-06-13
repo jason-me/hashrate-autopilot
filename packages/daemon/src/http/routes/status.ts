@@ -104,6 +104,10 @@ export async function registerStatusRoute(
         below_floor_since: null,
         last_proposals: [],
         config_summary: summariseConfig(config, deps.hashpriceCache?.getFresh(Infinity) ?? null, null),
+        // No tick has run yet (pre-first-tick / cold cache); the
+        // bid-vs-hashprice tile shows a dash until the controller has
+        // a market + hashprice to compare.
+        cheap_status: null,
       };
     }
 
@@ -180,6 +184,45 @@ export async function registerStatusRoute(
         ? { ...state, hashprice_sat_per_ph_day: hashpriceSatPerPhDay }
         : state;
 
+    // #293: live bid-vs-hashprice snapshot for the tile. Mirror the
+    // controller's cheap-mode quantity exactly: (fillable + overpay)
+    // measured against hashprice, all in sat/EH/day so the ratio is
+    // unit-consistent. The sustained-window progress comes straight
+    // from the controller's own cheap_mode_window so the tile can't
+    // drift from what actually engages cheap mode.
+    const cheapEnabled =
+      config.cheap_threshold_pct > 0 &&
+      config.cheap_target_hashrate_ph > config.target_hashrate_ph;
+    const hashpriceSatEh =
+      hashpriceSatPerPhDay !== null ? hashpriceSatPerPhDay * EH_PER_PH : null;
+    const ourBidSatEh =
+      fillable?.price_sat != null ? fillable.price_sat + config.overpay_sat_per_eh_day : null;
+    const bidVsHashpricePct =
+      ourBidSatEh !== null && hashpriceSatEh !== null && hashpriceSatEh > 0
+        ? (ourBidSatEh / hashpriceSatEh) * 100
+        : null;
+    const cheapWindow = state.cheap_mode_window;
+    const cheapEngaged = cheapWindow
+      ? cheapWindow.engage
+      : cheapEnabled &&
+        bidVsHashpricePct !== null &&
+        bidVsHashpricePct < config.cheap_threshold_pct;
+    const cheap_status: StatusResponse['cheap_status'] = {
+      enabled: cheapEnabled,
+      bid_vs_hashprice_pct: bidVsHashpricePct,
+      threshold_pct: config.cheap_threshold_pct,
+      engaged: cheapEngaged,
+      target_hashrate_ph: config.target_hashrate_ph,
+      cheap_target_hashrate_ph: config.cheap_target_hashrate_ph,
+      window: cheapWindow
+        ? {
+            ticks_below: cheapWindow.ticks_below,
+            ticks_required: cheapWindow.ticks_required,
+            minutes: config.cheap_sustained_window_minutes,
+          }
+        : null,
+    };
+
     return {
       run_mode: liveRunMode,
       action_mode: 'NORMAL' as const,
@@ -235,6 +278,7 @@ export async function registerStatusRoute(
         hashpriceSatPerPhDay,
         fillable?.price_sat ?? null,
       ),
+      cheap_status,
     };
   });
 }

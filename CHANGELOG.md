@@ -2,6 +2,10 @@
 
 ## 2026-06-13
 
+### `[Feature]` Bid-vs-hashprice tile shows how close you are to cheap mode (#293)
+
+A new add-tile catalogue entry, BID VS HASHPRICE, shows the price the controller would post (fillable ask + overpay) as a percentage of Ocean hashprice - the exact quantity cheap mode checks. The caption is state-aware: the cheap threshold ("cheap < 95%") when above it, sustained-window progress ("3/5 min < 95%") while it's filling below the threshold, and "cheap on → 10 PH/s" once cheap mode engages, with emerald / amber / neutral colouring to match. The percentage and the cheap-mode window summary are computed daemon-side (`/api/status` `cheap_status`) so the tile can't drift from the controller's own check. Opt in via the tile picker.
+
 ### `[Fix]` Solo miners no longer show phantom hashrate after a halt; no false "back online" (#291)
 
 A Bitaxe-family miner that thermally halts but stays reachable keeps publishing its last hashrate - the NerdAxe firmware exposes no halt flag and does not zero the reading - so the Bitaxe miners card looked healthy and a false "miner back online" alert fired while nothing was hashing. HA now detects a reachable-but-not-hashing miner: it reads the explicit `overheat_mode` (stock Bitaxe) and `shutdown` (NerdQAxe) flags where the firmware provides them, and otherwise catches a physically impossible hashrate-per-watt reading. A halted miner now shows 0 with a "reboot needed" badge, drops out of the fleet hashrate total, and the zero-hashrate alert keeps firing (no false recovery) until it is genuinely hashing again.

@@ -109,6 +109,12 @@ msgstr "{0} eventos cayeron en el mismo tick del daemon - la línea muestra su "
 msgid "{0} sat/PH/day (default - tunable later)"
 msgstr "{0} sat/PH/día (predeterminado - ajustable después)"
 
+#. placeholder {0}: cs.window.ticks_below
+#. placeholder {1}: cs.window.ticks_required
+#: src/components/TilesBar.tsx
+msgid "{0}/{1} min < {threshold}%"
+msgstr "{0}/{1} min < {threshold}%"
+
 #: src/lib/format.ts
 msgid "{days}d ago"
 msgstr "hace {days}d"
@@ -893,6 +899,10 @@ msgstr "OFERTA REANUDADA"
 msgid "Bid sustained-paused for"
 msgstr "Oferta sostenidamente Paused durante"
 
+#: src/components/TilesBar.tsx
+msgid "bid vs hashprice"
+msgstr "puja vs hashprice"
+
 #: src/components/BidEventDrawer.tsx
 msgid "Bid was cancelled. See reason above."
 msgstr "La oferta fue cancelada. Ver motivo arriba."
@@ -1442,9 +1452,18 @@ msgstr "Suavizado del gráfico"
 msgid "Chat ID"
 msgstr "ID de chat"
 
+#: src/components/TilesBar.tsx
+msgid "cheap < {threshold}%"
+msgstr "barato < {threshold}%"
+
 #: src/pages/Config.tsx
 msgid "Cheap mode"
 msgstr "Modo barato"
+
+#. placeholder {0}: cs.cheap_target_hashrate_ph
+#: src/components/TilesBar.tsx
+msgid "cheap on → {0} PH/s"
+msgstr "barato activo → {0} PH/s"
 
 #: src/pages/Config.tsx
 msgid "Cheap threshold"
@@ -3642,6 +3661,10 @@ msgid "Ocean's Unpaid Earnings - what will land on-chain at the next payout. "
 msgstr "Ganancias no pagadas de Ocean - lo que llegará on-chain en el próximo "
 "pago. Umbral: {0} sat (~0.01 BTC)."
 
+#: src/components/TilesBar.tsx
+msgid "of hashprice"
+msgstr "del hashprice"
+
 #: src/pages/Config.tsx
 msgid "Off"
 msgstr "Apagado"
@@ -5187,6 +5210,14 @@ msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo 
 "del DDNS Key en una sola llamada. Test connection envía una "
 "actualización real con los valores del formulario (sin guardar). "
 "`nochg` y `good` son ambos éxito."
+
+#. placeholder {0}: cs.cheap_target_hashrate_ph
+#: src/components/TilesBar.tsx
+msgid "The price the controller would post (fillable ask + overpay) as a "
+"percent of Ocean hashprice. Cheap mode steps the hashrate target up to "
+"{0} PH/s when this stays below the {threshold}% threshold. Lower is "
+"cheaper."
+msgstr "El precio que publicaría el controlador (ask disponible + overpay) como porcentaje del hashprice de Ocean. El modo barato sube el objetivo de hashrate a {0} PH/s cuando esto se mantiene por debajo del umbral del {threshold}%. Más bajo es más barato."
 
 #: src/pages/Config.tsx
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses "
