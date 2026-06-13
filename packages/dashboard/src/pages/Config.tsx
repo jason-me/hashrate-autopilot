@@ -320,6 +320,14 @@ function useSections(): Section[] {
                 },
               },
               {
+                label: 'mempool.guide',
+                template: 'https://mempool.guide/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://mempool.guide/tx/{txid}',
+                },
+              },
+              {
                 label: 'blockstream.info',
                 template: 'https://blockstream.info/block/{hash}',
                 secondary: {
