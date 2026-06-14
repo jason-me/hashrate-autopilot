@@ -3881,6 +3881,11 @@ msgstr "onze verdiensten (schat.)"
 msgid "our pool blocks"
 msgstr "onze pool-blokken"
 
+#: src/pages/Config.tsx
+msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
+"signaling."
+msgstr "Onze voorkeursverkenner: een mempool.space-fork die BIP-110 miner-signalering toont."
+
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"
 msgstr "ons aandeel (schat.)"
@@ -5191,7 +5196,10 @@ msgid "The price the controller would post (fillable ask + overpay) as a "
 "percent of Ocean hashprice. Cheap mode steps the hashrate target up to "
 "{0} PH/s when this stays below the {threshold}% threshold. Lower is "
 "cheaper."
-msgstr "De prijs die de controller zou plaatsen (vulbare ask + overpay) als percentage van de Ocean-hashprice. De goedkope modus verhoogt het hashrate-doel naar {0} PH/s zodra dit onder de drempel van {threshold}% blijft. Lager is goedkoper."
+msgstr "De prijs die de controller zou plaatsen (vulbare ask + overpay) als "
+"percentage van de Ocean-hashprice. De goedkope modus verhoogt het "
+"hashrate-doel naar {0} PH/s zodra dit onder de drempel van {threshold}% "
+"blijft. Lager is goedkoper."
 
 #: src/pages/Config.tsx
 msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses "

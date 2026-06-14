@@ -263,8 +263,9 @@ export const AppConfigSchema = z.object({
   // panel's "last pool block" row and the cube tooltips on the Hashrate
   // chart (issue #22). `{hash}` and `{height}` are substituted; at least
   // one placeholder is required so the link actually points somewhere.
-  // Default = mempool.space so a fresh install has working links
-  // without a config step.
+  // Default = mempool.guide (#289 follow-up): a mempool.space fork
+  // that surfaces BIP-110 miner signaling - our preferred explorer.
+  // A fresh install gets working links without a config step.
   block_explorer_url_template: z
     .string()
     .min(1)
@@ -272,7 +273,7 @@ export const AppConfigSchema = z.object({
       (v) => v.includes('{hash}') || v.includes('{height}'),
       { message: 'must contain {hash} or {height} placeholder' },
     )
-    .default('https://mempool.space/block/{hash}'),
+    .default('https://mempool.guide/block/{hash}'),
 
   // Transaction-URL counterpart to the block-URL template above.
   // Used for the on-chain payout dots on the Price chart's
@@ -288,7 +289,7 @@ export const AppConfigSchema = z.object({
       (v) => v.includes('{txid}') || v.includes('{hash}'),
       { message: 'must contain {txid} or {hash} placeholder' },
     )
-    .default('https://mempool.space/tx/{txid}'),
+    .default('https://mempool.guide/tx/{txid}'),
 
   // Chart smoothing - rolling-mean minute window applied client-side
   // to the hashrate chart's Braiins-delivered and Datum-received
@@ -637,8 +638,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   datum_api_url: null,
 
-  block_explorer_url_template: 'https://mempool.space/block/{hash}',
-  block_explorer_tx_url_template: 'https://mempool.space/tx/{txid}',
+  block_explorer_url_template: 'https://mempool.guide/block/{hash}',
+  block_explorer_tx_url_template: 'https://mempool.guide/tx/{txid}',
 
   braiins_hashrate_smoothing_minutes: 1,
   datum_hashrate_smoothing_minutes: 1,

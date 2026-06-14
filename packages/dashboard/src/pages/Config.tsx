@@ -103,6 +103,11 @@ type FieldSpec = (
         template: string;
         /** When set, picking this preset ALSO writes `template` to the named sibling field. Used by the block-explorer section to keep the block + tx URL templates in sync via a single preset click. */
         secondary?: { key: keyof AppConfig; template: string };
+        /** #289 follow-up: render this preset as the highlighted
+         *  "preferred" choice (yellow pill). */
+        highlight?: boolean;
+        /** Native hover tooltip on the preset pill. */
+        tooltip?: string;
       }>;
     }
   | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string }
@@ -312,19 +317,21 @@ function useSections(): Section[] {
             help: t`At least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
             presets: [
               {
-                label: 'mempool.space',
-                template: 'https://mempool.space/block/{hash}',
-                secondary: {
-                  key: 'block_explorer_tx_url_template',
-                  template: 'https://mempool.space/tx/{txid}',
-                },
-              },
-              {
                 label: 'mempool.guide',
                 template: 'https://mempool.guide/block/{hash}',
                 secondary: {
                   key: 'block_explorer_tx_url_template',
                   template: 'https://mempool.guide/tx/{txid}',
+                },
+                highlight: true,
+                tooltip: t`Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner signaling.`,
+              },
+              {
+                label: 'mempool.space',
+                template: 'https://mempool.space/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://mempool.space/tx/{txid}',
                 },
               },
               {
@@ -4740,22 +4747,28 @@ function Field({
         <div className="flex flex-wrap gap-1.5 mt-2">
           {spec.presets.map((p) => {
             const active = p.template === v;
+            // #289 follow-up: a highlighted "preferred" preset
+            // (mempool.guide) renders as a yellow pill in both states
+            // so it stands out as the recommended choice.
+            const cls = p.highlight
+              ? active
+                ? 'bg-amber-400/25 border-amber-400 text-amber-100'
+                : 'bg-amber-400/10 border-amber-500/60 text-amber-300 hover:bg-amber-400/20 hover:text-amber-100'
+              : active
+                ? 'bg-slate-700 border-slate-500 text-slate-100'
+                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200';
             return (
               <button
                 key={p.label}
                 type="button"
+                title={p.tooltip}
                 onClick={() => {
                   onChange(spec.key, p.template as never);
                   if (p.secondary) {
                     onChange(p.secondary.key, p.secondary.template as never);
                   }
                 }}
-                className={
-                  'px-2 py-0.5 rounded text-[11px] border ' +
-                  (active
-                    ? 'bg-slate-700 border-slate-500 text-slate-100'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200')
-                }
+                className={'px-2 py-0.5 rounded text-[11px] border ' + cls}
               >
                 {p.label}
               </button>

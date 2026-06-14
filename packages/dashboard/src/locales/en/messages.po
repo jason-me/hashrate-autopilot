@@ -3828,6 +3828,12 @@ msgstr "our earnings (est.)"
 msgid "our pool blocks"
 msgstr "our pool blocks"
 
+#: src/pages/Config.tsx
+msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
+"signaling."
+msgstr "Our preferred explorer: a mempool.space fork that surfaces BIP-110 "
+"miner signaling."
+
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"
 msgstr "our share (est.)"
