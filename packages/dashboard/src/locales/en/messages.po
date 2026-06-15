@@ -367,6 +367,10 @@ msgid "A few questions to get the daemon operational. Defaults work for typical 
 msgstr "A few questions to get the daemon operational. Defaults work for "
 "typical home miners; tune later from the Config page."
 
+#: src/pages/Config.tsx
+msgid "A mempool.space fork that surfaces BIP-110 miner signaling."
+msgstr "A mempool.space fork that surfaces BIP-110 miner signaling."
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Access"
@@ -506,8 +510,8 @@ msgid "amount"
 msgstr "amount"
 
 #: src/pages/Config.tsx
-msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
-msgstr "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+#~ msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+#~ msgstr "Another BIP-110-aware mempool explorer that surfaces miner signaling."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -3833,10 +3837,10 @@ msgid "our pool blocks"
 msgstr "our pool blocks"
 
 #: src/pages/Config.tsx
-msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
-"signaling."
-msgstr "Our preferred explorer: a mempool.space fork that surfaces BIP-110 "
-"miner signaling."
+#~ msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
+#~ "signaling."
+#~ msgstr "Our preferred explorer: a mempool.space fork that surfaces BIP-110 "
+#~ "miner signaling."
 
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"

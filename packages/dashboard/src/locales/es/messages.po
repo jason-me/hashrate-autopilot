@@ -373,6 +373,10 @@ msgstr "Unas preguntas para poner el daemon operativo. Los valores "
 "predeterminados funcionan para mineros caseros típicos; ajusta más "
 "tarde desde la página Config."
 
+#: src/pages/Config.tsx
+msgid "A mempool.space fork that surfaces BIP-110 miner signaling."
+msgstr "Un fork de mempool.space que muestra la señalización de BIP-110 por los mineros."
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Acceso"
@@ -512,8 +516,9 @@ msgid "amount"
 msgstr "monto"
 
 #: src/pages/Config.tsx
-msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
-msgstr "Otro explorador mempool compatible con BIP-110 que muestra la señalización de los mineros."
+#~ msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+#~ msgstr "Otro explorador mempool compatible con BIP-110 que muestra la "
+#~ "señalización de los mineros."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -3909,10 +3914,10 @@ msgid "our pool blocks"
 msgstr "nuestros bloques del pool"
 
 #: src/pages/Config.tsx
-msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
-"signaling."
-msgstr "Nuestro explorador preferido: un fork de mempool.space que muestra la "
-"señalización de BIP-110 por los mineros."
+#~ msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
+#~ "signaling."
+#~ msgstr "Nuestro explorador preferido: un fork de mempool.space que muestra la "
+#~ "señalización de BIP-110 por los mineros."
 
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"
