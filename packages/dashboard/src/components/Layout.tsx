@@ -169,11 +169,11 @@ export function Layout() {
         <div className="px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
           <div className="flex items-center gap-2.5 mr-4">
             <img
-              src="/aviator-96.png"
+              src="/aviator-mark.png"
               alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 rounded-md shrink-0"
+              width={27}
+              height={36}
+              className="h-9 w-auto shrink-0"
             />
             <div className="text-amber-400 font-semibold leading-tight">Hashrate Autopilot</div>
           </div>

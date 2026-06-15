@@ -4,7 +4,7 @@
 
 ### `[UI]` Aviator favicon and header logo
 
-The dashboard now has a favicon - a stylized 1940s aviator (leather flight helmet + goggles) in vintage orange on navy - shown in the browser tab and as a small badge next to the "Hashrate Autopilot" wordmark in the top bar. Favicon links (16/32/48 + apple-touch 180) and a theme-color meta were added to `index.html`.
+The dashboard now has a stylized 1940s aviator (leather flight helmet + goggles, vintage orange): a favicon in the browser tab (orange on a navy tile, 16/32/48 + apple-touch 180) and a transparent badge of the full aviator next to the "Hashrate Autopilot" wordmark in the top bar. Favicon links and a theme-color meta were added to `index.html`.
 
 ### `[Infra]` Bump esbuild to 0.28.1 (clears GHSA advisories)
 
