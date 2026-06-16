@@ -21,7 +21,7 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import type { BraiinsClient } from '@hashrate-autopilot/braiins-client';
+import { BraiinsApiError, type BraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { OwnedBidsRepo } from '../../state/repos/owned_bids.js';
@@ -164,6 +164,23 @@ export async function registerStaleUrlsRoute(
         await deps.ownedBidsRepo.markCancelled(bidId);
         return { ok: true };
       } catch (err) {
+        // #295: the bid may have already been deleted at Braiins (the
+        // operator cancelled it manually, or it closed). A cancel of a
+        // non-existent order then fails and leaves the operator stuck.
+        // Treat "order not found" as already-gone: clear the ledger row
+        // so the banner and the decision loop recover. The next tick's
+        // self-heal would catch this too, but handle it inline so the
+        // button gives immediate, correct feedback.
+        if (
+          err instanceof BraiinsApiError &&
+          (err.status === 404 ||
+            /not.?found|does not exist|no such|already (cancel|complet)/i.test(
+              err.grpcMessage ?? '',
+            ))
+        ) {
+          await deps.ownedBidsRepo.markCancelled(bidId);
+          return { ok: true, already_gone: true };
+        }
         reply.status(502);
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }

@@ -27,6 +27,7 @@ import {
 } from '../services/pool-health.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { OwnedBidsRepo, ReconcilableBid } from '../state/repos/owned_bids.js';
+import { selectVanishedLedgerBids } from '../state/stale-bid-prune.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 import type { RewardEventsRepo } from '../state/repos/reward_events.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
@@ -382,6 +383,29 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
       await deps.ownedBidsRepo.reconcileFromApi(tickAt, reconcilable);
     } catch (err) {
       console.warn(`[observe] ledger reconciliation failed: ${(err as Error).message}`);
+    }
+  }
+
+  // #295: self-heal stale ledger bids. Gate on a DEFINITIVELY
+  // successful bid-list fetch (`bidsResponse !== null`) - never prune
+  // on an API hiccup or we'd wipe live bids. Any active ledger bid the
+  // (full account) bid list no longer contains was deleted at Braiins
+  // out-of-band; clear it so the stale-URL banner and the decision
+  // loop recover instead of getting stuck on a ghost. A 3-minute grace
+  // window protects a just-placed bid that hasn't surfaced yet.
+  if (bidsResponse !== null) {
+    try {
+      const presentIds = new Set(apiBids.map((b) => b.braiins_order_id));
+      const candidates = await deps.ownedBidsRepo.listActiveForPrune();
+      const vanished = selectVanishedLedgerBids(candidates, presentIds, 3 * 60_000, tickAt);
+      if (vanished.length > 0) {
+        await deps.ownedBidsRepo.markCancelledMany(vanished);
+        console.warn(
+          `[observe] cleared ${vanished.length} stale ledger bid(s) no longer at Braiins: ${vanished.join(', ')}`,
+        );
+      }
+    } catch (err) {
+      console.warn(`[observe] stale-bid prune failed: ${(err as Error).message}`);
     }
   }
 

@@ -120,6 +120,41 @@ export class OwnedBidsRepo {
   }
 
   /**
+   * #295: candidate rows for the vanished-bid self-heal - non-abandoned
+   * ledger bids that are still in a live (non-terminal) status. The
+   * caller cross-checks these against Braiins's current bid list and
+   * clears any that have gone (see {@link markCancelledMany}).
+   */
+  async listActiveForPrune(): Promise<
+    Array<{ braiins_order_id: string; last_known_status: string | null; created_at: number }>
+  > {
+    return this.db
+      .selectFrom('owned_bids')
+      .select(['braiins_order_id', 'last_known_status', 'created_at'])
+      .where('abandoned', '=', 0)
+      .where((eb) =>
+        eb.or([
+          eb('last_known_status', 'is', null),
+          eb('last_known_status', 'not in', ['BID_STATUS_CANCELED', 'BID_STATUS_FULFILLED']),
+        ]),
+      )
+      .execute();
+  }
+
+  /** #295: mark a batch of ledger bids as terminal in one statement. */
+  async markCancelledMany(
+    braiinsOrderIds: readonly string[],
+    status = 'BID_STATUS_CANCELED',
+  ): Promise<void> {
+    if (braiinsOrderIds.length === 0) return;
+    await this.db
+      .updateTable('owned_bids')
+      .set({ last_known_status: status })
+      .where('braiins_order_id', 'in', [...braiinsOrderIds])
+      .execute();
+  }
+
+  /**
    * Bring the ledger rows into line with what Braiins currently reports for
    * our owned bids. Updates `last_known_status`, `price_sat`, `amount_sat`,
    * `speed_limit_ph`, and sets `first_seen_active_at` the first time a bid

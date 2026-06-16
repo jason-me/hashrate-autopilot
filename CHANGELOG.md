@@ -2,6 +2,10 @@
 
 ## 2026-06-15
 
+### `[Fix]` Self-heal local bids that were deleted at Braiins out-of-band (#295)
+
+If a bid was removed at Braiins while the autopilot wasn't looking (the operator cancelled it manually, a port/URL change, etc.), the local ledger kept it as active forever - the stale-URL banner showed a ghost bid and "Cancel & recreate" failed because the order no longer existed, leaving the only fix as hand-editing the database. Now the daemon cross-checks the ledger against a successful Braiins bid-list fetch each tick and clears any active bid the list no longer contains (with a grace window so a freshly-placed bid is never pruned, and only when the fetch definitively succeeded so an API hiccup can't wipe live bids). "Cancel & recreate" also recovers on its own: an "order not found" from Braiins is treated as already-gone and clears the row. No manual database surgery, no stuck loop.
+
 ### `[UI]` Add mempool.kilombino.com as a second BIP-110 block explorer
 
 A second BIP-110-aware mempool instance, mempool.kilombino.com, joins the block-explorer presets, highlighted in yellow next to mempool.guide. Selecting it sets both the block and transaction URL templates.
