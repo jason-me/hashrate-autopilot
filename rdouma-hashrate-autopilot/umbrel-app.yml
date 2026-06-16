@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.14.0"
+version: "1.15.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -53,6 +53,24 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.15.0 - aviator branding, bid-vs-hashprice tile, BIP-110 explorers, not-hashing detection, stale-bid self-heal.
+
+  NEW
+  - Bid-vs-hashprice tile (#293): a new stats-bar tile shows your bid as a percentage of Ocean's break-even hashprice, with a state-aware caption that tracks cheap mode - "cheap < 95%" when you're posting under the threshold, "3/5 min < 95%" while the sustained-window countdown runs, and "cheap on -> 10 PH/s" once cheap mode engages and scales you up to the cheap-mode target. The whole calculation is done daemon-side so the tile agrees with the controller.
+  - BIP-110 block explorers (#289): mempool.guide - a mempool.space fork that surfaces BIP-110 miner signaling - is now the default block/transaction explorer for fresh installs and the first preset under Config -> Display & Logging -> Block explorer, with mempool.kilombino.com added as a second BIP-110-aware option. Both render as highlighted yellow pills. Existing installs keep whatever explorer they configured.
+  - Aviator branding (#298): a stylized 1940s aviator (leather flight helmet + goggles) is now the app's identity - a favicon in the browser tab, a badge next to the "Hashrate Autopilot" wordmark in the top bar, and the Umbrel / home-screen app icon. The old icon was an unrelated illustration that turned to mush at small sizes.
+
+  IMPROVEMENTS
+  - Reachable-but-not-hashing detection for Bitaxe / AxeOS miners (#291): a miner that is still answering its HTTP API but has actually stopped hashing (thermal overheat_mode, NerdQAxe shutdown, or a physically-impossible hashrate-per-watt ratio after a stall) no longer reports phantom hashrate or a false "back online". The fleet tile excludes a halted device and its card shows a "reboot needed" badge.
+  - The "View on chart" action in a History event's detail drawer is now a prominent amber button near the top of the drawer instead of a faint link buried in the footer, so jumping from an event to its spot on the price chart is the obvious thing to reach for.
+
+  FIXES
+  - Stale local bids deleted at Braiins out-of-band now self-heal (#295): if a bid is removed at Braiins while the autopilot isn't looking (you cancelled it manually, a port/URL change, etc.), the daemon now cross-checks the local ledger against a successful Braiins bid-list fetch each tick and clears any active bid the list no longer contains (with a grace window so a freshly-placed bid is never pruned, and only when the fetch definitively succeeded). "Cancel & recreate" also recovers on its own - an "order not found" from Braiins is treated as already-gone. No more hand-editing the database.
+  - False giant "bid paused" bands are gone (#292): an orphan resume event could paint a huge rose idle band stretching back to the start of history; pause/resume bands now only render around a logged matching pause.
+  - The History -> chart "jump to event" beacon now works in Firefox and Safari (it previously only animated in Chrome), homes to a fixed window around the event, and renders reliably even if the event was filtered out of the chart.
+  - Dashboard updates are no longer stuck behind a year-long browser cache: index.html was being served immutable, so a deployed UI fix could stay invisible until a manual hard-refresh. It now revalidates.
+  - Daemon-offline gaps count as downtime in the uptime tile and bid-coverage math, instead of being silently skipped.
+
   v1.14.0 - run-mode and bid-pause history with chart markers and idle bands, History detail drawer, legend toggles.
 
   NEW

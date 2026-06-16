@@ -2,6 +2,10 @@
 
 ## 2026-06-15
 
+### `[Release]` v1.15.0
+
+Aviator branding (favicon, header logo, and app icon), the bid-vs-hashprice stats tile (#293), mempool.guide as the default block explorer plus mempool.kilombino.com as a second BIP-110-aware option (#289), reachable-but-not-hashing detection for Bitaxe miners (#291), and a sweep of fixes: stale-bid self-heal (#295), false bid-paused bands (#292), the cross-browser chart-jump beacon (#288), the year-long HTML cache, and daemon-offline downtime accounting. Safe to upgrade from any 1.14.x release.
+
 ### `[UI]` "View on chart" in the History event drawer is now a button
 
 The "View on chart" action in a History event's detail drawer was a faint amber text link buried in the footer and easy to miss. It's now a filled amber button placed near the top of the drawer, right under the event reason, so jumping from an event to its spot on the price chart is an obvious, prominent action you reach for first. "copy JSON" stays a subtle secondary control in the footer.
