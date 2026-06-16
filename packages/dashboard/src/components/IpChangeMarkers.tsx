@@ -16,6 +16,7 @@ import { t } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 
 import { useFormatters } from '../lib/locale';
+import { formatAgeMinutes } from '../lib/format';
 
 export interface IpChangeMarkerEvent {
   readonly id: number;
@@ -195,7 +196,8 @@ export function IpChangeTooltip({
         {event.new_ip}
       </div>
       <div className="text-slate-500 text-[11px] mt-1">
-        {fmt.timestamp(event.occurred_at)}
+        {fmt.timestamp(event.occurred_at)}{' '}
+        <span className="text-slate-600">({formatAgeMinutes(event.occurred_at)})</span>
       </div>
     </div>
   );

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-16
+
+### `[UI]` IP-change marker tooltip shows relative time
+
+The public-IP-change marker tooltip on the charts now shows a relative age in parentheses after the absolute timestamp (e.g. "15 Jun 2026, 12:22:28 (12h 24m ago)"), so you can tell at a glance how long ago an ISP rotation happened without doing the math.
+
 ## 2026-06-15
 
 ### `[Infra]` Pin js-yaml to 4.2.0 (clears Dependabot advisory)
