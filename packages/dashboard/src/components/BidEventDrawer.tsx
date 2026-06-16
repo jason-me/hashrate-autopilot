@@ -222,6 +222,16 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
             </section>
           )}
 
+          <button
+            type="button"
+            onClick={goToChart}
+            className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
+            title={t`Open the price chart pinned to this event`}
+          >
+            <Trans>View on chart</Trans>
+            <span aria-hidden="true">→</span>
+          </button>
+
           {event.kind === 'CREATE_BID' && (
             <section>
               <SectionHeader label={t`create`} />
@@ -306,22 +316,13 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
           )}
         </div>
 
-        <div className="border-t border-slate-800 px-4 py-3 sticky bottom-0 bg-slate-900 flex items-center justify-between gap-3">
+        <div className="border-t border-slate-800 px-4 py-3 sticky bottom-0 bg-slate-900 flex items-center gap-3">
           <button
             type="button"
             onClick={copyJson}
             className={`px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 inline-flex items-center gap-1.5 text-[11px] ${copied ? 'text-emerald-300' : 'text-slate-200'}`}
           >
             {copied ? <Trans>copied</Trans> : <Trans>copy JSON</Trans>}
-          </button>
-          <button
-            type="button"
-            onClick={goToChart}
-            className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
-            title={t`Open the price chart pinned to this event`}
-          >
-            <Trans>View on chart</Trans>
-            <span aria-hidden="true">→</span>
           </button>
         </div>
       </aside>

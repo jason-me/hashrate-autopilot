@@ -4,7 +4,7 @@
 
 ### `[UI]` "View on chart" in the History event drawer is now a button
 
-The "View on chart" action at the bottom of a History event's detail drawer was a faint amber text link that was easy to miss. It's now a filled amber button, so jumping from an event to its spot on the price chart is an obvious, prominent action. "copy JSON" stays a subtle secondary control.
+The "View on chart" action in a History event's detail drawer was a faint amber text link buried in the footer and easy to miss. It's now a filled amber button placed near the top of the drawer, right under the event reason, so jumping from an event to its spot on the price chart is an obvious, prominent action you reach for first. "copy JSON" stays a subtle secondary control in the footer.
 
 ### `[UI]` App icon is now the aviator brand mark (#298)
 
