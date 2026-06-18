@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-18
+
+### `[Infra]` Dependency bumps: lingui 6.4, better-sqlite3 12.11.1, react-router 7.18, + tooling (#297, #300)
+
+Applied both grouped Dependabot updates: production deps (better-sqlite3 12.10.0 → 12.11.1, @lingui/core + @lingui/react 6.2.0 → 6.4.0, react-router-dom 7.17.0 → 7.18.0) and dev/tooling deps (the rest of @lingui/* 6.4.0, tailwindcss + @tailwindcss/vite 4.3.1, vitest 4.1.9, eslint 10.5.0, playwright 1.61.0, prettier 3.8.4, typescript-eslint 8.61.1, @types/node 25.9.3). Verified with a full workspace build, the i18n catalog recompile, the test suite, and a dev-server smoke check; no behavior changes.
+
 ## 2026-06-17
 
 ### `[Fix]` Two CodeQL findings: support-bundle escaping + a no-op string replace
