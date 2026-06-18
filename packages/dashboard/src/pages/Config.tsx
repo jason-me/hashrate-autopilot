@@ -5677,7 +5677,13 @@ function diagnosticsToMarkdown(d: DiagnosticsResponse): string {
     const status =
       probe.status === 'ok' ? '✅ ok' : probe.status === 'failed' ? '❌ failed' : '– not configured';
     const latency = probe.latency_ms !== null && probe.status === 'ok' ? `${probe.latency_ms} ms` : '';
-    const detail = (probe.detail ?? probe.error ?? '').replace(/\|/g, '\\|');
+    // Escape for a markdown table cell: backslash first (else it would
+    // double-escape the pipe we add next), then the pipe, then collapse
+    // any newline so a multi-line error can't break the table row.
+    const detail = (probe.detail ?? probe.error ?? '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\|/g, '\\|')
+      .replace(/\r?\n/g, ' ');
     lines.push(`| ${probe.target} | ${status} | ${latency} | ${detail} |`);
   }
   lines.push('');

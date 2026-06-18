@@ -2,6 +2,10 @@
 
 ## 2026-06-17
 
+### `[Fix]` Two CodeQL findings: support-bundle escaping + a no-op string replace
+
+Fixed two static-analysis alerts. The Diagnostics support bundle's markdown table escaped `|` in a probe detail/error but not a leading backslash (and didn't collapse newlines), so a detail containing `\` or a multi-line error could break the table rendering; it now escapes backslashes first and flattens newlines. Separately, a leftover `whereClause.replace(/\be\./g, 'e.')` in the bid-events history query was a no-op (it replaced `e.` with itself) and is removed; the SQL it produced is byte-identical, so query behavior is unchanged.
+
 ### `[UI]` Correct the Ocean payout-mechanism wording (it's a batched sweep, not a coinbase)
 
 Several tooltips and docs claimed Ocean pays you "in the coinbase of the next block Ocean finds." That's wrong: Ocean accumulates block rewards in a pool wallet and settles operator payouts as batched, multi-output transactions broadcast on its own cadence, mined into whatever block by whatever pool (not a coinbase, not necessarily an Ocean-mined block). The "next payout" tooltip on Status, the two payout-alert tooltips, and the historical-backfill tooltip on Config are reworded to match reality, and docs/spec.md + docs/research.md are corrected (the backfill code already matched any tx paying the address since #240). Translations updated for en/nl/es.

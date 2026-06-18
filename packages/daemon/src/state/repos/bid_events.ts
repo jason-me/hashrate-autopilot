@@ -247,7 +247,11 @@ export class BidEventsRepo {
     // Coalesce window widened from 5 min to 1 hour so older orphan
     // CREATEs whose next event sits further in the future still
     // surface their order id.
-    const whereClauseRebased = whereClause.replace(/\be\./g, 'e.');
+    // The outer query (below) is `FROM events_with_effective_id e`, and
+    // the CTE selects `e.*`, so every `e.<col>` reference the where-clause
+    // was built with already resolves against the CTE - no alias rebase
+    // is needed. (A prior `.replace(/\be\./g, 'e.')` here was a no-op and
+    // CodeQL js/identity-replacement flagged it; removed.)
     const sqlText = `
       WITH events_with_effective_id AS (
         SELECT
@@ -300,7 +304,7 @@ export class BidEventsRepo {
           ORDER BY e4.occurred_at DESC
           LIMIT 1) AS effective_last_price_sat
         FROM events_with_effective_id e
-        ${whereClauseRebased}
+        ${whereClause}
         ORDER BY e.id DESC
         LIMIT ${Math.floor(args.limit)}
     `;
