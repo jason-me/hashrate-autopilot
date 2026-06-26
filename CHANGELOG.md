@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-25
+
+### `[Infra]` Dependency bumps: Babel 8, @types/node 26, typescript-eslint 8.62, actions/checkout v7 (#303-#306)
+
+Applied four Dependabot updates, all dev/build tooling or CI (no runtime bundle change): @babel/core 7.29.7 → 8.0.1, @types/node 25.9.3 → 26.0.0, typescript-eslint 8.61.1 → 8.62.0, and actions/checkout 6 → 7 in the CI workflows. The two majors were verified end to end: Babel 8 transforms the lingui macros cleanly (full build + dev-server check), and @types/node 26 passes the typecheck. Tests and dev smoke green; no behavior changes.
+
 ## 2026-06-22
 
 ### `[Fix]` Tiles bar "add tile" no longer overlaps the range selector on mobile (#302)
