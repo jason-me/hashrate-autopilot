@@ -1,3 +1,4 @@
+import { isValidBtcPayoutAddress } from '@hashrate-autopilot/shared';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -653,10 +654,17 @@ export function Config() {
   // keystroke during the debounce window). Cleanup cancels the pending
   // timer on every dependency change so a flurry of edits collapses
   // into one save.
+  // #309: never persist an invalid BTC payout address. The backend
+  // rejects it with 422 anyway, but gating here keeps autosave from
+  // spamming failed saves while the operator is mid-edit, and pairs
+  // with the inline error on the field.
+  const payoutAddressOk =
+    !draft || isValidBtcPayoutAddress((draft.btc_payout_address as string | null) ?? '');
   const lastAttemptedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!autoSave) return;
     if (!draft || !isDirty) return;
+    if (!payoutAddressOk) return;
     if (mutation.isPending) return;
     const draftKey = JSON.stringify(draft);
     if (mutation.isError && lastAttemptedRef.current === draftKey) return;
@@ -665,7 +673,7 @@ export function Config() {
       mutation.mutate(draft);
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [draft, autoSave, isDirty, mutation.isPending, mutation.isError]);
+  }, [draft, autoSave, isDirty, payoutAddressOk, mutation.isPending, mutation.isError]);
 
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
@@ -773,7 +781,8 @@ export function Config() {
           {!autoSave && (
             <button
               onClick={() => mutation.mutate(draft)}
-              disabled={mutation.isPending || !isDirty}
+              disabled={mutation.isPending || !isDirty || !payoutAddressOk}
+              title={!payoutAddressOk ? t`Fix the BTC payout address before saving.` : undefined}
               className="px-4 py-1.5 text-sm bg-amber-400 text-slate-900 font-medium rounded hover:bg-amber-300 disabled:opacity-50"
             >
               {mutation.isPending ? <Trans>saving…</Trans> : <Trans>save</Trans>}
@@ -4643,6 +4652,10 @@ function Field({
     // page is just as protective.
     const isWorker = spec.key === 'destination_pool_worker_name';
     const addr = (draft.btc_payout_address as string | null) ?? '';
+    // #309: the BTC payout address must be a real mainnet address.
+    // A stray `c` once got saved and silently broke Ocean crediting.
+    const isPayoutAddr = spec.key === 'btc_payout_address';
+    const addrInvalid = isPayoutAddr && v.trim().length > 0 && !isValidBtcPayoutAddress(v);
     const noPeriod = isWorker && v.length > 0 && !v.includes('.');
     const prefixMismatch =
       isWorker &&
@@ -4674,9 +4687,19 @@ function Field({
             onChange={(e) => onChange(spec.key, e.target.value as never)}
             className={
               'w-full bg-slate-800 border rounded px-3 py-1.5 text-sm font-mono ' +
-              (showWarning ? 'border-amber-600' : 'border-slate-700')
+              (addrInvalid ? 'border-red-600' : showWarning ? 'border-amber-600' : 'border-slate-700')
             }
           />
+        )}
+        {addrInvalid && (
+          <span className="block text-xs text-red-400 mt-1 leading-snug">
+            <Trans>
+              <strong>Not a valid Bitcoin address.</strong> Enter a mainnet bech32 address
+              (starts with <code className="text-slate-200">bc1q</code>) or a Taproot address
+              (<code className="text-slate-200">bc1p</code>). An invalid address here is not
+              saved, and would route your rented hashrate to nobody on Ocean.
+            </Trans>
+          </span>
         )}
         {noPeriod && (
           <span className="block text-xs text-amber-400 mt-1">

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-27
+
+### `[Fix]` Validate the BTC payout address (#309)
+
+The BTC payout address field accepted any non-empty string. A stray `c` got saved, the worker identity became `c.plebs-pilot`, and because Ocean credits by the address in the worker identity, the rented hashrate was credited to nobody - silent lost earnings, plus a blank Ocean panel and a frozen unpaid-earnings line. The field now validates as a real mainnet Bitcoin address (bech32 `bc1q…` or Taproot `bc1p…`) in the Config form, the first-run wizard, and the config-save API. An invalid address shows an inline error, isn't saved, and blocks the save. Validation is write-side only, so an already-saved bad value can't prevent the daemon from starting before you fix it.
+
 ## 2026-06-25
 
 ### `[Infra]` Dependency bumps: Babel 8, @types/node 26, typescript-eslint 8.62, actions/checkout v7 (#303-#306)

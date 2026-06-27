@@ -309,7 +309,7 @@ Per-device fields (`solo_miners` table, not on `config` - internal table/field n
 
 **Integrations:**
 
-- `btc_payout_address`
+- `btc_payout_address` - validated on save (#309): must be a real mainnet Bitcoin address - native SegWit bech32 (`bc1q…`) or Taproot bech32m (`bc1p…`), matching what the electrs payout path can derive a scripthash for. The Config form, the first-run wizard, and the `PUT /api/config` route all reject anything else (legacy `1…`/`3…`, testnet, or garbage); an invalid address is never persisted. Validation is write-side only so an already-saved bad value can't brick daemon boot. Before #309 the field took any non-empty string, so a stray `c` saved silently, the worker identity became `c.<label>`, and Ocean credited the rented hashrate to nobody.
 - `bitcoind_rpc_url` + `bitcoind_rpc_user` + `bitcoind_rpc_password` (live-editable; seeded from sops secrets on
   first boot)
 - Optional `electrs_host` + `electrs_port` (preferred over `bitcoind` RPC for balance lookups - instant)

@@ -224,6 +224,10 @@ msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - oth
 msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
 
 #: src/pages/Config.tsx
+msgid "<0>Not a valid Bitcoin address.</0> Enter a mainnet bech32 address (starts with <1>bc1q</1>) or a Taproot address (<2>bc1p</2>). An invalid address here is not saved, and would route your rented hashrate to nobody on Ocean."
+msgstr "<0>Not a valid Bitcoin address.</0> Enter a mainnet bech32 address (starts with <1>bc1q</1>) or a Taproot address (<2>bc1p</2>). An invalid address here is not saved, and would route your rented hashrate to nobody on Ocean."
+
+#: src/pages/Config.tsx
 msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 msgstr "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
 
@@ -1956,6 +1960,10 @@ msgstr "Fires whenever the fleet-wide best share difficulty exceeds the all-time
 msgid "First-run setup"
 msgstr "First-run setup"
 
+#: src/pages/Config.tsx
+msgid "Fix the BTC payout address before saving."
+msgstr "Fix the BTC payout address before saving."
+
 #: src/components/SoloMinersCard.tsx
 msgid "Fleet"
 msgstr "Fleet"
@@ -2750,6 +2758,10 @@ msgstr "Normal"
 #: src/pages/Config.tsx
 msgid "not a fully-qualified hostname"
 msgstr "not a fully-qualified hostname"
+
+#: src/pages/Setup.tsx
+msgid "Not a valid Bitcoin address. Use a mainnet bech32 address (starts with <0>bc1q</0>) or Taproot (<1>bc1p</1>)."
+msgstr "Not a valid Bitcoin address. Use a mainnet bech32 address (starts with <0>bc1q</0>) or Taproot (<1>bc1p</1>)."
 
 #: src/pages/Config.tsx
 msgid "not configured"
