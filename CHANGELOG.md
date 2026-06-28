@@ -2,6 +2,12 @@
 
 ## 2026-06-28
 
+### `[Fix]` P&L per-day card no longer stuck on "refreshing…" (#311)
+
+The Profit & Loss per-day card's refresh countdown was derived from `data.checked_at_ms`, which the finance API sets to the *oldest* of its aggregated source timestamps - so whenever any source was even slightly stale, `checked_at_ms + 60s` was already in the past and the card sat on "refreshing…" forever instead of counting down like the other cards. The countdown now derives from react-query's actual fetch time (`dataUpdatedAt + 60s`) and self-heals at zero, matching the rest of the dashboard.
+
+## 2026-06-28
+
 ### `[Fix]` Effective-cap line on the Price chart is now historically accurate (#312)
 
 The red line on the Price chart is the effective cap, `min(max bid, hashprice + max premium over hashprice)`. Max bid was already stored per tick, but the premium was applied as the *current* config value across the whole history - so changing "Max premium over hashprice" shifted the entire line, including the past, making it look like you'd always had the new value. The premium is now historized per tick (migration 0112), exactly like max bid, so the line reflects what the premium actually was at each moment and tuning the knob only affects ticks from the change forward. Pre-migration history falls back to the current value (we can't know the past premium). The line is also relabeled from "max bid" to "effective cap" since that's what it actually plots.

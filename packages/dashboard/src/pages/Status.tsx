@@ -1216,6 +1216,9 @@ export function Status() {
             qc.invalidateQueries({ queryKey: ['finance-range'] });
           }}
           refreshing={financeQuery.isFetching || financeRangeQuery.isFetching}
+          nextRefreshAtMs={
+            financeQuery.dataUpdatedAt > 0 ? financeQuery.dataUpdatedAt + 60_000 : null
+          }
         />
       </section>
     ),
@@ -2874,6 +2877,7 @@ function FinancePanel({
   chartRange,
   onRefresh,
   refreshing,
+  nextRefreshAtMs,
 }: {
   data: FinanceResponse | undefined;
   rangeData: FinanceRangeResponse | undefined;
@@ -2881,6 +2885,11 @@ function FinancePanel({
   chartRange: ChartRange;
   onRefresh: () => void;
   refreshing: boolean;
+  /** #311: when the panel will next refetch. Derived from react-query's
+   *  fetch time + 60s, NOT data.checked_at_ms (which is the oldest of
+   *  the aggregated source timestamps and is often already stale, which
+   *  pinned the countdown on "refreshing…" forever). */
+  nextRefreshAtMs: number | null;
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -2998,18 +3007,9 @@ function FinancePanel({
   // range dropdown labels from CHART_RANGE_SPECS.
   const rangeLabel = localizedRangeLabel(chartRange, i18n.locale);
 
-  // P&L now refreshes every 60s (matches the rest of the dashboard).
-  // Dashboard countdown is derived from checked_at_ms + 60s so the
-  // operator sees how long until fresh numbers without guessing the
-  // cadence. Earlier 1h cadence was too coarse - block-find events
-  // that bump `unpaid earnings (Ocean)` by ~38k sats took up to an
-  // hour to land in the panel even though /api/ocean had the new
-  // number within seconds.
-  const nextRefreshAtMs = data.checked_at_ms + 60_000;
-
   const headerControls = (
     <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
-      <RefreshCountdown nextAtMs={nextRefreshAtMs} />
+      <RefreshCountdown nextAtMs={nextRefreshAtMs} refetchQueryKey={['finance']} />
       <button
         onClick={onRefresh}
         disabled={refreshing}
