@@ -90,6 +90,9 @@
 > retarget, IP-change, on-chain payout, and Braiins deposit markers; the parser carries a one-key
 > alias (`price.unpaid → price.marker_deposit`) so saved overrides under the old name transparently
 > migrate.
+> Migration 0112 adds `tick_metrics.max_overpay_vs_hashprice_sat_per_eh_day` (#312), snapshotting
+> the dynamic-cap premium in effect at each tick so the price chart's effective-cap line is drawn
+> from per-tick history instead of re-applying the current config value backwards across all of it.
 
 ## 1. High-level shape
 
@@ -482,6 +485,7 @@ CREATE TABLE tick_metrics (
   fillable_ask_sat_per_eh_day INTEGER,    -- depth-aware ask at target (controller anchor)
   hashprice_sat_per_eh_day INTEGER,       -- Ocean break-even hashprice
   max_bid_sat_per_eh_day INTEGER,         -- snapshot of config cap used this tick
+  max_overpay_vs_hashprice_sat_per_eh_day INTEGER, -- snapshot of dynamic-cap premium this tick (migration 0112, #312); null = disabled
   available_balance_sat INTEGER,
   total_balance_sat INTEGER,              -- available + blocked; migration 0095; null pre-0095
   datum_hashrate_ph REAL,                 -- gateway-measured hashrate (null if not configured)

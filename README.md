@@ -21,7 +21,7 @@ rejection-rate spike can be lined up against an ISP IP rotation). The price char
 events (create / edit price / edit speed / cancel); the hashrate chart additionally mirrors the speed-edit
 (gauge) markers, since a speed-limit change is the one bid event that directly moves the delivered-hashrate
 curve. The price chart draws your bid (amber), the fillable ask the
-controller tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
+controller tracks (cyan), hashprice (violet), and the effective cap (red, the per-tick `min(max_bid, hashprice + max_overpay_vs_hashprice)` ceiling); the per-tick effective rate is a separate emerald line, off by default
 behind a config toggle because it's dramatically more volatile than the tracking lines and hijacks the
 Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source - Braiins / Datum / Ocean
 side-by-side, cost per PH delivered, effective rate vs hashprice), service panels for Braiins / Datum

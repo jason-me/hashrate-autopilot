@@ -1141,8 +1141,8 @@ msgid "Cheap-mode target"
 msgstr "Objetivo en modo barato"
 
 #: src/pages/Config.tsx
-msgid "Check your server's connection page - the port isn't fixed by which Electrum server you run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts Fulcrum on 50002 so both can run at once."
-msgstr "Comprueba la página de conexión de tu servidor - el puerto no lo fija qué servidor Electrum ejecutas. La convención es 50001 (TCP) / 50002 (TLS); Umbrel mantiene Electrs en 50001 y pone Fulcrum en 50002 para que ambos puedan funcionar a la vez."
+#~ msgid "Check your server's connection page - the port isn't fixed by which Electrum server you run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts Fulcrum on 50002 so both can run at once."
+#~ msgstr "Comprueba la página de conexión de tu servidor - el puerto no lo fija qué servidor Electrum ejecutas. La convención es 50001 (TCP) / 50002 (TLS); Umbrel mantiene Electrs en 50001 y pone Fulcrum en 50002 para que ambos puedan funcionar a la vez."
 
 #: src/pages/Config.tsx
 msgid "Choose file…"
@@ -3519,6 +3519,10 @@ msgstr "rango"
 msgid "Re-setup"
 msgstr "Reconfigurar"
 
+#: src/pages/Config.tsx
+msgid "Read the host and port off your Electrum server's own connection page - the same applies to Electrs, Fulcrum, or ElectrumX, on Umbrel, Docker, Start9, or bare metal. A fresh Umbrel install auto-fills these for the Electrum server you chose at setup, so you usually don't need to touch them."
+msgstr "Lee el host y el puerto en la propia página de conexión de tu servidor Electrum - esto vale igual para Electrs, Fulcrum o ElectrumX, y en Umbrel, Docker, Start9 o bare metal. Una instalación nueva de Umbrel los rellena automáticamente para el servidor Electrum que elegiste en la configuración, así que normalmente no necesitas tocarlos."
+
 #: src/pages/Setup.tsx
 msgid "Read-only token"
 msgstr "Token de solo lectura"
@@ -3904,6 +3908,10 @@ msgstr "Mostrar valor"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "mostrando {0} de {totalCount}"
+
+#: src/pages/Config.tsx
+msgid "Shown on the same connection page as the host."
+msgstr "Se muestra en la misma página de conexión que el host."
 
 #: src/components/SoloMinersCard.tsx
 msgid "shut down, reboot needed"
@@ -4510,8 +4518,8 @@ msgid "Your Bitcoin node supports BIP 110, which is currently in its activation 
 msgstr "Tu nodo Bitcoin admite BIP 110, que actualmente está en su ventana de activación. Hay dos caminos por los que puede activarse:"
 
 #: src/pages/Config.tsx
-msgid "Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same Umbrel."
-msgstr "El host de tu servidor Electrum. En Umbrel, la página de la app Electrs o Fulcrum muestra la dirección (p. ej. umbrel.local); usa electrs_electrs_1 cuando el autopilot se ejecuta en el mismo Umbrel."
+#~ msgid "Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same Umbrel."
+#~ msgstr "El host de tu servidor Electrum. En Umbrel, la página de la app Electrs o Fulcrum muestra la dirección (p. ej. umbrel.local); usa electrs_electrs_1 cuando el autopilot se ejecuta en el mismo Umbrel."
 
 #: src/pages/Status.tsx
 msgid "Your layout is saved on this device."

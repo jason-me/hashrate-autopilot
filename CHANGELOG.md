@@ -16,7 +16,7 @@ The red line on the Price chart is the effective cap, `min(max bid, hashprice + 
 
 ### `[UI]` Electrum host/port help points to the server's connection page (#313)
 
-The "Electrum server host" / "Port" fields used a terse "Default 50001." hint, which left Fulcrum users unsure what to enter (the autopilot works with electrs, Fulcrum, or ElectrumX). The help now points to the authoritative source - your server's own connection page (on Umbrel, the Electrs/Fulcrum app page shows the address and port) - and calls out that the port isn't fixed by which server you run: convention is 50001 (TCP) / 50002 (TLS), and Umbrel keeps Electrs on 50001 but puts Fulcrum on 50002 so both can run at once. No per-implementation presets, since the right port is environment-specific and the autopilot can't know it. (#273 follow-up.)
+The "Electrum server host" / "Port" fields used a terse "Default 50001." hint, which left users unsure what to enter (the autopilot works with electrs, Fulcrum, or ElectrumX). The help now simply points to the authoritative source: read the host and port off your Electrum server's own connection page - the same applies whichever implementation you run, on Umbrel, Docker, Start9, or bare metal - and notes that a fresh Umbrel install auto-fills these for the Electrum server you chose at setup, so you usually don't need to touch them. No per-implementation presets or port specifics, since the right values are environment-specific and the connection page is the one place that always shows them. (#273 follow-up.)
 
 ## 2026-06-28
 

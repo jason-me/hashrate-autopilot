@@ -4367,9 +4367,10 @@ function ElectrsFields({
         />
         <span className="block text-xs text-slate-500 mt-1">
           <Trans>
-            Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the
-            address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same
-            Umbrel.
+            Read the host and port off your Electrum server's own connection page - the same applies
+            to Electrs, Fulcrum, or ElectrumX, on Umbrel, Docker, Start9, or bare metal. A fresh
+            Umbrel install auto-fills these for the Electrum server you chose at setup, so you
+            usually don't need to touch them.
           </Trans>
         </span>
       </label>
@@ -4385,11 +4386,7 @@ function ElectrsFields({
           noGrouping
         />
         <span className="block text-xs text-slate-500 mt-1">
-          <Trans>
-            Check your server's connection page - the port isn't fixed by which Electrum server you
-            run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts
-            Fulcrum on 50002 so both can run at once.
-          </Trans>
+          <Trans>Shown on the same connection page as the host.</Trans>
         </span>
       </label>
       <div className="self-start mt-[26px]">
