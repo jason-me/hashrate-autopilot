@@ -2,6 +2,12 @@
 
 ## 2026-06-28
 
+### `[Fix]` Backfill the effective-cap line's historical premium (#312 follow-up)
+
+The #312 fix historized "max premium over hashprice" per tick going forward, but left every row recorded before that migration NULL - and the chart falls back to the *current* config value for NULL rows, so all of your pre-existing history still chased the live knob (exactly the bug #312 was meant to kill, only fixed from the migration forward). Lowering the premium still dragged the whole back-history down with it. Migration 0113 backfills that leading NULL block with the earliest premium the daemon actually recorded - the value in effect when per-tick recording began - carried backward over the old history. We can't know the true premium for ticks that predate recording (it was never stored), so this freezes the unknown past at a concrete historical value instead of letting it follow the current setting. Future knob changes now only move the line from the change forward. No-op if you never enabled the dynamic cap.
+
+## 2026-06-28
+
 ### `[Fix]` P&L per-day card no longer stuck on "refreshing…" (#311)
 
 The Profit & Loss per-day card's refresh countdown was derived from `data.checked_at_ms`, which the finance API sets to the *oldest* of its aggregated source timestamps - so whenever any source was even slightly stale, `checked_at_ms + 60s` was already in the past and the card sat on "refreshing…" forever instead of counting down like the other cards. The countdown now derives from react-query's actual fetch time (`dataUpdatedAt + 60s`) and self-heals at zero, matching the rest of the dashboard.

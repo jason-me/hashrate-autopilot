@@ -93,6 +93,9 @@
 > Migration 0112 adds `tick_metrics.max_overpay_vs_hashprice_sat_per_eh_day` (#312), snapshotting
 > the dynamic-cap premium in effect at each tick so the price chart's effective-cap line is drawn
 > from per-tick history instead of re-applying the current config value backwards across all of it.
+> Migration 0113 (#312 follow-up) backfills the leading block of pre-0112 NULL rows - which still
+> fell back to live config - with the earliest premium ever recorded (the value in effect when
+> per-tick recording began), carried backward; no-op when the dynamic cap was never enabled.
 
 ## 1. High-level shape
 
