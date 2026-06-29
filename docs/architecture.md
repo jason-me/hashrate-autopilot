@@ -265,7 +265,7 @@ done.
 - `/v1/spot/bid/current` + per-bid `/v1/spot/bid/detail/{id}` - our active bids.
 - `/v1/account/balance` - wallet (and reward income via Electrs/bitcoind separately).
 - Pool reachability (TCP connect to Datum Gateway:23334).
-- Payout observer: recent coinbase outputs to the BTC payout address since the last check.
+- Payout observer: recent on-chain payout transactions to the BTC payout address since the last check (Ocean settles via batched sweep transactions, not coinbase-direct).
 - Local DB: ownership ledger, config, last-decrease timestamps, run mode, manual-override windows.
 
 ### 3.3 Config reload without restart
