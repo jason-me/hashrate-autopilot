@@ -29,6 +29,7 @@ import { Tooltip } from '../components/Tooltip';
 import {
   api,
   UnauthorizedError,
+  type AlertConditionInterval,
   type BalanceView,
   type BidView,
   type FinanceResponse,
@@ -76,6 +77,8 @@ const EMPTY_DEPOSITS: readonly never[] = Object.freeze([]) as readonly never[];
 // #250: frozen sentinel so the IP-change marker prop stays referentially
 // stable until real data arrives (charts are React.memo'd).
 const EMPTY_IP_CHANGES: readonly never[] = Object.freeze([]) as readonly never[];
+// #316: frozen sentinel for the alert-condition span prop.
+const EMPTY_ALERT_SPANS: readonly never[] = Object.freeze([]) as readonly never[];
 
 // #93: per-chart secondary Y-axis selection, persisted per-browser.
 const HASHRATE_RIGHT_AXIS_KEY = 'hashrate-autopilot.hashrateRightAxis';
@@ -371,6 +374,15 @@ export function Status() {
     queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan],
     queryFn: () =>
       api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
+  });
+
+  // #316: condition spans (open/recovery alert pairs) for the timeline
+  // band layer on both charts, keyed off the same viewport bounds.
+  const alertSpansQuery = useQuery({
+    queryKey: ['alert-spans', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.alertSpans(fetchBounds.since_ms, fetchBounds.until_ms),
     placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
@@ -731,6 +743,20 @@ export function Status() {
     return intervals;
   }, [metricsQuery.data?.points, bidEventsQuery.data?.events]);
 
+  // #316: alerted condition spans -> background bands on both charts.
+  // Each chart picks the classes it's responsible for (see
+  // CONDITION_SPAN_CLASSES.charts). An open-ended span (end_ms null,
+  // still active) runs to +Infinity; the charts clamp to their data
+  // range, same as the bid-pause bands above.
+  const alertConditionIntervals = useMemo<AlertConditionInterval[]>(() => {
+    const spans = alertSpansQuery.data?.spans ?? EMPTY_ALERT_SPANS;
+    return spans.map((s) => ({
+      x0: s.start_ms,
+      x1: s.end_ms ?? Number.POSITIVE_INFINITY,
+      span: s,
+    }));
+  }, [alertSpansQuery.data?.spans]);
+
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
     return null;
@@ -857,6 +883,7 @@ export function Status() {
           markersHiddenCount={markersHiddenCount}
           bidPauseIntervals={bidPauseIntervals}
           idleModeIntervals={idleModeIntervals}
+          alertConditionIntervals={alertConditionIntervals}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -926,6 +953,7 @@ export function Status() {
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           bidPauseIntervals={bidPauseIntervals}
           idleModeIntervals={idleModeIntervals}
+          alertConditionIntervals={alertConditionIntervals}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}

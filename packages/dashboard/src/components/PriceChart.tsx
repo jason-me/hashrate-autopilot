@@ -28,6 +28,7 @@ import {
 
 import {
   api,
+  type AlertConditionInterval,
   type BidEventView,
   type DecisionDetail,
   type DecisionSummary,
@@ -36,6 +37,7 @@ import {
   type OurBlockMarker,
   type RewardEventView,
 } from '../lib/api';
+import { AlertConditionBands } from './AlertConditionBands';
 import {
   countPriorEpochPoolBlocks,
   inferRetargetBlockHeight,
@@ -268,6 +270,7 @@ export const PriceChart = memo(function PriceChart({
   soloSeries = [],
   bidPauseIntervals = [],
   idleModeIntervals = [],
+  alertConditionIntervals = [],
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -392,6 +395,8 @@ export const PriceChart = memo(function PriceChart({
    * edges line up with the power markers instead of tick boundaries.
    */
   idleModeIntervals?: ReadonlyArray<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }>;
+  /** #316: alerted condition spans; only price-targeted classes render here. */
+  alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -2389,6 +2394,19 @@ export const PriceChart = memo(function PriceChart({
             </rect>
           );
         })}
+        {/* #316: alerted condition bands targeting the price chart
+            (DATUM/API unreachable, low wallet runway). */}
+        <AlertConditionBands
+          intervals={alertConditionIntervals}
+          target="price"
+          xScale={xScale}
+          dataMinX={dataMinX}
+          dataMaxX={dataMaxX}
+          top={PADDING.top}
+          height={chartHeight - PADDING.top - PADDING.bottom}
+          colorOverrides={_colorOverrides}
+          idSuffix="px"
+        />
         {capExclusionPolygon && !isHidden('maxBid') && (
           <>
             <defs>

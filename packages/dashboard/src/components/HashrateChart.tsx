@@ -27,7 +27,8 @@ import {
   type ChartRange,
 } from '@hashrate-autopilot/shared';
 
-import type { MetricPoint, OurBlockMarker } from '../lib/api';
+import type { AlertConditionInterval, MetricPoint, OurBlockMarker } from '../lib/api';
+import { AlertConditionBands } from './AlertConditionBands';
 import {
   clientXToTickAt,
   CrosshairReadout,
@@ -369,6 +370,7 @@ export const HashrateChart = memo(function HashrateChart({
   markersHiddenCount = 0,
   bidPauseIntervals = [],
   idleModeIntervals = [],
+  alertConditionIntervals = [],
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -435,6 +437,14 @@ export const HashrateChart = memo(function HashrateChart({
    * edges line up with the power markers instead of tick boundaries.
    */
   idleModeIntervals?: ReadonlyArray<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }>;
+  /**
+   * #316: alerted condition spans (open/recovery alert pairs). Rendered
+   * as hatched background bands tinted per condition class; only the
+   * classes that target this chart (CONDITION_SPAN_CLASSES[].charts)
+   * render here. Open-ended spans use +Infinity and clamp to the data
+   * range, same as the bid-pause bands.
+   */
+  alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -1920,6 +1930,19 @@ export const HashrateChart = memo(function HashrateChart({
             </rect>
           );
         })}
+        {/* #316: alerted condition bands (below floor, zero hashrate,
+            DATUM/API unreachable, Bitaxe overheating) on this chart. */}
+        <AlertConditionBands
+          intervals={alertConditionIntervals}
+          target="hashrate"
+          xScale={xScale}
+          dataMinX={dataMinX}
+          dataMaxX={dataMaxX}
+          top={PADDING.top}
+          height={chartHeight - PADDING.top - PADDING.bottom}
+          colorOverrides={_colorOverrides}
+          idSuffix="hr"
+        />
         {/* #280: each series render is gated on its legend toggle. */}
         {!isHidden('target') && (
           <path d={targetPath} stroke={COLOR_TARGET} strokeWidth="1.2" strokeDasharray="4 3" fill="none" opacity="0.6" />

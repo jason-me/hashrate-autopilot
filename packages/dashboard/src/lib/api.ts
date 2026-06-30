@@ -252,6 +252,32 @@ export interface BidEventView {
   max_overpay_vs_hashprice_sat_per_ph_day: number | null;
 }
 
+/**
+ * #316: a condition span derived from an open/recovery alert pair.
+ * `end_ms` is null while the condition is still open. Mirrors the
+ * daemon's AlertConditionSpan.
+ */
+export interface AlertConditionSpanView {
+  open_id: number;
+  event_class: string;
+  severity: 'INFO' | 'WARNING' | 'IMPORTANT';
+  title: string;
+  body: string;
+  start_ms: number;
+  end_ms: number | null;
+}
+
+/**
+ * #316: an alerted condition span projected to chart x-coords. `x1` is
+ * +Infinity while the condition is still open; charts clamp to their
+ * data range. `span` carries the source alert (tooltip + class lookup).
+ */
+export interface AlertConditionInterval {
+  x0: number;
+  x1: number;
+  span: AlertConditionSpanView;
+}
+
 export interface PayoutsResponse {
   address: string | null;
   total_unspent_sat: number | null;
@@ -774,6 +800,12 @@ export const api = {
       `/api/bid-events?since=${since}&until=${until}${
         visibleSpan != null ? `&span=${visibleSpan}` : ''
       }`,
+    ),
+  // #316: condition spans (open/recovery alert pairs) overlapping the
+  // viewport, for the timeline band layer on both charts.
+  alertSpans: (since: number, until: number) =>
+    request<{ spans: AlertConditionSpanView[] }>(
+      `/api/alert-spans?since_ms=${since}&until_ms=${until}`,
     ),
   // #256 follow-up: history page endpoints.
   bidHistorySummaries: (limit = 20, beforeMs?: number) =>
