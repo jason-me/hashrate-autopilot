@@ -4,7 +4,7 @@
 
 ### `[Feature]` Alerted conditions now show as bands on the charts (#316)
 
-Sustained alert conditions - delivered hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe overheating - used to live only in the Alerts tab, disconnected from the timeline. They now render as hatched background bands on the charts over the exact period each condition was open, with a dashed onset line and a hover tooltip naming the condition and its duration. Hashrate-shaped conditions band the Hashrate chart (where the floor line is); connectivity ones band both charts. Each condition has its own color. This is the first half of unifying alerts into the timeline; the History tab gets matching rows next.
+Sustained alert conditions - delivered hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe overheating - used to live only in the Alerts tab, disconnected from the timeline. They now render as hatched background bands on the charts over the exact period each condition was open, with a dashed onset line and a hover tooltip naming the condition and its duration. Hashrate-shaped conditions band the Hashrate chart (where the floor line is); connectivity ones band both charts. Each condition has its own color. Orphan conditions - an opener with no recovery, e.g. left by a daemon restart mid-condition - are bounded (closed at the next episode of the same condition, or capped) so a stale weeks-old alert can't tile the whole chart. This is the first half of unifying alerts into the timeline; the History tab gets matching rows next.
 
 ## 2026-06-29
 

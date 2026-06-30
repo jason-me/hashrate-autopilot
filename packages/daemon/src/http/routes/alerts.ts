@@ -213,7 +213,7 @@ export async function registerAlertsRoutes(
       if (!Number.isFinite(sinceMs) || !Number.isFinite(untilMs) || sinceMs > untilMs) {
         return { spans: [] };
       }
-      const spans = await deps.alertsRepo.conditionSpansSince(sinceMs, untilMs);
+      const spans = await deps.alertsRepo.conditionSpansSince(sinceMs, untilMs, now);
       return { spans };
     },
   );

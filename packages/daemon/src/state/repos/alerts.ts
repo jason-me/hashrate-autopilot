@@ -375,16 +375,35 @@ export class AlertsRepo {
   /**
    * #316: condition spans overlapping [sinceMs, untilMs], derived from
    * open/recovery alert pairs. An opener (event_class in
-   * CONDITION_OPEN_CLASSES) is matched to its recovery via the
-   * recovery row's `paired_alert_id`; an opener with no recovery yet is
-   * an open-ended (ongoing) span. A span is returned when it overlaps
-   * the window: it started at or before `untilMs` AND it hadn't already
-   * closed before `sinceMs`. The alert volume is tiny (tens of openers
-   * over months), so we fetch both sides whole and pair in memory
-   * rather than over-engineer a SQL self-join.
+   * CONDITION_OPEN_CLASSES) is matched to its recovery via the recovery
+   * row's `paired_alert_id`. The alert volume is tiny (tens of openers
+   * over months), so we fetch both sides whole and pair in memory.
+   *
+   * Orphan openers (no recovery row) are the hazard: a daemon restart
+   * mid-condition, or a recovery that was never written, leaves an
+   * opener that naively reads as "still open" and would paint a band
+   * from its start to forever - empirically a 49-day-old solo_overheating
+   * orphan tiled the entire Hashrate chart (operator report 2026-06-30).
+   * So an orphan's end is bounded:
+   *   - by the NEXT same-class opener's start (a new episode means the
+   *     old one must have ended), else
+   *   - left open (end null = ongoing to now) only if it started within
+   *     ORPHAN_MAX_MS of now (plausibly the live condition), else
+   *   - capped at start + ORPHAN_MAX_MS (a stale orphan whose real end
+   *     we don't know; this keeps it from extending indefinitely).
+   * Recovered spans are trusted as-is at any length.
    */
-  async conditionSpansSince(sinceMs: number, untilMs: number): Promise<AlertConditionSpan[]> {
+  async conditionSpansSince(
+    sinceMs: number,
+    untilMs: number,
+    nowMs: number = Date.now(),
+  ): Promise<AlertConditionSpan[]> {
     if (CONDITION_OPEN_CLASSES.length === 0) return [];
+
+    // How long an orphan opener (no recovery) is allowed to imply the
+    // condition is still open. Beyond this we treat it as a stale gap,
+    // not a live condition, and stop the band there.
+    const ORPHAN_MAX_MS = 6 * 60 * 60 * 1000;
 
     const [openers, recoveries] = await Promise.all([
       this.db
@@ -414,12 +433,38 @@ export class AlertsRepo {
       }
     }
 
+    // Next same-class opener start, used to implicitly close an orphan.
+    const nextOpenerStartById = new Map<number, number>();
+    const lastStartByClass = new Map<string, { id: number; start: number }>();
+    // openers are ascending by created_at; walk descending so "next" is
+    // the most recently seen opener of the same class.
+    for (let i = openers.length - 1; i >= 0; i--) {
+      const o = openers[i]!;
+      if (o.event_class === null) continue;
+      const seen = lastStartByClass.get(o.event_class);
+      if (seen) nextOpenerStartById.set(o.id, seen.start);
+      lastStartByClass.set(o.event_class, { id: o.id, start: o.created_at });
+    }
+
     const spans: AlertConditionSpan[] = [];
     for (const o of openers) {
-      const endMs = recoveryByOpenId.get(o.id) ?? null;
-      // Closed before the window opened -> no overlap.
-      if (endMs !== null && endMs < sinceMs) continue;
       if (o.event_class === null) continue;
+      const recovery = recoveryByOpenId.get(o.id);
+      let endMs: number | null;
+      if (recovery !== undefined) {
+        endMs = recovery; // trust the recovery fully, any length.
+      } else {
+        const nextStart = nextOpenerStartById.get(o.id);
+        if (nextStart !== undefined) {
+          endMs = nextStart; // implicit close at the next episode.
+        } else if (nowMs - o.created_at <= ORPHAN_MAX_MS) {
+          endMs = null; // recent orphan -> plausibly still open.
+        } else {
+          endMs = o.created_at + ORPHAN_MAX_MS; // stale orphan -> bounded.
+        }
+      }
+      // Closed (or bounded) before the window opened -> no overlap.
+      if (endMs !== null && endMs < sinceMs) continue;
       spans.push({
         open_id: o.id,
         event_class: o.event_class,
