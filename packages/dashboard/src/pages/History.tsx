@@ -474,14 +474,30 @@ export function History() {
   // visibleAlertSpans), so we don't need to page back to it - just
   // highlight, scroll, and strip the param. The highlight (and thus the
   // forced visibility) clears after 1.8 s.
+  // #317: when a reveal link carries `ts` (the event's time) and the
+  // event is well in the past, jump the feed's date window to around it
+  // so the target row loads in context near the top - rather than
+  // floating far below the live feed where the scroll can't reach it.
+  // The endpoint's first page returns the newest bids <= until_ms.
+  const JUMP_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+  const jumpWindowToTs = (tsRaw: string | null) => {
+    if (!tsRaw) return;
+    const ts = Number.parseInt(tsRaw, 10);
+    if (!Number.isFinite(ts)) return;
+    if (ts >= Date.now() - JUMP_THRESHOLD_MS) return; // recent: keep live feed
+    setFilters((prev) => ({ ...prev, untilMs: ts + 60 * 60 * 1000 }));
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const raw = params.get('focus_span');
     if (!raw) return;
     const openId = Number.parseInt(raw, 10);
     if (!Number.isFinite(openId)) return;
+    jumpWindowToTs(params.get('ts'));
     setHighlightedSpanId(openId);
     params.delete('focus_span');
+    params.delete('ts');
     const next = params.toString();
     navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -521,8 +537,10 @@ export function History() {
     const params = new URLSearchParams(location.search);
     const raw = params.get('focus');
     if (!raw) return;
+    jumpWindowToTs(params.get('ts'));
     setHighlightedRowKey(raw);
     params.delete('focus');
+    params.delete('ts');
     const next = params.toString();
     navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps

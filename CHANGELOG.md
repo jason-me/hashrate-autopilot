@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[Fix]` "View in history" lands on the row in context, even for old events (#317)
+
+Revealing a weeks-old event (e.g. a payout from 6 days ago) used to scroll to a row floating far below the live feed, where it drifted as more bid pages loaded - effectively unreachable. The reveal link now carries the event's timestamp and, when the event is well in the past, jumps the History feed's date window to around it (the feed loads the ~100 bid rows from that period rather than thousands from now). The target row lands in the viewport with surrounding context. Reset the date filter to return to the live feed.
+
 ### `[Feature]` History becomes a unified event log with "View in history" from every marker (#317)
 
 The History tab now folds in the other notable account events as rows alongside bids and alerts: on-chain payouts, Braiins deposits, blocks your pool found, and public-IP changes - each with its own glyph, color, and an "Events" filter chip. And every clickable chart marker's pinned tooltip gains a "View in history" link that jumps to the matching row in the log and briefly highlights it, even if the event is weeks old (the row is surfaced on demand). This extends the chart-to-log jump you liked on the alert markers to the whole chart.

@@ -204,7 +204,7 @@ export function IpChangeTooltip({
       {pinned && (
         <button
           type="button"
-          onClick={() => navigate(`/history?focus=ip:${event.id}`)}
+          onClick={() => navigate(`/history?focus=ip:${event.id}&ts=${event.occurred_at}`)}
           className="mt-2 text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
         >
           <Trans>View in history</Trans>

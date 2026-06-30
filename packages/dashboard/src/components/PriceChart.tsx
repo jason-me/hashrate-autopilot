@@ -3354,7 +3354,7 @@ function RewardEventTooltip({
           {pinned && (
             <button
               type="button"
-              onClick={() => navigate(`/history?focus=payout:${reward.id}`)}
+              onClick={() => navigate(`/history?focus=payout:${reward.id}&ts=${reward.detected_at}`)}
               className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
             >
               <Trans>View in history</Trans>
@@ -3494,7 +3494,7 @@ function DepositTooltip({
           {pinned && (
             <button
               type="button"
-              onClick={() => navigate(`/history?focus=deposit:${deposit.tx_id}`)}
+              onClick={() => navigate(`/history?focus=deposit:${deposit.tx_id}&ts=${deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms}`)}
               className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
             >
               <Trans>View in history</Trans>

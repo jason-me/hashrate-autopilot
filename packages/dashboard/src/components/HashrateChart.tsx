@@ -2603,7 +2603,7 @@ export function PoolBlockTooltip({
         {pinned && isOurs && (
           <button
             type="button"
-            onClick={() => navigate(`/history?focus=block:${block.block_hash}`)}
+            onClick={() => navigate(`/history?focus=block:${block.block_hash}&ts=${block.timestamp_ms}`)}
             className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
           >
             <Trans>View in history</Trans>

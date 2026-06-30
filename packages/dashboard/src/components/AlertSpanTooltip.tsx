@@ -96,7 +96,7 @@ export function AlertSpanTooltip({
       <p className="mt-2 text-slate-300 whitespace-normal leading-snug">{span.body}</p>
       <button
         type="button"
-        onClick={() => navigate(`/history?focus_span=${span.open_id}`)}
+        onClick={() => navigate(`/history?focus_span=${span.open_id}&ts=${span.start_ms}`)}
         className="mt-2 text-amber-300 hover:text-amber-200 inline-flex items-center gap-1"
       >
         <Trans>View in history</Trans>
