@@ -20,6 +20,7 @@ import { parseDashboardTiles } from '@hashrate-autopilot/shared';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
+import { AlertSpanDrawer } from '../components/AlertSpanDrawer';
 import { ModeBadge } from '../components/ModeBadge';
 import { BtcSymbol } from '../components/BtcSymbol';
 import { SatSymbol } from '../components/SatSymbol';
@@ -30,6 +31,7 @@ import {
   api,
   UnauthorizedError,
   type AlertConditionInterval,
+  type AlertConditionSpanView,
   type BalanceView,
   type BidView,
   type FinanceResponse,
@@ -249,6 +251,8 @@ export function Status() {
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
   // #316: span (open_id) jumped to from a History alert row -> sonar beacon.
   const [focusedSpanId, setFocusedSpanId] = useState<number | null>(null);
+  // #316: condition span whose chart marker was clicked -> detail drawer.
+  const [chartSelectedSpan, setChartSelectedSpan] = useState<AlertConditionSpanView | null>(null);
   const focusSpanClearTimer = useRef<number | null>(null);
   const focusClearTimer = useRef<number | null>(null);
   const focusFallbackTimer = useRef<number | null>(null);
@@ -288,6 +292,7 @@ export function Status() {
       if (focusClearTimer.current !== null) window.clearTimeout(focusClearTimer.current);
       if (focusFallbackTimer.current !== null) window.clearTimeout(focusFallbackTimer.current);
       if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
+      if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
     },
     [],
   );
@@ -324,10 +329,12 @@ export function Status() {
       if (Number.isFinite(sid)) {
         if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
         setFocusedSpanId(sid);
+        // Auto-clear after ~6 s like the bid-event beacon (#288), so the
+        // pulse doesn't linger across later zoom/pan of the same span.
         focusSpanClearTimer.current = window.setTimeout(() => {
           focusSpanClearTimer.current = null;
           setFocusedSpanId(null);
-        }, 60_000);
+        }, 6_000);
       }
     }
     const idRaw = params.get('focus_event');
@@ -903,6 +910,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
+          onAlertSpanClick={setChartSelectedSpan}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -974,6 +982,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
+          onAlertSpanClick={setChartSelectedSpan}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -1347,6 +1356,14 @@ export function Status() {
         editing={rearranging}
         onReorder={cardOrder.setOrder}
       />
+      {/* #316: clicking a condition-band marker on either chart opens the
+          same alert detail drawer used in History. */}
+      {chartSelectedSpan && (
+        <AlertSpanDrawer
+          span={chartSelectedSpan}
+          onClose={() => setChartSelectedSpan(null)}
+        />
+      )}
     </div>
   );
 }

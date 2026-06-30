@@ -272,6 +272,7 @@ export const PriceChart = memo(function PriceChart({
   idleModeIntervals = [],
   alertConditionIntervals = [],
   focusSpanOpenId = null,
+  onAlertSpanClick,
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -400,6 +401,8 @@ export const PriceChart = memo(function PriceChart({
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #316: clicking a condition-band marker. */
+  onAlertSpanClick?: (span: AlertConditionInterval['span']) => void;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -2410,6 +2413,7 @@ export const PriceChart = memo(function PriceChart({
           colorOverrides={_colorOverrides}
           idSuffix="px"
           focusSpanOpenId={focusSpanOpenId}
+          onSpanClick={onAlertSpanClick}
         />
         {capExclusionPolygon && !isHidden('maxBid') && (
           <>

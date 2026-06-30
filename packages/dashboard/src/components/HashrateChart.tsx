@@ -372,6 +372,7 @@ export const HashrateChart = memo(function HashrateChart({
   idleModeIntervals = [],
   alertConditionIntervals = [],
   focusSpanOpenId = null,
+  onAlertSpanClick,
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -448,6 +449,8 @@ export const HashrateChart = memo(function HashrateChart({
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #316: clicking a condition-band marker. */
+  onAlertSpanClick?: (span: AlertConditionInterval['span']) => void;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -1946,6 +1949,7 @@ export const HashrateChart = memo(function HashrateChart({
           colorOverrides={_colorOverrides}
           idSuffix="hr"
           focusSpanOpenId={focusSpanOpenId}
+          onSpanClick={onAlertSpanClick}
         />
         {/* #280: each series render is gated on its legend toggle. */}
         {!isHidden('target') && (

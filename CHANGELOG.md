@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Alert chart markers are clickable; focus beacon auto-clears (#316)
+
+Two follow-ups from operator feedback. Clicking an onset or recovery marker on a chart band now opens the same alert detail drawer as the History rows (it had no info dialog before), with a generous click target over the small glyph. And the jump-to-chart focus beacon now auto-clears after ~6 seconds like the bid-event beacon, instead of pulsing for a full minute and re-appearing on every later zoom/pan of that span.
+
 ### `[UI]` Alert timeline polish: detail drawer, onset/recovery markers, focus beacon (#316)
 
 Follow-up to the alerts-on-timeline work, from operator feedback. Clicking an alert row in History now slides out a detail drawer (like bid events) showing the condition, severity, when it started and recovered, the duration, and the full alert body, with a "View on chart" button. On the charts, each condition band now carries a small triangle marker at the top - a filled down-triangle at the onset and a hollow up-triangle at the recovery ("above floor again") - so even a few-minutes span is visible and you can see exactly when it cleared. Jumping from a History alert row pulses a sonar beacon on the band so you can spot what you landed on. History also auto-loads a few more pages on open so a recent alert just past the first page surfaces without manual scrolling.

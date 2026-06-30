@@ -46,6 +46,7 @@ export function AlertConditionBands({
   colorOverrides,
   idSuffix,
   focusSpanOpenId = null,
+  onSpanClick,
 }: {
   intervals: ReadonlyArray<AlertConditionInterval>;
   target: AlertChartTarget;
@@ -60,6 +61,8 @@ export function AlertConditionBands({
   idSuffix: string;
   /** #316: the span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #316: clicking an onset/recovery marker opens the detail drawer. */
+  onSpanClick?: (span: AlertConditionInterval['span']) => void;
 }) {
   const relevant = intervals.filter((iv) =>
     conditionSpanClass(iv.span.event_class)?.charts.includes(target),
@@ -116,6 +119,13 @@ export function AlertConditionBands({
           iv.span.end_ms <= dataMaxX;
         const recX = recoveredInView ? xScale(iv.span.end_ms as number) : null;
         const onsetInView = iv.x0 >= dataMinX && iv.x0 <= dataMaxX;
+        const click = onSpanClick
+          ? (e: { stopPropagation: () => void }) => {
+              e.stopPropagation();
+              onSpanClick(iv.span);
+            }
+          : undefined;
+        const clickable = onSpanClick ? { cursor: 'pointer' as const } : undefined;
         return (
           <g key={`alert-band-${iv.span.open_id}-${i}`}>
             {x1 > x0 && (
@@ -125,6 +135,8 @@ export function AlertConditionBands({
                 width={x1 - x0}
                 height={height}
                 fill={`url(#alertBand_${cls.openClass}_${idSuffix})`}
+                onClick={click}
+                style={clickable}
               >
                 <title>
                   {`${label}: ${iv.span.title} (${formatDuration(clampedSpan)}${ongoing ? ', ongoing' : ''})`}
@@ -148,9 +160,20 @@ export function AlertConditionBands({
                 <path
                   d={`M${x0 - 5},${markerY - 5} L${x0 + 5},${markerY - 5} L${x0},${markerY + 4} Z`}
                   fill={color}
+                  pointerEvents="none"
+                />
+                {/* Generous transparent hit target over the onset glyph. */}
+                <rect
+                  x={x0 - 8}
+                  y={markerY - 8}
+                  width={16}
+                  height={18}
+                  fill="transparent"
+                  onClick={click}
+                  style={clickable}
                 >
                   <title>{`${label} started · ${iv.span.title}`}</title>
-                </path>
+                </rect>
               </>
             )}
             {/* Recovery: dashed end line + hollow UP triangle (back to normal). */}
@@ -173,9 +196,19 @@ export function AlertConditionBands({
                   stroke={color}
                   strokeWidth="1.6"
                   strokeLinejoin="round"
+                  pointerEvents="none"
+                />
+                <rect
+                  x={recX - 8}
+                  y={markerY - 8}
+                  width={16}
+                  height={18}
+                  fill="transparent"
+                  onClick={click}
+                  style={clickable}
                 >
                   <title>{`${conditionRecoveryLabel(iv.span.event_class)} (${formatDuration(clampedSpan)})`}</title>
-                </path>
+                </rect>
               </>
             )}
             {/* Focus beacon when jumped to from a History alert row. */}
