@@ -19,7 +19,7 @@ import type {
   AlertDeliveryStatus,
   AlertSeverity,
 } from '../../state/types.js';
-import type { AlertRow, AlertsRepo } from '../../state/repos/alerts.js';
+import type { AlertConditionSpan, AlertRow, AlertsRepo } from '../../state/repos/alerts.js';
 import type { ConfigRepo } from '../../state/repos/config.js';
 
 export interface AlertsRouteDeps {
@@ -44,6 +44,15 @@ export interface AlertsListResponse {
   total_count: number;
   /** #121: are there older rows past the returned page? */
   has_more: boolean;
+}
+
+export interface AlertSpansQuery {
+  since_ms?: string;
+  until_ms?: string;
+}
+
+export interface AlertSpansResponse {
+  spans: AlertConditionSpan[];
 }
 
 export interface AcknowledgeResponse {
@@ -186,6 +195,26 @@ export async function registerAlertsRoutes(
         total_count: totalCount,
         has_more: hasMore,
       };
+    },
+  );
+
+  // #316: condition spans (open/recovery alert pairs) overlapping the
+  // requested window, for the timeline band layer on both charts and
+  // the unified History feed. Defaults to a 30-day look-back when no
+  // window is given.
+  app.get<{ Querystring: AlertSpansQuery }>(
+    '/api/alert-spans',
+    async (req): Promise<AlertSpansResponse> => {
+      const now = Date.now();
+      const untilMs = req.query.until_ms ? Number(req.query.until_ms) : now;
+      const sinceMs = req.query.since_ms
+        ? Number(req.query.since_ms)
+        : untilMs - 30 * 24 * 60 * 60 * 1000;
+      if (!Number.isFinite(sinceMs) || !Number.isFinite(untilMs) || sinceMs > untilMs) {
+        return { spans: [] };
+      }
+      const spans = await deps.alertsRepo.conditionSpansSince(sinceMs, untilMs);
+      return { spans };
     },
   );
 

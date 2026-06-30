@@ -5,3 +5,4 @@ export * from './chart-ranges.js';
 export * from './chart-axis.js';
 export * from './dashboard-tiles.js';
 export * from './btc-address.js';
+export * from './alert-classes.js';

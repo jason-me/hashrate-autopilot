@@ -17,12 +17,34 @@
 
 import type { Kysely } from 'kysely';
 
+import {
+  CONDITION_OPEN_CLASSES,
+  CONDITION_RECOVERY_CLASSES,
+} from '@hashrate-autopilot/shared';
+
 import type {
   AlertDeliveryStatus,
   AlertSeverity,
   AlertStatus,
   Database,
 } from '../types.js';
+
+/**
+ * A condition span derived from an open/recovery alert pair (#316).
+ * `end_ms` is null while the condition is still open. Used by the
+ * timeline band layer on both charts and the unified History feed.
+ */
+export interface AlertConditionSpan {
+  /** The opener alert's row id (stable key + jump target). */
+  readonly open_id: number;
+  readonly event_class: string;
+  readonly severity: AlertSeverity;
+  readonly title: string;
+  readonly body: string;
+  readonly start_ms: number;
+  /** Recovery timestamp, or null if the condition is still open. */
+  readonly end_ms: number | null;
+}
 
 export interface AlertInsert {
   created_at: number;
@@ -348,5 +370,66 @@ export class AlertsRepo {
       .where('delivery_status', 'in', ['sent', 'failed', 'gave_up', 'muted'])
       .executeTakeFirst();
     return Number(result.numDeletedRows ?? 0);
+  }
+
+  /**
+   * #316: condition spans overlapping [sinceMs, untilMs], derived from
+   * open/recovery alert pairs. An opener (event_class in
+   * CONDITION_OPEN_CLASSES) is matched to its recovery via the
+   * recovery row's `paired_alert_id`; an opener with no recovery yet is
+   * an open-ended (ongoing) span. A span is returned when it overlaps
+   * the window: it started at or before `untilMs` AND it hadn't already
+   * closed before `sinceMs`. The alert volume is tiny (tens of openers
+   * over months), so we fetch both sides whole and pair in memory
+   * rather than over-engineer a SQL self-join.
+   */
+  async conditionSpansSince(sinceMs: number, untilMs: number): Promise<AlertConditionSpan[]> {
+    if (CONDITION_OPEN_CLASSES.length === 0) return [];
+
+    const [openers, recoveries] = await Promise.all([
+      this.db
+        .selectFrom('alerts')
+        .selectAll()
+        .where('event_class', 'in', CONDITION_OPEN_CLASSES as string[])
+        .where('created_at', '<=', untilMs)
+        .orderBy('created_at', 'asc')
+        .execute() as Promise<AlertRow[]>,
+      this.db
+        .selectFrom('alerts')
+        .select(['paired_alert_id', 'created_at'])
+        .where('event_class', 'in', CONDITION_RECOVERY_CLASSES as string[])
+        .where('paired_alert_id', 'is not', null)
+        .execute(),
+    ]);
+
+    // Earliest recovery per opener id (a re-fired condition that
+    // somehow produced two recoveries should close on the first).
+    const recoveryByOpenId = new Map<number, number>();
+    for (const r of recoveries) {
+      const openId = r.paired_alert_id;
+      if (openId === null) continue;
+      const prev = recoveryByOpenId.get(openId);
+      if (prev === undefined || r.created_at < prev) {
+        recoveryByOpenId.set(openId, r.created_at);
+      }
+    }
+
+    const spans: AlertConditionSpan[] = [];
+    for (const o of openers) {
+      const endMs = recoveryByOpenId.get(o.id) ?? null;
+      // Closed before the window opened -> no overlap.
+      if (endMs !== null && endMs < sinceMs) continue;
+      if (o.event_class === null) continue;
+      spans.push({
+        open_id: o.id,
+        event_class: o.event_class,
+        severity: o.severity,
+        title: o.title,
+        body: o.body,
+        start_ms: o.created_at,
+        end_ms: endMs,
+      });
+    }
+    return spans;
   }
 }
