@@ -3876,7 +3876,7 @@ function EventTooltip({
               /history. */}
           <button
             type="button"
-            onClick={() => navigate(`/history?focus_event=${e.id}`)}
+            onClick={() => navigate(`/history?focus_event=${e.id}&ts=${e.occurred_at}`)}
             className="text-[10px] text-amber-300 hover:underline"
             title={t`Open the History row for this event`}
           >

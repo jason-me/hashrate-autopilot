@@ -217,6 +217,19 @@ export function History() {
       return value;
     });
   };
+  // #317: when a reveal link carries `ts` (the event's time) and the event
+  // is well in the past, jump the feed's date window to around it so the
+  // target row loads in context near the top - rather than floating far
+  // below the live feed where the scroll can't reach it. The endpoint's
+  // first page returns the newest bids <= until_ms.
+  const JUMP_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+  const jumpWindowToTs = (tsRaw: string | null) => {
+    if (!tsRaw) return;
+    const ts = Number.parseInt(tsRaw, 10);
+    if (!Number.isFinite(ts)) return;
+    if (ts >= Date.now() - JUMP_THRESHOLD_MS) return; // recent: keep live feed
+    setFilters((prev) => ({ ...prev, untilMs: ts + 60 * 60 * 1000 }));
+  };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
   const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
@@ -443,6 +456,7 @@ export function History() {
     if (!raw) return;
     const id = Number.parseInt(raw, 10);
     if (!Number.isFinite(id)) return;
+    jumpWindowToTs(params.get('ts'));
     const match = events.find((e) => e.id === id);
     if (match) {
       // Defer the scroll a tick so the row is in the DOM and any
@@ -457,6 +471,7 @@ export function History() {
       // highlight. Use replace so the browser back button doesn't
       // land here.
       params.delete('focus_event');
+      params.delete('ts');
       const next = params.toString();
       navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
     } else if (query.hasNextPage && !query.isFetchingNextPage) {
@@ -474,20 +489,6 @@ export function History() {
   // visibleAlertSpans), so we don't need to page back to it - just
   // highlight, scroll, and strip the param. The highlight (and thus the
   // forced visibility) clears after 1.8 s.
-  // #317: when a reveal link carries `ts` (the event's time) and the
-  // event is well in the past, jump the feed's date window to around it
-  // so the target row loads in context near the top - rather than
-  // floating far below the live feed where the scroll can't reach it.
-  // The endpoint's first page returns the newest bids <= until_ms.
-  const JUMP_THRESHOLD_MS = 2 * 60 * 60 * 1000;
-  const jumpWindowToTs = (tsRaw: string | null) => {
-    if (!tsRaw) return;
-    const ts = Number.parseInt(tsRaw, 10);
-    if (!Number.isFinite(ts)) return;
-    if (ts >= Date.now() - JUMP_THRESHOLD_MS) return; // recent: keep live feed
-    setFilters((prev) => ({ ...prev, untilMs: ts + 60 * 60 * 1000 }));
-  };
-
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const raw = params.get('focus_span');

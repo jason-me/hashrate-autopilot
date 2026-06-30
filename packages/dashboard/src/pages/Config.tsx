@@ -2468,6 +2468,16 @@ function ChartColorRowIcon({
       </svg>
     );
   }
+  // #316: alert condition bands - the chart draws a filled down-triangle
+  // at the onset (and a hollow up-triangle at the recovery). Show the
+  // onset triangle here so the row reads as the marker it controls.
+  if (keyId.startsWith('events.alert_')) {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <path d="M2 3 L12 3 L7 11 Z" fill={color} />
+      </svg>
+    );
+  }
   // Fallback: a small swatch square.
   return (
     <span

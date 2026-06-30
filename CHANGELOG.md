@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Config color rows show the real marker icon; "View in history" on every event popup (#317)
+
+The six alert-condition color rows in Config -> Display -> Chart colors now show the actual marker glyph (the filled down-triangle the chart draws at a condition's onset) instead of a plain swatch, so they're recognizable next to the other marker rows. And the speed-edit marker popup on the hashrate chart gained a "View in history" link, so now every clickable chart popup that maps to a log row - bid events, alerts, payouts, deposits, blocks, IP changes, speed edits - can jump to its row. Those jumps also use the efficient date-window jump for old events.
+
 ### `[Fix]` "View in history" lands on the row in context, even for old events (#317)
 
 Revealing a weeks-old event (e.g. a payout from 6 days ago) used to scroll to a row floating far below the live feed, where it drifted as more bid pages loaded - effectively unreachable. The reveal link now carries the event's timestamp and, when the event is well in the past, jumps the History feed's date window to around it (the feed loads the ~100 bid rows from that period rather than thousands from now). The target row lands in the viewport with surrounding context. Reset the date filter to return to the live feed.
