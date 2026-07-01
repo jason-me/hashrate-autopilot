@@ -17,6 +17,8 @@ export function conditionLabel(openClass: string): string {
     case 'api_unreachable': return t`marketplace API down`;
     case 'wallet_runway': return t`low wallet runway`;
     case 'solo_overheating': return t`Bitaxe overheating`;
+    case 'marketplace_empty': return t`marketplace empty`;
+    case 'sustained_paused': return t`bid paused (sustained)`;
     default: return openClass;
   }
 }
@@ -30,6 +32,8 @@ export function conditionRecoveryLabel(openClass: string): string {
     case 'api_unreachable': return t`marketplace API back`;
     case 'wallet_runway': return t`wallet runway restored`;
     case 'solo_overheating': return t`Bitaxe cooled down`;
+    case 'marketplace_empty': return t`marketplace filled`;
+    case 'sustained_paused': return t`bid resumed`;
     default: return t`recovered`;
   }
 }

@@ -57,6 +57,30 @@ export async function registerConfigRoutes(
       // (e.g. DDNS updater on hostname/credential change).
       const prev = await deps.configRepo.get().catch(() => null);
       await deps.configRepo.upsert(cleaned);
+
+      // #318: record one config-change event per changed field, for the
+      // unified History log. Best-effort - never fails the save.
+      if (prev) {
+        const fmtVal = (v: unknown): string | null =>
+          v == null ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
+        const now = Date.now();
+        const changes = (Object.keys(cleaned) as Array<keyof AppConfig>)
+          .map((k) => ({ field: String(k), oldV: fmtVal(prev[k]), newV: fmtVal(cleaned[k]) }))
+          .filter((c) => c.oldV !== c.newV)
+          .map((c) => ({
+            occurred_at: now,
+            kind: 'config_change' as const,
+            field: c.field,
+            old_value: c.oldV,
+            new_value: c.newV,
+          }));
+        if (changes.length > 0) {
+          void deps.systemEventsRepo
+            .insertMany(changes)
+            .catch((err) => deps.log?.(`[config] system-events insert failed: ${(err as Error).message}`));
+        }
+      }
+
       if (deps.onConfigSaved) {
         // Best-effort - don't fail the save if a side-effect throws,
         // but log the error so an "I saved config but DDNS didn't

@@ -96,6 +96,10 @@
 > Migration 0113 (#312 follow-up) backfills the leading block of pre-0112 NULL rows - which still
 > fell back to live config - with the earliest premium ever recorded (the value in effect when
 > per-tick recording began), carried backward; no-op when the dynamic cap was never enabled.
+> Migration 0114 (#318) adds `system_events` (config changes + daemon boots) for the unified
+> History log: `config_change` rows (one per changed field, written by the config-save route via
+> `SystemEventsRepo`) and `daemon_started` rows (written on boot). Served by `GET /api/system-events`;
+> `GET /api/retargets` (#317) derives difficulty retargets from `tick_metrics.network_difficulty`.
 
 ## 1. High-level shape
 

@@ -41,6 +41,7 @@ import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js'
 import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { IpChangeEventsRepo } from './state/repos/ip_change_events.js';
+import { SystemEventsRepo } from './state/repos/system_events.js';
 import { BraiinsDepositsRepo } from './state/repos/braiins_deposits.js';
 import { SoloMinersRepo } from './state/repos/solo_miners.js';
 import { AxeOSPoller } from './services/axeos-poller.js';
@@ -91,6 +92,7 @@ interface BootDeps {
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
   readonly ipChangeEventsRepo: IpChangeEventsRepo;
+  readonly systemEventsRepo: SystemEventsRepo;
   readonly alertsRepo: AlertsRepo;
   readonly poolBlocksRepo: PoolBlocksRepo;
   readonly rewardEventsRepo: RewardEventsRepo;
@@ -181,6 +183,7 @@ async function main(): Promise<void> {
     tickMetricsRepo: new TickMetricsRepo(handle.db),
     bidEventsRepo: new BidEventsRepo(handle.db),
     ipChangeEventsRepo: new IpChangeEventsRepo(handle.db),
+    systemEventsRepo: new SystemEventsRepo(handle.db),
     alertsRepo: new AlertsRepo(handle.db),
     poolBlocksRepo: new PoolBlocksRepo(handle.db),
     rewardEventsRepo: new RewardEventsRepo(handle.db),
@@ -310,6 +313,7 @@ async function bootOperational(
     tickMetricsRepo,
     bidEventsRepo,
     ipChangeEventsRepo,
+    systemEventsRepo,
     alertsRepo,
     poolBlocksRepo,
     rewardEventsRepo,
@@ -318,6 +322,11 @@ async function bootOperational(
     ageKeyPath,
   } = deps;
   let dbCfg = dbCfgIn;
+  // #318: record a boot event so a restart shows in the History log even
+  // when the run mode didn't change. Best-effort; never blocks startup.
+  void systemEventsRepo
+    .insert({ occurred_at: Date.now(), kind: 'daemon_started' })
+    .catch((err) => console.warn(`[system-events] boot insert failed: ${(err as Error).message}`));
 
   // Seed bitcoind credentials from secrets into config on first boot
   // so they become dashboard-editable (issue #14). Only runs when secrets
@@ -1039,6 +1048,7 @@ async function bootOperational(
     tickMetricsRepo,
     bidEventsRepo,
     ipChangeEventsRepo,
+    systemEventsRepo,
     alertsRepo,
     poolBlocksRepo,
     rewardEventsRepo,

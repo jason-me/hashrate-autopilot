@@ -219,6 +219,31 @@ export async function registerMetricsRoute(
       return { retargets: out };
     },
   );
+
+  // #318: config-change + daemon-boot events for the unified History log.
+  app.get<{ Querystring: { since_ms?: string; until_ms?: string } }>(
+    '/api/system-events',
+    async (req): Promise<{
+      events: Array<{
+        id: number;
+        occurred_at: number;
+        kind: string;
+        field: string | null;
+        old_value: string | null;
+        new_value: string | null;
+        detail: string | null;
+      }>;
+    }> => {
+      const now = Date.now();
+      const untilMs = req.query.until_ms ? Number(req.query.until_ms) : now;
+      const sinceMs = req.query.since_ms
+        ? Number(req.query.since_ms)
+        : untilMs - 365 * 24 * 60 * 60 * 1000;
+      if (!Number.isFinite(sinceMs) || !Number.isFinite(untilMs)) return { events: [] };
+      const events = await deps.systemEventsRepo.listSince(sinceMs, untilMs);
+      return { events };
+    },
+  );
 }
 
 function toMetricPoint(r: {

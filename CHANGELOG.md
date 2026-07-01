@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[Feature]` Complete unified log: every alert type, config changes, daemon restarts (#318)
+
+Continuing the "one log of everything relevant" direction. The History tab now also shows: every remaining Telegram alert as a row (payout-initiated, Bitaxe best-difficulty, fee/beta-exit, plus any future alert class automatically - excluding ones already shown as a span or from a dedicated source); `marketplace_empty` and `sustained_paused` as log-only span rows (no extra chart band); **config changes, one row per changed field** (e.g. `max_bid: 49000 -> 50000`), recorded on save; and a **"daemon started"** row on every boot (so a restart shows even when the run mode didn't change). Config/boot events are stored in a new `system_events` table (migration 0114) and served by `/api/system-events`. The payout-initiated (unpaid-drop) dot on the price chart gains a "View in history" link that jumps the log to that time. Each new kind has a filter chip.
+
 ### `[Feature]` Difficulty retargets in the History log (#317)
 
 Difficulty-retarget events (the pickaxe markers) now appear as rows in the History log, with a "View in history" link on their chart tooltip - so you can jump from a retarget marker to its log row like the other events. A new `/api/retargets` endpoint derives them server-side from the per-tick network-difficulty epochs (a >0.5% jump = retarget, the same threshold the chart uses). Pool-luck step markers are intentionally left out of the log - they're too frequent to be log-worthy.

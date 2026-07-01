@@ -28,6 +28,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   CONDITION_SPAN_CLASSES,
+  CONDITION_OPEN_CLASSES,
+  CONDITION_RECOVERY_CLASSES,
   conditionSpanClass,
 } from '@hashrate-autopilot/shared';
 import {
@@ -58,11 +60,31 @@ type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
-/** #317: extra event types folded into the unified log (besides bids + alerts). */
-type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip' | 'retarget';
-const LOG_EXTRA_KINDS: readonly LogExtraKind[] = ['payout', 'deposit', 'block', 'ip', 'retarget'];
+/**
+ * #318: alert event_classes already represented in the log by a span row
+ * (the condition classes + recoveries) or a dedicated source (payouts,
+ * pool blocks, deposits). Everything else becomes a generic point-alert
+ * row - so future alert classes appear automatically.
+ */
+const ALERT_COVERED_ELSEWHERE = new Set<string>([
+  ...CONDITION_OPEN_CLASSES,
+  ...CONDITION_RECOVERY_CLASSES,
+  'payout_confirmed',
+  'pool_block_credited',
+  'braiins_deposit_detected',
+  'braiins_deposit_available',
+]);
 
-const LOG_EXTRA_COLOR_SLOT: Record<LogExtraKind, ChartColorKey> = {
+/** #317/#318: extra event types folded into the unified log (besides bids + alerts). */
+type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip' | 'retarget' | 'alert' | 'config' | 'boot';
+const LOG_EXTRA_KINDS: readonly LogExtraKind[] = [
+  'payout', 'deposit', 'block', 'ip', 'retarget', 'alert', 'config', 'boot',
+];
+
+const LOG_EXTRA_COLOR_SLOT: Record<
+  Exclude<LogExtraKind, 'alert' | 'config' | 'boot'>,
+  ChartColorKey
+> = {
   payout: 'price.marker_payout_gem',
   deposit: 'price.marker_deposit',
   block: 'hashrate.pool_block_ours',
@@ -71,6 +93,9 @@ const LOG_EXTRA_COLOR_SLOT: Record<LogExtraKind, ChartColorKey> = {
 };
 
 function logExtraColor(kind: LogExtraKind): string {
+  if (kind === 'alert') return '#fbbf24'; // amber-400 - generic alert
+  if (kind === 'config') return '#a78bfa'; // violet-400 - config change
+  if (kind === 'boot') return '#34d399'; // emerald-400 - daemon started
   return CHART_COLOR_DEFAULTS[LOG_EXTRA_COLOR_SLOT[kind]];
 }
 
@@ -81,6 +106,19 @@ function logExtraLabel(kind: LogExtraKind): string {
     case 'block': return t`pool block`;
     case 'ip': return t`IP change`;
     case 'retarget': return t`difficulty retarget`;
+    case 'alert': return t`alert`;
+    case 'config': return t`config change`;
+    case 'boot': return t`daemon started`;
+  }
+}
+
+/** #318: short label for a point-alert row, by event class. */
+function pointAlertLabel(eventClass: string): string {
+  switch (eventClass) {
+    case 'payout_initiated': return t`payout initiated`;
+    case 'solo_best_difficulty': return t`best difficulty`;
+    case 'beta_exit': return t`fee change`;
+    default: return eventClass.replace(/_/g, ' ');
   }
 }
 
@@ -91,6 +129,8 @@ interface LogExtraItem {
   key: string;
   ts: number;
   summary: string;
+  /** Overrides the kind's generic label (used for point alerts / config). */
+  label?: string;
 }
 
 /** Lucide glyph per extra kind, tinted with its marker color. */
@@ -150,6 +190,34 @@ function LogExtraGlyph({ kind }: { kind: LogExtraKind }) {
           <path d="M15.973 4.027A13 13 0 0 0 5.902 2.373c-1.398.342-1.092 2.158.277 2.601a19.9 19.9 0 0 1 5.822 3.024" />
           <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
           <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
+        </svg>
+      );
+    case 'alert': // Lucide bell
+      return (
+        <svg {...base}>
+          <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+          <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+        </svg>
+      );
+    case 'config': // Lucide sliders-horizontal
+      return (
+        <svg {...base}>
+          <line x1="21" x2="14" y1="4" y2="4" />
+          <line x1="10" x2="3" y1="4" y2="4" />
+          <line x1="21" x2="12" y1="12" y2="12" />
+          <line x1="8" x2="3" y1="12" y2="12" />
+          <line x1="21" x2="16" y1="20" y2="20" />
+          <line x1="12" x2="3" y1="20" y2="20" />
+          <line x1="14" x2="14" y1="2" y2="6" />
+          <line x1="8" x2="8" y1="10" y2="14" />
+          <line x1="16" x2="16" y1="18" y2="22" />
+        </svg>
+      );
+    case 'boot': // Lucide power
+      return (
+        <svg {...base}>
+          <path d="M12 2v10" />
+          <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
         </svg>
       );
   }
@@ -334,6 +402,21 @@ export function History() {
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   });
+  // #318: raw alerts, for the point-alert rows (classes not already
+  // covered as spans or by a dedicated source). One windowed fetch.
+  const alertsLogQuery = useQuery({
+    queryKey: ['history-alerts-log', alertWindow.since],
+    queryFn: () => api.alertsList({ since_ms: alertWindow.since, limit: 1000 }),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+  // #318: config changes + daemon boots.
+  const systemEventsQuery = useQuery({
+    queryKey: ['history-system-events', alertWindow.since, alertWindow.until],
+    queryFn: () => api.systemEvents(alertWindow.since, alertWindow.until),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
 
   // Bound alert rows to the loaded bid-event range so an old alert can't
   // float at the bottom of the list below a gap of not-yet-loaded bids.
@@ -403,6 +486,34 @@ export function History() {
         summary: `${(r.difficulty / 1e12).toFixed(1)} T · ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`,
       });
     }
+    for (const a of alertsLogQuery.data?.alerts ?? []) {
+      const ec = a.event_class;
+      if (!ec || ALERT_COVERED_ELSEWHERE.has(ec)) continue;
+      all.push({
+        kind: 'alert',
+        key: `alert:${a.id}`,
+        ts: a.created_at,
+        label: pointAlertLabel(ec),
+        summary: a.body || a.title,
+      });
+    }
+    for (const s of systemEventsQuery.data?.events ?? []) {
+      if (s.kind === 'config_change') {
+        all.push({
+          kind: 'config',
+          key: `config:${s.id}`,
+          ts: s.occurred_at,
+          summary: `${s.field ?? '?'}: ${s.old_value ?? '—'} → ${s.new_value ?? '—'}`,
+        });
+      } else if (s.kind === 'daemon_started') {
+        all.push({
+          kind: 'boot',
+          key: `boot:${s.id}`,
+          ts: s.occurred_at,
+          summary: s.detail ?? '',
+        });
+      }
+    }
     return all.filter(
       (it) =>
         it.key === highlightedRowKey ||
@@ -417,6 +528,8 @@ export function History() {
     oceanQuery.data,
     ipChangesQuery.data,
     retargetsQuery.data,
+    alertsLogQuery.data,
+    systemEventsQuery.data,
     shownExtraKinds,
     alertWindow,
     oldestBidTs,
@@ -572,6 +685,22 @@ export function History() {
     params.delete('ts');
     const next = params.toString();
     navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  // #318: ?jump_ts=<ms> jumps the log's date window to around a time
+  // without highlighting a specific row - used by chart markers that
+  // don't have a 1:1 log row id (e.g. the unpaid-drop / payout-initiated
+  // dot). The relevant rows appear in the jumped-to window.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('jump_ts');
+    if (!raw) return;
+    jumpWindowToTs(raw);
+    params.delete('jump_ts');
+    const next = params.toString();
+    navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
@@ -1141,7 +1270,7 @@ function LogExtraRow({
       <td className="py-1 px-3 whitespace-nowrap">
         <LogExtraGlyph kind={extra.kind} />
         <span className="ml-1.5" style={{ color }}>
-          {logExtraLabel(extra.kind)}
+          {extra.label ?? logExtraLabel(extra.kind)}
         </span>
       </td>
       <td className="py-1 px-3 text-right">{dash}</td>

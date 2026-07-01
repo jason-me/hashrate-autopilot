@@ -4106,6 +4106,7 @@ function UnpaidDropTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -4170,6 +4171,18 @@ function UnpaidDropTooltip({
       <div className="mt-1 text-[10px] text-slate-500">
         <Trans>Ocean debited the unpaid balance. On-chain transaction follows shortly.</Trans>
       </div>
+      {pinned && (
+        <div className="mt-2 pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() => navigate(`/history?jump_ts=${tip.tick_at}`)}
+            className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
+          >
+            <Trans>View in history</Trans>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

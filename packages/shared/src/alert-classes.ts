@@ -85,6 +85,24 @@ export const CONDITION_SPAN_CLASSES: readonly ConditionSpanClass[] = [
     colorSlot: 'events.alert_solo_overheating',
     label: 'Bitaxe overheating',
   },
+  // #318: log-only span classes (charts: [] -> they appear as History
+  // span rows but draw no chart band, since #167 fillable-null and #287
+  // bid-pause bands already cover them on the charts). Colors reuse an
+  // existing, semantically-close slot so no new Config rows are needed.
+  {
+    openClass: 'marketplace_empty',
+    recoveryClass: 'marketplace_empty_recovery',
+    charts: [],
+    colorSlot: 'events.alert_api_unreachable',
+    label: 'Marketplace empty',
+  },
+  {
+    openClass: 'sustained_paused',
+    recoveryClass: 'sustained_paused_recovery',
+    charts: [],
+    colorSlot: 'events.bid_paused',
+    label: 'Bid paused (sustained)',
+  },
 ];
 
 /** All opener classes that define a span, for quick membership tests. */

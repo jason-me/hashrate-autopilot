@@ -379,6 +379,10 @@ msgstr "aged out"
 msgid "aged out:"
 msgstr "aged out:"
 
+#: src/pages/History.tsx
+msgid "alert"
+msgstr "alert"
+
 #: src/pages/Config.tsx
 msgid "Alert condition bands"
 msgstr "Alert condition bands"
@@ -653,6 +657,10 @@ msgstr "best bid"
 msgid "Best diff"
 msgstr "Best diff"
 
+#: src/pages/History.tsx
+msgid "best difficulty"
+msgstr "best difficulty"
+
 #: src/pages/Config.tsx
 msgid "Beta-exit detected"
 msgstr "Beta-exit detected"
@@ -702,7 +710,12 @@ msgstr "bid paused"
 msgid "BID PAUSED"
 msgstr "BID PAUSED"
 
+#: src/lib/alertConditions.ts
+msgid "bid paused (sustained)"
+msgstr "bid paused (sustained)"
+
 #: src/components/PriceChart.tsx
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
@@ -1254,6 +1267,10 @@ msgstr "computing…"
 msgid "Config"
 msgstr "Config"
 
+#: src/pages/History.tsx
+msgid "config change"
+msgstr "config change"
+
 #: src/pages/Config.tsx
 msgid "Configuration"
 msgstr "Configuration"
@@ -1431,6 +1448,10 @@ msgstr "Custom color picker"
 #: src/pages/Setup.tsx
 msgid "Daemon did not return to OPERATIONAL within 90 seconds."
 msgstr "Daemon did not return to OPERATIONAL within 90 seconds."
+
+#: src/pages/History.tsx
+msgid "daemon started"
+msgstr "daemon started"
 
 #: src/pages/Config.tsx
 msgid "Daemon startup"
@@ -1960,6 +1981,10 @@ msgstr "failed to load: {0}"
 #: src/pages/Config.tsx
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups. Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX."
 msgstr "Fast and lightweight. Polled every minute. Instant balance lookups. Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX."
+
+#: src/pages/History.tsx
+msgid "fee change"
+msgstr "fee change"
 
 #: src/pages/Config.tsx
 msgid "Fee protection"
@@ -2549,6 +2574,14 @@ msgstr "marketplace API down"
 #: src/pages/Config.tsx
 msgid "Marketplace API has been unreachable for at least this many minutes."
 msgstr "Marketplace API has been unreachable for at least this many minutes."
+
+#: src/lib/alertConditions.ts
+msgid "marketplace empty"
+msgstr "marketplace empty"
+
+#: src/lib/alertConditions.ts
+msgid "marketplace filled"
+msgstr "marketplace filled"
 
 #: src/pages/Alerts.tsx
 msgid "marking…"
@@ -3271,6 +3304,10 @@ msgstr "payout"
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Payout address"
+
+#: src/pages/History.tsx
+msgid "payout initiated"
+msgstr "payout initiated"
 
 #: src/components/PriceChart.tsx
 msgid "PAYOUT INITIATED"

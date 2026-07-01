@@ -646,6 +646,17 @@ export interface RetargetView {
   previous: number;
 }
 
+/** #318: a config-change or daemon-boot event for the History log. */
+export interface SystemEventView {
+  id: number;
+  occurred_at: number;
+  kind: string;
+  field: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  detail: string | null;
+}
+
 export interface DdnsRouteResponse {
   daemon_public_ip: string | null;
   daemon_public_ip_checked_at: number | null;
@@ -847,6 +858,11 @@ export const api = {
   retargets: (since: number, until: number) =>
     request<{ retargets: RetargetView[] }>(
       `/api/retargets?since_ms=${since}&until_ms=${until}`,
+    ),
+  // #318: config-change + daemon-boot events for the unified History log.
+  systemEvents: (since: number, until: number) =>
+    request<{ events: SystemEventView[] }>(
+      `/api/system-events?since_ms=${since}&until_ms=${until}`,
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),

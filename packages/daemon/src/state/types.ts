@@ -278,6 +278,19 @@ export interface IpChangeEventsTable {
 }
 
 // ---------------------------------------------------------------------------
+// system_events (#318): config changes + daemon boots for the History log
+// ---------------------------------------------------------------------------
+export interface SystemEventsTable {
+  id: Generated<number>;
+  occurred_at: number;
+  kind: string;
+  field: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  detail: string | null;
+}
+
+// ---------------------------------------------------------------------------
 // alerts
 // ---------------------------------------------------------------------------
 
@@ -668,6 +681,7 @@ export interface Database {
   solo_miner_samples: SoloMinerSamplesTable;
   solo_best_difficulty_events: SoloBestDifficultyEventsTable;
   ip_change_events: IpChangeEventsTable;
+  system_events: SystemEventsTable;
   _migrations: MigrationsTable;
 }
 

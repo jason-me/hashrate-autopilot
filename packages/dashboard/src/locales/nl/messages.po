@@ -379,6 +379,10 @@ msgstr "verlopen"
 msgid "aged out:"
 msgstr "uit venster:"
 
+#: src/pages/History.tsx
+msgid "alert"
+msgstr "melding"
+
 #: src/pages/Config.tsx
 msgid "Alert condition bands"
 msgstr "Alarmconditie-banden"
@@ -653,6 +657,10 @@ msgstr "beste bod"
 msgid "Best diff"
 msgstr "Beste diff"
 
+#: src/pages/History.tsx
+msgid "best difficulty"
+msgstr "beste moeilijkheid"
+
 #: src/pages/Config.tsx
 msgid "Beta-exit detected"
 msgstr "Beta-exit gedetecteerd"
@@ -702,7 +710,12 @@ msgstr "bod gepauzeerd"
 msgid "BID PAUSED"
 msgstr "BOD GEPAUZEERD"
 
+#: src/lib/alertConditions.ts
+msgid "bid paused (sustained)"
+msgstr "bod gepauzeerd (aanhoudend)"
+
 #: src/components/PriceChart.tsx
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
@@ -1254,6 +1267,10 @@ msgstr "berekenen…"
 msgid "Config"
 msgstr "Config"
 
+#: src/pages/History.tsx
+msgid "config change"
+msgstr "configuratiewijziging"
+
 #: src/pages/Config.tsx
 msgid "Configuration"
 msgstr "Configuratie"
@@ -1431,6 +1448,10 @@ msgstr "Aangepaste kleurkiezer"
 #: src/pages/Setup.tsx
 msgid "Daemon did not return to OPERATIONAL within 90 seconds."
 msgstr "Daemon kwam niet terug op OPERATIONAL binnen 90 seconden."
+
+#: src/pages/History.tsx
+msgid "daemon started"
+msgstr "daemon gestart"
 
 #: src/pages/Config.tsx
 msgid "Daemon startup"
@@ -1960,6 +1981,10 @@ msgstr "laden mislukt: {0}"
 #: src/pages/Config.tsx
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups. Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX."
 msgstr "Snel en lichtgewicht. Elke minuut bevraagd. Directe saldo-lookups. Werkt met elke Electrum-protocol-server: electrs, Fulcrum, ElectrumX."
+
+#: src/pages/History.tsx
+msgid "fee change"
+msgstr "feewijziging"
 
 #: src/pages/Config.tsx
 msgid "Fee protection"
@@ -2549,6 +2574,14 @@ msgstr "marktplaats-API onbereikbaar"
 #: src/pages/Config.tsx
 msgid "Marketplace API has been unreachable for at least this many minutes."
 msgstr "Marketplace-API is al ten minste dit aantal minuten onbereikbaar."
+
+#: src/lib/alertConditions.ts
+msgid "marketplace empty"
+msgstr "marktplaats leeg"
+
+#: src/lib/alertConditions.ts
+msgid "marketplace filled"
+msgstr "marktplaats gevuld"
 
 #: src/pages/Alerts.tsx
 msgid "marking…"
@@ -3271,6 +3304,10 @@ msgstr "uitbetaling"
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Uitbetaaladres"
+
+#: src/pages/History.tsx
+msgid "payout initiated"
+msgstr "uitbetaling gestart"
 
 #: src/components/PriceChart.tsx
 msgid "PAYOUT INITIATED"
