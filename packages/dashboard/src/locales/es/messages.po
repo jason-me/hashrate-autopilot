@@ -2014,6 +2014,10 @@ msgstr "Disponible"
 msgid "Fillable (sat/PH/day)"
 msgstr "Disponible (sat/PH/day)"
 
+#: src/pages/History.tsx
+msgid "Filters"
+msgstr "Filtros"
+
 #: src/pages/Alerts.tsx
 msgid "fired"
 msgstr "activado"

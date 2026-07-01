@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Timeline: global "Filters all · none" toggle
+
+Next to the reset button there's now a global **all · none** that flips every chip in all three filter groups (Actions, Alerts, Events) at once - a quick way to start from "everything" or "nothing" and then pick. Reset stays as the full reset (also clears the text/date filters).
+
 ### `[UI]` Timeline "follow" (live tail) button
 
 A **follow** toggle in the timeline toolbar tails the feed live: it refetches faster and, as new events land, keeps you pinned to the newest ones (only when you're already near the top, so scrolling down to read isn't interrupted). Turning it on jumps to the live edge. Click again to stop.

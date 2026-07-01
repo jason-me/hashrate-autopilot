@@ -1210,6 +1210,13 @@ function Toolbar({
   };
   const setAllKinds = (on: boolean) =>
     onChange({ ...filters, kinds: on ? undefined : [] });
+  // #318 follow-up: global all/none - flip every chip in all three groups
+  // at once (operator's chosen "keep reset + add global All/None").
+  const selectAllGroups = (on: boolean) => {
+    setAllKinds(on);
+    onSetAllAlertClasses(on);
+    onSetAllExtraKinds(on);
+  };
 
   // #266 follow-up: locale-aware custom date picker (see DatePicker.tsx).
   // Browser-native input[type=date] always rendered as mm/dd/yyyy
@@ -1403,12 +1410,19 @@ function Toolbar({
             className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
+        {/* #318 follow-up: global all/none - flips every chip in every
+            group at once (Actions + Alerts + Events). Starts the
+            right-aligned button cluster. */}
+        <div className="hidden sm:flex items-center gap-2 sm:ml-auto self-end pb-1.5">
+          <span className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Filters</Trans></span>
+          <AllNone onAll={() => selectAllGroups(true)} onNone={() => selectAllGroups(false)} />
+        </div>
         {/* #318 follow-up: live-tail toggle. Emerald + pulsing dot when
-            on. Pushed to the right; export + reset follow. */}
+            on. export + reset follow. */}
         <button
           type="button"
           onClick={onToggleFollow}
-          className={`w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border self-end ${
+          className={`w-full sm:w-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border self-end ${
             following
               ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
               : 'border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200'
