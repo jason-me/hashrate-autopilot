@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-01
+
+### `[UI]` Timeline polish: renamed, columns reordered, filter fields on one row, real reset button
+
+The History page is now called **Timeline** (nav tab + heading), since it's a unified log of every event, not just orders. The **Action** column moves ahead of **Bid** so the most useful column shows first - especially on mobile, where the long bid id used to hog the second slot. The filter toolbar's text/date fields (Bid id, From, To, Δ price) now share one dedicated row instead of Δ price sitting alone, and **reset** is a real amber button rather than a faint text link.
+
 ## 2026-06-30
 
 ### `[UI]` Universal sonar beacon when jumping from a log row to its chart marker (#318)

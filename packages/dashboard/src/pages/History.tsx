@@ -5,7 +5,7 @@
  * flat table + infinite scroll. Server pages 100 events at a time
  * via a `before_id` cursor.
  *
- * Columns: When | Bid (full id) | Action | Fillable | Price before
+ * Columns: When | Action | Bid (full id) | Fillable | Price before
  *          | Price after | Δ price | Speed | Source. Δ price colour-
  * coded green=down/red=up. Speed/bid id are server-side coalesced
  * across events on the same bid so the column is never empty when
@@ -770,7 +770,7 @@ export function History() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
-        <Trans>Order history</Trans>
+        <Trans>Timeline</Trans>
       </h2>
       <Toolbar
         filters={filters}
@@ -785,8 +785,8 @@ export function History() {
           <thead className="text-slate-500 tracking-wider bg-slate-950/40">
             <tr>
               <th className="text-left font-normal py-1.5 px-3 whitespace-nowrap normal-case"><Trans>When</Trans></th>
-              <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Bid</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Action</Trans></th>
+              <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Bid</Trans></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Fillable</Trans></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price before</Trans></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price after</Trans></th>
@@ -1020,73 +1020,79 @@ function Toolbar({
           })}
         </div>
       </div>
-      <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Bid id contains</Trans></label>
-        <input
-          type="text"
-          value={filters.orderIdContains ?? ''}
-          onChange={(e) => onChange({ ...filters, orderIdContains: e.target.value || undefined })}
-          placeholder="B866…"
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          className="w-full sm:w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
-        />
-      </div>
-      {/* From + To form one logical date-range pair. On mobile they sit
-          side-by-side as a single row (sm:contents dissolves this wrapper
-          on desktop so each flows into the toolbar's wrap as before). */}
-      <div className="flex gap-3 sm:contents">
-        <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
-          <label className="text-[10px] tracking-wider text-slate-500"><Trans>From</Trans></label>
-          <DatePicker
-            value={filters.sinceMs}
-            snap="start"
-            onChange={(ms) => updateDate('sinceMs', ms)}
-            ariaLabel={t`From date`}
-            className="w-full sm:w-auto"
+      {/* #318 follow-up: the text/date/number fields (Bid id, From, To,
+          Δ price) share one dedicated full-width row so Δ price no longer
+          sits alone, with the reset button pushed to the right. On mobile
+          the wrapper stacks like the rest of the toolbar. */}
+      <div className="w-full flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-2">
+        <div className="flex flex-col gap-0.5">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>Bid id contains</Trans></label>
+          <input
+            type="text"
+            value={filters.orderIdContains ?? ''}
+            onChange={(e) => onChange({ ...filters, orderIdContains: e.target.value || undefined })}
+            placeholder="B866…"
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="w-full sm:w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
-        <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
-          <label className="text-[10px] tracking-wider text-slate-500"><Trans>To</Trans></label>
-          <DatePicker
-            value={filters.untilMs}
-            snap="end"
-            onChange={(ms) => updateDate('untilMs', ms)}
-            ariaLabel={t`To date`}
-            className="w-full sm:w-auto"
+        {/* From + To form one logical date-range pair. On mobile they sit
+            side-by-side as a single row (sm:contents dissolves this wrapper
+            on desktop so each flows into the field row's wrap as before). */}
+        <div className="flex gap-3 sm:contents">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
+            <label className="text-[10px] tracking-wider text-slate-500"><Trans>From</Trans></label>
+            <DatePicker
+              value={filters.sinceMs}
+              snap="start"
+              onChange={(ms) => updateDate('sinceMs', ms)}
+              ariaLabel={t`From date`}
+              className="w-full sm:w-auto"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
+            <label className="text-[10px] tracking-wider text-slate-500"><Trans>To</Trans></label>
+            <DatePicker
+              value={filters.untilMs}
+              snap="end"
+              onChange={(ms) => updateDate('untilMs', ms)}
+              ariaLabel={t`To date`}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <label className="text-[10px] tracking-wider text-slate-500">
+            {t`Δ price ≥ (sat/${unitLabel}/day)`}
+          </label>
+          <input
+            type="number"
+            min={0}
+            step={unitLabel === 'TH' ? 1 : unitLabel === 'EH' ? 1000 : 100}
+            value={deltaInUnit}
+            onChange={(e) => updateDelta(e.target.value)}
+            placeholder="0"
+            className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
+        {/* #318 follow-up: reset is now a real amber button (operator:
+            "don't be afraid of it"), right-aligned at the end of the
+            field row; full-width on mobile. */}
+        <button
+          type="button"
+          onClick={() => onChange({})}
+          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 self-end shadow-sm"
+          title={t`Reset all filters`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          <Trans>reset</Trans>
+        </button>
       </div>
-      <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500">
-          {t`Δ price ≥ (sat/${unitLabel}/day)`}
-        </label>
-        <input
-          type="number"
-          min={0}
-          step={unitLabel === 'TH' ? 1 : unitLabel === 'EH' ? 1000 : 100}
-          value={deltaInUnit}
-          onChange={(e) => updateDelta(e.target.value)}
-          placeholder="0"
-          className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
-        />
-      </div>
-      {/* #256 v2 follow-up: Reset button on the RIGHT side with a
-          Lucide rotate-ccw icon, labelled "reset" rather than "clear
-          all". Full-width, right-aligned row on mobile; ml-auto on desktop. */}
-      <button
-        type="button"
-        onClick={() => onChange({})}
-        className="w-full sm:w-auto sm:ml-auto flex items-center justify-end gap-1 text-[11px] text-slate-500 hover:text-amber-300 self-end"
-        title={t`Reset all filters`}
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-          <path d="M3 3v5h5" />
-        </svg>
-        <Trans>reset</Trans>
-      </button>
     </div>
   );
 }
@@ -1163,12 +1169,12 @@ function EventRow({
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(event.occurred_at)}
       </td>
-      <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
-        {bidId}
-      </td>
       <td className="py-1 px-3 whitespace-nowrap">
         <ActionGlyph kind={event.kind} />
         <span className="ml-1.5 text-slate-200">{labels[event.kind]}</span>
+      </td>
+      <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
+        {bidId}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
         {event.fillable_at_event_sat_per_ph_day !== null
@@ -1246,7 +1252,6 @@ function AlertSpanRow({
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(span.start_ms)}
       </td>
-      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 whitespace-nowrap">
         <svg
           width={12}
@@ -1270,6 +1275,7 @@ function AlertSpanRow({
           {ongoing ? t`ongoing` : formatDuration(durationMs)}
         </span>
       </td>
+      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
@@ -1316,13 +1322,13 @@ function LogExtraRow({
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(extra.ts)}
       </td>
-      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 whitespace-nowrap">
         <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} />
         <span className="ml-1.5" style={{ color }}>
           {extra.label ?? logExtraLabel(extra.kind)}
         </span>
       </td>
+      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>

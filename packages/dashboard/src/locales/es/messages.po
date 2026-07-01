@@ -2192,10 +2192,6 @@ msgstr "Ocultar valor"
 msgid "Highest best-difficulty seen on any reachable Bitaxe in the fleet. AxeOS reports this per device; the tile shows the leader. Best-difficulty grows over time as miners hit progressively rarer shares; resets when a worker restarts."
 msgstr "Best-difficulty máxima entre los Bitaxe alcanzables de la flota. AxeOS lo reporta por dispositivo; la tarjeta muestra el líder. La best-difficulty crece cuando los miners encuentran shares más raras; se reinicia al reiniciar un worker."
 
-#: src/components/Layout.tsx
-msgid "History"
-msgstr "Historial"
-
 #: src/pages/Status.tsx
 msgid "host"
 msgstr "host"
@@ -3105,10 +3101,6 @@ msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
 #: src/pages/Config.tsx
 msgid "Optional. When set, every Telegram message from this daemon is prefixed with `[label] ` so you can tell which instance fired the alert if you run more than one daemon against the same bot/chat. Leave empty to send messages without a prefix."
 msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon se antepone con `[etiqueta] ` para que puedas saber qué instancia disparó la alerta si ejecutas más de un daemon contra el mismo bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
-
-#: src/pages/History.tsx
-msgid "Order history"
-msgstr "Historial de órdenes"
 
 #: src/pages/Config.tsx
 msgid "Order, separators, 12h vs 24h. Month names always follow your UI language."
@@ -4262,6 +4254,11 @@ msgstr "Tiempo desde que Ocean encontró su bloque más reciente. El intervalo m
 #: src/pages/Status.tsx
 msgid "Time-weighted average of (our bid - fillable ask) per tick over the selected chart range. Reflects what the controller targeted - the price we posted regardless of whether we were delivering. Compare against the Overpay setting on Config → Pricing; sustained values above your configured overpay usually mean the bid is anchored above target (often by the 10-min price-decrease cooldown)."
 msgstr "Promedio ponderado por tiempo de (nuestra oferta - fillable ask) por tick en el rango del gráfico seleccionado. Refleja lo que apuntó el controlador - el precio que publicamos sin importar si estábamos entregando. Compara con la opción Overpay en Config → Pricing; valores sostenidos por encima del overpay configurado normalmente significan que la oferta está anclada por encima del objetivo (a menudo por el cooldown de 10 min para bajar el precio)."
+
+#: src/components/Layout.tsx
+#: src/pages/History.tsx
+msgid "Timeline"
+msgstr "Cronología"
 
 #: src/components/Bip110ScanCard.tsx
 msgid "tip"
