@@ -6,6 +6,10 @@
 
 When the Braiins bid-list read transiently failed (or momentarily didn't include our bid) while the orderbook read succeeded, the decision loop saw "no owned bids" and created a **second** bid, which its own "multiple owned bids" guard then cancelled a few minutes later - wasting a little hashrate spend and showing a confusing extra `create` in the Timeline. The create path now waits unless the bid-list fetch definitively succeeded AND the local ledger agrees there are no live bids, mirroring the caution already applied to ledger pruning. Strictly conservative: it can only prevent spurious creates.
 
+### `[UI]` Timeline detail panel mirrors the chart tooltip; long hashes are copyable
+
+Clicking a log row now opens a panel showing the same information the event's chart tooltip shows, instead of a bare summary. A pool block lists height, pool reward, subsidy, fees, your estimated share, and the BIP-110 signal - and the long block hash is now a small copyable value with a copy button rather than a wall of digits. Payout, deposit, IP-change and retarget rows get their structured detail too (txid / address are copyable).
+
 ### `[Fix]` Timeline Action filter now hides what you deselect (opt-out)
 
 The Action chips were opt-in - selecting one showed *only* that kind, and deselecting everything showed *everything* - which is the opposite of the Alerts and Events groups and confused the operator: clicking "price" off didn't hide the price rows. All three groups now behave the same: every chip is on by default, and clicking one hides that kind. The Action group also gets its own "all · none" toggle, and deselecting every action now correctly shows no bid rows (previously it fell back to showing all). Fixed a latent bug where reloading dropped MODE_CHANGE / bid-paused / bid-resumed from a saved filter.

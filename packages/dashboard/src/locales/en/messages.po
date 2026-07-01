@@ -364,6 +364,7 @@ msgid "adding…"
 msgstr "adding…"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "address"
 msgstr "address"
 
@@ -423,6 +424,7 @@ msgid "Always live (for trusted deployments)"
 msgstr "Always live (for trusted deployments)"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "amount"
 msgstr "amount"
 
@@ -906,6 +908,7 @@ msgid "Block hash"
 msgstr "Block hash"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "block height"
 msgstr "block height"
 
@@ -1138,6 +1141,7 @@ msgid "Celsius (°C)"
 msgstr "Celsius (°C)"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "change"
 msgstr "change"
 
@@ -1333,6 +1337,10 @@ msgstr "copied URL"
 #: src/components/ChartColorPicker.tsx
 msgid "Copied!"
 msgstr "Copied!"
+
+#: src/pages/History.tsx
+msgid "Copy"
+msgstr "Copy"
 
 #: src/pages/Config.tsx
 msgid "Copy as Markdown"
@@ -1622,6 +1630,10 @@ msgstr "Devices"
 #: src/pages/Config.tsx
 msgid "Diagnostics"
 msgstr "Diagnostics"
+
+#: src/pages/History.tsx
+msgid "difficulty"
+msgstr "difficulty"
 
 #: src/components/HashrateChart.tsx
 msgid "DIFFICULTY ADJUSTMENT"
@@ -1964,6 +1976,7 @@ msgstr "Fee protection"
 
 #: src/components/Bip110ScanCard.tsx
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "fees"
 msgstr "fees"
 
@@ -2177,6 +2190,7 @@ msgid "headers"
 msgstr "headers"
 
 #: src/components/Bip110ScanCard.tsx
+#: src/pages/History.tsx
 msgid "height"
 msgstr "height"
 
@@ -2705,6 +2719,10 @@ msgstr "network hashrate"
 msgid "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
 msgstr "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
 
+#: src/pages/History.tsx
+msgid "new"
+msgstr "new"
+
 #: src/components/HashrateChart.tsx
 msgid "new difficulty"
 msgstr "new difficulty"
@@ -3128,6 +3146,7 @@ msgstr "our bid"
 msgid "our earnings"
 msgstr "our earnings"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "our earnings (est.)"
 msgstr "our earnings (est.)"
@@ -3413,6 +3432,7 @@ msgid "pool luck 7d"
 msgstr "pool luck 7d"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "pool reward"
 msgstr "pool reward"
 
@@ -3459,6 +3479,7 @@ msgid "Presets"
 msgstr "Presets"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "previous"
 msgstr "previous"
 
@@ -3933,6 +3954,7 @@ msgid "Setting up…"
 msgstr "Setting up…"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "share log"
 msgstr "share log"
@@ -4007,6 +4029,7 @@ msgid "Signaling"
 msgstr "Signaling"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 
@@ -4092,6 +4115,7 @@ msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's inter
 msgstr "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel."
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "subsidy"
 msgstr "subsidy"
 
@@ -4300,6 +4324,10 @@ msgstr "Total earned at this address since first share, per Ocean."
 #: src/pages/Status.tsx
 msgid "Total worker connections on Ocean (one address can have many workers)."
 msgstr "Total worker connections on Ocean (one address can have many workers)."
+
+#: src/pages/History.tsx
+msgid "Transaction"
+msgstr "Transaction"
 
 #: src/pages/Config.tsx
 msgid "Transaction URL template"

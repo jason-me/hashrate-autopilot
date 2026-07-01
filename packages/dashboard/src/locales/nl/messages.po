@@ -364,6 +364,7 @@ msgid "adding…"
 msgstr "bezig met toevoegen…"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "address"
 msgstr "adres"
 
@@ -423,6 +424,7 @@ msgid "Always live (for trusted deployments)"
 msgstr "Altijd live (voor vertrouwde installaties)"
 
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "amount"
 msgstr "bedrag"
 
@@ -906,6 +908,7 @@ msgid "Block hash"
 msgstr "Blokhash"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "block height"
 msgstr "blokhoogte"
 
@@ -1138,6 +1141,7 @@ msgid "Celsius (°C)"
 msgstr "Celsius (°C)"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "change"
 msgstr "wijziging"
 
@@ -1333,6 +1337,10 @@ msgstr "URL gekopieerd"
 #: src/components/ChartColorPicker.tsx
 msgid "Copied!"
 msgstr "Gekopieerd!"
+
+#: src/pages/History.tsx
+msgid "Copy"
+msgstr "Kopiëren"
 
 #: src/pages/Config.tsx
 msgid "Copy as Markdown"
@@ -1622,6 +1630,10 @@ msgstr "Apparaten"
 #: src/pages/Config.tsx
 msgid "Diagnostics"
 msgstr "Diagnostiek"
+
+#: src/pages/History.tsx
+msgid "difficulty"
+msgstr "moeilijkheid"
 
 #: src/components/HashrateChart.tsx
 msgid "DIFFICULTY ADJUSTMENT"
@@ -1964,6 +1976,7 @@ msgstr "Fee-bescherming"
 
 #: src/components/Bip110ScanCard.tsx
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "fees"
 msgstr "fees"
 
@@ -2177,6 +2190,7 @@ msgid "headers"
 msgstr "headers"
 
 #: src/components/Bip110ScanCard.tsx
+#: src/pages/History.tsx
 msgid "height"
 msgstr "hoogte"
 
@@ -2705,6 +2719,10 @@ msgstr "netwerk-hashrate"
 msgid "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
 msgstr "De break-even rate van het netwerk bij de huidige moeilijkheidsgraad + blokbeloning: (block_reward_sat * 144 blokken/dag) / network_hashrate. Betaal je hierboven voor hashrate, dan verlies je geld tegenover zelf minen; eronder win je. De max-overpay-vs-hashprice cap van de autopilot klemt je bod ten opzichte van dit getal."
 
+#: src/pages/History.tsx
+msgid "new"
+msgstr "nieuw"
+
 #: src/components/HashrateChart.tsx
 msgid "new difficulty"
 msgstr "nieuwe moeilijkheid"
@@ -3128,6 +3146,7 @@ msgstr "ons bod"
 msgid "our earnings"
 msgstr "onze verdiensten"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "our earnings (est.)"
 msgstr "onze verdiensten (schat.)"
@@ -3413,6 +3432,7 @@ msgid "pool luck 7d"
 msgstr "pool-geluk 7d"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "pool reward"
 msgstr "pool-beloning"
 
@@ -3459,6 +3479,7 @@ msgid "Presets"
 msgstr "Voorkeuzes"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "previous"
 msgstr "vorige"
 
@@ -3933,6 +3954,7 @@ msgid "Setting up…"
 msgstr "Bezig met instellen…"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "share log"
 msgstr "share log"
@@ -4007,6 +4029,7 @@ msgid "Signaling"
 msgstr "Signaleert"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 msgstr "Signaleert BIP 110 (Reduced Data Temporary Soft Fork)"
 
@@ -4092,6 +4115,7 @@ msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's inter
 msgstr "Subnet om te scannen (CIDR). Laat leeg om automatisch te detecteren via de daemon-interface - vereist op Umbrel."
 
 #: src/components/HashrateChart.tsx
+#: src/pages/History.tsx
 msgid "subsidy"
 msgstr "subsidie"
 
@@ -4300,6 +4324,10 @@ msgstr "Totaal verdiend op dit adres sinds de eerste share, volgens Ocean."
 #: src/pages/Status.tsx
 msgid "Total worker connections on Ocean (one address can have many workers)."
 msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers hebben)."
+
+#: src/pages/History.tsx
+msgid "Transaction"
+msgstr "Transactie"
 
 #: src/pages/Config.tsx
 msgid "Transaction URL template"

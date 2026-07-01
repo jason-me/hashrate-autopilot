@@ -24,7 +24,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useInfiniteQuery, useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
   CONDITION_SPAN_CLASSES,
@@ -488,6 +488,7 @@ export function History() {
         key: `payout:${e.id}`,
         ts: e.detected_at,
         summary: `${formatNumber(e.value_sat, {})} sat · block ${e.block_height}`,
+        payout: e,
       });
     }
     for (const d of depositsQuery.data?.deposits ?? []) {
@@ -497,6 +498,7 @@ export function History() {
         key: `deposit:${d.tx_id}`,
         ts,
         summary: `${formatNumber(d.amount_sat, {})} sat`,
+        deposit: d,
       });
     }
     for (const b of oceanQuery.data?.our_recent_blocks ?? []) {
@@ -524,6 +526,7 @@ export function History() {
         label: blockLabel,
         blockVariant,
         blockHash: b.block_hash,
+        block: b,
       });
     }
     for (const c of ipChangesQuery.data?.events ?? []) {
@@ -532,6 +535,7 @@ export function History() {
         key: `ip:${c.id}`,
         ts: c.occurred_at,
         summary: `${c.old_ip ?? '—'} → ${c.new_ip}`,
+        ip: c,
       });
     }
     for (const r of retargetsQuery.data?.retargets ?? []) {
@@ -541,6 +545,7 @@ export function History() {
         key: `retarget:${r.tick_at}`,
         ts: r.tick_at,
         summary: `${(r.difficulty / 1e12).toFixed(1)} T · ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`,
+        retarget: r,
       });
     }
     for (const a of alertsLogQuery.data?.alerts ?? []) {
@@ -1482,31 +1487,173 @@ function LogExtraDrawer({
             </button>
           )}
 
-          <section>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
-              <Trans>Details</Trans>
-            </div>
-            <p className="text-xs text-slate-200 whitespace-normal leading-snug break-words">
-              {extra.summary}
-            </p>
-          </section>
-
-          {extra.kind === 'block' && extra.blockHash && (
-            <section>
-              <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
-                <Trans>Block hash</Trans>
-              </div>
-              <p className="text-[11px] text-slate-300 font-mono break-all leading-snug">
-                {extra.blockHash}
-              </p>
-            </section>
-          )}
+          <LogExtraDetail extra={extra} />
         </div>
       </aside>
     </div>
   );
 
   return createPortal(body, document.body);
+}
+
+/** Label/value row for the detail drawer (mono, right-aligned value). */
+function DetailRow({ label, value }: { label: ReactNode; value: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3 text-xs">
+      <span className="text-slate-500">{label}</span>
+      <span className="text-slate-200 font-mono text-right break-all">{value}</span>
+    </div>
+  );
+}
+
+/** #318 follow-up: mono value with a click-to-copy icon, for the long
+ *  hashes / txids the operator doesn't want displayed as a wall of
+ *  digits ("just say the hash, and let me copy it"). */
+function CopyableValue({ value }: { value: string }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(value).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={t`Copy`}
+      className="group flex items-start gap-1.5 text-left w-full"
+    >
+      <span className="text-[11px] text-slate-300 font-mono break-all leading-snug flex-1">{value}</span>
+      {copied ? (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 text-slate-500 group-hover:text-amber-300">
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/**
+ * #318 follow-up: per-kind detail for the log drawer, mirroring what the
+ * event's chart tooltip shows (operator: the side panel should be
+ * symmetric with the graph tooltip). Falls back to the row summary for
+ * kinds without a rich tooltip (alert / config / daemon start).
+ */
+function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const sat = (n: number) => `${formatNumber(n, {})} sat`;
+
+  if (extra.kind === 'block' && extra.block) {
+    const b = extra.block;
+    const share = b.share_log_pct_at_block;
+    return (
+      <>
+        <section className="space-y-1">
+          <DetailRow label={<Trans>height</Trans>} value={b.height} />
+          <DetailRow label={<Trans>pool reward</Trans>} value={sat(b.total_reward_sat)} />
+          <DetailRow label={<Trans>subsidy</Trans>} value={sat(b.subsidy_sat)} />
+          <DetailRow label={<Trans>fees</Trans>} value={sat(b.fees_sat)} />
+          {share !== null && share > 0 && (
+            <>
+              <DetailRow label={<Trans>share log</Trans>} value={`${share.toFixed(4)}%`} />
+              <DetailRow
+                label={<Trans>our earnings (est.)</Trans>}
+                value={sat(Math.round((b.total_reward_sat * share) / 100))}
+              />
+            </>
+          )}
+        </section>
+        {b.signals_bip110 === true && (
+          <div className="text-amber-300 text-[11px]">
+            <Trans>Signaling BIP 110 (Reduced Data Temporary Soft Fork)</Trans>
+          </div>
+        )}
+        <section>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+            <Trans>Block hash</Trans>
+          </div>
+          <CopyableValue value={b.block_hash} />
+        </section>
+      </>
+    );
+  }
+  if (extra.kind === 'payout' && extra.payout) {
+    const e = extra.payout;
+    return (
+      <>
+        <section className="space-y-1">
+          <DetailRow label={<Trans>amount</Trans>} value={sat(e.value_sat)} />
+          <DetailRow label={<Trans>block height</Trans>} value={e.block_height} />
+        </section>
+        <section>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+            <Trans>Transaction</Trans>
+          </div>
+          <CopyableValue value={`${e.txid}:${e.vout}`} />
+        </section>
+      </>
+    );
+  }
+  if (extra.kind === 'deposit' && extra.deposit) {
+    const d = extra.deposit;
+    return (
+      <>
+        <section className="space-y-1">
+          <DetailRow label={<Trans>amount</Trans>} value={sat(d.amount_sat)} />
+          {d.address && <DetailRow label={<Trans>address</Trans>} value={d.address} />}
+        </section>
+        <section>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+            <Trans>Transaction</Trans>
+          </div>
+          <CopyableValue value={d.tx_id} />
+        </section>
+      </>
+    );
+  }
+  if (extra.kind === 'ip' && extra.ip) {
+    const c = extra.ip;
+    return (
+      <section className="space-y-1">
+        <DetailRow label={<Trans>previous</Trans>} value={c.old_ip ?? '—'} />
+        <DetailRow label={<Trans>new</Trans>} value={c.new_ip} />
+      </section>
+    );
+  }
+  if (extra.kind === 'retarget' && extra.retarget) {
+    const r = extra.retarget;
+    const pct = ((r.difficulty - r.previous) / r.previous) * 100;
+    return (
+      <section className="space-y-1">
+        <DetailRow label={<Trans>difficulty</Trans>} value={`${(r.difficulty / 1e12).toFixed(2)} T`} />
+        <DetailRow label={<Trans>previous</Trans>} value={`${(r.previous / 1e12).toFixed(2)} T`} />
+        <DetailRow
+          label={<Trans>change</Trans>}
+          value={`${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`}
+        />
+      </section>
+    );
+  }
+  // alert / config / daemon start: no rich tooltip -> show the summary.
+  return (
+    <section>
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+        <Trans>Details</Trans>
+      </div>
+      <p className="text-xs text-slate-200 whitespace-normal leading-snug break-words">
+        {extra.summary}
+      </p>
+    </section>
+  );
 }
 
 function useActionLabels(): Record<BidEventView['kind'], string> {

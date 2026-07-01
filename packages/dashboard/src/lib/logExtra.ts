@@ -7,6 +7,14 @@
  * components all consume the strings this module produces.
  */
 
+import type {
+  DepositView,
+  IpChangeEvent,
+  OurBlockMarker,
+  RetargetView,
+  RewardEventView,
+} from './api';
+
 export type LogExtraKind =
   | 'payout'
   | 'deposit'
@@ -43,6 +51,17 @@ export interface LogExtraItem {
    *  drawer can route point alerts that map to a chart marker (e.g.
    *  `payout_initiated` -> the unpaid-drop marker). */
   eventClass?: string;
+  /**
+   * #318 follow-up: the raw source record for this row, so the detail
+   * drawer can show the same fields as the event's chart tooltip
+   * (operator: the side panel should mirror the graph tooltip). Exactly
+   * one is set, matching `kind`; alert/config/boot rely on `summary`.
+   */
+  block?: OurBlockMarker;
+  payout?: RewardEventView;
+  deposit?: DepositView;
+  ip?: IpChangeEvent;
+  retarget?: RetargetView;
 }
 
 /**
