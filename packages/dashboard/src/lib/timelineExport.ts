@@ -1,12 +1,18 @@
 /**
- * #320: export the Timeline to a formatted XLSX. Two pieces:
- *   - `fetchAllBidEvents` pages the bid-history endpoint to completion
- *     within the active filters (the feed is otherwise 100/page).
- *   - `buildTimelineWorkbookBlob` lazy-loads exceljs (kept out of the
- *     main bundle via dynamic import) and writes a formatted sheet.
- * The caller (History) merges bid events with the extra rows already
- * held by their queries, applies the date range + toggles, and hands a
- * flat, newest-first row list here.
+ * #320: streaming XLSX export of the Timeline.
+ *
+ * Why streaming: the earlier exceljs implementation held every cell in
+ * memory while building the workbook, which forced a row cap and could
+ * OOM the tab on the light hardware Hashrate Autopilot targets. This
+ * writes the worksheet XML row-by-row straight into a streaming deflate
+ * (fflate), with inline strings (no shared-strings table to accumulate),
+ * so peak memory is a single page of rows + the compressed output - flat
+ * regardless of row count. No cap.
+ *
+ * The rows arrive as an async iterable so the caller can page the
+ * bid-event endpoint and merge the (already-loaded, bounded) extra rows
+ * without ever materializing the whole set. exceljs is gone; fflate is
+ * ~8 kB and lazy-loaded so it stays out of the initial bundle.
  */
 import { api, type BidHistoryFilters, type BidHistoryFlatEvent } from './api';
 
@@ -24,97 +30,195 @@ export interface TimelineExportRow {
   reason: string;
 }
 
-/**
- * Safety ceiling on the bid-event pull. Not an Excel limit (that's ~1M
- * rows) - it bounds the paging loop and the in-browser workbook memory
- * (exceljs holds every cell in memory while building the .xlsx). 200k
- * rows covers years of history; beyond that, narrowing the date range
- * keeps the tab responsive.
- */
-export const EXPORT_MAX_BID_ROWS = 200_000;
+const COLUMNS: Array<{ key: keyof TimelineExportRow; header: string; width: number; numeric: boolean }> = [
+  { key: 'whenUtc', header: 'When (UTC)', width: 21, numeric: false },
+  { key: 'whenLocal', header: 'When (local)', width: 21, numeric: false },
+  { key: 'type', header: 'Type', width: 16, numeric: false },
+  { key: 'bid', header: 'Bid', width: 22, numeric: false },
+  { key: 'fillable', header: 'Fillable (sat/PH/day)', width: 18, numeric: true },
+  { key: 'priceBefore', header: 'Price before', width: 13, numeric: true },
+  { key: 'priceAfter', header: 'Price after', width: 13, numeric: true },
+  { key: 'deltaPrice', header: 'Δ price', width: 10, numeric: true },
+  { key: 'speed', header: 'Speed (PH/s)', width: 12, numeric: true },
+  { key: 'reason', header: 'Reason', width: 70, numeric: false },
+];
+const COL_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const LAST_COL = COL_LETTERS[COLUMNS.length - 1]!;
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /** Endpoint's max page size; larger pages = far fewer round-trips. */
 const EXPORT_PAGE_SIZE = 500;
 
 /**
- * Page `/api/bid-history-events` to completion under the active filters.
- * Returns the events plus whether the ceiling truncated the pull (the
- * caller surfaces that so a silent cap can't masquerade as "everything").
+ * Page `/api/bid-history-events` to completion under the active filters,
+ * yielding events newest-first. No cap - the streaming writer keeps
+ * memory flat, so the only bound is a runaway-loop backstop.
  */
-export async function fetchAllBidEvents(
+export async function* pageBidEvents(
   filters: BidHistoryFilters,
-): Promise<{ events: BidHistoryFlatEvent[]; truncated: boolean }> {
-  const events: BidHistoryFlatEvent[] = [];
+): AsyncGenerator<BidHistoryFlatEvent> {
   let cursor: number | undefined = undefined;
-  let truncated = false;
-  const maxPages = Math.ceil(EXPORT_MAX_BID_ROWS / EXPORT_PAGE_SIZE) + 1;
-  for (let i = 0; i < maxPages; i += 1) {
+  // Backstop: 1M rows is Excel's own ceiling; a real pull is far below.
+  for (let i = 0; i < Math.ceil(1_048_576 / EXPORT_PAGE_SIZE) + 1; i += 1) {
     const page = await api.bidHistoryFlatEvents(filters, cursor, EXPORT_PAGE_SIZE);
-    events.push(...page.events);
-    if (events.length >= EXPORT_MAX_BID_ROWS) {
-      truncated = page.next_cursor_id !== null;
-      break;
-    }
+    for (const e of page.events) yield e;
     if (page.next_cursor_id === null) break;
     cursor = page.next_cursor_id;
   }
-  return { events: events.slice(0, EXPORT_MAX_BID_ROWS), truncated };
 }
 
 function isoUtc(ms: number): string {
   return new Date(ms).toISOString().replace('T', ' ').replace('.000Z', 'Z');
 }
 
+// XML text escaping + stripping of characters XLSX/XML forbids (control
+// chars other than tab/newline/CR corrupt the file in Excel).
+const INVALID_XML = /[\x00-\x08\x0B\x0C\x0E-\x1F]/g;
+function xmlEscape(s: string): string {
+  return s
+    .replace(INVALID_XML, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function cellXml(letter: string, r: number, value: string | number | null, numeric: boolean): string {
+  if (value === null || value === '') return '';
+  const ref = `${letter}${r}`;
+  if (numeric) return `<c r="${ref}" t="n" s="2"><v>${value}</v></c>`;
+  return `<c r="${ref}" t="inlineStr" s="0"><is><t xml:space="preserve">${xmlEscape(String(value))}</t></is></c>`;
+}
+
+function headerRowXml(): string {
+  let s = '<row r="1">';
+  COLUMNS.forEach((c, i) => {
+    s += `<c r="${COL_LETTERS[i]}1" t="inlineStr" s="1"><is><t xml:space="preserve">${xmlEscape(c.header)}</t></is></c>`;
+  });
+  return s + '</row>';
+}
+
+function dataRowXml(row: TimelineExportRow, r: number): string {
+  let s = `<row r="${r}">`;
+  COLUMNS.forEach((c, i) => {
+    s += cellXml(COL_LETTERS[i]!, r, row[c.key] as string | number | null, c.numeric);
+  });
+  return s + '</row>';
+}
+
+const CONTENT_TYPES =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+  '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+  '<Default Extension="xml" ContentType="application/xml"/>' +
+  '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+  '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+  '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+  '</Types>';
+
+const ROOT_RELS =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+  '</Relationships>';
+
+const WORKBOOK =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+  '<sheets><sheet name="Timeline" sheetId="1" r:id="rId1"/></sheets>' +
+  '</workbook>';
+
+const WB_RELS =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+  '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+  '</Relationships>';
+
+// s=0 default text; s=1 bold header on a yellow fill; s=2 integer number.
+const STYLES =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+  '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>' +
+  '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+  '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFFACC15"/></patternFill></fill></fills>' +
+  '<borders count="1"><border/></borders>' +
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+  '<cellXfs count="3">' +
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+  '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+  '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '</cellXfs>' +
+  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+  '</styleSheet>';
+
+function sheetHead(): string {
+  const cols = COLUMNS.map(
+    (c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width}" customWidth="1"/>`,
+  ).join('');
+  return (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetViews><sheetView tabSelected="1" workbookViewId="0">' +
+    '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
+    '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>' +
+    `<cols>${cols}</cols><sheetData>`
+  );
+}
+
 /**
- * Build a formatted XLSX Blob from the flat rows. exceljs is imported
- * dynamically so it only loads when the operator actually exports.
+ * Stream the rows into a formatted .xlsx Blob. Memory stays flat: the
+ * worksheet XML is deflated in chunks as it's produced and only the
+ * (small) compressed output is retained.
  */
-export async function buildTimelineWorkbookBlob(
-  rows: readonly TimelineExportRow[],
-  localTimestamp: (ms: number) => string,
+export async function streamTimelineXlsx(
+  rows: AsyncIterable<TimelineExportRow>,
 ): Promise<Blob> {
-  const ExcelJS = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'Hashrate Autopilot';
-  const ws = wb.addWorksheet('Timeline', {
-    views: [{ state: 'frozen', ySplit: 1 }],
+  const { Zip, ZipDeflate, strToU8 } = await import('fflate');
+  const parts: Uint8Array[] = [];
+  let resolveDone!: () => void;
+  let rejectDone!: (e: unknown) => void;
+  const done = new Promise<void>((res, rej) => {
+    resolveDone = res;
+    rejectDone = rej;
   });
-  ws.columns = [
-    { header: 'When (UTC)', key: 'whenUtc', width: 21 },
-    { header: 'When (local)', key: 'whenLocal', width: 21 },
-    { header: 'Type', key: 'type', width: 16 },
-    { header: 'Bid', key: 'bid', width: 22 },
-    { header: 'Fillable (sat/PH/day)', key: 'fillable', width: 18 },
-    { header: 'Price before', key: 'priceBefore', width: 13 },
-    { header: 'Price after', key: 'priceAfter', width: 13 },
-    { header: 'Δ price', key: 'deltaPrice', width: 10 },
-    { header: 'Speed (PH/s)', key: 'speed', width: 12 },
-    { header: 'Reason', key: 'reason', width: 70 },
-  ];
-  for (const r of rows) ws.addRow(r);
+  const zip = new Zip((err, chunk, final) => {
+    if (err) {
+      rejectDone(err);
+      return;
+    }
+    if (chunk) parts.push(chunk);
+    if (final) resolveDone();
+  });
+  const addFull = (name: string, xml: string) => {
+    const f = new ZipDeflate(name, { level: 6 });
+    zip.add(f);
+    f.push(strToU8(xml), true);
+  };
+  addFull('[Content_Types].xml', CONTENT_TYPES);
+  addFull('_rels/.rels', ROOT_RELS);
+  addFull('xl/workbook.xml', WORKBOOK);
+  addFull('xl/_rels/workbook.xml.rels', WB_RELS);
+  addFull('xl/styles.xml', STYLES);
 
-  const header = ws.getRow(1);
-  header.font = { bold: true, color: { argb: 'FF0F172A' } };
-  header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFACC15' } };
-  header.alignment = { vertical: 'middle' };
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columnCount } };
-  // Right-align + integer-format the numeric columns.
-  for (const key of ['fillable', 'priceBefore', 'priceAfter', 'deltaPrice', 'speed']) {
-    const col = ws.getColumn(key);
-    col.numFmt = '#,##0';
-    col.alignment = { horizontal: 'right' };
+  const sheet = new ZipDeflate('xl/worksheets/sheet1.xml', { level: 6 });
+  zip.add(sheet);
+  sheet.push(strToU8(sheetHead() + headerRowXml()), false);
+  let count = 1;
+  let buf = '';
+  for await (const row of rows) {
+    count += 1;
+    buf += dataRowXml(row, count);
+    if (buf.length > 65_536) {
+      sheet.push(strToU8(buf), false);
+      buf = '';
+    }
   }
-  // Header alignment overrides the column alignment set above.
-  header.eachCell((cell) => {
-    cell.alignment = { horizontal: 'left', vertical: 'middle' };
-  });
-  void localTimestamp; // (rows already carry both timestamp strings)
-  void isoUtc;
-
-  const buf = await wb.xlsx.writeBuffer();
-  return new Blob([buf], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
+  if (buf) sheet.push(strToU8(buf), false);
+  sheet.push(strToU8(`</sheetData><autoFilter ref="A1:${LAST_COL}${count}"/></worksheet>`), true);
+  zip.end();
+  await done;
+  return new Blob(parts as BlobPart[], { type: XLSX_MIME });
 }
 
 /** Trigger a browser download of a Blob under `filename`. */

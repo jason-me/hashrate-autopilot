@@ -1954,10 +1954,6 @@ msgid "export"
 msgstr "exporteren"
 
 #: src/pages/History.tsx
-msgid "Export capped at the most recent {EXPORT_MAX_BID_ROWS} bid events. Set a narrower From/To range to export an earlier period."
-msgstr "Export beperkt tot de meest recente {EXPORT_MAX_BID_ROWS} bod-events. Stel een smaller Van/Tot-bereik in om een eerdere periode te exporteren."
-
-#: src/pages/History.tsx
 msgid "Export failed - see the browser console for details."
 msgstr "Export mislukt - zie de browserconsole voor details."
 

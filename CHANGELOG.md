@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[Perf]` Timeline export is now streaming, with no row cap (#320)
+
+Replaced the Excel writer (exceljs, which held every cell in memory and forced the 200k-row cap) with a streaming one built on fflate: the worksheet is written and compressed row-by-row, so memory stays flat regardless of size - it runs comfortably on the light hardware Hashrate Autopilot targets. The row cap is gone. The Excel library also shrank from ~930 kB to ~8 kB.
+
 ### `[Fix]` Autopilot no longer places a duplicate bid on a bid-list fetch blip (#319)
 
 When the Braiins bid-list read transiently failed (or momentarily didn't include our bid) while the orderbook read succeeded, the decision loop saw "no owned bids" and created a **second** bid, which its own "multiple owned bids" guard then cancelled a few minutes later - wasting a little hashrate spend and showing a confusing extra `create` in the Timeline. The create path now waits unless the bid-list fetch definitively succeeded AND the local ledger agrees there are no live bids, mirroring the caution already applied to ledger pruning. Strictly conservative: it can only prevent spurious creates.

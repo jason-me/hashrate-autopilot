@@ -54,11 +54,10 @@ import {
   type LogExtraKind,
 } from '../lib/logExtra';
 import {
-  buildTimelineWorkbookBlob,
   downloadBlob,
-  EXPORT_MAX_BID_ROWS,
-  fetchAllBidEvents,
   isoUtc,
+  pageBidEvents,
+  streamTimelineXlsx,
   type TimelineExportRow,
 } from '../lib/timelineExport';
 import { conditionLabel } from '../lib/alertConditions';
@@ -658,26 +657,32 @@ export function History() {
       const inRange = (ts: number) =>
         (filters.sinceMs == null || ts >= filters.sinceMs) &&
         (filters.untilMs == null || ts <= filters.untilMs);
-      const collected: Array<{ ts: number; row: TimelineExportRow }> = [];
-      const add = (ts: number, row: Omit<TimelineExportRow, 'whenUtc' | 'whenLocal'>) =>
-        collected.push({ ts, row: { ...row, whenUtc: isoUtc(ts), whenLocal: fmt.timestamp(ts) } });
+      // Extra rows are bounded (their queries hold the full set) - collect
+      // them in memory, sorted newest-first, then MERGE against the
+      // paged/streamed bid events so the whole set is never materialized.
+      const extras: Array<{ ts: number; row: TimelineExportRow }> = [];
       const extraRow = (ts: number, type: string, reason: string) =>
-        add(ts, {
-          type,
-          bid: null,
-          fillable: null,
-          priceBefore: null,
-          priceAfter: null,
-          deltaPrice: null,
-          speed: null,
-          reason,
+        extras.push({
+          ts,
+          row: {
+            whenUtc: isoUtc(ts),
+            whenLocal: fmt.timestamp(ts),
+            type,
+            bid: null,
+            fillable: null,
+            priceBefore: null,
+            priceAfter: null,
+            deltaPrice: null,
+            speed: null,
+            reason,
+          },
         });
-
-      const { events: allBidEvents, truncated } = await fetchAllBidEvents(filters);
-      for (const e of allBidEvents) {
+      const bidToRow = (e: BidHistoryFlatEvent): TimelineExportRow => {
         const before = e.old_price_sat_per_ph_day;
         const after = e.new_price_sat_per_ph_day;
-        add(e.occurred_at, {
+        return {
+          whenUtc: isoUtc(e.occurred_at),
+          whenLocal: fmt.timestamp(e.occurred_at),
           type: actionLabels[e.kind],
           bid: e.braiins_order_id,
           fillable:
@@ -689,8 +694,9 @@ export function History() {
           deltaPrice: before != null && after != null ? Math.round(after - before) : null,
           speed: e.speed_limit_ph,
           reason: e.reason ?? '',
-        });
-      }
+        };
+      };
+
       if (shownExtraKinds.has('payout'))
         for (const p of payoutsQuery.data?.events ?? []) {
           if (p.reorged || !inRange(p.detected_at)) continue;
@@ -736,16 +742,25 @@ export function History() {
         if (!shownAlertClasses.has(s.event_class) || !inRange(s.start_ms)) continue;
         extraRow(s.start_ms, conditionLabel(s.event_class), s.body ?? '');
       }
+      extras.sort((a, b) => b.ts - a.ts);
 
-      collected.sort((a, b) => b.ts - a.ts);
-      const blob = await buildTimelineWorkbookBlob(collected.map((c) => c.row), fmt.timestamp);
+      // Streaming newest-first merge: bid events arrive desc, page by
+      // page; extras are held desc in memory. Emit any extras newer than
+      // the incoming bid event before it, so the whole set never lands in
+      // memory at once - only one bid page + the compressed output.
+      async function* mergedRows(): AsyncGenerator<TimelineExportRow> {
+        let ei = 0;
+        for await (const e of pageBidEvents(filters)) {
+          const ts = e.occurred_at;
+          while (ei < extras.length && extras[ei]!.ts >= ts) yield extras[ei++]!.row;
+          yield bidToRow(e);
+        }
+        while (ei < extras.length) yield extras[ei++]!.row;
+      }
+
+      const blob = await streamTimelineXlsx(mergedRows());
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `hashrate-autopilot-timeline-${stamp}.xlsx`);
-      if (truncated) {
-        window.alert(
-          t`Export capped at the most recent ${EXPORT_MAX_BID_ROWS} bid events. Set a narrower From/To range to export an earlier period.`,
-        );
-      }
     } catch (err) {
       console.error('[timeline export]', err);
       window.alert(t`Export failed - see the browser console for details.`);
