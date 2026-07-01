@@ -2,7 +2,7 @@
  * #316: pinned pop-up for a condition-band marker clicked on a chart -
  * same interaction language as the other chart markers (pool blocks, IP
  * changes), not the History slide-over. Shows the condition, severity,
- * started/recovered/duration, the alert body, and a "View in history"
+ * started/recovered/duration, the alert body, and a "View in timeline"
  * link that jumps to the matching row on the History page.
  */
 import { Trans } from '@lingui/react/macro';
@@ -99,7 +99,7 @@ export function AlertSpanTooltip({
         onClick={() => navigate(`/history?focus_span=${span.open_id}&ts=${span.start_ms}`)}
         className="mt-2 text-amber-300 hover:text-amber-200 inline-flex items-center gap-1"
       >
-        <Trans>View in history</Trans>
+        <Trans>View in timeline</Trans>
         <span aria-hidden="true">→</span>
       </button>
     </div>

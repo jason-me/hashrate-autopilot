@@ -4012,8 +4012,8 @@ msgid "Show details"
 msgstr "Details tonen"
 
 #: src/components/PriceChart.tsx
-msgid "Show in history"
-msgstr "Toon in geschiedenis"
+msgid "Show in timeline"
+msgstr "Toon in tijdlijn"
 
 #: src/pages/Setup.tsx
 msgid "Show value"
@@ -4489,8 +4489,8 @@ msgstr "Details bekijken"
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
-msgid "View in history"
-msgstr "Bekijk in geschiedenis"
+msgid "View in timeline"
+msgstr "Bekijk in tijdlijn"
 
 #: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx

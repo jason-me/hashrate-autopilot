@@ -2669,7 +2669,7 @@ export function PoolBlockTooltip({
             onClick={() => navigate(`/history?focus=block:${block.block_hash}&ts=${block.timestamp_ms}`)}
             className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
           >
-            <Trans>View in history</Trans>
+            <Trans>View in timeline</Trans>
             <span aria-hidden="true">→</span>
           </button>
         )}
@@ -2859,7 +2859,7 @@ export function RetargetTooltip({
             onClick={() => navigate(`/history?focus=retarget:${event.tick_at}&ts=${event.tick_at}`)}
             className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
           >
-            <Trans>View in history</Trans>
+            <Trans>View in timeline</Trans>
             <span aria-hidden="true">→</span>
           </button>
         </div>

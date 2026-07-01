@@ -792,6 +792,22 @@ export function History() {
     if (!raw) return;
     const id = Number.parseInt(raw, 10);
     if (!Number.isFinite(id)) return;
+    // #318 follow-up: a bid event is fetched server-side, so a filter
+    // that excludes its kind / price-delta / bid-id (or a date range
+    // that predates it) means it never loads and the reveal can't
+    // highlight it. Per the operator, reset those filters first - an
+    // acceptable consequence of jumping to a currently-hidden row.
+    // (Alert + extra reveals force-show past their toggles already.)
+    if (
+      filters.kinds !== undefined ||
+      filters.minAbsPriceDelta != null ||
+      filters.orderIdContains != null ||
+      filters.sinceMs != null
+    ) {
+      setFilters({});
+      jumpWindowToTs(params.get('ts'));
+      return; // re-runs after the unfiltered refetch, then highlights
+    }
     jumpWindowToTs(params.get('ts'));
     const match = events.find((e) => e.id === id);
     if (match) {

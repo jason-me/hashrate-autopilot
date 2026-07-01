@@ -3411,7 +3411,7 @@ function RewardEventTooltip({
               onClick={() => navigate(`/history?focus=payout:${reward.id}&ts=${reward.detected_at}`)}
               className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
             >
-              <Trans>View in history</Trans>
+              <Trans>View in timeline</Trans>
               <span aria-hidden="true">→</span>
             </button>
           )}
@@ -3551,7 +3551,7 @@ function DepositTooltip({
               onClick={() => navigate(`/history?focus=deposit:${deposit.tx_id}&ts=${deposit.tx_timestamp_ms ?? deposit.credited_at_ms ?? deposit.first_seen_at_ms}`)}
               className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
             >
-              <Trans>View in history</Trans>
+              <Trans>View in timeline</Trans>
               <span aria-hidden="true">→</span>
             </button>
           )}
@@ -3934,7 +3934,7 @@ function EventTooltip({
             className="text-[10px] text-amber-300 hover:underline"
             title={t`Open the History row for this event`}
           >
-            <Trans>Show in history</Trans>{' →'}
+            <Trans>Show in timeline</Trans>{' →'}
           </button>
           <button
             type="button"
@@ -4231,7 +4231,7 @@ function UnpaidDropTooltip({
             onClick={() => navigate(`/history?jump_ts=${tip.tick_at}`)}
             className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
           >
-            <Trans>View in history</Trans>
+            <Trans>View in timeline</Trans>
             <span aria-hidden="true">→</span>
           </button>
         </div>
