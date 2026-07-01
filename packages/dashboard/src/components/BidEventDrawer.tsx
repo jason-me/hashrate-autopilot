@@ -37,10 +37,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { api, type BidHistoryFlatEvent, type MetricPoint } from '../lib/api';
 import { useFormatters } from '../lib/locale';
-import { formatNumber } from '../lib/format';
 import { formatAgeMinutes, formatTimestampUtc } from '../lib/format';
 import { copyToClipboard } from '../lib/clipboard';
-import { SatSymbol } from './SatSymbol';
+import { useDenomination } from '../lib/denomination';
 
 export interface BidEventDrawerProps {
   readonly event: BidHistoryFlatEvent;
@@ -51,8 +50,16 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const denomination = useDenomination();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+
+  // Rate values in the active denomination (bare number + shared unit
+  // suffix rendered muted by <Row>); other values (budget, speed) carry
+  // their own suffix via the denomination formatters below.
+  const rate = (satPerPhDay: number | null): string =>
+    denomination.formatSatPerPhDayValue(satPerPhDay);
+  const rateUnit = denomination.rateSuffix;
 
   // Esc closes. Bind on the document while the drawer is mounted so
   // the table underneath keeps its own keyboard shortcuts free.
@@ -235,9 +242,9 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
           {event.kind === 'CREATE_BID' && (
             <section>
               <SectionHeader label={t`create`} />
-              <Row label={t`price`} value={`${formatNumber(Math.round(newPrice ?? 0), {})} sat/PH/day`} />
-              <Row label={t`speed`} value={`${event.speed_limit_ph ?? '-'} PH/s`} />
-              <Row label={t`budget`} value={`${formatNumber(event.amount_sat ?? 0, {})} sat`} />
+              <Row label={t`price`} value={rate(newPrice)} unit={rateUnit} />
+              <Row label={t`speed`} value={denomination.formatHashrate(event.speed_limit_ph)} />
+              <Row label={t`budget`} value={denomination.formatSat(event.amount_sat ?? null)} />
             </section>
           )}
           {event.kind === 'EDIT_PRICE' && (
@@ -245,12 +252,14 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
               <SectionHeader label={t`edit price`} />
               <Row
                 label={t`price`}
-                value={`${formatNumber(Math.round(oldPrice ?? 0), {})} → ${formatNumber(Math.round(newPrice ?? 0), {})} sat/PH/day`}
+                value={`${rate(oldPrice)} → ${rate(newPrice)}`}
+                unit={rateUnit}
               />
               {delta !== null && (
                 <Row
                   label={t`delta`}
-                  value={`${delta >= 0 ? '+' : ''}${formatNumber(Math.round(delta), {})} sat/PH/day`}
+                  value={`${delta > 0 ? '+' : ''}${rate(delta)}`}
+                  unit={rateUnit}
                 />
               )}
             </section>
@@ -258,7 +267,7 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
           {event.kind === 'EDIT_SPEED' && (
             <section>
               <SectionHeader label={t`edit speed`} />
-              <Row label={t`new speed`} value={`${event.speed_limit_ph ?? '-'} PH/s`} />
+              <Row label={t`new speed`} value={denomination.formatHashrate(event.speed_limit_ph)} />
             </section>
           )}
           {event.kind === 'CANCEL_BID' && (
@@ -285,22 +294,22 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
             {marketAtEvent && (
               <>
                 {event.fillable_at_event_sat_per_ph_day !== null && (
-                  <Row label={t`fillable`} value={`${formatNumber(Math.round(event.fillable_at_event_sat_per_ph_day), {})} sat/PH/day`} />
+                  <Row label={t`fillable`} value={rate(event.fillable_at_event_sat_per_ph_day)} unit={rateUnit} />
                 )}
                 {overpayAtEvent !== null && (
-                  <Row label={t`overpay`} value={`${formatNumber(Math.round(overpayAtEvent), {})} sat/PH/day`} />
+                  <Row label={t`overpay`} value={rate(overpayAtEvent)} unit={rateUnit} />
                 )}
                 {marketAtEvent.hashprice_sat_per_ph_day !== null && (
-                  <Row label={t`hashprice`} value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day), {})} sat/PH/day`} />
+                  <Row label={t`hashprice`} value={rate(marketAtEvent.hashprice_sat_per_ph_day)} unit={rateUnit} />
                 )}
                 {maxOverpayAtEvent !== null && (
-                  <Row label={t`max overpay vs hashprice`} value={`${formatNumber(Math.round(maxOverpayAtEvent), {})} sat/PH/day`} />
+                  <Row label={t`max overpay vs hashprice`} value={rate(maxOverpayAtEvent)} unit={rateUnit} />
                 )}
                 {marketAtEvent.max_bid_sat_per_ph_day !== null && (
-                  <Row label={t`max bid`} value={`${formatNumber(Math.round(marketAtEvent.max_bid_sat_per_ph_day), {})} sat/PH/day`} />
+                  <Row label={t`max bid`} value={rate(marketAtEvent.max_bid_sat_per_ph_day)} unit={rateUnit} />
                 )}
                 {effectiveCapAtEvent !== null && (
-                  <Row label={t`effective cap`} value={`${formatNumber(Math.round(effectiveCapAtEvent), {})} sat/PH/day`} />
+                  <Row label={t`effective cap`} value={rate(effectiveCapAtEvent)} unit={rateUnit} />
                 )}
               </>
             )}
@@ -340,24 +349,17 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  // Strip the trailing `sat/PH/day` so the unit reads small + muted
+function Row({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  // Rate rows pass the bare value plus the active-denomination unit
+  // (e.g. "sat/EH/day", "BTC/EH/day"); the unit reads small + muted
   // beside the number, matching the rest of the dashboard's idiom.
-  const m = value.match(/^(.+?)\s+sat\/PH\/day$/);
+  // Other rows (budget, speed) carry their own suffix in `value`.
   return (
     <div className="flex justify-between gap-3 text-xs text-slate-300">
       <span className="text-slate-500">{label}</span>
       <span className="font-mono tabular-nums">
-        {m ? (
-          <>
-            {m[1]}
-            <span className="text-slate-500 text-[10px] ml-1">
-              <SatSymbol className="opacity-70" />/PH/day
-            </span>
-          </>
-        ) : (
-          value
-        )}
+        {value}
+        {unit && <span className="text-slate-500 text-[10px] ml-1">{unit}</span>}
       </span>
     </div>
   );

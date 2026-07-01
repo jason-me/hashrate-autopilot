@@ -93,6 +93,17 @@ export interface DenominationContextValue {
    */
   formatSatPerPhDay: (satPerPhDay: number | null, locale?: string) => string;
   /**
+   * Like {@link formatSatPerPhDay} but WITHOUT the unit suffix (and
+   * without a currency symbol), for dense tables where the unit lives in
+   * the column header. Same conversion + decimal precision; the sign is
+   * preserved. Examples (input = 47,928 sat/PH/day):
+   *   sats + PH:  "47,928"
+   *   BTC  + EH:  "0.47928000"
+   *   USD  + EH:  "28,756.80"
+   * Returns "--" for null.
+   */
+  formatSatPerPhDayValue: (satPerPhDay: number | null, locale?: string) => string;
+  /**
    * Format a hashrate (input PH/s) in the current hashrate unit.
    * Examples (input = 3.14):
    *   TH: "3,140 TH/s"
@@ -169,6 +180,7 @@ const defaultContext: DenominationContextValue = {
   setHashrateUnit: () => undefined,
   formatSat: () => '-',
   formatSatPerPhDay: () => '-',
+  formatSatPerPhDayValue: () => '-',
   formatHashrate: () => '-',
   hashrateSuffix: 'PH/s',
   rateSuffix: 'sat/PH/day',
@@ -291,6 +303,21 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       return `${(pickNf(nfRate, locale) ?? new Intl.NumberFormat(locale, { minimumFractionDigits: rateDigits, maximumFractionDigits: rateDigits })).format(scaled)} sat/${hashrateUnit}/day`;
     };
 
+    const formatSatPerPhDayValue = (
+      satPerPhDay: number | null,
+      locale: string | undefined = defaultLocale,
+    ): string => {
+      if (satPerPhDay === null) return '-';
+      const scaled = satPerPhDay * rateMultiplier;
+      if (effectiveMode === 'usd' && btcPrice !== null) {
+        return (pickNf(nfUsd, locale) ?? new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })).format(satToUsd(scaled, btcPrice));
+      }
+      if (effectiveMode === 'btc') {
+        return (pickNf(nfBtc8, locale) ?? new Intl.NumberFormat(locale, { minimumFractionDigits: 8, maximumFractionDigits: 8 })).format(scaled / SAT_PER_BTC);
+      }
+      return (pickNf(nfRate, locale) ?? new Intl.NumberFormat(locale, { minimumFractionDigits: rateDigits, maximumFractionDigits: rateDigits })).format(scaled);
+    };
+
     const formatHashrate = (
       ph: number | null,
       locale: string | undefined = defaultLocale,
@@ -316,6 +343,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       setHashrateUnit,
       formatSat,
       formatSatPerPhDay,
+      formatSatPerPhDayValue,
       formatHashrate,
       hashrateSuffix,
       rateSuffix,

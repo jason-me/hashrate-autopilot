@@ -14,6 +14,10 @@ Next to the reset button there's now a global **all · none** that flips every c
 
 A **follow** toggle in the timeline toolbar tails the feed live: it refetches faster and, as new events land, keeps you pinned to the newest ones (only when you're already near the top, so scrolling down to read isn't interrupted). Turning it on jumps to the live edge. Click again to stop.
 
+### `[UI]` Timeline table + bid-event detail respect the display denomination
+
+The on-screen Timeline was still showing Fillable, Price before/after and Δ price in raw sat/PH/day regardless of the units toggle (only the Excel export and the Speed column had been converted). Those columns now follow the active denomination, with the unit shown once in each column header (e.g. "Fillable (BTC/EH/day)") and the numbers bare below. The bid-event detail drawer (click a row) gets the same treatment across all its rate rows (price, delta, fillable, hashprice, overpay, max bid, effective cap), plus budget and speed. Free-text Reason lines are unchanged - they're the daemon's own audit wording in canonical sat/PH/day.
+
 ### `[UI]` Excel export respects the display denomination; faster to open
 
 The exported spreadsheet now honours the global units toggle: with EH + BTC selected (for example), fillable/prices/Δ and speed are written in BTC/EH/day and EH/s instead of always sat/PH/day and PH/s, and each column header spells out its unit (e.g. "Fillable (BTC/EH/day)", "Speed (EH/s)"). Decimals follow the denomination too, so speed now carries the same precision as the dashboard (e.g. "3.00 PH/s") rather than rounding to a whole number. Columns use fixed widths instead of Excel's best-fit auto-sizing, which had to rescan every cell when the file opened - noticeably slow on large (20k+ row) exports.

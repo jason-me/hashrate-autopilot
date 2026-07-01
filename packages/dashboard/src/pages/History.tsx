@@ -1075,6 +1075,13 @@ export function History() {
     };
   }, [highlightedRowKey]);
 
+  // Unit shown next to the rate columns' headers so the (bare) numeric
+  // cells below are self-describing under the active denomination
+  // (e.g. "sat/EH/day", "BTC/EH/day", "USD/PH/day").
+  const rateUnitHeader = `${
+    denomination.mode === 'usd' ? 'USD' : denomination.mode === 'btc' ? 'BTC' : 'sat'
+  }/${denomination.hashrateUnit}/day`;
+
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
@@ -1101,10 +1108,10 @@ export function History() {
               <th className="text-left font-normal py-1.5 px-3 whitespace-nowrap normal-case"><Trans>When</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Action</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Bid</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Fillable</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price before</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price after</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Δ price</Trans></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Fillable</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price before</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price after</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Δ price</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Speed</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Reason</Trans></th>
             </tr>
@@ -1643,14 +1650,14 @@ function EventRow({
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
         {event.fillable_at_event_sat_per_ph_day !== null
-          ? formatNumber(Math.round(event.fillable_at_event_sat_per_ph_day), {})
+          ? denomination.formatSatPerPhDayValue(event.fillable_at_event_sat_per_ph_day)
           : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-400 whitespace-nowrap">
-        {oldPrice !== null ? formatNumber(Math.round(oldPrice), {}) : '—'}
+        {oldPrice !== null ? denomination.formatSatPerPhDayValue(oldPrice) : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-200 whitespace-nowrap">
-        {newPrice !== null ? formatNumber(Math.round(newPrice), {}) : '—'}
+        {newPrice !== null ? denomination.formatSatPerPhDayValue(newPrice) : '—'}
       </td>
       <td className={`py-1 px-3 text-right font-mono whitespace-nowrap ${
         delta === null
@@ -1662,7 +1669,7 @@ function EventRow({
               : 'text-slate-500'
       }`}>
         {delta !== null
-          ? `${delta >= 0 ? '+' : ''}${formatNumber(Math.round(delta), {})}`
+          ? `${delta > 0 ? '+' : ''}${denomination.formatSatPerPhDayValue(delta)}`
           : '—'}
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
