@@ -40,6 +40,7 @@ import { useFormatters } from '../lib/locale';
 import { formatAgeMinutes, formatTimestampUtc } from '../lib/format';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
+import { rewriteReasonUnits } from '../lib/reasonUnits';
 
 export interface BidEventDrawerProps {
   readonly event: BidHistoryFlatEvent;
@@ -224,7 +225,10 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
             <section>
               <SectionHeader label={t`reason`} />
               <p className="text-xs text-slate-200 italic whitespace-normal leading-snug">
-                {event.reason}
+                {rewriteReasonUnits(event.reason, {
+                  rate: (n) => denomination.formatSatPerPhDay(n),
+                  hashrate: (n) => denomination.formatHashrate(n),
+                })}
               </p>
             </section>
           )}

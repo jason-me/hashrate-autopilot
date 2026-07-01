@@ -68,6 +68,7 @@ import {
   streamTimelineXlsx,
   type TimelineExportRow,
 } from '../lib/timelineExport';
+import { rewriteReasonUnits } from '../lib/reasonUnits';
 import { conditionLabel } from '../lib/alertConditions';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
@@ -782,7 +783,12 @@ export function History() {
           priceAfter: rateVal(after),
           deltaPrice: before != null && after != null ? rateVal(after - before) : null,
           speed: speedVal(e.speed_limit_ph),
-          reason: e.reason ?? '',
+          reason: e.reason
+            ? rewriteReasonUnits(e.reason, {
+                rate: (n) => denomination.formatSatPerPhDay(n),
+                hashrate: (n) => denomination.formatHashrate(n),
+              })
+            : '',
         };
       };
 
@@ -1627,6 +1633,15 @@ function EventRow({
     event.speed_limit_ph !== null
       ? denomination.formatHashrate(event.speed_limit_ph)
       : '—';
+  // Convert the canonical sat/PH/day + PH/s tokens the daemon bakes into
+  // the reason string into the active denomination, matching the numeric
+  // columns beside it.
+  const reasonText = event.reason
+    ? rewriteReasonUnits(event.reason, {
+        rate: (n) => denomination.formatSatPerPhDay(n),
+        hashrate: (n) => denomination.formatHashrate(n),
+      })
+    : null;
 
   return (
     <tr
@@ -1681,8 +1696,8 @@ function EventRow({
           Truncate-with-title keeps the column readable on dense screens
           but the full reason is one hover away. The click-row drawer
           carries it in full alongside the rest of the bid-event detail. */}
-      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={event.reason ?? undefined}>
-        {event.reason ?? '—'}
+      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={reasonText ?? undefined}>
+        {reasonText ?? '—'}
       </td>
     </tr>
   );

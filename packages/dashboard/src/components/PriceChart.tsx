@@ -58,6 +58,7 @@ import { darkenHex, getChartColor, parseOverrides } from '../lib/chartColors';
 import { useSeriesVisibility } from '../lib/seriesVisibility';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
+import { rewriteReasonUnits } from '../lib/reasonUnits';
 import {
   formatAgeMinutes,
   formatCompactNumber,
@@ -3904,7 +3905,10 @@ function EventTooltip({
         // long sentence doesn't blow the tooltip off-screen, but cap
         // the width so it stays readable.
         <div className="mt-2 text-[11px] text-slate-400 italic whitespace-normal max-w-[20rem]">
-          {e.reason}
+          {rewriteReasonUnits(e.reason, {
+            rate: (n) => denomination.formatSatPerPhDay(n),
+            hashrate: (n) => denomination.formatHashrate(n),
+          })}
         </div>
       )}
       {tip.pinned && (
