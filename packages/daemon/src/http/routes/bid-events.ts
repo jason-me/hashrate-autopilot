@@ -207,11 +207,16 @@ export async function registerBidEventsRoute(
     const beforeId = req.query.before_id
       ? Number.parseInt(req.query.before_id, 10)
       : undefined;
-    const kinds = req.query.kinds
-      ? (req.query.kinds.split(',').filter((s) =>
-          ['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'].includes(s),
-        ) as Array<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED'>)
-      : undefined;
+    // #318 follow-up: the `kinds` param is an opt-out selector. Absent =
+    // no filter. Present (even the empty string `?kinds=`) = filter to
+    // exactly the listed kinds; an empty string yields [] = "hide every
+    // action" and the repo returns no bid events.
+    const kinds =
+      req.query.kinds !== undefined
+        ? (req.query.kinds.split(',').filter((s) =>
+            ['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'].includes(s),
+          ) as Array<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED'>)
+        : undefined;
     const source =
       req.query.source === 'AUTOPILOT' || req.query.source === 'OPERATOR'
         ? (req.query.source as 'AUTOPILOT' | 'OPERATOR')
@@ -236,7 +241,7 @@ export async function registerBidEventsRoute(
       limit,
     };
     if (beforeId && Number.isFinite(beforeId)) args.beforeId = beforeId;
-    if (kinds && kinds.length > 0) args.kinds = kinds;
+    if (kinds !== undefined) args.kinds = kinds;
     if (source) args.source = source;
     if (orderIdContains) args.orderIdContains = orderIdContains;
     if (sinceMs && Number.isFinite(sinceMs)) args.sinceMs = sinceMs;

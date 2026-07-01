@@ -204,9 +204,17 @@ export class BidEventsRepo {
     if (args.beforeId !== undefined && Number.isFinite(args.beforeId)) {
       where.push(`e.id < ${Math.floor(args.beforeId)}`);
     }
-    if (args.kinds && args.kinds.length > 0) {
-      const list = args.kinds.map((k) => `'${k}'`).join(',');
-      where.push(`e.kind IN (${list})`);
+    // #318 follow-up: `kinds` is now an opt-out selector from the
+    // Timeline. undefined = no filter (all kinds); a non-empty list =
+    // only those kinds; an EXPLICIT empty list = the operator hid every
+    // action, so return no bid events (distinct from "no filter").
+    if (args.kinds !== undefined) {
+      if (args.kinds.length === 0) {
+        where.push('0 = 1');
+      } else {
+        const list = args.kinds.map((k) => `'${k}'`).join(',');
+        where.push(`e.kind IN (${list})`);
+      }
     }
     if (args.source) {
       where.push(`e.source = '${args.source}'`);

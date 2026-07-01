@@ -6,6 +6,10 @@
 
 When the Braiins bid-list read transiently failed (or momentarily didn't include our bid) while the orderbook read succeeded, the decision loop saw "no owned bids" and created a **second** bid, which its own "multiple owned bids" guard then cancelled a few minutes later - wasting a little hashrate spend and showing a confusing extra `create` in the Timeline. The create path now waits unless the bid-list fetch definitively succeeded AND the local ledger agrees there are no live bids, mirroring the caution already applied to ledger pruning. Strictly conservative: it can only prevent spurious creates.
 
+### `[Fix]` Timeline Action filter now hides what you deselect (opt-out)
+
+The Action chips were opt-in - selecting one showed *only* that kind, and deselecting everything showed *everything* - which is the opposite of the Alerts and Events groups and confused the operator: clicking "price" off didn't hide the price rows. All three groups now behave the same: every chip is on by default, and clicking one hides that kind. The Action group also gets its own "all · none" toggle, and deselecting every action now correctly shows no bid rows (previously it fell back to showing all). Fixed a latent bug where reloading dropped MODE_CHANGE / bid-paused / bid-resumed from a saved filter.
+
 ### `[UI]` Timeline filter groups get "all · none" quick toggles
 
 The Alerts and Events filter groups now have a compact "all · none" control next to their label, so isolating a single event type (e.g. only `create`) is a couple of clicks instead of deselecting a dozen chips one by one.

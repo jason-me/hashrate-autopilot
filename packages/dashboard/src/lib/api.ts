@@ -839,7 +839,10 @@ export const api = {
     const qs = new URLSearchParams();
     qs.set('limit', String(limit));
     if (beforeId !== undefined) qs.set('before_id', String(beforeId));
-    if (filters.kinds && filters.kinds.length > 0) qs.set('kinds', filters.kinds.join(','));
+    // #318 follow-up: opt-out action filter. Send `kinds` whenever it's
+    // defined - including the empty string (`?kinds=`) which means "hide
+    // every action" - and omit it only when undefined (no filter).
+    if (filters.kinds !== undefined) qs.set('kinds', filters.kinds.join(','));
     if (filters.source) qs.set('source', filters.source);
     if (filters.orderIdContains) qs.set('order_id', filters.orderIdContains);
     if (filters.sinceMs != null) qs.set('since_ms', String(filters.sinceMs));

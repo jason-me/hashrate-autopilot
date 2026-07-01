@@ -63,6 +63,13 @@ import { createPortal } from 'react-dom';
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 
+/** #318: the action kinds, in toolbar order. Opt-out filter: all shown
+ *  by default; `filters.kinds` carries the currently-shown subset (or
+ *  undefined = all, [] = none). */
+const ACTION_KINDS: readonly Kind[] = [
+  'CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED',
+];
+
 /** #316: condition class shown as an alert row + filter chip in History. */
 const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
@@ -263,10 +270,13 @@ function readStoredFilters(): BidHistoryFilters {
     // here are intentionally loose - drop on mismatch, never throw.
     const out: BidHistoryFilters = {};
     if (Array.isArray(parsed.kinds)) {
-      const valid = parsed.kinds.filter((k): k is Kind =>
-        k === 'CREATE_BID' || k === 'EDIT_PRICE' || k === 'EDIT_SPEED' || k === 'CANCEL_BID',
+      // #318: keep the exact selected subset, incl. an explicit [] (the
+      // opt-out "none" state). Only a missing kinds field means "all".
+      // (Prior validator dropped MODE_CHANGE/BID_PAUSED/BID_RESUMED and
+      // any empty selection - both lost across a reload.)
+      out.kinds = parsed.kinds.filter((k): k is Kind =>
+        (ACTION_KINDS as readonly string[]).includes(k),
       );
-      if (valid.length > 0) out.kinds = valid;
     }
     if (typeof parsed.orderIdContains === 'string' && parsed.orderIdContains.length > 0) {
       out.orderIdContains = parsed.orderIdContains;
@@ -909,14 +919,28 @@ function Toolbar({
   const { i18n } = useLingui();
   void i18n;
   const denomination = useDenomination();
-  const kinds: Kind[] = filters.kinds ? [...filters.kinds] : [];
+  // #318: opt-out action filter (matches the Alerts/Events groups). All
+  // kinds are shown by default; `filters.kinds` holds the currently-shown
+  // subset. undefined = all shown; a subset = only those; [] = none.
+  const shownKinds: Set<Kind> = filters.kinds ? new Set(filters.kinds) : new Set(ACTION_KINDS);
+
+  const setShownKinds = (next: Set<Kind>) => {
+    // Collapse "all shown" back to undefined so the URL/persistence stays
+    // clean and the server applies no filter; keep [] explicit for "none".
+    onChange({
+      ...filters,
+      kinds: next.size === ACTION_KINDS.length ? undefined : (Array.from(next) as Kind[]),
+    });
+  };
 
   const toggleKind = (k: Kind) => {
-    const set = new Set(kinds);
-    if (set.has(k)) set.delete(k);
-    else set.add(k);
-    onChange({ ...filters, kinds: set.size > 0 ? Array.from(set) : undefined });
+    const next = new Set(shownKinds);
+    if (next.has(k)) next.delete(k);
+    else next.add(k);
+    setShownKinds(next);
   };
+  const setAllKinds = (on: boolean) =>
+    onChange({ ...filters, kinds: on ? undefined : [] });
 
   // #266 follow-up: locale-aware custom date picker (see DatePicker.tsx).
   // Browser-native input[type=date] always rendered as mm/dd/yyyy
@@ -962,13 +986,16 @@ function Toolbar({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-2 text-xs">
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Action</Trans></label>
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>Action</Trans></label>
+          <AllNone onAll={() => setAllKinds(true)} onNone={() => setAllKinds(false)} />
+        </div>
         <div className="flex flex-wrap gap-1">
-          {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'] as Kind[]).map((k) => (
+          {ACTION_KINDS.map((k) => (
             <ActionChip
               key={k}
               kind={k}
-              active={kinds.includes(k)}
+              active={shownKinds.has(k)}
               onClick={() => toggleKind(k)}
             />
           ))}
