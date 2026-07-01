@@ -2076,6 +2076,18 @@ msgstr "Mínimo (PH/s)"
 msgid "Floor hashrate"
 msgstr "Hashrate mínimo"
 
+#: src/pages/History.tsx
+msgid "follow"
+msgstr "seguir"
+
+#: src/pages/History.tsx
+msgid "Follow new events live (auto-scroll to the newest)"
+msgstr "Seguir nuevos eventos en vivo (desplazamiento automático a los más recientes)"
+
+#: src/pages/History.tsx
+msgid "Following new events live - click to stop"
+msgstr "Siguiendo nuevos eventos en vivo - haz clic para detener"
+
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."

@@ -360,6 +360,24 @@ export function History() {
       return value;
     });
   };
+  // #318 follow-up: "follow" (live tail) - refetch faster and, as new
+  // events land, keep the feed pinned to the top so the newest entries
+  // trace in. Toggling on jumps to the live edge (drops any date window).
+  const [following, setFollowing] = useState(false);
+  const toggleFollow = () => {
+    setFollowing((on) => {
+      if (!on) {
+        // turning on: go live + scroll to the newest.
+        setFilters((prev) => {
+          const next = { ...prev };
+          delete next.untilMs;
+          return next;
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return !on;
+    });
+  };
   // #317: when a reveal link carries `ts` (the event's time) and the event
   // is well in the past, jump the feed's date window to around it so the
   // target row loads in context near the top - rather than floating far
@@ -422,13 +440,22 @@ export function History() {
     queryFn: ({ pageParam }) =>
       api.bidHistoryFlatEvents(filters, pageParam, PAGE_SIZE),
     getNextPageParam: (last) => last.next_cursor_id ?? undefined,
-    refetchInterval: 60_000,
+    refetchInterval: following ? 15_000 : 60_000,
   });
 
   const events: BidHistoryFlatEvent[] = useMemo(
     () => query.data?.pages.flatMap((p) => p.events) ?? [],
     [query.data],
   );
+
+  // #318 follow-up: while following, each fresh fetch pins back to the
+  // top - but only when the operator is already near the top, so a
+  // deliberate scroll-down isn't yanked away mid-read.
+  const lastFetchAt = query.dataUpdatedAt;
+  useEffect(() => {
+    if (!following) return;
+    if (window.scrollY < 400) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [following, lastFetchAt]);
 
   // #316: alert-condition spans, fetched for the toolbar's date window
   // (default: last year) and merged into the feed as rows. Sparse, so a
@@ -1026,6 +1053,8 @@ export function History() {
         onSetAllExtraKinds={setAllExtraKinds}
         onExport={handleExport}
         exporting={exporting}
+        following={following}
+        onToggleFollow={toggleFollow}
       />
       <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
@@ -1134,6 +1163,8 @@ function Toolbar({
   onSetAllExtraKinds,
   onExport,
   exporting,
+  following,
+  onToggleFollow,
 }: {
   filters: BidHistoryFilters;
   onChange: (next: BidHistoryFilters) => void;
@@ -1150,6 +1181,9 @@ function Toolbar({
   /** #320: export all matching rows to a formatted XLSX. */
   onExport: () => void;
   exporting: boolean;
+  /** #318 follow-up: live-tail mode. */
+  following: boolean;
+  onToggleFollow: () => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1369,13 +1403,31 @@ function Toolbar({
             className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
+        {/* #318 follow-up: live-tail toggle. Emerald + pulsing dot when
+            on. Pushed to the right; export + reset follow. */}
+        <button
+          type="button"
+          onClick={onToggleFollow}
+          className={`w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border self-end ${
+            following
+              ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
+              : 'border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200'
+          }`}
+          title={following ? t`Following new events live - click to stop` : t`Follow new events live (auto-scroll to the newest)`}
+        >
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${following ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
+            aria-hidden="true"
+          />
+          <Trans>follow</Trans>
+        </button>
         {/* #320: export every matching row to a formatted XLSX. Secondary
             (slate) so the amber reset stays the primary action. */}
         <button
           type="button"
           onClick={onExport}
           disabled={exporting}
-          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 self-end disabled:opacity-50 disabled:cursor-wait"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 self-end disabled:opacity-50 disabled:cursor-wait"
           title={t`Download all matching rows as an Excel (.xlsx) file`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

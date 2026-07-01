@@ -2076,6 +2076,18 @@ msgstr "Floor (PH/s)"
 msgid "Floor hashrate"
 msgstr "Floor hashrate"
 
+#: src/pages/History.tsx
+msgid "follow"
+msgstr "follow"
+
+#: src/pages/History.tsx
+msgid "Follow new events live (auto-scroll to the newest)"
+msgstr "Follow new events live (auto-scroll to the newest)"
+
+#: src/pages/History.tsx
+msgid "Following new events live - click to stop"
+msgstr "Following new events live - click to stop"
+
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."

@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Timeline "follow" (live tail) button
+
+A **follow** toggle in the timeline toolbar tails the feed live: it refetches faster and, as new events land, keeps you pinned to the newest ones (only when you're already near the top, so scrolling down to read isn't interrupted). Turning it on jumps to the live edge. Click again to stop.
+
 ### `[UI]` Timeline: "payout initiated" no longer looks like an alarm; reset re-enables everything; localized + auto-fit export
 
 Grab-bag of timeline fixes. "Payout initiated" was drawn with the alarm bell in alert-amber, which read as a problem - it now uses a payout (hand-coins) glyph in payout green, since it's good news. The **reset** button now re-enables every filter group (Actions, Alerts, and Events), not just the actions. And the Excel export now follows the interface language (headers + sheet tab translated to nl/es; the values were already localized) and marks its columns best-fit with header-aware widths so a longer localized header isn't clipped and double-clicking a column separator refits it.
