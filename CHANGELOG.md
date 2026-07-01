@@ -8,7 +8,7 @@ When the Braiins bid-list read transiently failed (or momentarily didn't include
 
 ### `[Feature]` Export the Timeline to a formatted Excel file (#320)
 
-An **export** button in the Timeline toolbar downloads every row matching the active filters as a formatted `.xlsx` (bold/frozen header, autofilter, column widths). It pages the bid-event feed to completion and merges in the payout / deposit / block / IP / retarget / alert / config / daemon-start rows within the active date range and group toggles - not just what's on screen. Very large pulls are capped at the most recent 5,000 bid events with a heads-up to narrow the date range. The Excel library loads only when you click export, so it never weighs down the normal page.
+An **export** button in the Timeline toolbar downloads every row matching the active filters as a formatted `.xlsx` (bold/frozen header, autofilter, column widths). It pages the bid-event feed to completion and merges in the payout / deposit / block / IP / retarget / alert / config / daemon-start rows within the active date range and group toggles - not just what's on screen. Very large pulls are capped at the most recent 200,000 bid events (a memory guard, not an Excel limit) with a heads-up to narrow the date range. The Excel library loads only when you click export, so it never weighs down the normal page.
 
 ### `[UI]` Timeline detail panel mirrors the chart tooltip; long hashes are copyable
 

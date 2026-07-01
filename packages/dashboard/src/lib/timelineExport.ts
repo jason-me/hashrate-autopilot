@@ -24,8 +24,17 @@ export interface TimelineExportRow {
   reason: string;
 }
 
-/** Hard ceiling so an unbounded range can't page forever. */
-export const EXPORT_MAX_BID_ROWS = 5000;
+/**
+ * Safety ceiling on the bid-event pull. Not an Excel limit (that's ~1M
+ * rows) - it bounds the paging loop and the in-browser workbook memory
+ * (exceljs holds every cell in memory while building the .xlsx). 200k
+ * rows covers years of history; beyond that, narrowing the date range
+ * keeps the tab responsive.
+ */
+export const EXPORT_MAX_BID_ROWS = 200_000;
+
+/** Endpoint's max page size; larger pages = far fewer round-trips. */
+const EXPORT_PAGE_SIZE = 500;
 
 /**
  * Page `/api/bid-history-events` to completion under the active filters.
@@ -38,9 +47,9 @@ export async function fetchAllBidEvents(
   const events: BidHistoryFlatEvent[] = [];
   let cursor: number | undefined = undefined;
   let truncated = false;
-  // Bounded loop: at 100/page the ceiling is 50 iterations.
-  for (let i = 0; i < Math.ceil(EXPORT_MAX_BID_ROWS / 100) + 1; i += 1) {
-    const page = await api.bidHistoryFlatEvents(filters, cursor, 100);
+  const maxPages = Math.ceil(EXPORT_MAX_BID_ROWS / EXPORT_PAGE_SIZE) + 1;
+  for (let i = 0; i < maxPages; i += 1) {
+    const page = await api.bidHistoryFlatEvents(filters, cursor, EXPORT_PAGE_SIZE);
     events.push(...page.events);
     if (events.length >= EXPORT_MAX_BID_ROWS) {
       truncated = page.next_cursor_id !== null;
