@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Mode-change gets its own icon so it stops colliding with daemon-started
+
+The "mode" action and the "daemon started" event both drew the Lucide power icon, so the mode filter chip looked like it might be a daemon-started filter. Mode-change now uses a distinct left-right arrow (⇄) everywhere - timeline rows + filter chip, chart markers, and the Config color swatch - leaving the power icon to mean daemon-started. (The daemon-started filter already lives in the Events row.)
+
 ### `[UI]` Richer timeline detail panels: build on daemon-start, human-readable config changes, explorer links
 
 Three improvements to the timeline side panels: a **daemon started** row now shows the build that launched (e.g. `build 721 · v1.15.1 · abc1234`). A **config change** now reads in plain language and your chosen hashrate unit - `max_overpay_vs_hashprice_sat_per_eh_day: 2000000 -> 1500000` becomes "Max overpay vs hashprice: 2,000 → 1,500 sat/PH/day". And **deposit / payout / pool-block** panels now carry an "open in block explorer" link. (The daemon-start build detail only appears for boots after this update.)

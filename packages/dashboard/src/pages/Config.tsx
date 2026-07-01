@@ -2425,14 +2425,18 @@ function ChartColorRowIcon({
   // from the marker rendering in PriceChart.tsx. The mode-change and
   // bid-paused colors also tint the idle background bands.
   if (keyId === 'events.mode_change') {
+    // Lucide `arrow-left-right` - run-mode switch (was `power`, which
+    // collided with the daemon-started glyph in the timeline).
     return (
       <svg
         width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
         fill="none" stroke={color} strokeWidth="2"
         strokeLinecap="round" strokeLinejoin="round"
       >
-        <path d="M12 2v10" />
-        <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+        <path d="M8 3 4 7l4 4" />
+        <path d="M4 7h16" />
+        <path d="m16 21 4-4-4-4" />
+        <path d="M20 17H4" />
       </svg>
     );
   }

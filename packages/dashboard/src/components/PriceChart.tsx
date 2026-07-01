@@ -2554,9 +2554,12 @@ export const PriceChart = memo(function PriceChart({
                 >
                   {e.kind === 'MODE_CHANGE' ? (
                     <>
-                      {/* Lucide `power`. */}
-                      <path d="M12 2v10" />
-                      <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+                      {/* Lucide `arrow-left-right` - run-mode switch (was
+                          `power`, which collided with daemon-started). */}
+                      <path d="M8 3 4 7l4 4" />
+                      <path d="M4 7h16" />
+                      <path d="m16 21 4-4-4-4" />
+                      <path d="M20 17H4" />
                     </>
                   ) : e.kind === 'BID_PAUSED' ? (
                     <>
@@ -4116,8 +4119,10 @@ function EventLegend({ kinds, colors }: { kinds: readonly BidEventKind[]; colors
       {has('MODE_CHANGE') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
           <svg {...iconProps} stroke={colors.MODE_CHANGE}>
-            <path d="M12 2v10" />
-            <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+            <path d="M8 3 4 7l4 4" />
+            <path d="M4 7h16" />
+            <path d="m16 21 4-4-4-4" />
+            <path d="M20 17H4" />
           </svg>
           <Trans>mode change</Trans>
         </span>

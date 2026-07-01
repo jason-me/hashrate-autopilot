@@ -1961,11 +1961,15 @@ function ActionGlyph({ kind }: { kind: BidEventView['kind'] }) {
     );
   }
   if (kind === 'MODE_CHANGE') {
-    // Lucide `power` - run-mode switch (DRY_RUN / LIVE / PAUSED).
+    // Lucide `arrow-left-right` - run-mode switch (DRY_RUN / LIVE /
+    // PAUSED). Distinct from the `power` glyph, which daemon-started
+    // owns; the two used to collide.
     return (
       <svg {...base} stroke="#c4b5fd">
-        <path d="M12 2v10" />
-        <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+        <path d="M8 3 4 7l4 4" />
+        <path d="M4 7h16" />
+        <path d="m16 21 4-4-4-4" />
+        <path d="M20 17H4" />
       </svg>
     );
   }
