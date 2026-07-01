@@ -6,6 +6,10 @@
 
 When the Braiins bid-list read transiently failed (or momentarily didn't include our bid) while the orderbook read succeeded, the decision loop saw "no owned bids" and created a **second** bid, which its own "multiple owned bids" guard then cancelled a few minutes later - wasting a little hashrate spend and showing a confusing extra `create` in the Timeline. The create path now waits unless the bid-list fetch definitively succeeded AND the local ledger agrees there are no live bids, mirroring the caution already applied to ledger pruning. Strictly conservative: it can only prevent spurious creates.
 
+### `[Feature]` Export the Timeline to a formatted Excel file (#320)
+
+An **export** button in the Timeline toolbar downloads every row matching the active filters as a formatted `.xlsx` (bold/frozen header, autofilter, column widths). It pages the bid-event feed to completion and merges in the payout / deposit / block / IP / retarget / alert / config / daemon-start rows within the active date range and group toggles - not just what's on screen. Very large pulls are capped at the most recent 5,000 bid events with a heads-up to narrow the date range. The Excel library loads only when you click export, so it never weighs down the normal page.
+
 ### `[UI]` Timeline detail panel mirrors the chart tooltip; long hashes are copyable
 
 Clicking a log row now opens a panel showing the same information the event's chart tooltip shows, instead of a bare summary. A pool block lists height, pool reward, subsidy, fees, your estimated share, and the BIP-110 signal - and the long block hash is now a small copyable value with a copy button rather than a wall of digits. Payout, deposit, IP-change and retarget rows get their structured detail too (txid / address are copyable).

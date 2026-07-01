@@ -24,7 +24,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useInfiniteQuery, useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
   CONDITION_SPAN_CLASSES,
@@ -53,6 +53,14 @@ import {
   type LogExtraItem,
   type LogExtraKind,
 } from '../lib/logExtra';
+import {
+  buildTimelineWorkbookBlob,
+  downloadBlob,
+  EXPORT_MAX_BID_ROWS,
+  fetchAllBidEvents,
+  isoUtc,
+  type TimelineExportRow,
+} from '../lib/timelineExport';
 import { conditionLabel } from '../lib/alertConditions';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
@@ -637,6 +645,130 @@ export function History() {
     return items;
   }, [events, visibleAlertSpans, visibleExtras]);
 
+  // #320: export every row matching the active filters (not just the
+  // loaded page) to a formatted XLSX. Bid events page to completion
+  // server-side; the extra kinds come from their already-loaded queries,
+  // bounded by the active date range + group toggles.
+  const [exporting, setExporting] = useState(false);
+  const actionLabels = useActionLabels();
+  const handleExport = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const inRange = (ts: number) =>
+        (filters.sinceMs == null || ts >= filters.sinceMs) &&
+        (filters.untilMs == null || ts <= filters.untilMs);
+      const collected: Array<{ ts: number; row: TimelineExportRow }> = [];
+      const add = (ts: number, row: Omit<TimelineExportRow, 'whenUtc' | 'whenLocal'>) =>
+        collected.push({ ts, row: { ...row, whenUtc: isoUtc(ts), whenLocal: fmt.timestamp(ts) } });
+      const extraRow = (ts: number, type: string, reason: string) =>
+        add(ts, {
+          type,
+          bid: null,
+          fillable: null,
+          priceBefore: null,
+          priceAfter: null,
+          deltaPrice: null,
+          speed: null,
+          reason,
+        });
+
+      const { events: allBidEvents, truncated } = await fetchAllBidEvents(filters);
+      for (const e of allBidEvents) {
+        const before = e.old_price_sat_per_ph_day;
+        const after = e.new_price_sat_per_ph_day;
+        add(e.occurred_at, {
+          type: actionLabels[e.kind],
+          bid: e.braiins_order_id,
+          fillable:
+            e.fillable_at_event_sat_per_ph_day != null
+              ? Math.round(e.fillable_at_event_sat_per_ph_day)
+              : null,
+          priceBefore: before != null ? Math.round(before) : null,
+          priceAfter: after != null ? Math.round(after) : null,
+          deltaPrice: before != null && after != null ? Math.round(after - before) : null,
+          speed: e.speed_limit_ph,
+          reason: e.reason ?? '',
+        });
+      }
+      if (shownExtraKinds.has('payout'))
+        for (const p of payoutsQuery.data?.events ?? []) {
+          if (p.reorged || !inRange(p.detected_at)) continue;
+          extraRow(p.detected_at, logExtraLabel('payout'), `${formatNumber(p.value_sat, {})} sat · block ${p.block_height}`);
+        }
+      if (shownExtraKinds.has('deposit'))
+        for (const d of depositsQuery.data?.deposits ?? []) {
+          const ts = d.credited_at_ms ?? d.tx_timestamp_ms ?? d.first_seen_at_ms;
+          if (!inRange(ts)) continue;
+          extraRow(ts, logExtraLabel('deposit'), `${formatNumber(d.amount_sat, {})} sat · ${d.tx_id}`);
+        }
+      if (shownExtraKinds.has('block'))
+        for (const b of oceanQuery.data?.our_recent_blocks ?? []) {
+          if (!inRange(b.timestamp_ms)) continue;
+          const lbl = b.found_by_us ? t`own pool block` : b.signals_bip110 === true ? t`BIP 110 block` : t`pool block`;
+          extraRow(b.timestamp_ms, lbl, `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat · ${b.block_hash}`);
+        }
+      if (shownExtraKinds.has('ip'))
+        for (const c of ipChangesQuery.data?.events ?? []) {
+          if (!inRange(c.occurred_at)) continue;
+          extraRow(c.occurred_at, logExtraLabel('ip'), `${c.old_ip ?? '—'} → ${c.new_ip}`);
+        }
+      if (shownExtraKinds.has('retarget'))
+        for (const r of retargetsQuery.data?.retargets ?? []) {
+          if (!inRange(r.tick_at)) continue;
+          const pct = ((r.difficulty - r.previous) / r.previous) * 100;
+          extraRow(r.tick_at, logExtraLabel('retarget'), `${(r.difficulty / 1e12).toFixed(1)} T · ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`);
+        }
+      if (shownExtraKinds.has('alert'))
+        for (const a of alertsLogQuery.data?.alerts ?? []) {
+          const ec = a.event_class;
+          if (!ec || ALERT_COVERED_ELSEWHERE.has(ec) || !inRange(a.created_at)) continue;
+          extraRow(a.created_at, pointAlertLabel(ec), a.body || a.title);
+        }
+      for (const s of systemEventsQuery.data?.events ?? []) {
+        if (!inRange(s.occurred_at)) continue;
+        if (s.kind === 'config_change' && shownExtraKinds.has('config'))
+          extraRow(s.occurred_at, logExtraLabel('config'), `${s.field ?? '?'}: ${s.old_value ?? '—'} → ${s.new_value ?? '—'}`);
+        else if (s.kind === 'daemon_started' && shownExtraKinds.has('boot'))
+          extraRow(s.occurred_at, logExtraLabel('boot'), s.detail ?? '');
+      }
+      for (const s of alertSpansQuery.data?.spans ?? []) {
+        if (!shownAlertClasses.has(s.event_class) || !inRange(s.start_ms)) continue;
+        extraRow(s.start_ms, conditionLabel(s.event_class), s.body ?? '');
+      }
+
+      collected.sort((a, b) => b.ts - a.ts);
+      const blob = await buildTimelineWorkbookBlob(collected.map((c) => c.row), fmt.timestamp);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `hashrate-autopilot-timeline-${stamp}.xlsx`);
+      if (truncated) {
+        window.alert(
+          t`Export capped at the most recent ${EXPORT_MAX_BID_ROWS} bid events. Set a narrower From/To range to export an earlier period.`,
+        );
+      }
+    } catch (err) {
+      console.error('[timeline export]', err);
+      window.alert(t`Export failed - see the browser console for details.`);
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    exporting,
+    filters,
+    fmt,
+    actionLabels,
+    shownExtraKinds,
+    shownAlertClasses,
+    payoutsQuery.data,
+    depositsQuery.data,
+    oceanQuery.data,
+    ipChangesQuery.data,
+    retargetsQuery.data,
+    alertsLogQuery.data,
+    systemEventsQuery.data,
+    alertSpansQuery.data,
+  ]);
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = sentinelRef.current;
@@ -803,6 +935,8 @@ export function History() {
         shownExtraKinds={shownExtraKinds}
         onToggleExtraKind={toggleExtraKind}
         onSetAllExtraKinds={setAllExtraKinds}
+        onExport={handleExport}
+        exporting={exporting}
       />
       <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
@@ -907,6 +1041,8 @@ function Toolbar({
   shownExtraKinds,
   onToggleExtraKind,
   onSetAllExtraKinds,
+  onExport,
+  exporting,
 }: {
   filters: BidHistoryFilters;
   onChange: (next: BidHistoryFilters) => void;
@@ -920,6 +1056,9 @@ function Toolbar({
   onToggleExtraKind: (kind: LogExtraKind) => void;
   /** #318: bulk show/hide every extra event kind. */
   onSetAllExtraKinds: (on: boolean) => void;
+  /** #320: export all matching rows to a formatted XLSX. */
+  onExport: () => void;
+  exporting: boolean;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1130,13 +1269,29 @@ function Toolbar({
             className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
+        {/* #320: export every matching row to a formatted XLSX. Secondary
+            (slate) so the amber reset stays the primary action. */}
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 self-end disabled:opacity-50 disabled:cursor-wait"
+          title={t`Download all matching rows as an Excel (.xlsx) file`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+          </svg>
+          {exporting ? <Trans>exporting…</Trans> : <Trans>export</Trans>}
+        </button>
         {/* #318 follow-up: reset is now a real amber button (operator:
             "don't be afraid of it"), right-aligned at the end of the
             field row; full-width on mobile. */}
         <button
           type="button"
           onClick={() => onChange({})}
-          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 self-end shadow-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 self-end shadow-sm"
           title={t`Reset all filters`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

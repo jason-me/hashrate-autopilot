@@ -1685,6 +1685,10 @@ msgstr "Listo"
 msgid "Done rearranging"
 msgstr "Listo"
 
+#: src/pages/History.tsx
+msgid "Download all matching rows as an Excel (.xlsx) file"
+msgstr "Descargar todas las filas coincidentes como archivo Excel (.xlsx)"
+
 #: src/pages/Status.tsx
 msgid "Drag from the amber grip handle on the left of each card to reorder."
 msgstr "Arrastra desde el asa ámbar a la izquierda de cada tarjeta para reordenar."
@@ -1944,6 +1948,22 @@ msgstr "Expandir al doble de altura"
 #: src/pages/Status.tsx
 msgid "expected"
 msgstr "esperado"
+
+#: src/pages/History.tsx
+msgid "export"
+msgstr "exportar"
+
+#: src/pages/History.tsx
+msgid "Export capped at the most recent {EXPORT_MAX_BID_ROWS} bid events. Set a narrower From/To range to export an earlier period."
+msgstr "Exportación limitada a los {EXPORT_MAX_BID_ROWS} eventos de puja más recientes. Define un rango Desde/Hasta más estrecho para exportar un periodo anterior."
+
+#: src/pages/History.tsx
+msgid "Export failed - see the browser console for details."
+msgstr "La exportación falló - consulta la consola del navegador para más detalles."
+
+#: src/pages/History.tsx
+msgid "exporting…"
+msgstr "exportando…"
 
 #: src/pages/Config.tsx
 msgid "Fahrenheit (°F)"
