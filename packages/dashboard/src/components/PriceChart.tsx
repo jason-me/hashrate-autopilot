@@ -2598,9 +2598,10 @@ export const PriceChart = memo(function PriceChart({
           // #287 follow-up: mode-change and pause/resume markers have
           // no price anchor (no bid price on the row), so they render
           // like pool blocks: top-edge glyph + full-height dashed
-          // guide line down to the plot baseline. One shared power
-          // icon for every mode change regardless of direction
-          // (operator: "let's not overdo it"); the tooltip's reason
+          // guide line down to the plot baseline. One shared
+          // arrow-left-right icon for every mode change regardless of
+          // direction (operator: "let's not overdo it"; was `power`,
+          // now reserved for daemon-started); the tooltip's reason
           // line carries the transition / Braiins pause reason.
           if (e.kind === 'MODE_CHANGE' || e.kind === 'BID_PAUSED' || e.kind === 'BID_RESUMED') {
             const stroke =

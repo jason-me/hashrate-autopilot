@@ -356,6 +356,82 @@ function persistFilters(filters: BidHistoryFilters): void {
   }
 }
 
+/**
+ * #320 audit follow-up: the Alerts / Events chip groups and the follow
+ * toggle are sticky too, in their own slot (the bid-filter slot above
+ * predates them and its shape is server-facing). Missing key or field
+ * = the defaults (all chips on, follow off), so first-run behavior is
+ * unchanged and stale entries from old builds degrade gracefully.
+ */
+const EXTRA_FILTERS_STORAGE_KEY = 'hashrate-autopilot.history-extra-filters';
+
+interface StoredExtraFilters {
+  alerts?: string[];
+  extras?: string[];
+  following?: boolean;
+}
+
+function readStoredExtraFilters(): {
+  alerts: Set<string>;
+  extras: Set<LogExtraKind>;
+  following: boolean;
+} {
+  const defaults = {
+    alerts: new Set<string>(ALERT_FILTER_CLASSES),
+    extras: new Set<LogExtraKind>(LOG_EXTRA_KINDS),
+    following: false,
+  };
+  if (typeof window === 'undefined') return defaults;
+  try {
+    const raw = window.localStorage.getItem(EXTRA_FILTERS_STORAGE_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as StoredExtraFilters;
+    return {
+      alerts: Array.isArray(parsed.alerts)
+        ? new Set(parsed.alerts.filter((c) => (ALERT_FILTER_CLASSES as readonly string[]).includes(c)))
+        : defaults.alerts,
+      extras: Array.isArray(parsed.extras)
+        ? new Set(
+            parsed.extras.filter((k): k is LogExtraKind =>
+              (LOG_EXTRA_KINDS as readonly string[]).includes(k),
+            ),
+          )
+        : defaults.extras,
+      following: parsed.following === true,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function persistExtraFilters(v: {
+  alerts: Set<string>;
+  extras: Set<LogExtraKind>;
+  following: boolean;
+}): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const allDefault =
+      v.alerts.size === ALERT_FILTER_CLASSES.length &&
+      v.extras.size === LOG_EXTRA_KINDS.length &&
+      !v.following;
+    if (allDefault) {
+      window.localStorage.removeItem(EXTRA_FILTERS_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(
+        EXTRA_FILTERS_STORAGE_KEY,
+        JSON.stringify({
+          alerts: [...v.alerts],
+          extras: [...v.extras],
+          following: v.following,
+        } satisfies StoredExtraFilters),
+      );
+    }
+  } catch {
+    // localStorage unavailable (private mode etc.). Ignore.
+  }
+}
+
 export function History() {
   const { i18n } = useLingui();
   void i18n;
@@ -369,10 +445,17 @@ export function History() {
       return value;
     });
   };
+  // #320 audit follow-up: sticky Alerts/Events chips + follow toggle.
+  // Read once; a persisted "following" is dropped when the stored bid
+  // filters pin an until-date (a live tail of a past window is
+  // contradictory - the date filter wins).
+  const [storedExtraFilters] = useState(readStoredExtraFilters);
   // #318 follow-up: "follow" (live tail) - refetch faster and, as new
   // events land, keep the feed pinned to the top so the newest entries
   // trace in. Toggling on jumps to the live edge (drops any date window).
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(
+    () => storedExtraFilters.following && readStoredFilters().untilMs == null,
+  );
   const toggleFollow = () => {
     setFollowing((on) => {
       if (!on) {
@@ -410,9 +493,10 @@ export function History() {
   const [highlightedSpanId, setHighlightedSpanId] = useState<number | null>(null);
   // #317: generic focus key (`<kind>:<key>`) for the extra log rows.
   const [highlightedRowKey, setHighlightedRowKey] = useState<string | null>(null);
-  // #317: which extra event kinds show as rows. Default: all on.
+  // #317: which extra event kinds show as rows. Default: all on;
+  // sticky per browser (#320 audit follow-up).
   const [shownExtraKinds, setShownExtraKinds] = useState<Set<LogExtraKind>>(
-    () => new Set(LOG_EXTRA_KINDS),
+    () => storedExtraFilters.extras,
   );
   const toggleExtraKind = (k: LogExtraKind) =>
     setShownExtraKinds((prev) => {
@@ -421,10 +505,11 @@ export function History() {
       else next.add(k);
       return next;
     });
-  // #316: which alert-condition classes show as rows. Default: all on.
-  // An empty set hides every alert row (matching the chip-off semantics).
+  // #316: which alert-condition classes show as rows. Default: all on;
+  // sticky per browser (#320 audit follow-up). An empty set hides every
+  // alert row (matching the chip-off semantics).
   const [shownAlertClasses, setShownAlertClasses] = useState<Set<string>>(
-    () => new Set(ALERT_FILTER_CLASSES),
+    () => storedExtraFilters.alerts,
   );
   const toggleAlertClass = (c: string) =>
     setShownAlertClasses((prev) => {
@@ -440,6 +525,10 @@ export function History() {
     setShownAlertClasses(on ? new Set(ALERT_FILTER_CLASSES) : new Set());
   const setAllExtraKinds = (on: boolean) =>
     setShownExtraKinds(on ? new Set(LOG_EXTRA_KINDS) : new Set());
+  // #320 audit follow-up: persist the chip selections + follow state.
+  useEffect(() => {
+    persistExtraFilters({ alerts: shownAlertClasses, extras: shownExtraKinds, following });
+  }, [shownAlertClasses, shownExtraKinds, following]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -474,11 +563,15 @@ export function History() {
     const since = filters.sinceMs ?? until - YEAR_MS;
     return { since, until };
   }, [filters.sinceMs, filters.untilMs]);
+  // #320 audit follow-up: while following, the merged sources poll at
+  // the same 15 s as the bid feed so a fresh payout/block/alert doesn't
+  // lag up to a minute behind the rows around it.
+  const extraRefetchMs = following ? 15_000 : 60_000;
   const alertSpansQuery = useQuery({
     queryKey: ['history-alert-spans', alertWindow.since, alertWindow.until],
     queryFn: () => api.alertSpans(alertWindow.since, alertWindow.until),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
 
   // #317: extra event types folded into the log. Reuse the existing
@@ -487,31 +580,31 @@ export function History() {
     queryKey: ['history-reward-events'],
     queryFn: () => api.rewardEvents(),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   const depositsQuery = useQuery({
     queryKey: ['history-deposits'],
     queryFn: () => api.deposits(),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   const oceanQuery = useQuery({
     queryKey: ['history-ocean'],
     queryFn: () => api.ocean(),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   const ipChangesQuery = useQuery({
     queryKey: ['history-ip-changes', alertWindow.since, alertWindow.until],
     queryFn: () => api.ipChangesViewport(alertWindow.since, alertWindow.until),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   const retargetsQuery = useQuery({
     queryKey: ['history-retargets', alertWindow.since, alertWindow.until],
     queryFn: () => api.retargets(alertWindow.since, alertWindow.until),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   // #318: raw alerts, for the point-alert rows (classes not already
   // covered as spans or by a dedicated source). One windowed fetch.
@@ -519,14 +612,14 @@ export function History() {
     queryKey: ['history-alerts-log', alertWindow.since],
     queryFn: () => api.alertsList({ since_ms: alertWindow.since, limit: 1000 }),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   // #318: config changes + daemon boots.
   const systemEventsQuery = useQuery({
     queryKey: ['history-system-events', alertWindow.since, alertWindow.until],
     queryFn: () => api.systemEvents(alertWindow.since, alertWindow.until),
     placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
+    refetchInterval: extraRefetchMs,
   });
   // #318 follow-up: config carries the block-explorer URL templates so the
   // detail drawer can deep-link deposits / payouts / blocks to an explorer.

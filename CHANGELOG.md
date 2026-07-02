@@ -2,6 +2,10 @@
 
 ## 2026-07-02
 
+### `[UI]` Timeline: all filters are now sticky; follow live-tails every source
+
+The Alerts and Events chip groups and the follow toggle now persist per browser like the rest of the toolbar filters (they used to reset to "all on"/off on every reload). And while following, the merged sources (payouts, deposits, blocks, IP changes, retargets, alerts, system events) poll at the same 15 s as the bid feed, so a fresh payout no longer lags up to a minute behind the rows around it.
+
 ### `[Fix]` Config-layer cleanup from the code-vs-spec audit
 
 Three small config fixes. The dynamic hashprice cap's schema default now matches what fresh installs actually get (2,000,000 sat/EH/day, cap ON - the Zod default said "disabled" while first-run seeding enabled it; existing installs keep whatever they have, including an explicit "disabled"). The dead `handover_window_minutes` field is dropped (migration 0115) - it belonged to a manual-override system that was retired before it ever shipped. And `BHA_WALLET_RUNWAY_ALERT_DAYS` now accepts fractional days (e.g. `0.5`) via environment variable, matching what the dashboard and docs always allowed.

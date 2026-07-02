@@ -667,8 +667,10 @@ on the wire). Columns: When, Bid (full id, no truncation), Action, Reason (#285 
 decision reason / mode transition / Braiins pause reason), Fillable at event, Price before, Price
 after, Δ price (green for downward, red for upward), Speed. Clicking a row slides in a detail drawer
 (#285) with every field plus a "View on chart" jump that pans the Status price chart to the event,
-scrolls the page to the chart, and pulses an amber focus ring around the marker for ~5 s. Toolbar
-filters persist per browser (sticky).
+scrolls the page to the chart, and pulses an amber focus ring around the marker for ~6 s. Every toolbar
+filter persists per browser (sticky): the Action-kind chips, bid-id, date range and Δ-price filter, plus the
+Alerts / Events chip groups and the follow toggle (a persisted follow is dropped when a stored until-date
+pins the window - a live tail of a past window is contradictory).
 
 **Denomination-aware values (#320).** Every rate and hashrate on the page follows the global
 currency (sats/BTC/USD) and hashrate-unit (TH/PH/EH) toggles, not just the Status cards. The Fillable
@@ -681,9 +683,10 @@ numeric tokens into the active denomination too, leaving the surrounding audit w
 Excel export honours the denomination as well (values converted, headers unit-labelled, decimals per
 denomination), with the plain word "sat" in text cells where a font glyph can't render.
 
-**Live tail + bulk filter controls (#320).** A **follow** toggle in the toolbar tails the feed: it
-refetches faster and keeps the newest rows pinned to the top (only when already near the top, so
-reading older rows isn't interrupted). Each filter group (Actions / Alerts / Events) has an
+**Live tail + bulk filter controls (#320).** A **follow** toggle in the toolbar tails the feed: the bid
+feed AND every merged source (alerts, payouts, deposits, blocks, IP changes, retargets, system events)
+refetch at 15 s instead of 60 s, and the newest rows stay pinned to the top (only when already near the
+top, so reading older rows isn't interrupted). Each filter group (Actions / Alerts / Events) has an
 "all · none" segmented toggle, plus a global "select all" / "select none" pair in the toolbar (reset
 stays alongside and clears text/date filters too).
 

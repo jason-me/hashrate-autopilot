@@ -32,8 +32,9 @@ export const DEFAULT_CHART_RANGE: ChartRange = '24h';
 export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED';
 
 // Deliberately excludes MODE_CHANGE / BID_PAUSED / BID_RESUMED (#287):
-// those are History rows, never chart markers, so the per-range marker filters and the
-// "all kinds" chart helpers don't carry them.
+// those render as ALWAYS-VISIBLE chart markers (PriceChart adds them to
+// the allowed set itself, bypassing the per-range fading), so the
+// per-range marker filters and the "all kinds" helpers don't carry them.
 export const ALL_BID_EVENT_KINDS: readonly BidEventKind[] = [
   'CREATE_BID',
   'EDIT_PRICE',

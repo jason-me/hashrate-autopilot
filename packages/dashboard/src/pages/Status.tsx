@@ -1429,7 +1429,7 @@ export function Status() {
 }
 
 // ---------------------------------------------------------------------------
-// Hero operations card - run mode, action mode, operator avail, quiet hours.
+// Hero operations card - live bid price/hashprice, delivered hashrate, run-mode toggle.
 // ---------------------------------------------------------------------------
 
 const heroColors: Record<StatusResponse['run_mode'], string> = {
