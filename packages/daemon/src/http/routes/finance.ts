@@ -2,11 +2,12 @@
  * GET /api/finance - top-level money panel for the dashboard.
  *
  * Combines three sources into a single profit/loss view:
- *   - spent      = lifetime sum of `amount_consumed_sat` across every
- *                  bid the autopilot has ever owned. (There is no
- *                  dashboard manual-bump path - §7.3's override flow
- *                  was retired unbuilt; foreign bids count only under
- *                  the opt-in 'account' spent_scope.)
+ *   - spent      = scope per config.spent_scope: 'account' (default)
+ *                  counts the whole account via AccountSpendService,
+ *                  'autopilot' restricts to lifetime amount_consumed_sat
+ *                  over ledger-owned bids. (There is no dashboard
+ *                  manual-bump path - §7.3's override flow was retired
+ *                  unbuilt.)
  *   - collected  = lifetime sat received at the configured payout
  *                  address (sum of reward_events.value_sat where
  *                  reorged=0). We count "what they put in," not the

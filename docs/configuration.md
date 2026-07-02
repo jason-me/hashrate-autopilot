@@ -38,8 +38,7 @@ issue #60.
 | `BHA_BITCOIND_RPC_URL` | `bitcoind_rpc_url` | Optional. Editable from the Config page. |
 | `BHA_BITCOIND_RPC_USER` | `bitcoind_rpc_user` | Optional. |
 | `BHA_BITCOIND_RPC_PASSWORD` | `bitcoind_rpc_password` | Optional. |
-| `BHA_TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | Legacy; retained for compat. |
-| `BHA_TELEGRAM_WEBHOOK_SECRET` | `telegram_webhook_secret` | Legacy; retained for compat. |
+| `BHA_TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | Active (#100). Dual-location: also a live-editable config field; the env var seeds both. |
 
 ## Targets and pricing
 
@@ -48,7 +47,7 @@ issue #60.
 | `BHA_TARGET_HASHRATE_PH` | `target_hashrate_ph` | float, PH/s |
 | `BHA_MINIMUM_FLOOR_HASHRATE_PH` | `minimum_floor_hashrate_ph` | float, PH/s |
 | `BHA_MAX_BID_SAT_PER_EH_DAY` | `max_bid_sat_per_eh_day` | int, sat/EH/day |
-| `BHA_MAX_OVERPAY_VS_HASHPRICE_SAT_PER_EH_DAY` | `max_overpay_vs_hashprice_sat_per_eh_day` | int or empty (disable) |
+| `BHA_MAX_OVERPAY_VS_HASHPRICE_SAT_PER_EH_DAY` | `max_overpay_vs_hashprice_sat_per_eh_day` | int (default 2,000,000 = cap on) or empty/0 (disable) |
 | `BHA_OVERPAY_SAT_PER_EH_DAY` | `overpay_sat_per_eh_day` | int, sat/EH/day |
 | `BHA_BID_BUDGET_SAT` | `bid_budget_sat` | int sat; `0` = use full wallet balance per CREATE |
 | `BHA_BID_EDIT_DEADBAND_PCT` | `bid_edit_deadband_pct` | float (%); default 20 (legacy `overpay/5` equivalent). EDIT_PRICE noise floor: `max(tick_size, overpay × pct / 100)` (#222, migration 0099) |
@@ -68,7 +67,7 @@ issue #60.
 |---|---|---|
 | `BHA_BOOT_MODE` | `boot_mode` | `ALWAYS_DRY_RUN` (default), `LAST_MODE`, `ALWAYS_LIVE` |
 | `BHA_SPENT_SCOPE` | `spent_scope` | `autopilot`, `account` (default) |
-| `BHA_BTC_PRICE_SOURCE` | `btc_price_source` | `none` (default), `coingecko`, `coinbase`, `bitstamp`, `kraken` |
+| `BHA_BTC_PRICE_SOURCE` | `btc_price_source` | `coingecko` (default), `none`, `coinbase`, `bitstamp`, `kraken` |
 | `BHA_PAYOUT_SOURCE` | `payout_source` | `none` (default), `electrs`, `bitcoind` |
 
 ## Cheap-mode (opportunistic scaling)
@@ -83,7 +82,7 @@ issue #60.
 
 | Env var | Schema field |
 |---|---|
-| `BHA_WALLET_RUNWAY_ALERT_DAYS` | `wallet_runway_alert_days` |
+| `BHA_WALLET_RUNWAY_ALERT_DAYS` | `wallet_runway_alert_days` (fractional days allowed, e.g. 0.5; 0 disables) |
 | `BHA_BELOW_FLOOR_ALERT_AFTER_MINUTES` | `below_floor_alert_after_minutes` |
 | `BHA_ZERO_HASHRATE_LOUD_ALERT_AFTER_MINUTES` | `zero_hashrate_loud_alert_after_minutes` |
 | `BHA_POOL_OUTAGE_BLIP_TOLERANCE_SECONDS` | `pool_outage_blip_tolerance_seconds` |
@@ -117,6 +116,7 @@ issue #60.
 
 | Env var | Schema field | Type |
 |---|---|---|
+| `BHA_TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | string (live-editable config field; same env var also seeds the secrets-tier fallback) |
 | `BHA_TELEGRAM_CHAT_ID` | `telegram_chat_id` | string |
 | `BHA_TELEGRAM_INSTANCE_LABEL` | `telegram_instance_label` | string |
 | `BHA_NOTIFICATIONS_MUTED` | `notifications_muted` | boolean |
@@ -143,9 +143,9 @@ issue #60.
 | Env var | Schema field | Type |
 |---|---|---|
 | `BHA_SOLO_MINING_ENABLED` | `solo_mining_enabled` | boolean |
-| `BHA_SOLO_OVERHEATING_THRESHOLD_CELSIUS` | `solo_overheating_threshold_celsius` | int (°C; 0 = auto per model) |
+| `BHA_SOLO_OVERHEATING_THRESHOLD_CELSIUS` | `solo_overheating_threshold_celsius` | int (°C; 0 = built-in flat 75 °C ceiling) |
 | `BHA_SOLO_ZERO_HASHRATE_ALERT_AFTER_MINUTES` | `solo_zero_hashrate_alert_after_minutes` | int |
-| `BHA_SOLO_SHARE_REJECTION_THRESHOLD_PCT` | `solo_share_rejection_threshold_pct` | int (%) |
+| `BHA_SOLO_SHARE_REJECTION_THRESHOLD_PCT` | `solo_share_rejection_threshold_pct` | number (%) |
 | `BHA_SOLO_SHARE_REJECTION_WINDOW_MINUTES` | `solo_share_rejection_window_minutes` | int |
 
 ## Payout history
@@ -169,7 +169,9 @@ issue #60.
 | `BHA_BLOCK_FOUND_SOUND` | `block_found_sound` | `off`, `cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-block`, `custom` |
 | `BHA_DISPLAY_NUMBER_LOCALE` | `display_number_locale` | `system` (default), `en-US`, `nl-NL`, `fr-FR`, `no-grouping` (#227 follow-up, migration 0102) |
 | `BHA_DISPLAY_DATE_LAYOUT` | `display_date_layout` | `system` (default), `us`, `eu-spaced-24h`, `slash-dmy-24h`, `iso`, `slash-mdy-12h` (#227 follow-up, migration 0102) |
-| `BHA_CHART_COLOR_OVERRIDES` | `chart_color_overrides` | JSON object keyed by series/marker name with `#RRGGBB` values, default `{}`. Covers 22 named slots (11 line series + 7 marker icons + 4 bid-event glyphs); see `docs/spec.md` §8 for the full key list. (#238 + v1.12 marker keys, migration 0103) |
+| `BHA_CHART_COLOR_OVERRIDES` | `chart_color_overrides` | JSON object keyed by series/marker name with `#RRGGBB` values, default `{}`. Covers 26 named slots (11 line series + 7 marker icons + 8 event glyphs incl. the #287 lifecycle trio and the #316 alert-condition band slot); see `docs/spec.md` §8. (#238 + v1.12 marker keys, migration 0103) |
+| `BHA_DASHBOARD_TILES` | `dashboard_tiles` | JSON array of tile-catalogue ids (#266, migration 0110); empty = default six |
+| `BHA_DASHBOARD_CARD_ORDER` | `dashboard_card_order` | JSON array (reserved/dormant - card order lives in browser localStorage; migration 0108) |
 | `BHA_DEBUG_API_ENABLED` | `debug_api_enabled` | boolean |
 
 ## Process-level env vars (not config overrides)
