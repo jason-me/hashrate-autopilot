@@ -39,9 +39,11 @@ export interface PoolHealth {
 /**
  * Datum Gateway stats (issue #19). Optional - present only when
  * `datum_api_url` is configured and the last poll succeeded. The
- * integration is informational-only; the control loop never reads
- * this. Hashrate comes across as Th/s from Datum and is converted
- * to PH/s here.
+ * integration is informational-only (dashboard panel + alerts); the
+ * control loop never reads it - the datum-down auto-cancel keys on
+ * the mandatory stratum TCP probe in `state.pool`, not on this.
+ * Hashrate comes across as Th/s from Datum and is converted to PH/s
+ * here.
  */
 export interface DatumSnapshot {
   readonly reachable: boolean;

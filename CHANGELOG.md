@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-02
+
+### `[Fix]` Datum-down auto-cancel now keys on the stratum probe, not the optional stats API
+
+The stop-spend rule (cancel all bids after 3 consecutive ticks of Datum being unreachable, #199) was reading the optional Datum stats-API poller instead of the mandatory stratum TCP probe. Two failure modes fixed: with no stats API configured the protection could never fire during a real stratum outage, and a stats-API-only glitch (healthy share path) cancelled every bid. Found in a code-vs-spec audit; the spec always said "stratum".
+
 ## 2026-07-01
 
 ### `[UI]` "Daemon started" markers on the price chart (bidirectional jump)
