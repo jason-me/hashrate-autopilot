@@ -2,6 +2,10 @@
 
 ## 2026-07-02
 
+### `[Fix]` Pool-block-credited alert reports the exact credit, not the ~ estimate
+
+The "Credited to you" number in the pool-block Telegram/alert was falling back to the `~share × reward` estimate (consistently ~1% high) whenever the daemon had restarted since the previous block - which during active development was nearly always. The alert already waits for Ocean's unpaid balance to include the credit before firing, so the exact number was always available at that moment: it now uses the unpaid delta against the block's own noticing-time baseline, which needs no memory of any previous alert. The `~` estimate remains only for genuine unknowns (multiple blocks in one tick, or the payout-block failsafe where unpaid went down instead of up).
+
 ### `[UI]` Timeline: all filters are now sticky; follow live-tails every source
 
 The Alerts and Events chip groups and the follow toggle now persist per browser like the rest of the toolbar filters (they used to reset to "all on"/off on every reload). And while following, the merged sources (payouts, deposits, blocks, IP changes, retargets, alerts, system events) poll at the same 15 s as the bid feed, so a fresh payout no longer lags up to a minute behind the rows around it.

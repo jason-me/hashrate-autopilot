@@ -502,3 +502,83 @@ describe('AlertEvaluator - payout_confirmed (#226)', () => {
   });
 
 });
+
+describe('AlertEvaluator - pool_block_credited actual credit (#239 v2)', () => {
+  // The queue captures unpaid BEFORE Ocean credits the block (~4 min
+  // user_hashrate lag); once unpaid rises past it, the delta against
+  // the entry's own noticing-time value IS the credit - exact, no
+  // tilde, and independent of any previous alert (so a daemon restart
+  // between blocks no longer downgrades the number to the estimate).
+  const block = (height: number): import('../state/types.js').PoolBlocksTable => ({
+    height,
+    block_hash: `hash-${height}`,
+    timestamp_ms: 1_000_000,
+    total_reward_sat: 316_496_380, // ~3.165 BTC
+    subsidy_sat: 312_500_000,
+    fees_sat: 3_996_380,
+    worker: null,
+    username: null,
+    observed_at_ms: 1_000_000,
+  });
+
+  function makePoolBlocksRepo(blocks: import('../state/types.js').PoolBlocksTable[]) {
+    let visible: import('../state/types.js').PoolBlocksTable[] = [];
+    return {
+      repo: {
+        maxHeight: vi.fn(async () => 100),
+        sinceHeight: vi.fn(async (h: number) => visible.filter((b) => b.height > h)),
+      } as unknown as NonNullable<ConstructorParameters<typeof AlertEvaluator>[0]['poolBlocksRepo']>,
+      reveal: () => { visible = blocks; },
+    };
+  }
+
+  const tickMetricsRepo = {
+    nearestShareLogPct: vi.fn(async () => 0.0106),
+  } as unknown as NonNullable<ConstructorParameters<typeof AlertEvaluator>[0]['tickMetricsRepo']>;
+
+  function creditState(overrides: Partial<State>): State {
+    return makeState({
+      ...overrides,
+      config: {
+        ...(makeState({}).config),
+        notify_on_pool_block_credit: true,
+      } as State['config'],
+    });
+  }
+
+  it('fires with the exact noticed-based delta (no tilde) once Ocean catches up - even with no prior-alert anchor', async () => {
+    const mgr = makeManager();
+    const { repo, reveal } = makePoolBlocksRepo([block(101)]);
+    const ev = new AlertEvaluator({ alertManager: mgr, poolBlocksRepo: repo, tickMetricsRepo });
+    // Tick 1: silent baseline (post-restart posture; no anchor exists).
+    await ev.evaluate(creditState({ tick_at: 0, ocean_unpaid_sat: 925_094 } as Partial<State>));
+    // Tick 2: block appears; unpaid still pre-credit -> queued, no fire.
+    reveal();
+    await ev.evaluate(creditState({ tick_at: 60_000, ocean_unpaid_sat: 925_094 } as Partial<State>));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+    // Tick 3: Ocean caught up -> fires with unpaid_now - noticed = 34,009.
+    await ev.evaluate(creditState({ tick_at: 120_000, ocean_unpaid_sat: 959_103 } as Partial<State>));
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    const body = mgr.recorded[0]!.body;
+    expect(mgr.recorded[0]!.event_class).toBe('pool_block_credited');
+    // Exact credit, no tilde on the credit figure (the share-pct keeps
+    // its own '~' - that one genuinely is an estimate).
+    expect(body).toContain('Credited to you: 34,009 sat');
+    expect(body).not.toContain('~34,009');
+  });
+
+  it('falls back to the ~ estimate when the failsafe fires (unpaid never rose)', async () => {
+    const mgr = makeManager();
+    const { repo, reveal } = makePoolBlocksRepo([block(101)]);
+    const ev = new AlertEvaluator({ alertManager: mgr, poolBlocksRepo: repo, tickMetricsRepo });
+    await ev.evaluate(creditState({ tick_at: 0, ocean_unpaid_sat: 925_094 } as Partial<State>));
+    reveal();
+    await ev.evaluate(creditState({ tick_at: 60_000, ocean_unpaid_sat: 925_094 } as Partial<State>));
+    // 10-minute failsafe elapses without unpaid moving (e.g. Ocean stuck).
+    await ev.evaluate(creditState({ tick_at: 60_000 + 10 * 60_000, ocean_unpaid_sat: 925_094 } as Partial<State>));
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    const body = mgr.recorded[0]!.body;
+    // estimate = 316,496,380 x 0.0106% = 33,549 sat, tilde-prefixed.
+    expect(body).toContain('Credited to you: ~33,549 sat');
+  });
+});

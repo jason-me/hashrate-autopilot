@@ -827,17 +827,26 @@ export class AlertEvaluator {
       const rewardBtc = formatBtc(blk.total_reward_sat, locale);
       const sharePctStr = sharePct !== null ? formatPct(sharePct, 4, locale) : 'unknown';
       const unpaidSat = state.ocean_unpaid_sat;
-      // #239: prefer the actual unpaid_sat delta as the credit
-      // number. Falls back to share_log_pct × reward estimate when:
-      //   - multiple alerts are being emitted this tick (can't
-      //     apportion the delta across N blocks)
-      //   - first alert (no previous anchor — daemon just restarted
-      //     or this is the first pool_block_credited ever)
-      //   - delta is negative (payout happened between alerts, or
-      //     Ocean's accounting did something the operator doesn't
-      //     want us to mis-attribute)
+      // #239 (v2, 2026-07-02): prefer the actual unpaid_sat delta as
+      // the credit number. Primary source is the entry's OWN
+      // noticing-time unpaid: the queue captures unpaid ~1 min after
+      // the block lands, BEFORE Ocean's user_hashrate endpoint credits
+      // it (~4 min lag - the whole reason the deferral queue exists),
+      // so once oceanCaughtUp gates the fire, `unpaid_now - noticed`
+      // IS this block's credit. Unlike the previous-alert anchor this
+      // needs no cross-restart memory, so a deploy no longer downgrades
+      // the next block to the estimate (operator caught the "~" number
+      // running ~1% above the real credit on every block during the
+      // 2026-07 deploy streak). The previous-alert anchor stays as the
+      // fallback for the unpaidNowAvailable path (noticed was null).
+      // Estimate fallback remains for:
+      //   - multiple alerts this tick (can't apportion the delta)
+      //   - failsafe fires (payout dropped unpaid; delta invalid)
+      //   - no baseline at all
       let actualCreditSat: number | null = null;
-      if (
+      if (singleAlertThisTick && oceanCaughtUp && entry.noticed_unpaid_sat !== null && unpaidSat !== null) {
+        actualCreditSat = unpaidSat - entry.noticed_unpaid_sat;
+      } else if (
         singleAlertThisTick &&
         prevAnchorUnpaidSat !== null &&
         unpaidSat !== null &&
