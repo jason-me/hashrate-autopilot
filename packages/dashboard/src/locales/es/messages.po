@@ -1468,6 +1468,10 @@ msgstr "El daemon no volvió a OPERATIONAL en 90 segundos."
 msgid "daemon started"
 msgstr "daemon iniciado"
 
+#: src/components/PriceChart.tsx
+msgid "DAEMON STARTED"
+msgstr "DAEMON INICIADO"
+
 #: src/pages/Config.tsx
 msgid "Daemon startup"
 msgstr "Arranque del daemon"

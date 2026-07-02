@@ -70,11 +70,11 @@ export interface LogExtraItem {
 
 /**
  * #318 follow-up: nav URL that jumps the chart to an extra log entry's
- * marker, or null when the kind has no chart representation (config /
- * daemon-started). Each jumpable kind pulses a sonar beacon on its
- * marker: blocks via `focus_block`, the others via a generic
- * `focus_marker=<kind>:<key>`. The payout / deposit / IP / retarget keys
- * are exactly the row's own `key`; the `payout_initiated` point alert
+ * marker, or null when the kind has no chart representation (config
+ * changes). Each jumpable kind pulses a sonar beacon on its marker:
+ * blocks via `focus_block`, the others via a generic
+ * `focus_marker=<kind>:<key>`. The payout / deposit / IP / retarget /
+ * boot keys are exactly the row's own `key`; the `payout_initiated` point alert
  * maps to the tick-derived unpaid-drop marker (`unpaid:<ts>`), and other
  * point alerts have no marker so they pan only.
  */
@@ -88,14 +88,15 @@ export function logExtraJumpUrl(extra: LogExtraItem): string | null {
     case 'deposit':
     case 'ip':
     case 'retarget':
-      // The row key is already `<kind>:<marker-id>`.
+    case 'boot':
+      // The row key is already `<kind>:<marker-id>` (boot -> `boot:<id>`),
+      // matching the chart marker's `focusMarker` key.
       return `/?at=${extra.ts}&focus_marker=${extra.key}`;
     case 'alert':
       return extra.eventClass === 'payout_initiated'
         ? `/?at=${extra.ts}&focus_marker=unpaid:${extra.ts}`
         : `/?at=${extra.ts}`;
     case 'config':
-    case 'boot':
       return null;
   }
 }

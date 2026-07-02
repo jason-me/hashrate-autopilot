@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` "Daemon started" markers on the price chart (bidirectional jump)
+
+Daemon restarts now show up as an always-visible power-glyph marker on the price chart (emerald, with a dashed guide line), the same idiom as the run-mode / pause / resume markers. Clicking one opens a small tooltip with the build/version and a "View in timeline" jump; and the reverse - the Timeline's "daemon started" row now has a "View on chart" button that pans there and pulses the marker. So a restart that explains a gap is reachable from either view, closing the last event kind that only jumped one way.
+
 ### `[UI]` Timeline rate units use the Satoshi glyph + a fixed second line
 
 The Timeline's rate column headers now put the unit on its own second line ("Fillable" then "(≡/PH/day)") instead of wrapping at an arbitrary spot, and the word "sat" is replaced by the Satoshi glyph in the headers, the Δ-price filter label, and the reason text - shorter, cleaner, and consistent with the rest of the dashboard. The Excel export keeps the plain "sat" wording (a font glyph can't render in a spreadsheet).

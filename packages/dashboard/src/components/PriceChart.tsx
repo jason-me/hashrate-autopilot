@@ -251,6 +251,20 @@ function formatSatCompact(
   return formatCompactNumber(sat, locale, axisSpan);
 }
 
+/** #320: a daemon-start (boot) event rendered as a chart marker. */
+export interface BootMarker {
+  id: number;
+  occurred_at: number;
+  detail: string | null;
+}
+
+interface BootTooltipState {
+  boot: BootMarker;
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+
 export const PriceChart = memo(function PriceChart({
   points,
   events = [],
@@ -263,6 +277,7 @@ export const PriceChart = memo(function PriceChart({
   rewardEvents = [],
   deposits = [],
   ourBlocks = [],
+  bootEvents = [],
   ipChangeEvents = [],
   blockExplorerTemplate,
   txExplorerTemplate,
@@ -364,6 +379,12 @@ export const PriceChart = memo(function PriceChart({
    * chart they hovered.
    */
   ourBlocks?: readonly OurBlockMarker[];
+  /**
+   * #320: daemon-start (boot) events, drawn as always-visible top-edge
+   * power-glyph markers with a dashed guide line - the chart counterpart
+   * to the Timeline's "daemon started" rows, for bidirectional jumping.
+   */
+  bootEvents?: readonly BootMarker[];
   /** #250: public-IP change events, drawn as router-icon markers. */
   ipChangeEvents?: ReadonlyArray<IpChangeMarkerEvent>;
   /** Block-explorer URL template for pool-block markers (`{hash}` / `{height}` placeholders). */
@@ -470,6 +491,10 @@ export const PriceChart = memo(function PriceChart({
   const COLOR_MODE_CHANGE = getChartColor('events.mode_change', _colorOverrides);
   const COLOR_BID_PAUSED = getChartColor('events.bid_paused', _colorOverrides);
   const COLOR_BID_RESUMED = getChartColor('events.bid_resumed', _colorOverrides);
+  // #320: daemon-start (boot) marker - emerald, matching the Timeline
+  // log's boot glyph (#34d399). Not operator-configurable; a boot is a
+  // fixed system event, not a tunable overlay.
+  const COLOR_BOOT = '#34d399';
   const COLOR_RIGHT_AXIS = getChartColor('price.right_axis', _colorOverrides);
   /* eslint-enable @typescript-eslint/no-shadow */
   // #280: clickable-legend series visibility, persisted per device
@@ -1518,6 +1543,30 @@ export const PriceChart = memo(function PriceChart({
   );
   const closeDepositTip = useCallback(() => setDepositTip(null), []);
 
+  // #320: daemon-start (boot) markers - same hover/pin pattern as the
+  // reward/deposit dots.
+  const [bootTip, setBootTip] = useState<BootTooltipState | null>(null);
+  const onBootEnter = useCallback(
+    (boot: BootMarker) => (e: React.MouseEvent) => {
+      setBootTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { boot, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onBootLeave = useCallback(() => {
+    setBootTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onBootClick = useCallback(
+    (boot: BootMarker) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setBootTip({ boot, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeBootTip = useCallback(() => setBootTip(null), []);
+
   const onUnpaidDropEnter = useCallback(
     (d: { tick_at: number; prev: number; cur: number }) => (e: React.MouseEvent) => {
       setUnpaidDropTip((prev) => {
@@ -1612,6 +1661,22 @@ export const PriceChart = memo(function PriceChart({
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [unpaidDropTip?.pinned]);
+
+  useEffect(() => {
+    if (!bootTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document.getElementById('price-chart-pinned-boot-tooltip')?.contains(target)
+      ) {
+        return;
+      }
+      setBootTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [bootTip?.pinned]);
 
   useEffect(() => {
     if (!tooltip?.pinned) return;
@@ -3093,6 +3158,50 @@ export const PriceChart = memo(function PriceChart({
           });
         })()}
 
+        {/* #320: daemon-start (boot) markers. Always-visible top-edge
+            power glyph + full-height dashed guide line (no price anchor),
+            mirroring the mode-change marker idiom. Clicking pins a
+            tooltip with a "View in timeline" jump; the reverse jump
+            (log -> chart) beacons via focusMarker `boot:<id>`. */}
+        {bootEvents
+          .filter((b) => b.occurred_at >= dataMinX && b.occurred_at <= dataMaxX)
+          .map((b) => {
+            const x = xScale(b.occurred_at);
+            return (
+              <g
+                key={`boot-icon-${b.id}`}
+                onMouseEnter={onBootEnter(b)}
+                onMouseLeave={onBootLeave}
+                onClick={onBootClick(b)}
+                style={{ cursor: 'pointer' }}
+              >
+                <line
+                  x1={x} x2={x}
+                  y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
+                  stroke={COLOR_BOOT}
+                  strokeWidth="1"
+                  strokeDasharray="2 4"
+                  opacity="0.55"
+                  pointerEvents="none"
+                />
+                <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
+                <svg
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke={COLOR_BOOT} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                >
+                  {/* Lucide `power` - reserved for daemon-started. */}
+                  <path d="M12 2v10" />
+                  <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+                </svg>
+                {focusMarker === `boot:${b.id}` && (
+                  <MarkerBeacon cx={x} cy={PADDING.top - 4} color={COLOR_BOOT} />
+                )}
+              </g>
+            );
+          })}
+
         {difficultyRetargets
           .filter((r) => r.tick_at >= dataMinX && r.tick_at <= dataMaxX)
           .map((r) => {
@@ -3189,7 +3298,8 @@ export const PriceChart = memo(function PriceChart({
         (rewardTip !== null && !rewardTip.pinned) ||
         (depositTip !== null && !depositTip.pinned) ||
         (retargetTip !== null && !retargetTip.pinned) ||
-        (unpaidDropTip !== null && !unpaidDropTip.pinned)
+        (unpaidDropTip !== null && !unpaidDropTip.pinned) ||
+        (bootTip !== null && !bootTip.pinned)
       ) && (
         <CrosshairReadout
           chartId="price"
@@ -3246,6 +3356,8 @@ export const PriceChart = memo(function PriceChart({
           onClose={closeUnpaidDropTip}
         />
       )}
+
+      {bootTip && <BootTooltip tip={bootTip} onClose={closeBootTip} />}
 
       {tooltip && (
         <EventTooltip
@@ -3419,6 +3531,85 @@ function RewardEventTooltip({
               <span aria-hidden="true">→</span>
             </button>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * #320: tooltip for a daemon-start (boot) marker. Mirrors the reward /
+ * deposit tooltips: timestamp + the boot detail line (build · version ·
+ * hash), and when pinned a "View in timeline" jump to the matching log
+ * row (`focus=boot:<id>`).
+ */
+function BootTooltip({
+  tip,
+  onClose,
+}: {
+  tip: BootTooltipState;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const fmt = useFormatters();
+  const navigate = useNavigate();
+  const { boot, pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const { left, top } = sideTooltipPosition(tip.x, tip.y, rect);
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, boot.id]);
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'price-chart-pinned-boot-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-emerald-400">
+          <Trans>DAEMON STARTED</Trans>
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">
+        {fmt.timestamp(boot.occurred_at)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(boot.occurred_at)}</span>
+      </div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(boot.occurred_at)}</div>
+      {boot.detail && (
+        <div className="mt-2 text-slate-300 font-mono text-[11px]">{boot.detail}</div>
+      )}
+      {pinned && (
+        <div className="mt-3 pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() => navigate(`/history?focus=boot:${boot.id}&ts=${boot.occurred_at}`)}
+            className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
+          >
+            <Trans>View in timeline</Trans>
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       )}
     </div>

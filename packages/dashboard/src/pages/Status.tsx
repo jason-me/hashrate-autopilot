@@ -463,6 +463,23 @@ export function Status() {
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
+  // #320: daemon-start (boot) markers for the price chart, so a restart
+  // that explains a gap is a jumpable symbol - bidirectional with the
+  // Timeline's "daemon started" rows. Keyed off the same viewport bounds.
+  const systemEventsQuery = useQuery({
+    queryKey: ['system-events', fetchBounds.since_ms, fetchBounds.until_ms],
+    queryFn: () => api.systemEvents(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
+    refetchInterval: vp.liveEdge ? 60_000 : false,
+  });
+  const bootEvents = useMemo(
+    () =>
+      (systemEventsQuery.data?.events ?? [])
+        .filter((e) => e.kind === 'daemon_started')
+        .map((e) => ({ id: e.id, occurred_at: e.occurred_at, detail: e.detail })),
+    [systemEventsQuery.data],
+  );
+
   // #275: stat tiles aggregate over the VISIBLE viewport, not
   // `fetchBounds`. The fetch buffer (±1 window-width) exists so chart
   // series pan smoothly, but feeding it to /api/stats made the tiles
@@ -1019,6 +1036,7 @@ export function Status() {
           rewardEvents={visibleRewardEvents}
           deposits={depositsQuery.data?.deposits ?? EMPTY_DEPOSITS}
           ourBlocks={visibleOurBlocks}
+          bootEvents={bootEvents}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}

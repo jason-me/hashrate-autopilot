@@ -2,9 +2,10 @@
  * #318 follow-up: the log-drawer "View on chart" routing. Each jumpable
  * kind must jump the chart to the event time AND pulse a sonar beacon on
  * its marker (blocks via focus_block, the others via a generic
- * focus_marker=<kind>:<key>); config / daemon-start have no chart marker
- * so they return null (no jump button). This locks the URL contract that
- * Status.tsx + the chart marker beacons consume.
+ * focus_marker=<kind>:<key>); config changes have no chart marker so they
+ * return null (no jump button). #320 added a daemon-start (boot) marker,
+ * so boot now jumps too. This locks the URL contract that Status.tsx +
+ * the chart marker beacons consume.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -54,8 +55,13 @@ describe('logExtraJumpUrl', () => {
     ).toBe('/?at=9000');
   });
 
-  it('config and daemon-start rows have no chart marker (null = no jump button)', () => {
+  it('daemon-start (boot) rows jump to their chart marker by row key (#320)', () => {
+    expect(logExtraJumpUrl(item({ kind: 'boot', key: 'boot:14', ts: 1782955973431 }))).toBe(
+      '/?at=1782955973431&focus_marker=boot:14',
+    );
+  });
+
+  it('config-change rows have no chart marker (null = no jump button)', () => {
     expect(logExtraJumpUrl(item({ kind: 'config', key: 'config:1', ts: 1 }))).toBeNull();
-    expect(logExtraJumpUrl(item({ kind: 'boot', key: 'boot:1', ts: 1 }))).toBeNull();
   });
 });
