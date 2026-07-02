@@ -40,7 +40,7 @@ import { useFormatters } from '../lib/locale';
 import { formatAgeMinutes, formatTimestampUtc } from '../lib/format';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
-import { rewriteReasonUnits } from '../lib/reasonUnits';
+import { RateSuffix, ReasonText } from './DenomUnit';
 
 export interface BidEventDrawerProps {
   readonly event: BidHistoryFlatEvent;
@@ -60,7 +60,7 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
   // their own suffix via the denomination formatters below.
   const rate = (satPerPhDay: number | null): string =>
     denomination.formatSatPerPhDayValue(satPerPhDay);
-  const rateUnit = denomination.rateSuffix;
+  const rateUnit = <RateSuffix suffix={denomination.rateSuffix} />;
 
   // Esc closes. Bind on the document while the drawer is mounted so
   // the table underneath keeps its own keyboard shortcuts free.
@@ -225,10 +225,7 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
             <section>
               <SectionHeader label={t`reason`} />
               <p className="text-xs text-slate-200 italic whitespace-normal leading-snug">
-                {rewriteReasonUnits(event.reason, {
-                  rate: (n) => denomination.formatSatPerPhDay(n),
-                  hashrate: (n) => denomination.formatHashrate(n),
-                })}
+                <ReasonText reason={event.reason} denomination={denomination} />
               </p>
             </section>
           )}
@@ -353,7 +350,7 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
-function Row({ label, value, unit }: { label: string; value: string; unit?: string }) {
+function Row({ label, value, unit }: { label: string; value: string; unit?: React.ReactNode }) {
   // Rate rows pass the bare value plus the active-denomination unit
   // (e.g. "sat/EH/day", "BTC/EH/day"); the unit reads small + muted
   // beside the number, matching the rest of the dashboard's idiom.

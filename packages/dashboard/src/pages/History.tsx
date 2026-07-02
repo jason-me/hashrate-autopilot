@@ -69,6 +69,8 @@ import {
   type TimelineExportRow,
 } from '../lib/timelineExport';
 import { rewriteReasonUnits } from '../lib/reasonUnits';
+import { RateSuffix, ReasonText } from '../components/DenomUnit';
+import { SatSymbol } from '../components/SatSymbol';
 import { conditionLabel } from '../lib/alertConditions';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
@@ -1081,13 +1083,6 @@ export function History() {
     };
   }, [highlightedRowKey]);
 
-  // Unit shown next to the rate columns' headers so the (bare) numeric
-  // cells below are self-describing under the active denomination
-  // (e.g. "sat/EH/day", "BTC/EH/day", "USD/PH/day").
-  const rateUnitHeader = `${
-    denomination.mode === 'usd' ? 'USD' : denomination.mode === 'btc' ? 'BTC' : 'sat'
-  }/${denomination.hashrateUnit}/day`;
-
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
@@ -1114,10 +1109,10 @@ export function History() {
               <th className="text-left font-normal py-1.5 px-3 whitespace-nowrap normal-case"><Trans>When</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Action</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Bid</Trans></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Fillable</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price before</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price after</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
-              <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Δ price</Trans> <span className="text-slate-600">({rateUnitHeader})</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case whitespace-nowrap"><Trans>Fillable</Trans> <span className="block text-slate-600">(<RateSuffix suffix={denomination.rateSuffix} />)</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case whitespace-nowrap"><Trans>Price before</Trans> <span className="block text-slate-600">(<RateSuffix suffix={denomination.rateSuffix} />)</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case whitespace-nowrap"><Trans>Price after</Trans> <span className="block text-slate-600">(<RateSuffix suffix={denomination.rateSuffix} />)</span></th>
+              <th className="text-right font-normal py-1.5 px-3 normal-case whitespace-nowrap"><Trans>Δ price</Trans> <span className="block text-slate-600">(<RateSuffix suffix={denomination.rateSuffix} />)</span></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Speed</Trans></th>
               <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Reason</Trans></th>
             </tr>
@@ -1449,7 +1444,7 @@ function Toolbar({
         </div>
         <div className="flex flex-col gap-0.5">
           <label className="text-[10px] tracking-wider text-slate-500">
-            {t`Δ price ≥ (sat/${unitLabel}/day)`}
+            <Trans>Δ price ≥</Trans> (<SatSymbol />/{unitLabel}/day)
           </label>
           <input
             type="number"
@@ -1697,7 +1692,7 @@ function EventRow({
           but the full reason is one hover away. The click-row drawer
           carries it in full alongside the rest of the bid-event detail. */}
       <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={reasonText ?? undefined}>
-        {reasonText ?? '—'}
+        {event.reason ? <ReasonText reason={event.reason} denomination={denomination} /> : '—'}
       </td>
     </tr>
   );

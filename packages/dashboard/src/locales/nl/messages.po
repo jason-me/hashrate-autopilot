@@ -4727,5 +4727,9 @@ msgid "Δ price"
 msgstr "Δ prijs"
 
 #: src/pages/History.tsx
-msgid "Δ price ≥ (sat/{unitLabel}/day)"
-msgstr "Δ prijs ≥ (sat/{unitLabel}/dag)"
+msgid "Δ price ≥"
+msgstr "Δ prijs ≥"
+
+#: src/pages/History.tsx
+#~ msgid "Δ price ≥ (sat/{unitLabel}/day)"
+#~ msgstr "Δ prijs ≥ (sat/{unitLabel}/dag)"
