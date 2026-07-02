@@ -1003,8 +1003,9 @@ export class AlertEvaluator {
 
   /**
    * #226: `payout_confirmed` - INFO Telegram alert when the on-chain
-   * scanner observes a coinbase output crediting the configured
-   * payout address. Detection: walk reward_events rows with `id` >
+   * scanner observes an output crediting the configured payout
+   * address (any tx - Ocean pays via batched sweeps from its pool
+   * wallet, not coinbase-direct, #240). Detection: walk reward_events rows with `id` >
    * `lastNotifiedRewardEventId` (and `reorged = 0`); fire one INFO
    * per row; advance the watermark.
    *
@@ -1193,10 +1194,12 @@ export class AlertEvaluator {
    * its respective ceiling for ~3 ticks (~90 s).
    *
    * Two ceilings, not one (#158-ish, see operator screenshot 2026-05-12):
-   * - ASIC junction (Bitmain chip silicon): per-model lookup (BM1370 = 68 °C,
-   *   BM1368/66 = 70 °C, BM1397 = 75 °C, fallback 70 °C), overridable via
-   *   `solo_overheating_threshold_celsius`. The ASIC throttles or shuts
-   *   down if pushed past this; we want a heads-up well before that.
+   * - ASIC junction (Bitmain chip silicon): flat 75 °C ceiling for every
+   *   model (the per-model table is historical - all entries were raised
+   *   to 75 after real Bitaxes idled around the old 68-70 limits),
+   *   overridable via `solo_overheating_threshold_celsius`. The ASIC
+   *   throttles or shuts down if pushed past this; we want a heads-up
+   *   well before that.
    * - VR (buck-converter MOSFET stage): hardcoded `VR_OVERHEATING_CEILING_C`.
    *   These chips are typically rated to 125 °C junction; 90 °C is the
    *   "consider better cooling" threshold. AxeOS itself doesn't flag

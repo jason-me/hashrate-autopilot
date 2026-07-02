@@ -1,5 +1,5 @@
 /**
- * gate() - applies the SPEC §7.3 mutation-gate to every proposal and also
+ * gate() - applies the SPEC §7.2 mutation-gate to every proposal and also
  * enforces client-side pacing rules the market settings give us.
  *
  * The core `canMutate()` check lives in `@hashrate-autopilot/shared`. This

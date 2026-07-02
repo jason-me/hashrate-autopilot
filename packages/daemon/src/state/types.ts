@@ -35,7 +35,6 @@ export interface ConfigTable {
   /** #135: dedicated minute threshold for the sustained_paused alert (was pool_outage_blip_tolerance_seconds × 5). */
   sustained_paused_alert_after_minutes: number;
   api_outage_alert_after_minutes: number;
-  handover_window_minutes: number;
   btc_payout_address: string;
   /** #100: Telegram chat id the notifier POSTs into. Empty string = unconfigured. */
   telegram_chat_id: string;

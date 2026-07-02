@@ -323,7 +323,7 @@ CREATE TABLE config (
   pool_outage_blip_tolerance_seconds INTEGER NOT NULL,
   api_outage_alert_after_minutes INTEGER NOT NULL,
   -- Manual override
-  handover_window_minutes INTEGER NOT NULL,
+  -- handover_window_minutes dropped by 0115 (retired §7.3 manual-override system)
   -- Cheap-mode opportunistic scaling
   cheap_target_hashrate_ph REAL NOT NULL DEFAULT 0,
   cheap_threshold_pct INTEGER NOT NULL DEFAULT 0,

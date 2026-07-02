@@ -91,7 +91,6 @@ issue #60.
 | `BHA_DATUM_UNREACHABLE_ALERT_AFTER_MINUTES` | `datum_unreachable_alert_after_minutes` |
 | `BHA_SUSTAINED_PAUSED_ALERT_AFTER_MINUTES` | `sustained_paused_alert_after_minutes` |
 | `BHA_MARKETPLACE_EMPTY_ALERT_AFTER_MINUTES` | `marketplace_empty_alert_after_minutes` |
-| `BHA_HANDOVER_WINDOW_MINUTES` | `handover_window_minutes` |
 
 ## Retention
 

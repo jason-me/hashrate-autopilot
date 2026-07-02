@@ -411,7 +411,6 @@ export interface AppConfig {
   datum_unreachable_alert_after_minutes: number;
   sustained_paused_alert_after_minutes: number;
   api_outage_alert_after_minutes: number;
-  handover_window_minutes: number;
   btc_payout_address: string;
   telegram_chat_id: string;
   telegram_bot_token: string;

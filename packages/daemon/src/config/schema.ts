@@ -71,18 +71,22 @@ export const AppConfigSchema = z.object({
   max_bid_sat_per_eh_day: positiveInt,
   // Hashprice-relative cap (issue #27). When set, the effective price
   // ceiling on each tick becomes min(max_bid, hashprice + this). Null
-  // disables it, falling back to the fixed max_bid. Also falls back
-  // when hashprice is unavailable (Ocean stats down). Stops the
-  // autopilot from wildly overpaying when hashprice drops sharply and
-  // the fixed max_bid alone would still allow it. 0 from the
-  // dashboard is coerced to null so a blank field in the UI reads as
-  // "disabled" end-to-end.
+  // disables it, falling back to the fixed max_bid. When the cap is
+  // configured but hashprice is unavailable (Ocean stats down), the
+  // controller SKIPS the tick entirely rather than trading without
+  // its ceiling (refuse-to-trade, spec §8). Stops the autopilot from
+  // wildly overpaying when hashprice drops sharply and the fixed
+  // max_bid alone would still allow it. 0 from the dashboard is
+  // coerced to null so a blank field in the UI reads as "disabled"
+  // end-to-end. Default 2,000,000 sat/EH/day (2,000 sat/PH/day):
+  // fresh installs run with the safety cap ON, matching
+  // APP_CONFIG_DEFAULTS (which first-run setup seeds from).
   max_overpay_vs_hashprice_sat_per_eh_day: z
     .preprocess(
       (v) => (v === 0 ? null : v),
       positiveInt.nullable(),
     )
-    .default(null),
+    .default(2_000_000),
 
   // Overpay above fillable_ask (#53 pay-your-bid redesign).
   // Each tick the controller targets `fillable_ask + overpay_sat_per_eh_day`,
@@ -145,8 +149,6 @@ export const AppConfigSchema = z.object({
   datum_unreachable_alert_after_minutes: positiveInt.default(10),
   sustained_paused_alert_after_minutes: positiveInt.default(10),
   api_outage_alert_after_minutes: positiveInt,
-
-  handover_window_minutes: positiveInt,
 
   // Accounting
   btc_payout_address: nonEmptyString,
@@ -410,12 +412,14 @@ export const AppConfigSchema = z.object({
   // - notify_on_payout_initiated: fires the tick we observe a sharp
   //   drop in ocean_unpaid_sat (>30% of prior) WITH the residual below
   //   the on-chain payout threshold (1,048,576 sat). At that moment
-  //   Ocean has debited the balance and committed to including the
-  //   payout in the coinbase of the next block it finds; the
-  //   transaction hasn't hit the chain yet.
+  //   Ocean has debited the balance and queued the payout; the
+  //   on-chain transaction (a batched sweep from Ocean's pool wallet,
+  //   mined in any block by any pool - NOT a coinbase output, #240)
+  //   hasn't hit the chain yet.
   // - notify_on_payout_confirmed: fires when the on-chain payout
-  //   scanner writes a new row to reward_events (a coinbase output
-  //   to the configured payout address has confirmed). Idempotent
+  //   scanner writes a new row to reward_events (an output paying
+  //   the configured payout address has confirmed - any tx, not
+  //   just a coinbase, #240). Idempotent
   //   via the in-memory `lastNotifiedRewardEventId` watermark in the
   //   alert evaluator, same pattern as pool_block_credited.
   // Both default off so a fresh install / upgrade doesn't start
@@ -485,8 +489,8 @@ export const AppConfigSchema = z.object({
   // provider every 5 minutes (and forces a heartbeat at least hourly,
   // so providers with "no update in 30 days = hostname expired" rules
   // - free No-IP - stay alive). Empty string disables the updater
-  // entirely. v1 supports 'noip' only; dyndns2-generic and DuckDNS
-  // are planned follow-ups. Driven by motivating incident on
+  // entirely. Supported providers: No-IP, DuckDNS, and generic
+  // dyndns2 (via ddns_update_url). Driven by motivating incident on
   // 2026-05-07 when mynetgear.com DDNS drift caused a recurring
   // Stratum DOWN false-alarm and a 30+ minute manual diagnosis.
   ddns_provider: z.enum(['', 'noip', 'duckdns', 'dyndns2']).default(''),
@@ -498,16 +502,17 @@ export const AppConfigSchema = z.object({
   // Empty when provider is not 'dyndns2'.
   ddns_update_url: z.string().default(''),
   // #149: solo-mining monitoring (Bitaxe / AxeOS).
-  // Off by default - operator opts in via the Config -> Solo miners
-  // master toggle. With this flag false the daemon does not poll
+  // Off by default - operator opts in via the master toggle under
+  // Config -> Display & Logging -> Bitaxe miners. With this flag false the daemon does not poll
   // AxeOS at all and the entire feature surface is hidden from
   // the dashboard.
   solo_mining_enabled: z.boolean().default(false),
-  // Global overheating ceiling override. 0 = use the per-ASIC-model
-  // lookup table baked into the alert evaluator (BM1370=68, BM1368=70,
-  // BM1366=70, BM1397=75, fallback=70). Non-zero = a single global
-  // operator override that wins for every device regardless of model.
-  // Per-device overrides are out of scope for v1.
+  // Global overheating ceiling override. 0 = use the built-in
+  // ceiling, which is a flat 75 degC for every ASIC model (the
+  // per-model lookup table is historical - all entries were raised
+  // to 75 after real Bitaxes idled around the old 68-70 limits).
+  // Non-zero = a single global operator override that wins for every
+  // device. Per-device overrides are out of scope for v1.
   solo_overheating_threshold_celsius: z.number().int().nonnegative().default(0),
   // Consecutive bad-minutes before the solo_zero_hashrate alert fires.
   // "Bad" = hashRate_1m == 0 OR device unreachable.
@@ -609,7 +614,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   sustained_paused_alert_after_minutes: 10,
   api_outage_alert_after_minutes: 10,
 
-  handover_window_minutes: 30,
 
   // Strategy knobs. sat/EH/day internally; 100 sat/PH/day = 100,000 sat/EH/day.
 

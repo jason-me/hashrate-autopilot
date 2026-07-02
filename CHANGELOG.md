@@ -2,6 +2,10 @@
 
 ## 2026-07-02
 
+### `[Fix]` Config-layer cleanup from the code-vs-spec audit
+
+Three small config fixes. The dynamic hashprice cap's schema default now matches what fresh installs actually get (2,000,000 sat/EH/day, cap ON - the Zod default said "disabled" while first-run seeding enabled it; existing installs keep whatever they have, including an explicit "disabled"). The dead `handover_window_minutes` field is dropped (migration 0115) - it belonged to a manual-override system that was retired before it ever shipped. And `BHA_WALLET_RUNWAY_ALERT_DAYS` now accepts fractional days (e.g. `0.5`) via environment variable, matching what the dashboard and docs always allowed.
+
 ### `[Fix]` Datum-down auto-cancel now keys on the stratum probe, not the optional stats API
 
 The stop-spend rule (cancel all bids after 3 consecutive ticks of Datum being unreachable, #199) was reading the optional Datum stats-API poller instead of the mandatory stratum TCP probe. Two failure modes fixed: with no stats API configured the protection could never fire during a real stratum outage, and a stats-API-only glitch (healthy share path) cancelled every bid. Found in a code-vs-spec audit; the spec always said "stratum".

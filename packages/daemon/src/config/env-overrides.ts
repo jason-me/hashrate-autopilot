@@ -92,7 +92,9 @@ const APP_CONFIG_ENV: {
   // #222: percent. Default 0 = halt on any non-zero fee_rate_pct, matching beta_exit alert semantics.
   max_acceptable_fee_pct: { varName: 'BHA_MAX_ACCEPTABLE_FEE_PCT', coerce: asNumber },
   bid_budget_sat: { varName: 'BHA_BID_BUDGET_SAT', coerce: asInt },
-  wallet_runway_alert_days: { varName: 'BHA_WALLET_RUNWAY_ALERT_DAYS', coerce: asInt },
+  // Fractional days are valid (schema is nonnegative number, e.g. 0.5)
+  // - asNumber, not asInt, so the env layer matches the dashboard.
+  wallet_runway_alert_days: { varName: 'BHA_WALLET_RUNWAY_ALERT_DAYS', coerce: asNumber },
   below_floor_alert_after_minutes: {
     varName: 'BHA_BELOW_FLOOR_ALERT_AFTER_MINUTES',
     coerce: asInt,
@@ -117,7 +119,6 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_API_OUTAGE_ALERT_AFTER_MINUTES',
     coerce: asInt,
   },
-  handover_window_minutes: { varName: 'BHA_HANDOVER_WINDOW_MINUTES', coerce: asInt },
   btc_payout_address: { varName: 'BHA_BTC_PAYOUT_ADDRESS', coerce: asString },
   electrs_host: { varName: 'BHA_ELECTRS_HOST', coerce: asStringOrNullOnEmpty },
   electrs_port: { varName: 'BHA_ELECTRS_PORT', coerce: asIntOrNullOnEmpty },

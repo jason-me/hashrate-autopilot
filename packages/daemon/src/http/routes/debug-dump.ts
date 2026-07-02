@@ -69,7 +69,6 @@ const SAFE_CONFIG_FIELDS: ReadonlySet<keyof AppConfig> = new Set([
   'sustained_paused_alert_after_minutes',
   'api_outage_alert_after_minutes',
   'marketplace_empty_alert_after_minutes',
-  'handover_window_minutes',
   'btc_payout_address',
   'electrs_host',
   'electrs_port',

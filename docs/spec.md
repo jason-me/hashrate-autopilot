@@ -119,7 +119,10 @@ Append-only log of public-IP changes. The daemon's `PublicIpService` polls `api.
   Operator promotes DRY-RUN → LIVE via a button in the dashboard.
 - **LIVE** - the autopilot may execute create / edit / cancel.
 - **PAUSED** - operator or controller-entered hard stop. No creates, edits, or cancels. Observation continues.
-  Entered on: operator pause button, sustained pool outage, unknown-order ambiguity.
+  Entered on: operator pause button, or unknown-order ambiguity (autopilot-proposed; executes only in LIVE - in
+  DRY-RUN the PAUSE proposal is logged without changing the mode). A sustained pool outage does NOT pause: it
+  triggers the §9 cancel-all-to-stop-spend while the run mode stays put, so bidding resumes automatically on
+  recovery.
 
 Run mode on startup is chosen by the `boot_mode` config knob:
 
@@ -142,11 +145,15 @@ All three mutation kinds (create, edit, cancel) use the same rule. The implement
 through this gate. Price-decrease cooldowns and other Braiins-side pacing rules are layered on top of the gate (see
 `packages/daemon/src/controller/gate.ts`).
 
-### 7.3 Manual overrides
+### 7.3 Manual overrides (retired, never shipped)
 
-Operator actions from the dashboard (bump-price, manual cancel, recreate-with-these-params) set a short-lived
-`manual_override_until_ms` that suppresses autopilot `EDIT_PRICE` proposals on the affected bid so the controller
-does not immediately undo the operator's intent on the next tick. Default window: `handover_window_minutes`.
+An earlier revision specified dashboard per-bid actions (bump-price, manual cancel, recreate-with-these-params)
+that would set a short-lived `manual_override_until_ms` suppressing autopilot `EDIT_PRICE` proposals for
+`handover_window_minutes`. The system was retired before it shipped: the dashboard has no per-bid mutation
+buttons (see §12.5), the controller's override slot is hardcoded null, and the `handover_window_minutes` config
+field was dropped (migration 0115). The operator intervenes today via the run-mode toggle (DRY-RUN / PAUSED
+stop all mutations) or by acting directly in the Braiins marketplace UI - foreign edits to an owned bid are
+simply re-tracked on the next tick.
 
 ## 8. Tunable configuration (live-editable from dashboard)
 
@@ -174,7 +181,8 @@ See also the "Pricing strategy" section further down - these three knobs feed th
   displays it in sat/PH/day.
 - `max_bid_sat_per_eh_day` - fixed safety ceiling. If `fillable_ask + overpay` exceeds this, the bid is
   clamped down (and may not fill). Intended as an opt-out price, not the normal bid.
-- `max_overpay_vs_hashprice_sat_per_eh_day` *(optional, default null / disabled)* - dynamic
+- `max_overpay_vs_hashprice_sat_per_eh_day` *(default 2,000,000 sat/EH/day = 2,000 sat/PH/day; fresh
+  installs run with the cap ON)* - dynamic
   hashprice-relative safety ceiling. When set, `effective_cap = min(max_bid, hashprice + this)`.
   Prevents the autopilot from following fillable off a cliff during a hashprice crash when the fixed
   `max_bid` alone would still allow it. Null / 0 falls back to the fixed `max_bid`; also falls back when
@@ -228,7 +236,6 @@ market conditions - they are not the normal bid.
 **Cheap-mode interaction.** Cheap-mode (below) changes `target_hashrate_ph` opportunistically; the
 pricing formula is unchanged.
 
-- `handover_window_minutes` - manual-override suppression window. Default 30 (lives in `APP_CONFIG_DEFAULTS`, not the Zod schema's `.default()`).
 
 **Daemon startup:**
 
@@ -383,7 +390,8 @@ The updater pushes on a 5-min cadence and on any save event that touches a DDNS-
 - If multiple owned bids are observed (e.g. a manual CREATE during an autopilot run), the controller
   cancels all but the lexicographically-first `braiins_order_id` and converges the remaining one to the
   current target price.
-- Respect the 10-open-bid account cap.
+- Respect the 10-open-bid account cap (implicitly: the single-bid strategy, the #319 create guard, and the
+  unknown-bid PAUSE together keep the account at one owned bid; there is no explicit count check).
 - Handover (pre-placing a successor before an active bid drains) and cancel-and-replace-to-skip-cooldown
   are **not implemented** - the spec called for them in v1.x but v2.1's direct fillable tracking plus
   the deadband plus the full-wallet-balance `bid_budget_sat = 0` sentinel combine to make handover
@@ -408,9 +416,11 @@ The updater pushes on a 5-min cadence and on any save event that touches a DDNS-
 
 **Unknown-order detection:**
 
-- If autopilot sees bids in the account whose IDs are not in its local ownership ledger, it transitions to PAUSED
-  and alerts. Operator reviews: adopts (autopilot takes ownership) or dismisses (autopilot tracks for accounting
-  only, never touches).
+- If autopilot sees bids in the account whose IDs are not in its local ownership ledger, it proposes PAUSED
+  (executed in LIVE; logged-only in DRY-RUN) and alerts. There is no in-dashboard adopt/dismiss review flow
+  (an earlier revision specified one; see §12.5) - the operator resolves the ambiguity in the Braiins UI
+  (cancel the foreign bid, or wait for it to expire) and then re-enables LIVE. Foreign bids are tracked for
+  accounting under the opt-in `spent_scope = 'account'` (§11) but are never mutated.
 
 **All autopilot decisions are logged** with the input state that drove them, for post-hoc debugging.
 
@@ -701,7 +711,7 @@ Dedicated `/alerts` page (#100 / #109 / #134 / #139 / #153): event-grouped audit
 
 ### 12.5 Things the v1 spec listed but the current build does not ship
 
-For honesty against the older spec drafts: no operator-availability / quiet-hours UI, no per-bid operator-action menu (bump / recreate / cancel - still an option to add but not present), no what-if simulator (retired in v2.0), no separate Decisions tab (the bid-event pinned tooltip on the Price chart covers the forensic-debug use case).
+For honesty against the older spec drafts: no operator-availability / quiet-hours UI, no per-bid operator-action menu (bump / recreate / cancel - still an option to add but not present), no manual-override suppression window (the retired §7.3 system: `manual_override_until_ms` / `handover_window_minutes` never shipped and the config field was dropped), no unknown-bid adopt/dismiss review flow (unknown bids propose PAUSE; the operator resolves them in the Braiins UI), no what-if simulator (retired in v2.0), no separate Decisions tab (the bid-event pinned tooltip on the Price chart covers the forensic-debug use case).
 
 ## 13. Research-derived API constraints
 
