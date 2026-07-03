@@ -2,6 +2,10 @@
 
 ## 2026-07-03
 
+### `[UI]` Unpaid-line block dots explain the balance step
+
+Clicking a dot on the unpaid-earnings (or lifetime-earnings) line showed only the pool-block tooltip - block reward, share, explorer link - but nothing about the thing the dot actually sits on: your balance. The tooltip now adds a "unpaid balance at this step" section with before, after, and the credited delta as Ocean observed it. The top-edge block cubes (which aren't balance events) keep the plain block tooltip.
+
 ### `[UI]` BIP 110 scanner: reward and fees always show 8 decimals
 
 The block table stripped trailing zeros from the BTC amounts, so every row had a different width (3.132358 next to 3.13594278) and the reward/fees columns were hard to scan. Both now always render the full 8 decimals.

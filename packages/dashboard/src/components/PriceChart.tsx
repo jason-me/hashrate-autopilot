@@ -1444,10 +1444,10 @@ export const PriceChart = memo(function PriceChart({
 
   // Pool-block dots (right-axis = ocean_unpaid_sat or lifetime_earnings_sat).
   const onPoolBlockEnter = useCallback(
-    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+    (block: OurBlockMarker, balance?: PoolBlockTooltipState['balance']) => (e: React.MouseEvent) => {
       setPoolBlockTip((prev) => {
         if (prev?.pinned) return prev;
-        return { block, x: e.clientX, y: e.clientY, pinned: false };
+        return { block, balance, x: e.clientX, y: e.clientY, pinned: false };
       });
     },
     [],
@@ -1456,9 +1456,9 @@ export const PriceChart = memo(function PriceChart({
     setPoolBlockTip((prev) => (prev?.pinned ? prev : null));
   }, []);
   const onPoolBlockClick = useCallback(
-    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+    (block: OurBlockMarker, balance?: PoolBlockTooltipState['balance']) => (e: React.MouseEvent) => {
       e.stopPropagation();
-      setPoolBlockTip({ block, x: e.clientX, y: e.clientY, pinned: true });
+      setPoolBlockTip({ block, balance, x: e.clientX, y: e.clientY, pinned: true });
     },
     [],
   );
@@ -1750,8 +1750,9 @@ export const PriceChart = memo(function PriceChart({
     return out;
   }, [chartData, showRewardMarkers, rewardEvents, points]);
 
+  type PoolBlockBalance = NonNullable<PoolBlockTooltipState['balance']>;
   const visiblePoolBlockMarkers = useMemo(() => {
-    const empty: Array<{ block: OurBlockMarker; cx: number; cy: number; blockCx: number }> = [];
+    const empty: Array<{ block: OurBlockMarker; cx: number; cy: number; blockCx: number; balance: PoolBlockBalance | null }> = [];
     if (!chartData || !showPoolBlockMarkers || !chartData.rightAxis) return empty;
     const { dataMinX, dataMaxX, xScale, rightYScale, rightAxis } = chartData;
     let lastNonNull: number | null = null;
@@ -1771,7 +1772,13 @@ export const PriceChart = memo(function PriceChart({
       cy: number;
       blockCx: number;
       steppedIdx: number;
+      balance: PoolBlockBalance | null;
     }> = [];
+    // #322 follow-up: the dot sits ON the balance line, so the tooltip
+    // should say what the balance did there - carry the step's
+    // before/after values along with the geometry.
+    const balanceSeries: PoolBlockBalance['series'] =
+      rightAxisSeries === 'ocean_unpaid_sat' ? 'unpaid' : 'lifetime';
     // ourBlocks comes from /api/ocean newest-first, so sort ASC so the
     // two-pointer cursor walk lines up with `points` (also ASC).
     const sortedBlocks = [...ourBlocks].sort((a, b) => a.timestamp_ms - b.timestamp_ms);
@@ -1809,6 +1816,7 @@ export const PriceChart = memo(function PriceChart({
     let scanFromIdx = 0;
     let lastClaimedSteppedIdx = -1;
     let lastClaimedValue: number | null = null;
+    let lastClaimedBaseline: number | null = null;
     for (const b of sortedBlocks) {
       if (b.timestamp_ms < dataMinX || b.timestamp_ms > dataMaxX) continue;
       while (cursor < points.length && points[cursor]!.tick_at < b.timestamp_ms) {
@@ -1819,6 +1827,7 @@ export const PriceChart = memo(function PriceChart({
       const scanFrom = Math.max(cursor, scanFromIdx);
       let v: number | null = null;
       let steppedIdx = -1;
+      let balance: PoolBlockBalance | null = null;
       if (scanFrom < points.length) {
         // Baseline = value at the tick just before scanFrom. For block
         // 1 this is the pre-block tick. For block N+1 this is the
@@ -1845,6 +1854,10 @@ export const PriceChart = memo(function PriceChart({
           scanFromIdx = steppedIdx + 1;
           lastClaimedSteppedIdx = steppedIdx;
           lastClaimedValue = stepped;
+          lastClaimedBaseline = baselineIsNum ? (baseline as number) : null;
+          if (lastClaimedBaseline !== null) {
+            balance = { series: balanceSeries, before_sat: lastClaimedBaseline, after_sat: stepped };
+          }
         } else if (
           lastClaimedSteppedIdx >= 0 &&
           lastClaimedValue !== null &&
@@ -1868,6 +1881,12 @@ export const PriceChart = memo(function PriceChart({
           // pass below pulls the dots apart visually.
           steppedIdx = lastClaimedSteppedIdx;
           v = lastClaimedValue;
+          // Batched case: Ocean folded this block's credit into the
+          // previous step - the observed before/after describes the
+          // combined step, shared by both blocks.
+          if (lastClaimedBaseline !== null && lastClaimedValue !== null) {
+            balance = { series: balanceSeries, before_sat: lastClaimedBaseline, after_sat: lastClaimedValue };
+          }
         } else {
           const c = rightAxis.values[cursor];
           if (typeof c === 'number' && Number.isFinite(c)) v = c;
@@ -1883,6 +1902,7 @@ export const PriceChart = memo(function PriceChart({
         cy: rightYScale(v),
         blockCx: xScale(b.timestamp_ms),
         steppedIdx,
+        balance,
       });
     }
     // #221: shared-step stagger. After the scan-advancing pass above,
@@ -1898,7 +1918,7 @@ export const PriceChart = memo(function PriceChart({
     const out: typeof empty = [];
     for (const p of projected) {
       if (p.steppedIdx < 0) {
-        out.push({ block: p.block, cx: p.cx, cy: p.cy, blockCx: p.blockCx });
+        out.push({ block: p.block, cx: p.cx, cy: p.cy, blockCx: p.blockCx, balance: p.balance });
         continue;
       }
       const rank = stepCounts.get(p.steppedIdx) ?? 0;
@@ -1908,10 +1928,11 @@ export const PriceChart = memo(function PriceChart({
         cx: p.cx + rank * STAGGER_PX,
         cy: p.cy,
         blockCx: p.blockCx,
+        balance: p.balance,
       });
     }
     return out;
-  }, [chartData, showPoolBlockMarkers, ourBlocks, points]);
+  }, [chartData, showPoolBlockMarkers, ourBlocks, points, rightAxisSeries]);
 
   const unpaidDropMarkers = useMemo(() => {
     const empty: Array<{ cx: number; cy: number; tick_at: number; prev: number; cur: number }> = [];
@@ -2934,14 +2955,14 @@ export const PriceChart = memo(function PriceChart({
         {/* Pool-block dots on the right-axis line. Click opens the
             same rich tooltip the Hashrate chart uses (reward, our
             share, BIP-110 signal, explorer link). */}
-        {visiblePoolBlockMarkers.map(({ block: b, cx, cy, blockCx }) => {
+        {visiblePoolBlockMarkers.map(({ block: b, cx, cy, blockCx, balance }) => {
           const fill = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_POOL_BLOCK;
           return (
             <g
               key={`pool-block-${b.block_hash || b.height}`}
-              onMouseEnter={onPoolBlockEnter(b)}
+              onMouseEnter={onPoolBlockEnter(b, balance ?? undefined)}
               onMouseLeave={onPoolBlockLeave}
-              onClick={onPoolBlockClick(b)}
+              onClick={onPoolBlockClick(b, balance ?? undefined)}
               style={{ cursor: 'pointer' }}
             >
               {Math.abs(cx - blockCx) > 2 && (

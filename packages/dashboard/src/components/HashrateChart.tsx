@@ -2506,6 +2506,17 @@ export interface PoolBlockTooltipState {
   x: number;
   y: number;
   pinned: boolean;
+  /**
+   * #322 follow-up: set when the tooltip was opened from a step-dot on
+   * a right-axis balance line (unpaid / lifetime earnings) - the dot
+   * IS a balance event, so the tooltip explains what the balance did:
+   * the observed step this block's TIDES credit caused.
+   */
+  balance?: {
+    series: 'unpaid' | 'lifetime';
+    before_sat: number;
+    after_sat: number;
+  };
 }
 
 /**
@@ -2613,6 +2624,34 @@ export function PoolBlockTooltip({
           <Trans>Signaling BIP 110 (Reduced Data Temporary Soft Fork)</Trans>
         </div>
       )}
+
+      {tip.balance && (() => {
+        const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+        const delta = tip.balance.after_sat - tip.balance.before_sat;
+        return (
+          <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
+              {tip.balance.series === 'unpaid'
+                ? <Trans>unpaid balance at this step</Trans>
+                : <Trans>lifetime earnings at this step</Trans>}
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500"><Trans>before</Trans></span>
+              <span className="font-mono tabular-nums">{nf.format(tip.balance.before_sat)} sat</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500"><Trans>after</Trans></span>
+              <span className="font-mono tabular-nums">{nf.format(tip.balance.after_sat)} sat</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500"><Trans>credited</Trans></span>
+              <span className={`font-mono tabular-nums ${delta >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {delta >= 0 ? '+' : ''}{nf.format(delta)} sat
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {(() => {
         // Prefer the per-block historical share_log captured at the

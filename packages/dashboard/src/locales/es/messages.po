@@ -375,6 +375,10 @@ msgstr "anadiendo…"
 msgid "address"
 msgstr "dirección"
 
+#: src/components/HashrateChart.tsx
+msgid "after"
+msgstr "después"
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
@@ -635,6 +639,10 @@ msgstr "credenciales inválidas"
 #: src/pages/Config.tsx
 msgid "Balance-check backend"
 msgstr "Backend de verificación de saldo"
+
+#: src/components/HashrateChart.tsx
+msgid "before"
+msgstr "antes"
 
 #: src/lib/alertConditions.ts
 msgid "below floor"
@@ -1405,6 +1413,10 @@ msgstr "creada"
 #: src/pages/Config.tsx
 msgid "Credential (DDNS Key password / token)"
 msgstr "Credencial (contraseña / token del DDNS Key)"
+
+#: src/components/HashrateChart.tsx
+msgid "credited"
+msgstr "acreditado"
 
 #: src/components/PriceChart.tsx
 msgid "credited on Braiins"
@@ -2479,6 +2491,10 @@ msgstr "Permite que el panel muestre los pagos Ocean TIDES cuando llegan. Elige 
 #: src/pages/Status.tsx
 msgid "lifetime earnings (paid + unpaid)"
 msgstr "ganancias totales (pagado + no pagado)"
+
+#: src/components/HashrateChart.tsx
+msgid "lifetime earnings at this step"
+msgstr "ganancias totales en este paso"
 
 #: src/pages/Status.tsx
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
@@ -4443,6 +4459,10 @@ msgstr "no pagado"
 #: src/pages/Config.tsx
 msgid "unpaid (sat)"
 msgstr "no pagado (sat)"
+
+#: src/components/HashrateChart.tsx
+msgid "unpaid balance at this step"
+msgstr "saldo pendiente en este paso"
 
 #: src/pages/Status.tsx
 msgid "unpaid earnings"
