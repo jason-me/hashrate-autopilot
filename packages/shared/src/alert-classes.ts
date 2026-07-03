@@ -130,6 +130,30 @@ export function conditionSpanClass(openClass: string | null | undefined): Condit
   return BY_OPEN_CLASS.get(openClass);
 }
 
+/**
+ * #322: how a condition interval renders on a given chart.
+ *
+ * - 'band': the class targets this chart - full hatch band + onset /
+ *   recovery markers (+ focus beacon when focused).
+ * - 'beacon-only': chart-less classes (marketplace_empty /
+ *   sustained_paused draw no band of their own - the #167 fillable-null
+ *   and #287 bid-pause hatches cover them) still need a landing spot
+ *   for the Timeline's "View on chart" jump, so the FOCUSED span gets a
+ *   sonar beacon + dashed guide on the price chart, nothing else.
+ * - 'none': not rendered here.
+ */
+export function conditionBandRenderMode(
+  openClass: string | null | undefined,
+  target: 'price' | 'hashrate',
+  focused: boolean,
+): 'band' | 'beacon-only' | 'none' {
+  const cls = conditionSpanClass(openClass);
+  if (!cls) return 'none';
+  if (cls.charts.includes(target)) return 'band';
+  if (cls.charts.length === 0 && target === 'price' && focused) return 'beacon-only';
+  return 'none';
+}
+
 /** True if this event_class is a span opener we surface on the timeline. */
 export function isConditionOpenClass(eventClass: string | null | undefined): boolean {
   return !!eventClass && BY_OPEN_CLASS.has(eventClass);

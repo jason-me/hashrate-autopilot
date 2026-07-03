@@ -18,6 +18,7 @@
  */
 
 import {
+  conditionBandRenderMode,
   conditionSpanClass,
   type AlertChartTarget,
 } from '@hashrate-autopilot/shared';
@@ -83,8 +84,17 @@ export function AlertConditionBands({
   const hoverX = hoverTickAt != null ? xScale(hoverTickAt) : null;
   const proximity = (mx: number): number =>
     hoverX == null ? 0 : Math.max(0, 1 - Math.abs(mx - hoverX) / REVEAL_PX);
-  const relevant = intervals.filter((iv) =>
-    conditionSpanClass(iv.span.event_class)?.charts.includes(target),
+  // #322: 'band' = full hatch + markers; 'beacon-only' = a focused
+  // chart-less class (marketplace_empty / sustained_paused) gets just a
+  // sonar anchor for the Timeline jump. Logic lives in shared
+  // conditionBandRenderMode (unit-tested).
+  const relevant = intervals.filter(
+    (iv) =>
+      conditionBandRenderMode(
+        iv.span.event_class,
+        target,
+        focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId,
+      ) !== 'none',
   );
   if (relevant.length === 0) return null;
 
@@ -148,12 +158,16 @@ export function AlertConditionBands({
         // Markers are hidden by default and fade in near the cursor; the
         // focused (jumped-to) span's markers always show.
         const focused = focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId;
+        // #322: beacon-only rendering for chart-less classes (see the
+        // relevant-filter above) - no hatch, no onset/recovery glyphs.
+        const beaconOnly =
+          conditionBandRenderMode(iv.span.event_class, target, focused) === 'beacon-only';
         const onsetOp = focused ? 1 : proximity(x0);
         const recOp = focused ? 1 : recX !== null ? proximity(recX) : 0;
         const hitEvents = (op: number) => (op > 0.35 ? 'auto' : 'none');
         return (
           <g key={`alert-band-${iv.span.open_id}-${i}`}>
-            {x1 > x0 && (
+            {!beaconOnly && x1 > x0 && (
               <rect
                 x={x0}
                 y={top}
@@ -170,7 +184,7 @@ export function AlertConditionBands({
             )}
             {/* Onset line + DOWN triangle (entered the condition).
                 Fades in near the cursor (see proximity). */}
-            {onsetInView && (
+            {!beaconOnly && onsetInView && (
               <>
                 <g opacity={onsetOp} style={{ transition: 'opacity 120ms' }} pointerEvents="none">
                   <line
@@ -204,7 +218,7 @@ export function AlertConditionBands({
               </>
             )}
             {/* Recovery: dashed end line + hollow UP triangle (back to normal). */}
-            {recX !== null && (
+            {!beaconOnly && recX !== null && (
               <>
                 <g opacity={recOp} style={{ transition: 'opacity 120ms' }} pointerEvents="none">
                   <line
@@ -258,6 +272,18 @@ export function AlertConditionBands({
                     stroke-width: 2;
                   }
                 `}</style>
+                {beaconOnly && (
+                  <line
+                    x1={beaconX}
+                    y1={top}
+                    x2={beaconX}
+                    y2={top + height}
+                    stroke={color}
+                    strokeWidth="1.2"
+                    strokeOpacity="0.6"
+                    strokeDasharray="3 2"
+                  />
+                )}
                 <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} />
                 <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-0.8s' }} />
                 <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-1.6s' }} />
