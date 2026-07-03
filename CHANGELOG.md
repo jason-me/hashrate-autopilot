@@ -2,6 +2,10 @@
 
 ## 2026-07-03
 
+### `[UI]` BIP 110 scanner: reward and fees always show 8 decimals
+
+The block table stripped trailing zeros from the BTC amounts, so every row had a different width (3.132358 next to 3.13594278) and the reward/fees columns were hard to scan. Both now always render the full 8 decimals.
+
 ### `[Feature]` Timeline: alert recoveries are rows too (#322)
 
 When an alert condition heals (hashrate back above floor, DATUM reachable again, ...), the Timeline now shows a second row at the recovery moment - emerald check glyph, "below floor resolved", with the recovery message ("Hashrate back at or above floor - was below for 17m") in the Reason column. Previously only the opening row existed and the recovery left no trace in the feed. Recovery rows toggle with the same condition chip as their opening row (no extra filter) and are included in the Excel export. Spans closed implicitly (a next episode, or a stale orphan bound) have no real recovery moment and get no fabricated row. Clicking a recovery row opens a recovery-flavored drawer (emerald "resolved" header, the recovery message), and its "View on chart" jumps to the band's closing edge and pulses the beacon there - not at the onset. The two log-only condition classes (marketplace empty, bid paused sustained) draw no chart band of their own - the fillable-gap and bid-pause hatches already cover them - so their jump used to land on nothing; they now get a beacon-plus-guide-line anchor on the price chart at the jumped-to moment.

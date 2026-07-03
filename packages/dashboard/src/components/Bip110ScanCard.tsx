@@ -111,7 +111,10 @@ function formatMediumDate(ms: number, dateTimeLocale: string): string {
 const BIP110_REFERENCE_URL = 'https://bip110.org/';
 
 function formatBtc(sat: number): string {
-  return (sat / 1e8).toFixed(8).replace(/0+$/, '').replace(/\.$/, '.0');
+  // Fixed 8 decimals - stripping trailing zeros gave every row a
+  // different width (3.132358 vs 3.13594278), which made the reward /
+  // fees columns jagged and hard to scan (operator, 2026-07-03).
+  return (sat / 1e8).toFixed(8);
 }
 
 function formatSize(bytes: number): string {
