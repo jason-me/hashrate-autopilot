@@ -20,7 +20,7 @@ difficulty-retarget pickaxe icons, on-chain payout gem markers, and public-IP-ch
 rejection-rate spike can be lined up against an ISP IP rotation). Sustained alert conditions (delivered
 hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe
 overheating) render as colored background bands over the exact period each was open, and appear as rows in
-the Timeline tab interleaved with bid activity - so an alert lives in the timeline, not just in a separate list.
+the Timeline tab interleaved with bid activity - both the moment a condition opened and (as an emerald "resolved" row) the moment it healed - so an alert lives in the timeline, not just in a separate list.
 The Timeline tab is a unified event log: on-chain payouts, Braiins deposits, blocks your pool found, daemon
 restarts, and IP changes show as rows too, and every clickable chart marker has a "View in timeline" link that
 jumps to and highlights its row in the log (and the log rows jump back to the chart). Every rate and hashrate on
@@ -324,7 +324,7 @@ Every bid event the autopilot or operator emitted - CREATE / EDIT_PRICE / EDIT_S
 an append-only log surfaced at `/history` (titled "Timeline" in the nav) as a flat sortable table,
 interleaved with alert spans, on-chain events, difficulty retargets, and daemon restarts.
 
-![Timeline page](docs/images/order-history.png)
+![Timeline page](docs/images/timeline.png)
 
 Toolbar filters: action-kind chips with Lucide glyphs matching the rows, full bid-id substring, From / To
 date range via a custom locale-aware date picker (the browser-native `<input type=date>` always rendered
