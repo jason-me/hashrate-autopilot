@@ -484,7 +484,13 @@ export function History() {
     setFilters((prev) => ({ ...prev, untilMs: ts + 60 * 60 * 1000 }));
   };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
-  const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
+  // #322 follow-up: carries whether the drawer was opened from the
+  // recovery row, so it presents the healing (and jumps to the band's
+  // closing edge) rather than the problem.
+  const [selectedSpan, setSelectedSpan] = useState<{
+    span: AlertConditionSpanView;
+    recovery: boolean;
+  } | null>(null);
   // #318 follow-up: clicking an extra log row opens a detail side panel
   // (like bid events + alert spans) rather than jumping straight to the
   // chart; the panel carries a "View on chart" button.
@@ -1241,7 +1247,7 @@ export function History() {
                   recovery={item.recovery === true}
                   fmt={fmt}
                   highlighted={!item.recovery && highlightedSpanId === item.span.open_id}
-                  onClick={() => setSelectedSpan(item.span)}
+                  onClick={() => setSelectedSpan({ span: item.span, recovery: item.recovery === true })}
                 />
               ) : (
                 <LogExtraRow
@@ -1288,7 +1294,8 @@ export function History() {
       )}
       {selectedSpan && (
         <AlertSpanDrawer
-          span={selectedSpan}
+          span={selectedSpan.span}
+          recovery={selectedSpan.recovery}
           onClose={() => setSelectedSpan(null)}
         />
       )}

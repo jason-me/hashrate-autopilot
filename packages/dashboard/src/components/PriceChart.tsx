@@ -289,6 +289,7 @@ export const PriceChart = memo(function PriceChart({
   idleModeIntervals = [],
   alertConditionIntervals = [],
   focusSpanOpenId = null,
+  focusSpanEdge = 'start',
   onAlertSpanClick,
   viewportHandlers,
   wheelRef,
@@ -425,6 +426,8 @@ export const PriceChart = memo(function PriceChart({
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #322: beacon the focused span's closing edge instead of its onset. */
+  focusSpanEdge?: 'start' | 'end';
   /** #316: clicking a condition-band marker. */
   onAlertSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
   viewportHandlers?: {
@@ -2520,6 +2523,7 @@ export const PriceChart = memo(function PriceChart({
           colorOverrides={_colorOverrides}
           idSuffix="px"
           focusSpanOpenId={focusSpanOpenId}
+          focusSpanEdge={focusSpanEdge}
           hoverTickAt={crosshair?.state?.tickAt ?? null}
           onSpanClick={onAlertSpanClick}
         />

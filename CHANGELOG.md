@@ -4,7 +4,7 @@
 
 ### `[Feature]` Timeline: alert recoveries are rows too (#322)
 
-When an alert condition heals (hashrate back above floor, DATUM reachable again, ...), the Timeline now shows a second row at the recovery moment - emerald check glyph, "below floor resolved", with the recovery message ("Hashrate back at or above floor - was below for 17m") in the Reason column. Previously only the opening row existed and the recovery left no trace in the feed. Recovery rows toggle with the same condition chip as their opening row (no extra filter) and are included in the Excel export. Spans closed implicitly (a next episode, or a stale orphan bound) have no real recovery moment and get no fabricated row.
+When an alert condition heals (hashrate back above floor, DATUM reachable again, ...), the Timeline now shows a second row at the recovery moment - emerald check glyph, "below floor resolved", with the recovery message ("Hashrate back at or above floor - was below for 17m") in the Reason column. Previously only the opening row existed and the recovery left no trace in the feed. Recovery rows toggle with the same condition chip as their opening row (no extra filter) and are included in the Excel export. Spans closed implicitly (a next episode, or a stale orphan bound) have no real recovery moment and get no fabricated row. Clicking a recovery row opens a recovery-flavored drawer (emerald "resolved" header, the recovery message), and its "View on chart" jumps to the band's closing edge and pulses the beacon there - not at the onset.
 
 ## 2026-07-02
 

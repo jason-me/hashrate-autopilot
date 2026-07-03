@@ -250,6 +250,9 @@ export function Status() {
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
   // #316: span (open_id) jumped to from a History alert row -> sonar beacon.
   const [focusedSpanId, setFocusedSpanId] = useState<number | null>(null);
+  // #322: which edge of the focused span the beacon anchors on -
+  // 'end' when the jump came from a Timeline recovery row.
+  const [focusedSpanEdge, setFocusedSpanEdge] = useState<'start' | 'end'>('start');
   // #318: pool-block hash jumped to from a History block row -> sonar
   // beacon on the matching cube/crown marker.
   const [focusedBlockHash, setFocusedBlockHash] = useState<string | null>(null);
@@ -339,6 +342,7 @@ export function Status() {
       if (Number.isFinite(sid)) {
         if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
         setFocusedSpanId(sid);
+        setFocusedSpanEdge(params.get('focus_span_edge') === 'end' ? 'end' : 'start');
         // Auto-clear after ~6 s like the bid-event beacon (#288), so the
         // pulse doesn't linger across later zoom/pan of the same span.
         focusSpanClearTimer.current = window.setTimeout(() => {
@@ -420,6 +424,7 @@ export function Status() {
     }, 100);
     params.delete('focus_event');
     params.delete('focus_span');
+    params.delete('focus_span_edge');
     params.delete('focus_block');
     params.delete('focus_marker');
     params.delete('at');
@@ -969,6 +974,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
+          focusSpanEdge={focusedSpanEdge}
           onAlertSpanClick={(span, x, y) => setAlertTip({ span, x, y })}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
@@ -1044,6 +1050,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
+          focusSpanEdge={focusedSpanEdge}
           onAlertSpanClick={(span, x, y) => setAlertTip({ span, x, y })}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}

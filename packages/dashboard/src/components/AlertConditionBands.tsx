@@ -46,6 +46,7 @@ export function AlertConditionBands({
   colorOverrides,
   idSuffix,
   focusSpanOpenId = null,
+  focusSpanEdge = 'start',
   hoverTickAt = null,
   onSpanClick,
 }: {
@@ -62,6 +63,10 @@ export function AlertConditionBands({
   idSuffix: string;
   /** #316: the span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #322: which edge of the focused span to beacon - 'end' when the
+   *  jump came from a recovery row (falls back to onset when the span
+   *  has no recovery edge in the data). */
+  focusSpanEdge?: 'start' | 'end';
   /**
    * #317: the crosshair's hovered timestamp. The onset/recovery markers
    * are hidden by default (just the hatch band shows) and fade in only
@@ -235,7 +240,9 @@ export function AlertConditionBands({
               </>
             )}
             {/* Focus beacon when jumped to from a History alert row. */}
-            {focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId && (
+            {focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId && (() => {
+              const beaconX = focusSpanEdge === 'end' && recX !== null ? recX : x0;
+              return (
               <g pointerEvents="none">
                 <style>{`
                   @keyframes alertFocusPing_${idSuffix} {
@@ -251,11 +258,12 @@ export function AlertConditionBands({
                     stroke-width: 2;
                   }
                 `}</style>
-                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} />
-                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-0.8s' }} />
-                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-1.6s' }} />
+                <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} />
+                <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-0.8s' }} />
+                <circle cx={beaconX} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-1.6s' }} />
               </g>
-            )}
+              );
+            })()}
           </g>
         );
       })}

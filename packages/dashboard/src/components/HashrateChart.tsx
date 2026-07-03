@@ -374,6 +374,7 @@ export const HashrateChart = memo(function HashrateChart({
   idleModeIntervals = [],
   alertConditionIntervals = [],
   focusSpanOpenId = null,
+  focusSpanEdge = 'start',
   focusBlockHash = null,
   focusMarker = null,
   onAlertSpanClick,
@@ -453,6 +454,8 @@ export const HashrateChart = memo(function HashrateChart({
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #322: beacon the focused span's closing edge instead of its onset. */
+  focusSpanEdge?: 'start' | 'end';
   /** #318: pool-block hash jumped to from a History block row; the
    *  matching cube/crown marker gets a sonar beacon (auto-clears). */
   focusBlockHash?: string | null;
@@ -1984,6 +1987,7 @@ export const HashrateChart = memo(function HashrateChart({
           colorOverrides={_colorOverrides}
           idSuffix="hr"
           focusSpanOpenId={focusSpanOpenId}
+          focusSpanEdge={focusSpanEdge}
           hoverTickAt={crosshair?.state?.tickAt ?? null}
           onSpanClick={onAlertSpanClick}
         />

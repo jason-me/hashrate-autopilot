@@ -4,6 +4,11 @@
  * recovered (or that it's ongoing), the duration, and the full alert
  * body, with a "View on chart" button that pans the price chart to the
  * onset and pulses a focus beacon on the band.
+ *
+ * #322: opened from a recovery row, the drawer presents the healing
+ * instead - emerald "<condition> resolved" header, the recovery body,
+ * and "View on chart" pans to the band's CLOSING edge (still beaconing
+ * the same span).
  */
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -19,21 +24,30 @@ import { useFormatters } from '../lib/locale';
 
 export function AlertSpanDrawer({
   span,
+  recovery = false,
   onClose,
 }: {
   span: AlertConditionSpanView;
+  /** #322: present the span's recovery moment instead of its opening. */
+  recovery?: boolean;
   onClose: () => void;
 }): React.JSX.Element {
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
   const navigate = useNavigate();
-  const color = conditionColor(span.event_class);
+  const color = recovery ? '#34d399' : conditionColor(span.event_class);
   const ongoing = span.end_ms === null;
   const durationMs = (span.end_ms ?? Date.now()) - span.start_ms;
 
   const goToChart = () => {
-    navigate(`/?at=${span.start_ms}&focus_span=${span.open_id}`);
+    // Recovery rows jump to the band's closing edge (and beacon it);
+    // open rows to the onset.
+    if (recovery && span.end_ms !== null) {
+      navigate(`/?at=${span.end_ms}&focus_span=${span.open_id}&focus_span_edge=end`);
+    } else {
+      navigate(`/?at=${span.start_ms}&focus_span=${span.open_id}`);
+    }
   };
 
   const body = (
@@ -52,8 +66,10 @@ export function AlertSpanDrawer({
           <div className="min-w-0">
             <div className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color }}>
               <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-              {conditionLabel(span.event_class)}
-              <span className="text-slate-500">· {span.severity}</span>
+              {recovery
+                ? t`${conditionLabel(span.event_class)} resolved`
+                : conditionLabel(span.event_class)}
+              {!recovery && <span className="text-slate-500">· {span.severity}</span>}
             </div>
             <div className="text-xs text-slate-300 mt-1 whitespace-nowrap">
               {ongoing ? <Trans>ongoing</Trans> : formatDuration(durationMs)}
@@ -103,7 +119,9 @@ export function AlertSpanDrawer({
             <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
               <Trans>What happened</Trans>
             </div>
-            <p className="text-xs text-slate-200 whitespace-normal leading-snug">{span.body}</p>
+            <p className="text-xs text-slate-200 whitespace-normal leading-snug">
+              {recovery ? span.recovery_body ?? span.body : span.body}
+            </p>
           </section>
         </div>
       </aside>

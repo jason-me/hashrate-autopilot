@@ -71,6 +71,7 @@ msgstr "{0} events landed in the same daemon tick - the line shows their combine
 
 #. placeholder {0}: conditionLabel(s.event_class)
 #. placeholder {0}: conditionLabel(span.event_class)
+#: src/components/AlertSpanDrawer.tsx
 #: src/pages/History.tsx
 msgid "{0} resolved"
 msgstr "{0} resolved"
