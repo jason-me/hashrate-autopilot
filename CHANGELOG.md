@@ -2,6 +2,10 @@
 
 ## 2026-07-03
 
+### `[Release]` v1.16.0
+
+The Timeline release. One unified chronological event log (bid actions, alert spans with recovery rows, payouts, deposits, all pool blocks, retargets, IP changes, config edits, daemon restarts) with bidirectional chart jumps and sonar beacons; streaming denomination-aware Excel export with no row cap; follow live-tail; daemon-started chart markers; fully denomination-aware values everywhere including rewritten reason text. Controller safety: the #319 duplicate-bid guard and the stratum-probe datum-down cancel. Exact TIDES credits in pool-block alerts (#321). Migration 0115. Docs audited to spec v2.17 with a fresh screenshot set.
+
 ### `[UI]` Unpaid-line block dots explain the balance step
 
 Clicking a dot on the unpaid-earnings (or lifetime-earnings) line showed only the pool-block tooltip - block reward, share, explorer link - but nothing about the thing the dot actually sits on: your balance. The tooltip now adds a "unpaid balance at this step" section with before, after, and the credited delta as Ocean observed it. The top-edge block cubes (which aren't balance events) keep the plain block tooltip.

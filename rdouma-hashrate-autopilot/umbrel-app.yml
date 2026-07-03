@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.15.1"
+version: "1.16.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -53,6 +53,22 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.16.0 - the Timeline release: one unified event log, alert recoveries, Excel export, and two controller-safety fixes.
+
+  NEW
+  - Unified Timeline (the History page, rebuilt): one chronological feed of everything that happened - bid actions, alert conditions with their durations, on-chain payouts, Braiins deposits, every pool block (yours crowned), difficulty retargets, public-IP changes, config edits, and daemon restarts. Every row opens a detail panel, and every row and chart marker jump to each other with a sonar ping so you can trace any event in both directions.
+  - Alert recoveries are events too: when a condition heals (hashrate back above floor, DATUM reachable again), the Timeline shows an emerald "resolved" row at that moment with the recovery message, controlled by the same filter chip as the alert itself.
+  - Excel export: one click streams the current filtered Timeline to a formatted .xlsx - frozen header, autofilter, your display units, your language - with no row cap and flat memory even at hundreds of thousands of rows.
+  - Follow (live tail): a toggle that keeps the newest events pinned to the top and polls every source faster, so the Timeline becomes a live console during an incident.
+  - Daemon restarts now show on the price chart as an emerald power marker, jumpable to and from the Timeline - a restart that explains a gap in your history is one click away from either view.
+  - Everything respects your display units: the Timeline's columns, detail panels, chart tooltips, the free-text decision reasons, and the Excel export all follow the sats/BTC/USD and TH/PH/EH toggles, with the Satoshi glyph standing in for "sat".
+
+  FIXES
+  - No duplicate bid after a marketplace hiccup (#319): a transient failure fetching the bid list could make the autopilot believe it owned nothing and post a second bid; creating now requires a confirmed-successful fetch and an empty local ledger.
+  - The stop-spend protection now watches the right signal: cancelling bids after a sustained DATUM outage keys on the mandatory stratum probe, so it works even without the optional stats API configured - and a stats-API blip can no longer cancel healthy bids.
+  - Pool-block alerts report your exact TIDES credit (#321): the "credited to you" number is now the real balance delta Ocean recorded, not a ~1%-high estimate; the "~" prefix only appears when the exact number genuinely isn't knowable.
+  - The wallet-runway alert threshold accepts fractional days via environment variable, and a retired internal setting was removed.
+
   v1.15.1 - effective-cap chart accuracy, payout-address validation, refresh and DATUM fixes.
 
   FIXES
