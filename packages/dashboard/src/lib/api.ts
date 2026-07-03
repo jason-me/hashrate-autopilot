@@ -265,6 +265,9 @@ export interface AlertConditionSpanView {
   body: string;
   start_ms: number;
   end_ms: number | null;
+  /** #322: the paired recovery alert's body; null when the span closed
+   *  implicitly or is still open. Non-null = a real recovery moment. */
+  recovery_body: string | null;
 }
 
 /**

@@ -44,6 +44,14 @@ export interface AlertConditionSpan {
   readonly start_ms: number;
   /** Recovery timestamp, or null if the condition is still open. */
   readonly end_ms: number | null;
+  /**
+   * #322: the paired recovery alert's body ("Hashrate back at or above
+   * floor - was below for 17m."), or null when the span was closed
+   * implicitly (next same-class episode / orphan bound) or is still
+   * open. Non-null recovery_body marks a REAL recovery moment - the
+   * Timeline renders those as their own rows at end_ms.
+   */
+  readonly recovery_body: string | null;
 }
 
 export interface AlertInsert {
@@ -415,7 +423,7 @@ export class AlertsRepo {
         .execute() as Promise<AlertRow[]>,
       this.db
         .selectFrom('alerts')
-        .select(['paired_alert_id', 'created_at'])
+        .select(['paired_alert_id', 'created_at', 'body'])
         .where('event_class', 'in', CONDITION_RECOVERY_CLASSES as string[])
         .where('paired_alert_id', 'is not', null)
         .execute(),
@@ -423,13 +431,13 @@ export class AlertsRepo {
 
     // Earliest recovery per opener id (a re-fired condition that
     // somehow produced two recoveries should close on the first).
-    const recoveryByOpenId = new Map<number, number>();
+    const recoveryByOpenId = new Map<number, { at: number; body: string }>();
     for (const r of recoveries) {
       const openId = r.paired_alert_id;
       if (openId === null) continue;
       const prev = recoveryByOpenId.get(openId);
-      if (prev === undefined || r.created_at < prev) {
-        recoveryByOpenId.set(openId, r.created_at);
+      if (prev === undefined || r.created_at < prev.at) {
+        recoveryByOpenId.set(openId, { at: r.created_at, body: r.body });
       }
     }
 
@@ -452,7 +460,7 @@ export class AlertsRepo {
       const recovery = recoveryByOpenId.get(o.id);
       let endMs: number | null;
       if (recovery !== undefined) {
-        endMs = recovery; // trust the recovery fully, any length.
+        endMs = recovery.at; // trust the recovery fully, any length.
       } else {
         const nextStart = nextOpenerStartById.get(o.id);
         if (nextStart !== undefined) {
@@ -473,6 +481,7 @@ export class AlertsRepo {
         body: o.body,
         start_ms: o.created_at,
         end_ms: endMs,
+        recovery_body: recovery !== undefined ? recovery.body : null,
       });
     }
     return spans;

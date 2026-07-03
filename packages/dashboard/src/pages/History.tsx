@@ -802,12 +802,19 @@ export function History() {
   // Merged, newest-first timeline of bid events + alert rows + extras.
   type TimelineItem =
     | { kind: 'bid'; ts: number; ev: BidHistoryFlatEvent }
-    | { kind: 'alert'; ts: number; span: AlertConditionSpanView }
+    | { kind: 'alert'; ts: number; span: AlertConditionSpanView; recovery?: boolean }
     | { kind: 'extra'; ts: number; extra: LogExtraItem };
   const timelineItems: TimelineItem[] = useMemo(() => {
     const items: TimelineItem[] = [
       ...events.map((ev) => ({ kind: 'bid' as const, ts: ev.occurred_at, ev })),
       ...visibleAlertSpans.map((span) => ({ kind: 'alert' as const, ts: span.start_ms, span })),
+      // #322: a span closed by a REAL recovery alert gets a second row
+      // at the recovery moment ("it healed" is an event too). Implicit
+      // closes (next episode / orphan bound) have no recovery moment,
+      // so no row is fabricated. Toggled by the same condition chip.
+      ...visibleAlertSpans
+        .filter((span) => span.end_ms !== null && span.recovery_body != null)
+        .map((span) => ({ kind: 'alert' as const, ts: span.end_ms!, span, recovery: true })),
       ...visibleExtras.map((extra) => ({ kind: 'extra' as const, ts: extra.ts, extra })),
     ];
     items.sort((a, b) => b.ts - a.ts);
@@ -929,8 +936,14 @@ export function History() {
           extraRow(s.occurred_at, logExtraLabel('boot'), s.detail ?? '');
       }
       for (const s of alertSpansQuery.data?.spans ?? []) {
-        if (!shownAlertClasses.has(s.event_class) || !inRange(s.start_ms)) continue;
-        extraRow(s.start_ms, conditionLabel(s.event_class), s.body ?? '');
+        if (!shownAlertClasses.has(s.event_class)) continue;
+        if (inRange(s.start_ms)) {
+          extraRow(s.start_ms, conditionLabel(s.event_class), s.body ?? '');
+        }
+        // #322: real recoveries export as their own rows too.
+        if (s.end_ms !== null && s.recovery_body != null && inRange(s.end_ms)) {
+          extraRow(s.end_ms, t`${conditionLabel(s.event_class)} resolved`, s.recovery_body);
+        }
       }
       extras.sort((a, b) => b.ts - a.ts);
 
@@ -1223,10 +1236,11 @@ export function History() {
                 />
               ) : item.kind === 'alert' ? (
                 <AlertSpanRow
-                  key={`alert-${item.span.open_id}`}
+                  key={item.recovery ? `alert-r-${item.span.open_id}` : `alert-${item.span.open_id}`}
                   span={item.span}
+                  recovery={item.recovery === true}
                   fmt={fmt}
-                  highlighted={highlightedSpanId === item.span.open_id}
+                  highlighted={!item.recovery && highlightedSpanId === item.span.open_id}
                   onClick={() => setSelectedSpan(item.span)}
                 />
               ) : (
@@ -1799,11 +1813,14 @@ function EventRow({
  */
 function AlertSpanRow({
   span,
+  recovery = false,
   fmt,
   highlighted,
   onClick,
 }: {
   span: AlertConditionSpanView;
+  /** #322: render as the span's recovery moment (at end_ms) instead of its opening. */
+  recovery?: boolean;
   fmt: ReturnType<typeof useFormatters>;
   highlighted: boolean;
   onClick: () => void;
@@ -1811,13 +1828,15 @@ function AlertSpanRow({
   const { i18n } = useLingui();
   void i18n;
   const cls = conditionSpanClass(span.event_class);
-  const color = cls ? CHART_COLOR_DEFAULTS[cls.colorSlot as ChartColorKey] : '#fb923c';
+  const color = recovery
+    ? '#34d399' // emerald - good news, matching the resolved pill on /alerts
+    : cls ? CHART_COLOR_DEFAULTS[cls.colorSlot as ChartColorKey] : '#fb923c';
   const ongoing = span.end_ms === null;
   const durationMs = (span.end_ms ?? Date.now()) - span.start_ms;
   const dash = <span className="text-slate-600">—</span>;
   return (
     <tr
-      id={`alert-span-row-${span.open_id}`}
+      id={recovery ? `alert-recovery-row-${span.open_id}` : `alert-span-row-${span.open_id}`}
       onClick={onClick}
       className={`border-t border-slate-800/70 align-top cursor-pointer transition-colors ${
         highlighted ? 'bg-amber-500/10 ring-1 ring-amber-500/40' : 'hover:bg-slate-800/30'
@@ -1825,30 +1844,52 @@ function AlertSpanRow({
       title={t`Show details`}
     >
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
-        {fmt.timestamp(span.start_ms)}
+        {fmt.timestamp(recovery ? span.end_ms! : span.start_ms)}
       </td>
       <td className="py-1 px-3 whitespace-nowrap">
-        <svg
-          width={12}
-          height={12}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="inline-block align-middle"
-        >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
+        {recovery ? (
+          /* Lucide `circle-check` - the condition healed. */
+          <svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="inline-block align-middle"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+        ) : (
+          <svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="inline-block align-middle"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+        )}
         <span className="ml-1.5" style={{ color }}>
-          {conditionLabel(span.event_class)}
+          {recovery
+            ? t`${conditionLabel(span.event_class)} resolved`
+            : conditionLabel(span.event_class)}
         </span>
-        <span className="ml-2 text-[11px] text-slate-500 font-mono">
-          {ongoing ? t`ongoing` : formatDuration(durationMs)}
-        </span>
+        {!recovery && (
+          <span className="ml-2 text-[11px] text-slate-500 font-mono">
+            {ongoing ? t`ongoing` : formatDuration(durationMs)}
+          </span>
+        )}
       </td>
       <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
@@ -1856,8 +1897,11 @@ function AlertSpanRow({
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-right">{dash}</td>
-      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={span.body}>
-        {span.body}
+      <td
+        className="py-1 px-3 text-slate-400 max-w-[20rem] truncate"
+        title={recovery ? span.recovery_body ?? undefined : span.body}
+      >
+        {recovery ? span.recovery_body : span.body}
       </td>
     </tr>
   );

@@ -48,7 +48,7 @@ describe('AlertsRepo.conditionSpansSince (#316)', () => {
       created_at: createdAt,
       severity: 'INFO',
       title: 'recovered',
-      body: 'b',
+      body: 'back above floor - was below for 17m',
       status: 'BUFFERED',
       event_class: eventClass,
       delivery_status: 'sent',
@@ -74,7 +74,22 @@ describe('AlertsRepo.conditionSpansSince (#316)', () => {
       event_class: 'hashrate_below_floor',
       start_ms: 1_000,
       end_ms: 1_000 + 10 * 60 * 60 * 1000,
+      // #322: the paired recovery's body rides along so the Timeline
+      // can render the recovery as its own row.
+      recovery_body: 'back above floor - was below for 17m',
     });
+  });
+
+  it('recovery_body is null for implicit closes and open spans (#322)', async () => {
+    // Orphan closed implicitly by the next same-class opener: no real
+    // recovery moment -> no recovery_body.
+    await insertOpener('zero_hashrate', 1_000);
+    // Recent orphan (still open) -> also null.
+    await insertOpener('zero_hashrate', 5_000);
+    const spans = await repo.conditionSpansSince(0, Number.MAX_SAFE_INTEGER, 6_000);
+    expect(spans).toHaveLength(2);
+    expect(spans[0]!.recovery_body).toBeNull();
+    expect(spans[1]!.recovery_body).toBeNull();
   });
 
   it('leaves end_ms null for a RECENT orphan (plausibly still open)', async () => {

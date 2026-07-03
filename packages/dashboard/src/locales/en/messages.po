@@ -69,6 +69,12 @@ msgstr "(no push attempted yet)"
 msgid "{0} events landed in the same daemon tick - the line shows their combined effect on the rolling-{windowLabel} window. Pool luck went from {luckBeforeText} to {luckAfterText}."
 msgstr "{0} events landed in the same daemon tick - the line shows their combined effect on the rolling-{windowLabel} window. Pool luck went from {luckBeforeText} to {luckAfterText}."
 
+#. placeholder {0}: conditionLabel(s.event_class)
+#. placeholder {0}: conditionLabel(span.event_class)
+#: src/pages/History.tsx
+msgid "{0} resolved"
+msgstr "{0} resolved"
+
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default - tunable later)"

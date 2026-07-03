@@ -69,6 +69,12 @@ msgstr "(nog geen update verstuurd)"
 msgid "{0} events landed in the same daemon tick - the line shows their combined effect on the rolling-{windowLabel} window. Pool luck went from {luckBeforeText} to {luckAfterText}."
 msgstr "{0} gebeurtenissen vielen in dezelfde daemon-tick - de lijn toont hun gecombineerde effect op het rollende {windowLabel}-venster. Pool luck ging van {luckBeforeText} naar {luckAfterText}."
 
+#. placeholder {0}: conditionLabel(s.event_class)
+#. placeholder {0}: conditionLabel(span.event_class)
+#: src/pages/History.tsx
+msgid "{0} resolved"
+msgstr "{0} opgelost"
+
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default - tunable later)"
